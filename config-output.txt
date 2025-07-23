@@ -1,0 +1,77 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "useDefineForClassFields": true,
+        "lib": [
+            "es2020",
+            "dom",
+            "dom.iterable"
+        ],
+        "module": "esnext",
+        "skipLibCheck": true,
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "strict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "baseUrl": "./",
+        "paths": {
+            "@/*": [
+                "src/renderer/*"
+            ],
+            "@shared/*": [
+                "src/shared/*"
+            ]
+        },
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "exactOptionalPropertyTypes": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "allowSyntheticDefaultImports": true,
+        "resolvePackageJsonExports": true,
+        "resolvePackageJsonImports": true,
+        "preserveConstEnums": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictBindCallApply": true,
+        "strictPropertyInitialization": true,
+        "strictBuiltinIteratorReturn": true,
+        "alwaysStrict": true,
+        "useUnknownInCatchVariables": true
+    },
+    "files": [
+        "./src/renderer/App.tsx",
+        "./src/renderer/main.tsx",
+        "./src/renderer/components/builder/ScheduleBuilder.tsx",
+        "./src/renderer/components/common/ActivityLibrary.tsx",
+        "./src/renderer/components/common/Navigation.tsx",
+        "./src/renderer/components/display/SmartboardDisplay.tsx",
+        "./src/renderer/components/management/Settings.tsx",
+        "./src/renderer/components/management/StudentManagement.tsx",
+        "./vite.config.ts"
+    ],
+    "include": [
+        "src/renderer/**/*",
+        "src/shared/**/*",
+        "*.config.ts",
+        "vite-env.d.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "build",
+        "src/main"
+    ]
+}

@@ -1,110 +1,90 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron'
-import { join } from 'path'
-import Store from 'electron-store'
+import { app, BrowserWindow, Menu, ipcMain, dialog, shell } from 'electron';
+import { join } from 'path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { homedir } from 'os';
 
-// Initialize electron store for persistent data
-const store = new Store()
+// Development vs Production
+const isDev = process.env.NODE_ENV === 'development';
 
-// Keep a global reference of the window object
-let mainWindow: BrowserWindow | null = null
+// Global reference to main window
+let mainWindow: BrowserWindow | null = null;
 
-// Enable live reload for development
-if (process.env.NODE_ENV === 'development') {
-  require('electron-reload')(__dirname, {
-    electron: join(__dirname, '..', 'node_modules', '.bin', 'electron'),
-    hardResetMethod: 'exit'
-  })
+// Data directory for storing schedules and settings
+const dataDir = join(homedir(), '.visual-schedule-builder');
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
 }
 
+// Create the main application window
 function createWindow(): void {
-  // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
     show: false, // Don't show until ready
+    icon: isDev ? undefined : join(__dirname, '../assets/icon.png'),
     webPreferences: {
-      nodeIntegration: false, // Security: disable node integration
-      contextIsolation: true, // Security: enable context isolation
-      preload: join(__dirname, 'preload.js'), // Preload script for secure IPC
+      nodeIntegration: false,
+      contextIsolation: true,
       webSecurity: true,
-      allowRunningInsecureContent: false,
-      experimentalFeatures: false
+      sandbox: false
     },
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
-    icon: join(__dirname, '../../assets/icon.png'), // App icon
-  })
+    titleBarStyle: 'default',
+    autoHideMenuBar: false
+  });
 
   // Load the app
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173')
+  if (isDev) {
+    // Development: load from Vite dev server
+    mainWindow.loadURL('http://localhost:5173');
     // Open DevTools in development
-    mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    // Production: load from built files
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
-  // Show window when ready to prevent visual flash
+  // Handle window ready
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-    
-    // Focus window on creation
-    if (process.env.NODE_ENV === 'development') {
-      mainWindow?.webContents.openDevTools()
+    if (mainWindow) {
+      mainWindow.show();
+      
+      // Focus the window
+      if (isDev) {
+        mainWindow.focus();
+      }
     }
-  })
+  });
 
   // Handle window closed
   mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
-    return { action: 'deny' }
-  })
+    // Open external URLs in the default browser
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
+  });
 
   // Prevent navigation to external sites
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    const parsedUrl = new URL(navigationUrl)
+    const parsedUrl = new URL(navigationUrl);
+    const currentUrl = mainWindow?.webContents.getURL();
     
-    if (parsedUrl.origin !== 'http://localhost:5173' && parsedUrl.origin !== 'file://') {
-      event.preventDefault()
+    if (currentUrl && parsedUrl.origin !== new URL(currentUrl).origin) {
+      event.preventDefault();
+      shell.openExternal(navigationUrl);
     }
-  })
+  });
 }
 
-// App event handlers
-app.whenReady().then(() => {
-  createWindow()
-  createMenu()
-  setupIPC()
-
-  app.on('activate', () => {
-    // On macOS, re-create window when dock icon is clicked
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
-
-app.on('window-all-closed', () => {
-  // On macOS, apps typically stay active until explicitly quit
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-// Security: Prevent new window creation
-app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', (event, navigationUrl) => {
-    event.preventDefault()
-    shell.openExternal(navigationUrl)
-  })
-})
-
+// Create application menu
 function createMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -114,57 +94,91 @@ function createMenu(): void {
           label: 'New Schedule',
           accelerator: 'CmdOrCtrl+N',
           click: () => {
-            mainWindow?.webContents.send('menu-new-schedule')
+            sendToRenderer('menu:new-schedule');
           }
         },
         {
           label: 'Open Schedule',
           accelerator: 'CmdOrCtrl+O',
-          click: () => {
-            mainWindow?.webContents.send('menu-open-schedule')
+          click: async () => {
+            const result = await dialog.showOpenDialog(mainWindow!, {
+              properties: ['openFile'],
+              filters: [
+                { name: 'Schedule Files', extensions: ['json'] },
+                { name: 'All Files', extensions: ['*'] }
+              ],
+              defaultPath: dataDir
+            });
+            
+            if (!result.canceled && result.filePaths.length > 0) {
+              sendToRenderer('menu:open-schedule', result.filePaths[0]);
+            }
           }
         },
         {
           label: 'Save Schedule',
           accelerator: 'CmdOrCtrl+S',
           click: () => {
-            mainWindow?.webContents.send('menu-save-schedule')
+            sendToRenderer('menu:save-schedule');
           }
         },
         {
-          label: 'Save As...',
+          label: 'Save Schedule As...',
           accelerator: 'CmdOrCtrl+Shift+S',
-          click: () => {
-            mainWindow?.webContents.send('menu-save-as-schedule')
+          click: async () => {
+            const result = await dialog.showSaveDialog(mainWindow!, {
+              filters: [
+                { name: 'Schedule Files', extensions: ['json'] },
+                { name: 'All Files', extensions: ['*'] }
+              ],
+              defaultPath: join(dataDir, 'my-schedule.json')
+            });
+            
+            if (!result.canceled && result.filePath) {
+              sendToRenderer('menu:save-schedule-as', result.filePath);
+            }
           }
         },
         { type: 'separator' },
         {
-          label: 'Export to PDF',
+          label: 'Import Activities',
+          click: async () => {
+            const result = await dialog.showOpenDialog(mainWindow!, {
+              properties: ['openFile'],
+              filters: [
+                { name: 'JSON Files', extensions: ['json'] },
+                { name: 'CSV Files', extensions: ['csv'] },
+                { name: 'All Files', extensions: ['*'] }
+              ]
+            });
+            
+            if (!result.canceled && result.filePaths.length > 0) {
+              sendToRenderer('menu:import-activities', result.filePaths[0]);
+            }
+          }
+        },
+        {
+          label: 'Export Data',
           click: () => {
-            mainWindow?.webContents.send('menu-export-pdf')
+            sendToRenderer('menu:export-data');
           }
         },
         { type: 'separator' },
         {
-          label: 'Quit',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-          click: () => {
-            app.quit()
-          }
+          role: 'quit'
         }
       ]
     },
     {
       label: 'Edit',
       submenu: [
-        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
-        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
+        { role: 'undo' },
+        { role: 'redo' },
         { type: 'separator' },
-        { label: 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
-        { label: 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-        { label: 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' },
-        { label: 'Select All', accelerator: 'CmdOrCtrl+A', role: 'selectAll' }
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' }
       ]
     },
     {
@@ -174,21 +188,35 @@ function createMenu(): void {
           label: 'Schedule Builder',
           accelerator: 'CmdOrCtrl+1',
           click: () => {
-            mainWindow?.webContents.send('menu-view-builder')
+            sendToRenderer('menu:view-builder');
           }
         },
         {
           label: 'Smartboard Display',
           accelerator: 'CmdOrCtrl+2',
           click: () => {
-            mainWindow?.webContents.send('menu-view-display')
+            sendToRenderer('menu:view-display');
           }
         },
         {
           label: 'Student Management',
           accelerator: 'CmdOrCtrl+3',
           click: () => {
-            mainWindow?.webContents.send('menu-view-management')
+            sendToRenderer('menu:view-students');
+          }
+        },
+        {
+          label: 'Activity Library',
+          accelerator: 'CmdOrCtrl+4',
+          click: () => {
+            sendToRenderer('menu:view-library');
+          }
+        },
+        {
+          label: 'Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            sendToRenderer('menu:view-settings');
           }
         },
         { type: 'separator' },
@@ -197,171 +225,192 @@ function createMenu(): void {
           accelerator: process.platform === 'darwin' ? 'Ctrl+Command+F' : 'F11',
           click: () => {
             if (mainWindow) {
-              mainWindow.setFullScreen(!mainWindow.isFullScreen())
+              mainWindow.setFullScreen(!mainWindow.isFullScreen());
             }
           }
         },
-        { label: 'Reload', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-        { label: 'Force Reload', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
-        { label: 'Toggle Developer Tools', accelerator: 'F12', role: 'toggleDevTools' }
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' }
       ]
     },
     {
-      label: 'Tools',
+      label: 'Window',
       submenu: [
-        {
-          label: 'Activity Library',
-          click: () => {
-            mainWindow?.webContents.send('menu-activity-library')
-          }
-        },
-        {
-          label: 'Import Images',
-          click: () => {
-            mainWindow?.webContents.send('menu-import-images')
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Settings',
-          accelerator: 'CmdOrCtrl+,',
-          click: () => {
-            mainWindow?.webContents.send('menu-settings')
-          }
-        }
+        { role: 'minimize' },
+        { role: 'close' }
       ]
     },
     {
       label: 'Help',
       submenu: [
         {
-          label: 'User Guide',
-          click: () => {
-            shell.openExternal('https://github.com/YOUR_USERNAME/visual-schedule-builder/wiki/User-Guide')
-          }
-        },
-        {
-          label: 'Keyboard Shortcuts',
-          click: () => {
-            mainWindow?.webContents.send('menu-shortcuts')
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Report Bug',
-          click: () => {
-            shell.openExternal('https://github.com/YOUR_USERNAME/visual-schedule-builder/issues/new?template=bug_report.md')
-          }
-        },
-        {
-          label: 'Request Feature',
-          click: () => {
-            shell.openExternal('https://github.com/YOUR_USERNAME/visual-schedule-builder/issues/new?template=feature_request.md')
-          }
-        },
-        { type: 'separator' },
-        {
           label: 'About Visual Schedule Builder',
           click: () => {
-            dialog.showMessageBox(mainWindow!, {
-              type: 'info',
-              title: 'About Visual Schedule Builder',
-              message: 'Visual Schedule Builder',
-              detail: `Version: ${app.getVersion()}\nA desktop application for creating interactive visual schedules in special education classrooms.\n\nBuilt with Electron and React.\nOpen source under MIT License.`,
-              buttons: ['OK']
-            })
+            sendToRenderer('menu:about');
+          }
+        },
+        {
+          label: 'User Guide',
+          click: () => {
+            shell.openExternal('https://github.com/JayBubar/visual-schedule-builder#readme');
+          }
+        },
+        {
+          label: 'Report Issue',
+          click: () => {
+            shell.openExternal('https://github.com/JayBubar/visual-schedule-builder/issues');
+          }
+        },
+        {
+          label: 'Check for Updates',
+          click: () => {
+            sendToRenderer('menu:check-updates');
           }
         }
       ]
     }
-  ]
+  ];
 
   // macOS specific menu adjustments
   if (process.platform === 'darwin') {
     template.unshift({
       label: app.getName(),
       submenu: [
-        { label: 'About Visual Schedule Builder', role: 'about' },
+        { role: 'about' },
         { type: 'separator' },
-        { label: 'Services', role: 'services' },
+        { role: 'services' },
         { type: 'separator' },
-        { label: 'Hide Visual Schedule Builder', accelerator: 'Command+H', role: 'hide' },
-        { label: 'Hide Others', accelerator: 'Command+Shift+H', role: 'hideOthers' },
-        { label: 'Show All', role: 'unhide' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
         { type: 'separator' },
-        { label: 'Quit', accelerator: 'Command+Q', click: () => app.quit() }
+        { role: 'quit' }
       ]
-    })
+    });
+
+    // Window menu adjustments for macOS
+    (template[4].submenu as Electron.MenuItemConstructorOptions[]).push(
+      { type: 'separator' },
+      { role: 'front' },
+      { type: 'separator' },
+      { role: 'window' }
+    );
   }
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 }
 
-function setupIPC(): void {
-  // Handle data persistence
-  ipcMain.handle('store-get', (event, key) => {
-    return store.get(key)
-  })
-
-  ipcMain.handle('store-set', (event, key, value) => {
-    store.set(key, value)
-    return true
-  })
-
-  ipcMain.handle('store-delete', (event, key) => {
-    store.delete(key)
-    return true
-  })
-
-  // File operations
-  ipcMain.handle('show-save-dialog', async (event, options) => {
-    if (!mainWindow) return { canceled: true }
-    
-    return await dialog.showSaveDialog(mainWindow, {
-      title: 'Save Schedule',
-      defaultPath: 'schedule.json',
-      filters: [
-        { name: 'Schedule Files', extensions: ['json'] },
-        { name: 'All Files', extensions: ['*'] }
-      ],
-      ...options
-    })
-  })
-
-  ipcMain.handle('show-open-dialog', async (event, options) => {
-    if (!mainWindow) return { canceled: true }
-    
-    return await dialog.showOpenDialog(mainWindow, {
-      title: 'Open Schedule',
-      filters: [
-        { name: 'Schedule Files', extensions: ['json'] },
-        { name: 'All Files', extensions: ['*'] }
-      ],
-      properties: ['openFile'],
-      ...options
-    })
-  })
-
-  ipcMain.handle('show-open-images-dialog', async () => {
-    if (!mainWindow) return { canceled: true }
-    
-    return await dialog.showOpenDialog(mainWindow, {
-      title: 'Import Images',
-      filters: [
-        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'] },
-        { name: 'All Files', extensions: ['*'] }
-      ],
-      properties: ['openFile', 'multiSelections']
-    })
-  })
-
-  // App info
-  ipcMain.handle('get-app-version', () => {
-    return app.getVersion()
-  })
-
-  ipcMain.handle('get-app-path', (event, name) => {
-    return app.getPath(name as any)
-  })
+// Helper function to send messages to renderer
+function sendToRenderer(channel: string, ...args: any[]): void {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send(channel, ...args);
+  }
 }
+
+// IPC Handlers for data persistence
+ipcMain.handle('data:save-schedule', async (event, scheduleData) => {
+  try {
+    const filePath = join(dataDir, 'current-schedule.json');
+    writeFileSync(filePath, JSON.stringify(scheduleData, null, 2));
+    return { success: true, path: filePath };
+  } catch (error) {
+    console.error('Error saving schedule:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('data:load-schedule', async (event, filePath?: string) => {
+  try {
+    const targetPath = filePath || join(dataDir, 'current-schedule.json');
+    
+    if (!existsSync(targetPath)) {
+      return { success: false, error: 'Schedule file not found' };
+    }
+    
+    const data = readFileSync(targetPath, 'utf-8');
+    const scheduleData = JSON.parse(data);
+    return { success: true, data: scheduleData };
+  } catch (error) {
+    console.error('Error loading schedule:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('data:save-settings', async (event, settings) => {
+  try {
+    const filePath = join(dataDir, 'settings.json');
+    writeFileSync(filePath, JSON.stringify(settings, null, 2));
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('data:load-settings', async () => {
+  try {
+    const filePath = join(dataDir, 'settings.json');
+    
+    if (!existsSync(filePath)) {
+      // Return default settings
+      const defaultSettings = {
+        theme: 'dark',
+        accessibility: {
+          highContrast: false,
+          largeText: false,
+          reducedMotion: false
+        },
+        smartboard: {
+          autoAdvance: false,
+          showTimer: true,
+          soundEffects: true
+        }
+      };
+      return { success: true, data: defaultSettings };
+    }
+    
+    const data = readFileSync(filePath, 'utf-8');
+    const settings = JSON.parse(data);
+    return { success: true, data: settings };
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('app:get-version', () => {
+  return app.getVersion();
+});
+
+ipcMain.handle('app:get-data-path', () => {
+  return dataDir;
+});
+
+// App event handlers
+app.whenReady().then(() => {
+  createWindow();
+  createMenu();
+
+  // macOS: Re-create window when dock icon is clicked
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
+
+// Quit when all windows are closed (except on macOS)
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// Export for testing
+export { createWindow, createMenu };

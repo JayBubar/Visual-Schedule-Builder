@@ -1,202 +1,233 @@
-import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
+import React, { useState, useEffect } from 'react';
+import Navigation from './components/common/Navigation';
+import UnifiedScheduleManager from './components/builder/UnifiedScheduleManager';
+import SmartboardDisplay from './components/display/SmartboardDisplay';
+import ActivityLibrary from './components/common/ActivityLibrary';
+import StudentManagement from './components/management/StudentManagement';
+import StaffManagement from './components/management/StaffManagement';
+import Settings from './components/management/Settings';
+import CelebrationAnimations from './components/common/CelebrationAnimations';
+import { useStaffData } from './hooks/useStaffData';
+import { useStudentData } from './hooks/useStudentData';
+import { ViewType, ScheduleVariation, Student, StaffMember } from './types';
 
-// Components (will be created in next steps)
-import Navigation from './components/common/Navigation'
-import ScheduleBuilder from './components/builder/ScheduleBuilder'
-import SmartboardDisplay from './components/display/SmartboardDisplay'
-import StudentManagement from './components/management/StudentManagement'
-import Settings from './components/management/Settings'
-import ActivityLibrary from './components/common/ActivityLibrary'
-
-// Types
-interface AppState {
-  currentView: 'builder' | 'display' | 'management'
-  isFullscreen: boolean
-  theme: 'light' | 'dark' | 'high-contrast'
-}
-
-function App() {
-  const [appState, setAppState] = useState<AppState>({
-    currentView: 'builder',
-    isFullscreen: false,
-    theme: 'light'
-  })
-
-  // Handle menu commands from Electron
-  useEffect(() => {
-    // Listen for menu commands if in Electron environment
-    if (window.electronAPI) {
-      const handleMenuCommand = (command: string) => {
-        switch (command) {
-          case 'menu-view-builder':
-            setAppState(prev => ({ ...prev, currentView: 'builder' }))
-            break
-          case 'menu-view-display':
-            setAppState(prev => ({ ...prev, currentView: 'display' }))
-            break
-          case 'menu-view-management':
-            setAppState(prev => ({ ...prev, currentView: 'management' }))
-            break
-          default:
-            console.log('Unhandled menu command:', command)
-        }
-      }
-
-      // In a real implementation, you'd set up IPC listeners here
-      // For now, this is a placeholder
-      console.log('Menu handlers would be set up here')
-    }
-  }, [])
+const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<ViewType>('builder');
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleVariation | null>(null);
+  const [scheduleVariations, setScheduleVariations] = useState<ScheduleVariation[]>([]);
+  
+  // Use actual data from hooks (includes uploaded photos and real data)
+  const { staff } = useStaffData();
+  const { students } = useStudentData();
 
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyboard = (event: KeyboardEvent) => {
-      // Handle global keyboard shortcuts
-      if (event.ctrlKey || event.metaKey) {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey) {
         switch (event.key) {
           case '1':
-            event.preventDefault()
-            setAppState(prev => ({ ...prev, currentView: 'builder' }))
-            window.announceToScreenReader('Switched to Schedule Builder')
-            break
+            event.preventDefault();
+            setCurrentView('builder');
+            break;
           case '2':
-            event.preventDefault()
-            setAppState(prev => ({ ...prev, currentView: 'display' }))
-            window.announceToScreenReader('Switched to Smartboard Display')
-            break
+            event.preventDefault();
+            setCurrentView('display');
+            break;
           case '3':
-            event.preventDefault()
-            setAppState(prev => ({ ...prev, currentView: 'management' }))
-            window.announceToScreenReader('Switched to Student Management')
-            break
+            event.preventDefault();
+            setCurrentView('students');
+            break;
+          case '4':
+            event.preventDefault();
+            setCurrentView('staff');
+            break;
+          case '5':
+            event.preventDefault();
+            setCurrentView('library');
+            break;
+          case '6':
+            event.preventDefault();
+            setCurrentView('celebrations');
+            break;
+          case ',':
+            event.preventDefault();
+            setCurrentView('settings');
+            break;
         }
       }
+    };
 
-      // Handle F11 for fullscreen (when not in Electron)
-      if (event.key === 'F11' && !window.electronAPI) {
-        event.preventDefault()
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen()
-          setAppState(prev => ({ ...prev, isFullscreen: true }))
-        } else {
-          document.exitFullscreen()
-          setAppState(prev => ({ ...prev, isFullscreen: false }))
-        }
-      }
-    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-    document.addEventListener('keydown', handleKeyboard)
-    return () => document.removeEventListener('keydown', handleKeyboard)
-  }, [])
-
-  // Handle fullscreen changes
+  // Load schedule variations from localStorage
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setAppState(prev => ({ 
-        ...prev, 
-        isFullscreen: !!document.fullscreenElement 
-      }))
+    const saved = localStorage.getItem('scheduleVariations');
+    if (saved) {
+      const variations: ScheduleVariation[] = JSON.parse(saved);
+      setScheduleVariations(variations);
+      
+      // Auto-select the most recently used schedule
+      const mostRecentSchedule = variations
+        .filter(s => s.lastUsed)
+        .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())[0];
+      
+      if (mostRecentSchedule) {
+        setSelectedSchedule(mostRecentSchedule);
+      } else if (variations.length > 0) {
+        setSelectedSchedule(variations[0]);
+      }
     }
+  }, []);
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  }, [])
+  // Handler functions for schedule management
+  const handleScheduleSelect = (schedule: ScheduleVariation | null) => {
+    setSelectedSchedule(schedule);
+    
+    if (schedule) {
+      const updatedVariations = scheduleVariations.map(s => 
+        s.id === schedule.id 
+          ? { ...s, lastUsed: new Date().toISOString(), usageCount: (s.usageCount || 0) + 1 }
+          : s
+      );
+      setScheduleVariations(updatedVariations);
+      localStorage.setItem('scheduleVariations', JSON.stringify(updatedVariations));
+    }
+  };
+
+  const handleScheduleUpdate = (updatedVariations: ScheduleVariation[]) => {
+    setScheduleVariations(updatedVariations);
+    localStorage.setItem('scheduleVariations', JSON.stringify(updatedVariations));
+  };
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <Router>
-        <div 
-          className={`app ${appState.theme} ${appState.isFullscreen ? 'fullscreen' : ''}`}
-          role="application"
-          aria-label="Visual Schedule Builder"
-        >
-          {/* Skip to main content link for screen readers */}
-          <a 
-            href="#main-content" 
-            className="skip-link"
-            onFocus={() => window.announceToScreenReader('Skip to main content link focused')}
-          >
-            Skip to main content
-          </a>
+    <div className="app">
+      <Navigation 
+        currentView={currentView} 
+        onViewChange={setCurrentView}
+        selectedSchedule={selectedSchedule}
+      />
+      
+      <main className="main-content">
+        <UnifiedScheduleManager 
+          isActive={currentView === 'builder'}
+          selectedSchedule={selectedSchedule}
+          onScheduleSelect={handleScheduleSelect}
+          onScheduleUpdate={handleScheduleUpdate}
+          scheduleVariations={scheduleVariations}
+        />
+        
+        <SmartboardDisplay 
+          isActive={currentView === 'display'}
+          currentSchedule={selectedSchedule ? {
+            activities: selectedSchedule.activities,
+            startTime: selectedSchedule.startTime,
+            name: selectedSchedule.name
+          } : undefined}
+          staff={staff}
+          students={students}
+        />
+        
+        <StudentManagement 
+          isActive={currentView === 'students'} 
+        />
+        
+        <StaffManagement 
+          isActive={currentView === 'staff'} 
+        />
+        
+        <ActivityLibrary 
+          isActive={currentView === 'library'} 
+        />
+        
+        <CelebrationAnimations 
+          isActive={currentView === 'celebrations'} 
+        />
+        
+        <Settings 
+          isActive={currentView === 'settings'} 
+        />
+      </main>
 
-          {/* Navigation - hidden in fullscreen display mode */}
-          {!(appState.isFullscreen && appState.currentView === 'display') && (
-            <Navigation 
-              currentView={appState.currentView}
-              onViewChange={(view) => {
-                setAppState(prev => ({ ...prev, currentView: view }))
-                window.announceToScreenReader(`Switched to ${view}`)
-              }}
-            />
-          )}
-
-          {/* Main content area */}
-          <main 
-            id="main-content"
-            className="main-content"
-            role="main"
-            tabIndex={-1}
-          >
-            <Routes>
-              <Route path="/" element={<Navigate to="/builder" replace />} />
-              <Route 
-                path="/builder" 
-                element={
-                  <ScheduleBuilder 
-                    isActive={appState.currentView === 'builder'}
-                  />
-                } 
-              />
-              <Route 
-                path="/display" 
-                element={
-                  <SmartboardDisplay 
-                    isActive={appState.currentView === 'display'}
-                    isFullscreen={appState.isFullscreen}
-                  />
-                } 
-              />
-              <Route 
-                path="/management" 
-                element={
-                  <StudentManagement 
-                    isActive={appState.currentView === 'management'}
-                  />
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <Settings 
-                    theme={appState.theme}
-                    onThemeChange={(theme) => 
-                      setAppState(prev => ({ ...prev, theme }))
-                    }
-                  />
-                } 
-              />
-              <Route 
-                path="/library" 
-                element={<ActivityLibrary />} 
-              />
-            </Routes>
-          </main>
-
-          {/* Global keyboard shortcut hints - only show when not in display mode */}
-          {appState.currentView !== 'display' && (
-            <div className="keyboard-hints" role="complementary" aria-label="Keyboard shortcuts">
-              <span className="keyboard-hint">Ctrl+1: Builder</span>
-              <span className="keyboard-hint">Ctrl+2: Display</span>
-              <span className="keyboard-hint">Ctrl+3: Management</span>
+      {selectedSchedule && (
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          padding: '12px 20px',
+          borderRadius: '25px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          color: '#2c3e50',
+          fontSize: '14px',
+          fontWeight: '500',
+          zIndex: 100,
+          maxWidth: '300px'
+        }}>
+          <div style={{
+            width: '10px',
+            height: '10px',
+            borderRadius: '50%',
+            background: selectedSchedule.type === 'emergency' ? '#e74c3c' :
+                       selectedSchedule.type === 'special-event' ? '#f39c12' :
+                       selectedSchedule.type === 'time-variation' ? '#3498db' : '#2ecc71',
+            animation: 'pulse 2s infinite'
+          }} />
+          
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: '600', fontSize: '13px' }}>
+              Active Schedule
             </div>
-          )}
-        </div>
-      </Router>
-    </DndProvider>
-  )
-}
+            <div style={{ opacity: 0.8, fontSize: '12px' }}>
+              {selectedSchedule.name}
+            </div>
+          </div>
 
-export default App
+          <button
+            onClick={() => setCurrentView('builder')}
+            style={{
+              background: 'rgba(102, 126, 234, 0.1)',
+              border: '1px solid rgba(102, 126, 234, 0.3)',
+              borderRadius: '8px',
+              padding: '4px 8px',
+              color: '#667eea',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            Manage
+          </button>
+        </div>
+      )}
+
+      <style>
+        {`
+          .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+          }
+
+          .main-content {
+            flex: 1;
+            overflow: auto;
+          }
+
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+          }
+        `}
+      </style>
+    </div>
+  );
+};
+
+export default App;

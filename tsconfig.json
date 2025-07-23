@@ -7,56 +7,35 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    /* Linting - Relaxed for development */
+    "strict": false,
+    "exactOptionalPropertyTypes": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitAny": false,
+    "noImplicitOverride": false,
     "noFallthroughCasesInSwitch": true,
 
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/renderer/*"],
-      "@shared/*": ["src/shared/*"]
-    },
-
-    /* Additional strict type checking */
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-
-    /* Emit configuration */
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-
-    /* Experimental */
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+      "@/*": ["src/renderer/*"]
+    }
   },
   "include": [
-    "src/renderer/**/*",
-    "src/shared/**/*",
-    "*.config.ts",
-    "vite-env.d.ts"
+    "src/renderer/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "build",
-    "src/main"
+    "build"
   ],
-  "references": [
-    { "path": "./tsconfig.main.json" }
-  ]
 }

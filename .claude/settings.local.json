@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run type-check:*)",
+      "Bash(wc -l \"C:\\Users\\jaybu\\documents\\my-projects\\visual-schedule-builder\\src\\renderer\\styles\\index.css\")",
+      "Bash(npm run dev:*)",
+      "Bash(npm run lint)",
+      "Bash(npm install:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run build:vite:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}

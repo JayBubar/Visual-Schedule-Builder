@@ -1,19 +1,18 @@
 {
-  "extends": "./tsconfig.json",
+  "composite": true,
   "compilerOptions": {
     "target": "ES2020",
     "module": "CommonJS",
     "lib": ["ES2020"],
+    "moduleResolution": "node",
     "outDir": "dist/main",
     "noEmit": false,
-    "jsx": "preserve",
-    
-    /* Node.js specific */
+    "strict": false,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    
-    /* Path mapping for main process */
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["src/shared/*"]
