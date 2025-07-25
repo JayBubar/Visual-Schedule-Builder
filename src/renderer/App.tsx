@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from './components/common/Navigation';
-import UnifiedScheduleManager from './components/builder/UnifiedScheduleManager';
+import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
 import ActivityLibrary from './components/common/ActivityLibrary';
 import StudentManagement from './components/management/StudentManagement';
@@ -110,12 +110,8 @@ const App: React.FC = () => {
       />
       
       <main className="main-content">
-        <UnifiedScheduleManager 
+        <ScheduleBuilder 
           isActive={currentView === 'builder'}
-          selectedSchedule={selectedSchedule}
-          onScheduleSelect={handleScheduleSelect}
-          onScheduleUpdate={handleScheduleUpdate}
-          scheduleVariations={scheduleVariations}
         />
         
         <SmartboardDisplay 
@@ -126,7 +122,7 @@ const App: React.FC = () => {
             name: selectedSchedule.name
           } : undefined}
           staff={staff}
-          students={students}
+          students={students as any}
         />
         
         <StudentManagement 
@@ -150,62 +146,6 @@ const App: React.FC = () => {
         />
       </main>
 
-      {selectedSchedule && (
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          right: '20px',
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(10px)',
-          padding: '12px 20px',
-          borderRadius: '25px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          color: '#2c3e50',
-          fontSize: '14px',
-          fontWeight: '500',
-          zIndex: 100,
-          maxWidth: '300px'
-        }}>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: selectedSchedule.type === 'emergency' ? '#e74c3c' :
-                       selectedSchedule.type === 'special-event' ? '#f39c12' :
-                       selectedSchedule.type === 'time-variation' ? '#3498db' : '#2ecc71',
-            animation: 'pulse 2s infinite'
-          }} />
-          
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: '600', fontSize: '13px' }}>
-              Active Schedule
-            </div>
-            <div style={{ opacity: 0.8, fontSize: '12px' }}>
-              {selectedSchedule.name}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setCurrentView('builder')}
-            style={{
-              background: 'rgba(102, 126, 234, 0.1)',
-              border: '1px solid rgba(102, 126, 234, 0.3)',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              color: '#667eea',
-              fontSize: '12px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Manage
-          </button>
-        </div>
-      )}
 
       <style>
         {`

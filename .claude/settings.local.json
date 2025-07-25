@@ -12,7 +12,9 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(tail:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
