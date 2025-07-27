@@ -87,7 +87,29 @@ export interface StudentGroup extends Group {
   updatedAt?: string;
 }
 
-// Assignment interface
+// 🔧 NEW: Group Assignment interface for SmartboardDisplay
+export interface GroupAssignment {
+  id: string;
+  groupName: string;
+  color: 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'yellow' | string;
+  staffMember?: {
+    id: string;
+    name: string;
+    role: string;
+    avatar?: string;
+    photo?: string;
+  } | null;
+  studentIds: string[];
+  staffId?: string;
+  location?: string;
+  activityVariation?: string;
+  notes?: string;
+  isIndependent?: boolean;
+  groupType?: string;
+  targetSkills?: string[];
+}
+
+// 🔧 ENHANCED: Assignment interface with groupAssignments
 export interface Assignment {
   isWholeClass: boolean;
   groups?: Group[];
@@ -95,6 +117,8 @@ export interface Assignment {
   staffIds?: string[];
   notes?: string;
   groupingType?: 'whole-class' | 'small-groups' | 'individual' | 'flexible';
+  // 🎯 CRITICAL: Add groupAssignments to Assignment interface
+  groupAssignments?: GroupAssignment[];
 }
 
 // Activity Assignment interface
@@ -124,6 +148,28 @@ export interface Activity {
   groupAssignments?: GroupAssignment[];
   accommodations?: string[];
   adaptations?: string[];
+  
+  // 🎯 NEW: Transition properties (optional for all activities)
+  isTransition?: boolean;
+  transitionType?: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
+  animationStyle?: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
+  showNextActivity?: boolean;
+  movementPrompts?: string[];
+  autoStart?: boolean;
+  soundEnabled?: boolean;
+  customMessage?: string;
+}
+
+// 🎯 NEW: Transition-specific interface
+export interface TransitionActivity extends Activity {
+  isTransition: true;
+  transitionType: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
+  animationStyle: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
+  showNextActivity: boolean;
+  movementPrompts: string[];
+  autoStart?: boolean;
+  soundEnabled?: boolean;
+  customMessage?: string;
 }
 
 // Saved Activity interface (extends Activity)
@@ -243,6 +289,16 @@ export interface ActivityLibraryItem {
   tags?: string[];
   ageGroup?: 'elementary' | 'middle' | 'high' | 'adult' | 'all';
   difficulty?: 'easy' | 'medium' | 'hard';
+  
+  // 🎯 NEW: Transition properties for library items
+  isTransition?: boolean;
+  transitionType?: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
+  animationStyle?: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
+  showNextActivity?: boolean;
+  movementPrompts?: string[];
+  autoStart?: boolean;
+  soundEnabled?: boolean;
+  customMessage?: string;
 }
 
 // Photo upload result interface
@@ -325,23 +381,6 @@ export interface StaffMember {
   avatar?: string;      // Keep existing optional property
   color?: string;       // Keep existing optional property
   schedule?: string[];  // Keep existing optional property (Available time slots)
-}
-
-export interface GroupAssignment {
-  id: string;
-  groupName: string;
-  color: 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'yellow';
-  staffMember: {
-    id: string;
-    name: string;
-    role: string;
-    avatar?: string;
-    photo?: string;
-  };
-  studentIds: string[];
-  location?: string;
-  activityVariation?: string;
-  notes?: string;
 }
 
 export type GroupingType = 'whole-class' | 'small-groups' | 'individual' | 'flexible';

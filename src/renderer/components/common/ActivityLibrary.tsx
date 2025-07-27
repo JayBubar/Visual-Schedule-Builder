@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
-import { Activity } from '../../types';
+import { Activity, ActivityLibraryItem } from '../../types';
+import { defaultTransitionActivities, addTransitionsToLibrary } from '../../data/defaultTransitionActivities';
 
 interface ActivityLibraryProps {
   isActive: boolean;
@@ -15,6 +16,9 @@ interface LibraryActivity extends Omit<Activity, 'duration'> {
 interface CustomActivity extends LibraryActivity {
   createdAt: string;
   updatedAt?: string;
+  usageCount?: number;
+  ageGroup?: 'elementary' | 'middle' | 'high' | 'adult' | 'all';
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 // Activity creation/edit modal component
@@ -40,7 +44,9 @@ const ActivityModal: React.FC<{
   const commonEmojis = [
     '📚', '✏️', '🔢', '🎨', '🎵', '⚽', '🧪', '🗺️', '💻', '🎭',
     '🍎', '🌅', '🤝', '🧘', '🔬', '📖', '✋', '🗣️', '💭', '🎯',
-    '🏃', '🤲', '🍽️', '🚻', '🤫', '👷', '💃', '🏥', '📝', '🎉'
+    '🏃', '🤲', '🍽️', '🚻', '🤫', '👷', '💃', '🏥', '📝', '🎉',
+    // 🎯 ADD TRANSITION EMOJIS
+    '🔄', '🧠', '🧹', '💃', '🔵', '⭐', '✨', '🌟', '⚡', '🎪'
   ];
 
   useEffect(() => {
@@ -344,6 +350,85 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }
   }, []);
 
+// 🎯 CRITICAL FIX: Add transition activities automatically AND include them in display
+useEffect(() => {
+  console.log('🎯 ActivityLibrary - Checking for transition activities...');
+  
+  // Get current activities from localStorage
+  const currentCustomActivities = JSON.parse(localStorage.getItem('custom_activities') || '[]');
+  
+  // Check if transitions already exist to avoid duplicates
+  const hasTransitions = currentCustomActivities.some((activity: any) => activity.isTransition);
+  
+  if (!hasTransitions) {
+    console.log('➕ Adding transition activities to library...');
+    
+    // Add transition activities to existing activities (returns ActivityLibraryItem[])
+    const activitiesWithTransitions = addTransitionsToLibrary(currentCustomActivities);
+    
+    // ✅ FIXED: Convert ActivityLibraryItem[] to CustomActivity[] by ensuring all required properties
+    const customActivitiesWithTransitions: CustomActivity[] = activitiesWithTransitions.map((activity: ActivityLibraryItem): CustomActivity => {
+      return {
+        // Required LibraryActivity properties
+        id: activity.id,
+        name: activity.name,
+        emoji: activity.emoji,
+        icon: activity.icon,
+        category: activity.category,
+        defaultDuration: activity.defaultDuration,
+        description: activity.description || '',
+        tags: activity.tags || [],
+        
+        // Optional Activity properties that LibraryActivity inherits
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        isCustom: activity.isCustom,
+        ageGroup: activity.ageGroup,
+        difficulty: activity.difficulty,
+        
+        // ✅ FIXED: Always include transition properties (don't use conditional spread)
+        isTransition: activity.isTransition || false,
+        transitionType: activity.transitionType,
+        animationStyle: activity.animationStyle,
+        showNextActivity: activity.showNextActivity,
+        movementPrompts: activity.movementPrompts,
+        autoStart: activity.autoStart,
+        soundEnabled: activity.soundEnabled,
+        customMessage: activity.customMessage,
+        
+        // Required CustomActivity properties
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        usageCount: 0
+      };
+    });
+    
+    // Save the updated activities back to localStorage
+    localStorage.setItem('custom_activities', JSON.stringify(customActivitiesWithTransitions));
+    
+    // Update state with the new activities
+    setCustomActivities(customActivitiesWithTransitions);
+    
+    console.log('✅ Transition activities added to library!');
+  } else {
+    console.log('✅ Transition activities already exist in library');
+    // Just set the current activities - but ensure they conform to CustomActivity interface
+    const validatedActivities: CustomActivity[] = currentCustomActivities.map((activity: any): CustomActivity => ({
+      ...activity,
+      // ✅ FIXED: Ensure all required properties exist
+      description: activity.description || '',
+      tags: activity.tags || [],
+      materials: activity.materials || [],
+      instructions: activity.instructions || '',
+      createdAt: activity.createdAt || new Date().toISOString(),
+      updatedAt: activity.updatedAt || new Date().toISOString(),
+      usageCount: activity.usageCount || 0
+    }));
+    
+    setCustomActivities(validatedActivities);
+  }
+}, []); // Run once on component mount
+
   // Save custom activities to localStorage
   const saveCustomActivities = (activities: CustomActivity[]) => {
     localStorage.setItem('custom_activities', JSON.stringify(activities));
@@ -361,11 +446,52 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }));
   };
 
-  // Combine base and custom activities
+  // Special styling for activity categories
+  const getActivityCategoryStyle = (category: string) => {
+    const baseStyle = {
+      padding: '4px 8px',
+      borderRadius: '12px',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.5px'
+    };
+
+    switch (category) {
+      case 'transition':
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(45deg, #9C27B0, #E1BEE7)',
+          color: 'white',
+          boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)'
+        };
+      case 'academic':
+        return { ...baseStyle, background: '#E3F2FD', color: '#1976D2' };
+      case 'social':
+        return { ...baseStyle, background: '#E8F5E8', color: '#388E3C' };
+      case 'creative':
+        return { ...baseStyle, background: '#FFF3E0', color: '#F57C00' };
+      case 'movement':
+        return { ...baseStyle, background: '#E0F2F1', color: '#00695C' };
+      case 'break':
+        return { ...baseStyle, background: '#FFEBEE', color: '#C62828' };
+      case 'resource':
+        return { ...baseStyle, background: '#F3E5F5', color: '#7B1FA2' };
+      default:
+        return { ...baseStyle, background: '#F5F5F5', color: '#757575' };
+    }
+  };
+
+  // 🎯 CRITICAL FIX: Show ALL activities including transitions
   const allActivities = useMemo(() => {
-    return [...baseActivities, ...customActivities];
+    const combinedActivities = [...baseActivities, ...customActivities];
+    console.log('🔍 All activities including transitions:', combinedActivities.length);
+    console.log('🔍 Transition activities found:', combinedActivities.filter(a => a.category === 'transition').length);
+    // ✅ REMOVED THE FILTER THAT WAS HIDING TRANSITIONS
+    return combinedActivities;
   }, [customActivities]);
 
+  // 🎯 UPDATED: Include transition in categories list
   const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition'];
 
   // Filter activities based on search and category
@@ -401,22 +527,34 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       // Create unique instance ID to prevent duplicates
       const instanceId = `${activity.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Enhanced activity data mapping for Schedule Builder
+      // 🎯 CRITICAL FIX: Enhanced activity data mapping that preserves ALL transition properties
       const activityToAdd = {
-        id: instanceId, // Unique instance ID
-        originalId: activity.id, // Keep reference to original
+        id: instanceId,
+        originalId: activity.id,
         name: activity.name,
         icon: activity.icon,
-        emoji: activity.icon, // Alias for compatibility
+        emoji: activity.icon,
         duration: activity.defaultDuration,
         category: activity.category,
         description: activity.description || '',
-        materials: [], // Empty array for Schedule Builder compatibility
+        materials: [],
         instructions: activity.description || '',
         isCustom: activity.isCustom || false,
         tags: activity.tags || [],
         createdAt: new Date().toISOString(),
-        addedFromLibrary: true // Flag to identify library additions
+        addedFromLibrary: true,
+        
+        // 🔥 CRITICAL FIX: Preserve ALL transition properties
+        ...(activity.isTransition && {
+          isTransition: activity.isTransition,
+          transitionType: activity.transitionType,
+          animationStyle: activity.animationStyle,
+          showNextActivity: activity.showNextActivity,
+          movementPrompts: activity.movementPrompts,
+          autoStart: activity.autoStart,
+          soundEnabled: activity.soundEnabled,
+          customMessage: activity.customMessage
+        })
       };
 
       // Get existing activities and check for duplicates
@@ -476,6 +614,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         id: `custom_${activity.id}_${Date.now()}`,
         isCustom: true,
         createdAt: new Date().toISOString(),
+        difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
       };
       setEditingActivity(customVersion);
       setModalOpen(true);
@@ -519,6 +658,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       name: `${activity.name} (Copy)`,
       isCustom: true,
       createdAt: new Date().toISOString(),
+      difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
     };
     
     setEditingActivity(duplicate);
@@ -534,6 +674,12 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         <p className="component-subtitle">
           Browse and manage your collection of educational activities
         </p>
+        
+        {/* 🎯 NEW: Show transition activities notice */}
+        <div className="transition-notice">
+          <span className="transition-badge">✨ NEW</span>
+          <span>Transition activities are now available! Look for the purple "TRANSITION" badge.</span>
+        </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -566,9 +712,9 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`category-button ${selectedCategory === category ? 'active' : ''}`}
+                className={`category-button ${selectedCategory === category ? 'active' : ''} ${category === 'transition' ? 'transition-button' : ''}`}
               >
-                {category}
+                {category === 'transition' ? '✨ transition' : category}
                 <span className="category-count">({getCategoryCount(category)})</span>
               </button>
             ))}
@@ -602,6 +748,10 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         {selectedCategory !== 'All' && (
           <span className="filter-summary"> in {selectedCategory}</span>
         )}
+        {/* 🎯 Show transition count */}
+        <span className="transition-count">
+          • {allActivities.filter(a => a.category === 'transition').length} transition activities
+        </span>
       </div>
 
       {/* Activity Display */}
@@ -626,15 +776,22 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
                 ) : (
                   activity.icon
                 )}
+                {/* 🎯 Special transition indicator */}
+                {activity.category === 'transition' && (
+                  <div className="transition-indicator">✨</div>
+                )}
               </div>
               <div className="activity-content">
                 <div className="activity-header">
                   <h3 className="activity-title">
                     {activity.name}
                     {activity.isCustom && <span className="custom-badge">Custom</span>}
+                    {activity.isTransition && <span className="transition-badge">Transition</span>}
                   </h3>
                   <div className="activity-meta">
-                    <span className="activity-category-badge">{activity.category}</span>
+                    <span style={getActivityCategoryStyle(activity.category)}>
+                      {activity.category === 'transition' ? '✨ TRANSITION' : activity.category}
+                    </span>
                     <span className="activity-duration">{activity.defaultDuration}min</span>
                   </div>
                 </div>
@@ -644,10 +801,26 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
                     <span key={tag} className="activity-tag">#{tag}</span>
                   ))}
                 </div>
+                
+                {/* 🎯 Show transition properties if it's a transition */}
+                {activity.isTransition && (
+                  <div className="transition-details">
+                    <div className="transition-info">
+                      <span className="transition-type">Type: {activity.transitionType}</span>
+                      <span className="transition-animation">Animation: {activity.animationStyle}</span>
+                    </div>
+                    {activity.movementPrompts && activity.movementPrompts.length > 0 && (
+                      <div className="movement-prompts-preview">
+                        <strong>Movement prompts:</strong> {activity.movementPrompts[0]}
+                        {activity.movementPrompts.length > 1 && <span> (+{activity.movementPrompts.length - 1} more)</span>}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="activity-actions">
                 <button 
-                  className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''}`}
+                  className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
                   title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
                   onClick={() => handleAddActivity(activity)}
                   disabled={addingActivities.has(activity.id)}
@@ -657,7 +830,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
                       <span className="spinner">⏳</span> Adding...
                     </>
                   ) : (
-                    '+ Add'
+                    activity.category === 'transition' ? '✨ Add' : '+ Add'
                   )}
                 </button>
                 <button 
@@ -722,6 +895,29 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .library-header {
           text-align: center;
           margin-bottom: 2rem;
+        }
+
+        /* 🎯 NEW: Transition notice styling */
+        .transition-notice {
+          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          margin: 1rem auto;
+          max-width: 500px;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+          box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+        }
+
+        .transition-badge {
+          background: rgba(255, 255, 255, 0.2);
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+          font-weight: 600;
+          font-size: 0.75rem;
         }
 
         .library-controls {
@@ -817,6 +1013,23 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           border-color: #667eea;
         }
 
+        /* 🎯 Special transition button styling */
+        .category-button.transition-button {
+          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
+          color: white;
+          border-color: #9C27B0;
+        }
+
+        .category-button.transition-button:hover {
+          background: linear-gradient(45deg, #8E24AA, #CE93D8);
+          border-color: #8E24AA;
+        }
+
+        .category-button.transition-button.active {
+          background: linear-gradient(45deg, #7B1FA2, #BA68C8);
+          border-color: #7B1FA2;
+        }
+
         .category-count {
           font-size: 0.8rem;
           opacity: 0.8;
@@ -866,6 +1079,12 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           color: #495057;
         }
 
+        /* 🎯 Transition count styling */
+        .transition-count {
+          color: #9C27B0;
+          font-weight: 600;
+        }
+
         .activities-container {
           margin-bottom: 2rem;
         }
@@ -896,12 +1115,25 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           display: flex;
           flex-direction: column;
           gap: 1rem;
+          position: relative;
         }
 
         .activity-item:hover {
           border-color: #667eea;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
           transform: translateY(-2px);
+        }
+
+        /* 🎯 Special transition activity styling */
+        .activity-item[data-category="transition"] {
+          border-color: #9C27B0;
+          background: linear-gradient(135deg, rgba(156, 39, 176, 0.02), rgba(225, 190, 231, 0.05));
+        }
+
+        .activity-item[data-category="transition"]:hover {
+          border-color: #9C27B0;
+          box-shadow: 0 4px 12px rgba(156, 39, 176, 0.25);
+          background: linear-gradient(135deg, rgba(156, 39, 176, 0.05), rgba(225, 190, 231, 0.1));
         }
 
         .activity-icon-large {
@@ -912,6 +1144,21 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           justify-content: center;
           align-items: center;
           height: 3rem;
+          position: relative;
+        }
+
+        /* 🎯 Transition indicator */
+        .transition-indicator {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          font-size: 1rem;
+          animation: sparkle 2s infinite;
+        }
+
+        @keyframes sparkle {
+          0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+          50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
         }
 
         .custom-activity-icon {
@@ -941,6 +1188,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          flex-wrap: wrap;
         }
 
         .custom-badge {
@@ -952,21 +1200,23 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           font-weight: 500;
         }
 
+        /* 🎯 Transition badge styling */
+        .transition-badge {
+          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
+          color: white;
+          padding: 0.125rem 0.5rem;
+          border-radius: 10px;
+          font-size: 0.7rem;
+          font-weight: 500;
+          box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+        }
+
         .activity-meta {
           display: flex;
           flex-direction: column;
           align-items: end;
           gap: 0.25rem;
           flex-shrink: 0;
-        }
-
-        .activity-category-badge {
-          background: #e9ecef;
-          color: #495057;
-          padding: 0.25rem 0.75rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
         }
 
         .activity-duration {
@@ -995,6 +1245,37 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           border-radius: 8px;
           font-size: 0.75rem;
           font-weight: 500;
+        }
+
+        /* 🎯 Transition details section */
+        .transition-details {
+          background: rgba(156, 39, 176, 0.1);
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+          border-left: 3px solid #9C27B0;
+        }
+
+        .transition-info {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 0.5rem;
+          font-size: 0.8rem;
+          color: #7B1FA2;
+          font-weight: 500;
+        }
+
+        .transition-type,
+        .transition-animation {
+          background: rgba(255, 255, 255, 0.7);
+          padding: 0.25rem 0.5rem;
+          border-radius: 4px;
+        }
+
+        .movement-prompts-preview {
+          font-size: 0.8rem;
+          color: #6c757d;
+          font-style: italic;
         }
 
         .activity-actions {
@@ -1026,6 +1307,19 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           border-color: #5a67d8;
           transform: translateY(-1px);
           box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* 🎯 Special transition add button */
+        .action-button.primary.transition-add {
+          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
+          border-color: #9C27B0;
+          box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+        }
+
+        .action-button.primary.transition-add:hover:not(:disabled) {
+          background: linear-gradient(45deg, #8E24AA, #CE93D8);
+          border-color: #8E24AA;
+          box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
         }
 
         .action-button.primary.adding {
@@ -1543,6 +1837,17 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
             margin: 0.5rem;
             max-width: calc(100vw - 1rem);
           }
+
+          .transition-notice {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.25rem;
+          }
+
+          .transition-info {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
         }
 
         @media (max-width: 480px) {
@@ -1560,6 +1865,14 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
           .emoji-picker {
             grid-template-columns: repeat(6, 1fr);
+          }
+
+          .activity-title {
+            font-size: 1.1rem;
+          }
+
+          .transition-details {
+            padding: 0.5rem;
           }
         }
       `}</style>

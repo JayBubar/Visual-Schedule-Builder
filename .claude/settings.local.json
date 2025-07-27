@@ -14,7 +14,9 @@
       "Bash(tail:*)",
       "Bash(grep:*)",
       "Bash(wc:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(del:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

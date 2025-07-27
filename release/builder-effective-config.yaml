@@ -1,0 +1,17 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.visualschedulebuilder.app
+productName: Visual Schedule Builder
+files:
+  - filter:
+      - dist/**/*
+      - package.json
+mac:
+  category: public.app-category.education
+  target: dmg
+win:
+  target: nsis
+linux:
+  target: AppImage
+electronVersion: 22.3.27

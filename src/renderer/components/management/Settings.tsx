@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 
 interface SettingsProps {
   isActive: boolean;
@@ -51,60 +51,205 @@ interface SettingsData {
   };
 }
 
+// Default settings configuration
+const DEFAULT_SETTINGS: SettingsData = {
+  appearance: {
+    theme: 'light',
+    fontSize: 'medium',
+    animations: true,
+    colorBlindFriendly: false
+  },
+  accessibility: {
+    screenReader: false,
+    keyboardNavigation: true,
+    reduceMotion: false,
+    highContrast: false,
+    textToSpeech: false,
+    autoReadSchedule: false
+  },
+  smartboard: {
+    touchSensitivity: 'medium',
+    buttonSize: 'large',
+    displayMode: 'presentation',
+    autoFullscreen: false,
+    gestureControls: true
+  },
+  schedule: {
+    defaultDuration: 30,
+    timeFormat: '12h',
+    autoAdvance: false,
+    soundAlerts: true,
+    visualAlerts: true,
+    transitionWarning: 5,
+    autoSave: true
+  },
+  notifications: {
+    activityReminders: true,
+    transitionAlerts: true,
+    completionSounds: true,
+    customSounds: false,
+    volume: 70
+  },
+  data: {
+    autoBackup: true,
+    backupFrequency: 'weekly',
+    exportFormat: 'json',
+    includePhotos: true,
+    cloudSync: false
+  }
+};
+
+// Settings storage key
+const SETTINGS_STORAGE_KEY = 'visualScheduleBuilderSettings';
+
 const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   const [activeSection, setActiveSection] = useState<keyof SettingsData>('appearance');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock settings data - in real app, this would come from storage
-  const [settings, setSettings] = useState<SettingsData>({
-    appearance: {
-      theme: 'light',
-      fontSize: 'medium',
-      animations: true,
-      colorBlindFriendly: false
-    },
-    accessibility: {
-      screenReader: false,
-      keyboardNavigation: true,
-      reduceMotion: false,
-      highContrast: false,
-      textToSpeech: false,
-      autoReadSchedule: false
-    },
-    smartboard: {
-      touchSensitivity: 'medium',
-      buttonSize: 'large',
-      displayMode: 'presentation',
-      autoFullscreen: false,
-      gestureControls: true
-    },
-    schedule: {
-      defaultDuration: 30,
-      timeFormat: '12h',
-      autoAdvance: false,
-      soundAlerts: true,
-      visualAlerts: true,
-      transitionWarning: 5,
-      autoSave: true
-    },
-    notifications: {
-      activityReminders: true,
-      transitionAlerts: true,
-      completionSounds: true,
-      customSounds: false,
-      volume: 70
-    },
-    data: {
-      autoBackup: true,
-      backupFrequency: 'weekly',
-      exportFormat: 'json',
-      includePhotos: true,
-      cloudSync: false
+  // Settings state
+  const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
+
+  // Load settings from localStorage on component mount
+  const loadSettings = useCallback(() => {
+    try {
+      setIsLoading(true);
+      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
+      
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        
+        // Merge with defaults to ensure all keys exist
+        const mergedSettings = {
+          ...DEFAULT_SETTINGS,
+          ...parsedSettings,
+          // Deep merge each section
+          appearance: { ...DEFAULT_SETTINGS.appearance, ...parsedSettings.appearance },
+          accessibility: { ...DEFAULT_SETTINGS.accessibility, ...parsedSettings.accessibility },
+          smartboard: { ...DEFAULT_SETTINGS.smartboard, ...parsedSettings.smartboard },
+          schedule: { ...DEFAULT_SETTINGS.schedule, ...parsedSettings.schedule },
+          notifications: { ...DEFAULT_SETTINGS.notifications, ...parsedSettings.notifications },
+          data: { ...DEFAULT_SETTINGS.data, ...parsedSettings.data }
+        };
+        
+        setSettings(mergedSettings);
+        console.log('✅ Settings loaded from localStorage:', mergedSettings);
+        
+        // Apply settings immediately
+        applySettings(mergedSettings);
+      } else {
+        console.log('📝 No saved settings found, using defaults');
+        applySettings(DEFAULT_SETTINGS);
+      }
+    } catch (error) {
+      console.error('❌ Error loading settings:', error);
+      setShowErrorMessage('Failed to load settings. Using defaults.');
+      applySettings(DEFAULT_SETTINGS);
+    } finally {
+      setIsLoading(false);
     }
-  });
+  }, []);
 
-  const updateSetting = (section: keyof SettingsData, key: string, value: any) => {
+  // Apply settings to the application
+  const applySettings = useCallback((settingsToApply: SettingsData) => {
+    try {
+      // Apply theme
+      const body = document.body;
+      body.classList.remove('theme-light', 'theme-dark', 'theme-high-contrast');
+      body.classList.add(`theme-${settingsToApply.appearance.theme}`);
+
+      // Apply font size
+      body.classList.remove('font-small', 'font-medium', 'font-large', 'font-extra-large');
+      body.classList.add(`font-${settingsToApply.appearance.fontSize}`);
+
+      // Apply animations
+      if (!settingsToApply.appearance.animations || settingsToApply.accessibility.reduceMotion) {
+        body.classList.add('reduce-motion');
+      } else {
+        body.classList.remove('reduce-motion');
+      }
+
+      // Apply high contrast
+      if (settingsToApply.accessibility.highContrast || settingsToApply.appearance.theme === 'high-contrast') {
+        body.classList.add('high-contrast');
+      } else {
+        body.classList.remove('high-contrast');
+      }
+
+      // Apply color blind friendly
+      if (settingsToApply.appearance.colorBlindFriendly) {
+        body.classList.add('color-blind-friendly');
+      } else {
+        body.classList.remove('color-blind-friendly');
+      }
+
+      // Apply button size for smartboard
+      body.classList.remove('buttons-small', 'buttons-medium', 'buttons-large', 'buttons-extra-large');
+      body.classList.add(`buttons-${settingsToApply.smartboard.buttonSize}`);
+
+      // Dispatch custom event for other components to listen to
+      window.dispatchEvent(new CustomEvent('settingsChanged', {
+        detail: settingsToApply
+      }));
+
+      console.log('🎨 Settings applied to application');
+    } catch (error) {
+      console.error('❌ Error applying settings:', error);
+    }
+  }, []);
+
+  // Save settings to localStorage
+  const saveSettings = useCallback(() => {
+    try {
+      // Validate settings before saving
+      const validationError = validateSettings(settings);
+      if (validationError) {
+        setShowErrorMessage(validationError);
+        return;
+      }
+
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      setHasUnsavedChanges(false);
+      
+      // Apply settings immediately
+      applySettings(settings);
+      
+      // Show success message
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+      
+      console.log('💾 Settings saved successfully:', settings);
+    } catch (error) {
+      console.error('❌ Error saving settings:', error);
+      setShowErrorMessage('Failed to save settings. Please try again.');
+    }
+  }, [settings, applySettings]);
+
+  // Validate settings
+  const validateSettings = (settingsToValidate: SettingsData): string | null => {
+    // Validate default duration
+    if (settingsToValidate.schedule.defaultDuration < 5 || settingsToValidate.schedule.defaultDuration > 120) {
+      return 'Default duration must be between 5 and 120 minutes';
+    }
+
+    // Validate transition warning
+    if (settingsToValidate.schedule.transitionWarning < 1 || settingsToValidate.schedule.transitionWarning > 15) {
+      return 'Transition warning must be between 1 and 15 minutes';
+    }
+
+    // Validate volume
+    if (settingsToValidate.notifications.volume < 0 || settingsToValidate.notifications.volume > 100) {
+      return 'Volume must be between 0 and 100';
+    }
+
+    return null;
+  };
+
+  // Update a specific setting
+  const updateSetting = useCallback((section: keyof SettingsData, key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       [section]: {
@@ -113,21 +258,107 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
       }
     }));
     setHasUnsavedChanges(true);
-  };
+    setShowErrorMessage(null);
+  }, []);
 
-  const saveSettings = () => {
-    // In real app, this would save to electron-store or similar
-    console.log('Saving settings:', settings);
-    setHasUnsavedChanges(false);
-    // Show success notification
-  };
-
-  const resetSettings = () => {
-    // Reset to defaults
+  // Reset settings to defaults
+  const resetSettings = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS);
+    setHasUnsavedChanges(true);
     setShowResetDialog(false);
-    setHasUnsavedChanges(false);
-    // Reload default settings
-  };
+    setShowErrorMessage(null);
+    console.log('🔄 Settings reset to defaults');
+  }, []);
+
+  // Export settings
+  const exportSettings = useCallback(() => {
+    try {
+      const dataStr = JSON.stringify(settings, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'visual-schedule-builder-settings.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      console.log('📤 Settings exported successfully');
+    } catch (error) {
+      console.error('❌ Error exporting settings:', error);
+      setShowErrorMessage('Failed to export settings');
+    }
+  }, [settings]);
+
+  // Import settings
+  const importSettings = useCallback(() => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      
+      input.onchange = (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const importedSettings = JSON.parse(e.target?.result as string);
+            
+            // Validate imported settings structure
+            if (!importedSettings || typeof importedSettings !== 'object') {
+              throw new Error('Invalid settings file format');
+            }
+            
+            // Merge with defaults to ensure all keys exist
+            const mergedSettings = {
+              ...DEFAULT_SETTINGS,
+              ...importedSettings,
+              appearance: { ...DEFAULT_SETTINGS.appearance, ...importedSettings.appearance },
+              accessibility: { ...DEFAULT_SETTINGS.accessibility, ...importedSettings.accessibility },
+              smartboard: { ...DEFAULT_SETTINGS.smartboard, ...importedSettings.smartboard },
+              schedule: { ...DEFAULT_SETTINGS.schedule, ...importedSettings.schedule },
+              notifications: { ...DEFAULT_SETTINGS.notifications, ...importedSettings.notifications },
+              data: { ...DEFAULT_SETTINGS.data, ...importedSettings.data }
+            };
+            
+            setSettings(mergedSettings);
+            setHasUnsavedChanges(true);
+            setShowErrorMessage(null);
+            console.log('📥 Settings imported successfully:', mergedSettings);
+          } catch (error) {
+            console.error('❌ Error importing settings:', error);
+            setShowErrorMessage('Failed to import settings. Invalid file format.');
+          }
+        };
+        reader.readAsText(file);
+      };
+      
+      input.click();
+    } catch (error) {
+      console.error('❌ Error importing settings:', error);
+      setShowErrorMessage('Failed to import settings');
+    }
+  }, []);
+
+  // Load settings on mount
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  // Auto-save when enabled
+  useEffect(() => {
+    if (settings.schedule.autoSave && hasUnsavedChanges) {
+      const timer = setTimeout(() => {
+        saveSettings();
+      }, 2000); // Auto-save after 2 seconds of no changes
+      
+      return () => clearTimeout(timer);
+    }
+  }, [settings.schedule.autoSave, hasUnsavedChanges, saveSettings]);
 
   const settingsSections = [
     { id: 'appearance', name: 'Appearance', icon: '🎨', description: 'Themes, fonts, and visual preferences' },
@@ -139,6 +370,48 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   ] as const;
 
   if (!isActive) return null;
+
+  if (isLoading) {
+    return (
+      <div className="settings-page">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading settings...</p>
+        </div>
+        <style>{`
+          .settings-page {
+            padding: 1.5rem;
+            background: white;
+            min-height: calc(100vh - 80px);
+            position: relative;
+          }
+
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            gap: 1rem;
+          }
+
+          .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-page">
@@ -287,6 +560,21 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <span className="toggle-text">Keyboard Navigation</span>
                   </label>
                   <p className="setting-description">Navigate the app using only keyboard shortcuts</p>
+                </div>
+              </div>
+
+              <div className="settings-group">
+                <div className="toggle-setting">
+                  <label className="toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={settings.accessibility.reduceMotion}
+                      onChange={(e) => updateSetting('accessibility', 'reduceMotion', e.target.checked)}
+                    />
+                    <span className="toggle-slider"></span>
+                    <span className="toggle-text">Reduce Motion</span>
+                  </label>
+                  <p className="setting-description">Minimize animations and moving elements</p>
                 </div>
               </div>
 
@@ -547,6 +835,21 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
               </div>
 
               <div className="settings-group">
+                <div className="toggle-setting">
+                  <label className="toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.customSounds}
+                      onChange={(e) => updateSetting('notifications', 'customSounds', e.target.checked)}
+                    />
+                    <span className="toggle-slider"></span>
+                    <span className="toggle-text">Custom Sounds</span>
+                  </label>
+                  <p className="setting-description">Use custom sound files for notifications</p>
+                </div>
+              </div>
+
+              <div className="settings-group">
                 <label className="setting-label">Volume Level</label>
                 <div className="slider-group">
                   <input
@@ -672,15 +975,47 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
             >
               🔄 Reset to Defaults
             </button>
-            <button className="action-button secondary">
+            <button 
+              onClick={exportSettings}
+              className="action-button secondary"
+            >
               📤 Export Settings
             </button>
-            <button className="action-button secondary">
+            <button 
+              onClick={importSettings}
+              className="action-button secondary"
+            >
               📥 Import Settings
             </button>
           </div>
         </div>
       </div>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="success-message">
+          <div className="message-content">
+            <span className="message-icon">✅</span>
+            <span className="message-text">Settings saved successfully!</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {showErrorMessage && (
+        <div className="error-message">
+          <div className="message-content">
+            <span className="message-icon">❌</span>
+            <span className="message-text">{showErrorMessage}</span>
+            <button 
+              onClick={() => setShowErrorMessage(null)} 
+              className="message-close"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Unsaved Changes Warning */}
       {hasUnsavedChanges && (
@@ -716,6 +1051,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           padding: 1.5rem;
           background: white;
           min-height: calc(100vh - 80px);
+          position: relative;
         }
 
         .settings-header {
@@ -1058,6 +1394,69 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           color: #495057;
         }
 
+        .success-message,
+        .error-message {
+          position: fixed;
+          top: 2rem;
+          right: 2rem;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 1000;
+          animation: slideIn 0.3s ease;
+        }
+
+        .success-message {
+          background: #d4edda;
+          border: 2px solid #c3e6cb;
+          color: #155724;
+        }
+
+        .error-message {
+          background: #f8d7da;
+          border: 2px solid #f5c6cb;
+          color: #721c24;
+        }
+
+        .message-content {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .message-icon {
+          font-size: 1.25rem;
+        }
+
+        .message-text {
+          font-weight: 500;
+        }
+
+        .message-close {
+          background: none;
+          border: none;
+          font-size: 1.25rem;
+          cursor: pointer;
+          color: inherit;
+          opacity: 0.7;
+          margin-left: auto;
+        }
+
+        .message-close:hover {
+          opacity: 1;
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
         .unsaved-warning {
           position: fixed;
           bottom: 2rem;
@@ -1171,6 +1570,69 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           border-color: #c82333;
         }
 
+        /* Theme Application Styles */
+        body.theme-dark {
+          background-color: #1a1a1a;
+          color: #ffffff;
+        }
+
+        body.theme-dark .settings-page {
+          background: #2d2d2d;
+          color: #ffffff;
+        }
+
+        body.theme-dark .settings-nav,
+        body.theme-dark .settings-content {
+          background: #333333;
+          border-color: #555555;
+        }
+
+        body.theme-high-contrast {
+          background-color: #000000;
+          color: #ffffff;
+        }
+
+        body.theme-high-contrast .settings-nav,
+        body.theme-high-contrast .settings-content {
+          background: #000000;
+          border: 3px solid #ffffff;
+        }
+
+        /* Font Size Application */
+        body.font-small { font-size: 12px; }
+        body.font-medium { font-size: 14px; }
+        body.font-large { font-size: 16px; }
+        body.font-extra-large { font-size: 18px; }
+
+        /* Button Size Application */
+        body.buttons-small button { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+        body.buttons-medium button { padding: 0.5rem 1rem; font-size: 0.875rem; }
+        body.buttons-large button { padding: 0.75rem 1.5rem; font-size: 1rem; }
+        body.buttons-extra-large button { padding: 1rem 2rem; font-size: 1.125rem; }
+
+        /* Reduce Motion */
+        body.reduce-motion * {
+          animation-duration: 0.01s !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01s !important;
+        }
+
+        /* High Contrast Mode */
+        body.high-contrast {
+          filter: contrast(150%);
+        }
+
+        /* Color Blind Friendly */
+        body.color-blind-friendly .nav-section.active {
+          background: repeating-linear-gradient(
+            45deg,
+            #667eea,
+            #667eea 10px,
+            #764ba2 10px,
+            #764ba2 20px
+          );
+        }
+
         /* Responsive Design */
         @media (max-width: 1024px) {
           .settings-layout {
@@ -1217,6 +1679,8 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
             justify-content: center;
           }
 
+          .success-message,
+          .error-message,
           .unsaved-warning {
             bottom: 1rem;
             right: 1rem;
@@ -1261,25 +1725,10 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           outline-offset: 2px;
         }
 
-        /* High contrast mode */
-        @media (prefers-contrast: high) {
-          .settings-nav,
-          .settings-content {
-            border: 3px solid #000000;
-          }
-
-          .nav-section.active {
-            background: #000000;
-            color: #ffffff;
-          }
-
-          .toggle-slider {
-            border: 2px solid #000000;
-          }
-
-          .radio-item {
-            border: 2px solid #000000;
-          }
+        /* Keyboard navigation styles */
+        body.keyboard-navigation *:focus {
+          outline: 3px solid #667eea !important;
+          outline-offset: 2px !important;
         }
       `}</style>
     </div>

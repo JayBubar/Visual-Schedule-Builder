@@ -1,421 +1,488 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
+import TransitionDisplay from './TransitionDisplay';
 
-// Types matching your project structure
-interface Student {
-  id: string;
-  name: string;
-  grade?: string;
-  photo?: string | null;
-  workingStyle: 'independent' | 'collaborative' | 'guided' | 'needs-support';
-  accommodations?: string[];
-  behaviorNotes?: string;
-  isActive?: boolean;
-}
-
-interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  email?: string;
-  phone?: string;
-  photo?: string | null;
-  specialties?: string[];
+interface SmartboardDisplayProps {
   isActive: boolean;
-  startDate: string;
-  notes?: string;
-  isResourceTeacher?: boolean;
-  isRelatedArtsTeacher?: boolean;
-}
-
-interface GroupAssignment {
-  id: string;
-  groupName: string;
-  color: 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
-  staffMember: {
-    id: string;
+  currentSchedule?: {
+    activities: SavedActivity[];
+    startTime: string;
     name: string;
-    role: string;
-    avatar: string;
-  } | null;
-  studentIds: string[];
-  students?: Student[];
-  location: string;
-  groupType?: string;
-  targetSkills?: string[];
-}
-
-interface EnhancedActivity {
-  id: string;
-  name: string;
-  icon: string;
-  duration: number;
-  category: string;
-  description?: string;
-  groupingType?: 'whole-class' | 'small-groups' | 'individual' | 'flexible';
-  groupAssignments?: GroupAssignment[];
-}
-
-interface EnhancedSmartboardDisplayProps {
-  currentActivity?: EnhancedActivity;
-  staff: StaffMember[];
-  students: Student[];
-  timeRemaining?: number;
-  isRunning?: boolean;
-  onTimerControl?: (action: 'start' | 'pause' | 'reset' | 'skip') => void;
-}
-
-const EnhancedSmartboardDisplay: React.FC<EnhancedSmartboardDisplayProps> = ({
-  currentActivity,
-  staff,
-  students,
-  timeRemaining = 1800,
-  isRunning = false,
-  onTimerControl
-}) => {
-  // ADD DEFAULT FALLBACK if currentActivity is undefined
-  const activity = currentActivity || {
-    id: 'default',
-    name: 'No Activity Selected',
-    icon: '📋',
-    duration: 30,
-    category: 'general',
-    description: 'Please select an activity to display',
-    groupingType: 'whole-class' as const,
-    groupAssignments: []
   };
+  staff?: StaffMember[];
+  students?: Student[];
+}
 
-  // Load real student data from localStorage if available
-  const [realStudents, setRealStudents] = React.useState<Student[]>(students);
-  const [realStaff, setRealStaff] = React.useState<StaffMember[]>(staff);
+const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
+  isActive,
+  currentSchedule,
+  staff = [],
+  students = []
+}) => {
+  // 🎯 CRITICAL: ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
+  // State management - MUST be at the top, always called
+  const [realStudents, setRealStudents] = useState<Student[]>([]);
+  const [realStaff, setRealStaff] = useState<StaffMember[]>([]);
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(1800);
+  const [isRunning, setIsRunning] = useState(false);
+  const [fallbackSchedule, setFallbackSchedule] = useState<any>(null);
 
-  React.useEffect(() => {
-    // Load actual students from localStorage
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-      try {
-        const parsedStudents = JSON.parse(savedStudents);
-        setRealStudents(parsedStudents.filter((s: Student) => s.isActive !== false));
-      } catch (error) {
-        console.error('Error loading students for display:', error);
+  // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
+  useEffect(() => {
+    console.log('🖥️ SmartboardDisplay - Loading schedule data...');
+    
+    if (!currentSchedule) {
+      console.log('🔍 No currentSchedule provided, loading from localStorage...');
+      
+      // Try multiple possible localStorage keys
+      const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
+      
+      for (const key of possibleKeys) {
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            const schedules = JSON.parse(saved);
+            console.log(`📋 Found ${schedules.length} schedules in '${key}'`);
+            
+            if (schedules.length > 0) {
+              // Use the most recent schedule
+              const mostRecent = schedules
+                .filter((s: any) => s.lastUsed)
+                .sort((a: any, b: any) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())[0];
+              
+              const scheduleToUse = mostRecent || schedules[0];
+              console.log('🎯 Using schedule:', scheduleToUse.name);
+              
+              // 🎯 CRITICAL: Preserve groupAssignments when loading
+              const loadedActivities = (scheduleToUse.activities || []).map((activity: any) => ({
+                ...activity,
+                // Ensure groupAssignments are preserved
+                groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
+              }));
+              
+              console.log('🔄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
+                name: a.name,
+                groupCount: a.groupAssignments?.length || 0,
+                groups: a.groupAssignments
+              })));
+              
+              setFallbackSchedule({
+                activities: loadedActivities,
+                startTime: scheduleToUse.startTime || '09:00',
+                name: scheduleToUse.name || 'Untitled Schedule'
+              });
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading from ${key}:`, error);
+        }
       }
+    } else {
+      // 🎯 CRITICAL: Also preserve groupAssignments from currentSchedule prop
+      console.log('📥 Using provided currentSchedule, preserving groups...');
+      const preservedActivities = (currentSchedule.activities || []).map((activity: any) => ({
+        ...activity,
+        groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
+      }));
+      
+      console.log('🔄 Preserved activities from props:', preservedActivities.map((a: any) => ({
+        name: a.name,
+        groupCount: a.groupAssignments?.length || 0
+      })));
     }
+  }, [currentSchedule]);
 
-    // Load actual staff from localStorage
-    const savedStaff = localStorage.getItem('staff_members');
-    if (savedStaff) {
-      try {
-        const parsedStaff = JSON.parse(savedStaff);
-        setRealStaff(parsedStaff.filter((s: StaffMember) => s.isActive));
-      } catch (error) {
-        console.error('Error loading staff for display:', error);
+  // Load real data from localStorage
+  useEffect(() => {
+    try {
+      const savedStudents = localStorage.getItem('students');
+      if (savedStudents) {
+        const studentData = JSON.parse(savedStudents);
+        setRealStudents(studentData);
+        console.log('📚 Loaded students from localStorage:', studentData.length);
       }
+
+      const savedStaff = localStorage.getItem('staff_members');
+      if (savedStaff) {
+        const staffData = JSON.parse(savedStaff);
+        setRealStaff(staffData);
+        console.log('👨‍🏫 Loaded staff from localStorage:', staffData.length);
+      }
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error);
     }
   }, []);
 
-  // Color mapping for groups
-  const colorMap = {
-    red: '#ff6b6b',
-    blue: '#4dabf7',
-    green: '#51cf66',
-    yellow: '#ffd43b',
-    purple: '#9775fa',
-    orange: '#ff922b'
+  // Timer countdown effect (moved after hooks)
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isRunning && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            setIsRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, timeRemaining]);
+
+  // 🎯 AFTER ALL HOOKS: Now calculate derived values
+  const activeSchedule = currentSchedule || fallbackSchedule;
+  const currentActivity = activeSchedule?.activities[currentActivityIndex];
+
+  // Set initial timer when activity changes
+  useEffect(() => {
+    if (currentActivity && currentActivity.duration) {
+      setTimeRemaining(currentActivity.duration * 60);
+    }
+  }, [currentActivityIndex, currentActivity]);
+
+  // Timer control functions (moved after hooks)
+  const onTimerControl = (action: string) => {
+    switch (action) {
+      case 'play':
+        setIsRunning(true);
+        break;
+      case 'pause':
+        setIsRunning(false);
+        break;
+      case 'reset':
+        setTimeRemaining(currentActivity?.duration ? currentActivity.duration * 60 : 1800);
+        setIsRunning(false);
+        break;
+      case 'next':
+        if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
+          setCurrentActivityIndex(prev => prev + 1);
+          const nextActivity = activeSchedule?.activities[currentActivityIndex + 1];
+          setTimeRemaining(nextActivity?.duration * 60 || 1800);
+          setIsRunning(false);
+        }
+        break;
+      case 'previous':
+        if (currentActivityIndex > 0) {
+          setCurrentActivityIndex(prev => prev - 1);
+          const prevActivity = activeSchedule?.activities[currentActivityIndex - 1];
+          setTimeRemaining(prevActivity?.duration * 60 || 1800);
+          setIsRunning(false);
+        }
+        break;
+    }
   };
 
-  // Format time display
-  const formatTime = (seconds: number): string => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Get timer color based on remaining time
-  const getTimerColor = (): string => {
-    if (timeRemaining <= 60) return '#F44336'; // Red for last minute
-    if (timeRemaining <= 300) return '#FF9800'; // Orange for last 5 minutes
-    return '#4CAF50'; // Green for normal time
-  };
-
-  // Get student data by ID
+  // Helper functions for group display
   const getStudentById = (studentId: string): Student | undefined => {
-    return realStudents.find(s => s.id === studentId);
+    return [...realStudents, ...students].find(s => s.id === studentId);
   };
 
-  // Student Card Component for Display
-  const StudentDisplayCard: React.FC<{ student: Student; groupColor: string }> = ({ student, groupColor }) => (
+  const getStaffById = (staffId: string): StaffMember | undefined => {
+    return [...realStaff, ...staff].find(s => s.id === staffId);
+  };
+
+  // Helper functions
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTimerColor = (): string => {
+    const percentage = currentActivity ? (timeRemaining / (currentActivity.duration * 60)) * 100 : 100;
+    if (percentage > 50) return '#4CAF50';
+    if (percentage > 25) return '#FF9800';
+    return '#f44336';
+  };
+
+  // 🔍 DEBUG LOGGING (moved after hooks)
+  console.log('🔍 DIRECT Activity Property Check:', {
+    activityName: currentActivity?.name,
+    hasIsTransition: currentActivity?.hasOwnProperty('isTransition'),
+    isTransitionValue: currentActivity?.isTransition,
+    allProperties: Object.keys(currentActivity || {}),
+    category: currentActivity?.category,
+    fullActivity: currentActivity
+  });
+
+  // 🎯 ENHANCED TRANSITION DETECTION (moved after hooks)
+  const isTransitionActivity = 
+    currentActivity?.isTransition === true ||  // Primary check
+    (currentActivity?.category === 'transition' && 
+     currentActivity?.transitionType) ||       // Fallback: category + transitionType
+    (currentActivity?.category === 'transition' && 
+     currentActivity?.animationStyle) ||       // Fallback: category + animationStyle
+    (currentActivity?.name && 
+     ['Movement Break', 'Brain Break', 'Transition Time', 'Get Ready', 'Clean Up Time']
+     .includes(currentActivity.name));         // Fallback: known transition activity names
+
+  // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
+  if (!isActive) {
+    return null;
+  }
+
+  // 🔧 ISOLATION FIX: Render transition in isolated container
+  if (isTransitionActivity && currentActivity) {
+    console.log('🎯 SmartboardDisplay - Rendering transition activity:', currentActivity.name);
+    
+    // Get next activity for preview
+    const nextActivity = activeSchedule?.activities[currentActivityIndex + 1];
+    
+    return (
+      <div className="smartboard-display-container" style={{ 
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '2rem',
+        position: 'relative',
+        zIndex: 1
+      }}>
+        <TransitionDisplay
+          activity={{
+            ...currentActivity,
+            // Ensure transition properties exist even if missing
+            isTransition: true,
+            transitionType: currentActivity.transitionType || 'movement-break',
+            animationStyle: currentActivity.animationStyle || 'running-kids',
+            showNextActivity: currentActivity.showNextActivity !== false, // Default to true
+            movementPrompts: currentActivity.movementPrompts || [
+              'Get ready to move! 🏃‍♀️',
+              'Stand up and stretch! 🙌',
+              'Take a deep breath! 😮‍💨',
+              'Prepare for next activity! 🎯'
+            ]
+          }}
+          nextActivity={nextActivity}
+          timeRemaining={timeRemaining}
+          onTimerControl={onTimerControl}
+          isRunning={isRunning}
+          previousActivity={activeSchedule?.activities[currentActivityIndex - 1]}
+          activityIndex={currentActivityIndex}
+          totalActivities={activeSchedule?.activities.length || 1}
+        />
+      </div>
+    );
+  }
+
+  if (!activeSchedule || !currentActivity) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>📅</div>
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>No Schedule Available</h2>
+        <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+          Please create a schedule in the Schedule Builder first.
+        </p>
+      </div>
+    );
+  }
+
+  // Student card component
+  const StudentCard: React.FC<{ student: Student; groupColor: string }> = ({ student, groupColor }) => (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-      padding: '1rem',
-      background: 'rgba(255, 255, 255, 0.95)',
+      background: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '12px',
-      border: `3px solid ${groupColor}`,
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-      transition: 'all 0.3s ease',
-      minHeight: '70px'
+      padding: '1rem',
+      textAlign: 'center',
+      border: `2px solid ${groupColor}40`,
+      transition: 'transform 0.2s ease',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
     }}>
-      {/* Student Photo */}
       <div style={{
         width: '50px',
         height: '50px',
         borderRadius: '50%',
-        overflow: 'hidden',
-        background: student.photo 
-          ? 'transparent' 
-          : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
+        background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'white',
         fontSize: '1.2rem',
-        fontWeight: '700',
-        flexShrink: 0,
-        border: `2px solid ${groupColor}`
+        margin: '0 auto 0.5rem auto',
+        border: `2px solid ${groupColor}`,
+        overflow: 'hidden',
+        boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)'
       }}>
         {student.photo ? (
-          <img
-            src={student.photo}
-            alt={student.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
-          />
+          <img src={student.photo} alt={student.name} style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }} />
         ) : (
-          student.name.charAt(0).toUpperCase()
+          <span style={{ color: 'white', fontWeight: '700' }}>👤</span>
         )}
       </div>
-
-      {/* Student Info */}
-      <div style={{ flex: 1 }}>
-        <div style={{
-          fontWeight: '700',
-          fontSize: '1.1rem',
-          color: '#2c3e50',
-          marginBottom: '0.25rem'
-        }}>
-          {student.name}
-        </div>
-        <div style={{
-          fontSize: '0.9rem',
-          color: '#6c757d',
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
-          <span>{student.grade || 'No grade'}</span>
-          <span>•</span>
-          <span style={{
-            background: student.workingStyle === 'independent' ? '#28a745' : 
-                       student.workingStyle === 'collaborative' ? '#007bff' : 
-                       student.workingStyle === 'guided' ? '#17a2b8' : '#ffc107',
-            color: 'white',
-            padding: '2px 8px',
-            borderRadius: '12px',
-            fontSize: '0.8rem',
-            fontWeight: '600'
-          }}>
-            {student.workingStyle === 'independent' && '🧠 Independent'}
-            {student.workingStyle === 'collaborative' && '👥 Collaborative'}
-            {student.workingStyle === 'guided' && '📖 Guided'}
-            {student.workingStyle === 'needs-support' && '🤝 Needs Support'}
-          </span>
-        </div>
-      </div>
-
-      {/* Accommodations indicator */}
-      {student.accommodations && student.accommodations.length > 0 && (
-        <div style={{
-          background: 'rgba(102, 126, 234, 0.1)',
-          color: '#667eea',
-          padding: '4px 8px',
-          borderRadius: '8px',
-          fontSize: '0.8rem',
-          fontWeight: '600'
-        }}>
-          🛠️ {student.accommodations.length} accommodations
-        </div>
-      )}
+      <h6 style={{
+        margin: '0',
+        fontSize: '0.9rem',
+        fontWeight: '600',
+        color: 'white',
+        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+      }}>
+        {student.name}
+      </h6>
     </div>
   );
 
-  // Staff Card Component for Display
-  const StaffDisplayCard: React.FC<{ staffMember: any; groupColor: string }> = ({ staffMember, groupColor }) => (
+  // Staff card component
+  const StaffCard: React.FC<{ staffMember: StaffMember; groupColor: string }> = ({ staffMember, groupColor }) => (
     <div style={{
       display: 'flex',
       alignItems: 'center',
       gap: '1rem',
-      padding: '1.25rem',
       background: `linear-gradient(135deg, ${groupColor}15, ${groupColor}25)`,
       borderRadius: '16px',
-      border: `3px solid ${groupColor}`,
-      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.1)',
-      marginBottom: '1rem'
+      padding: '1.25rem',
+      border: `2px solid ${groupColor}40`,
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
     }}>
-      {/* Staff Photo */}
       <div style={{
         width: '60px',
         height: '60px',
         borderRadius: '50%',
-        overflow: 'hidden',
-        background: staffMember.avatar && staffMember.avatar.startsWith('data:') 
-          ? 'transparent' 
-          : `linear-gradient(135deg, #28a745, #20c997)`,
+        background: staffMember.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}, ${groupColor}CC)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        color: 'white',
         fontSize: '1.5rem',
-        fontWeight: '700',
-        flexShrink: 0,
         border: `3px solid ${groupColor}`,
+        overflow: 'hidden',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
       }}>
-        {staffMember.avatar && staffMember.avatar.startsWith('data:') ? (
-          <img
-            src={staffMember.avatar}
-            alt={staffMember.name}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
-            }}
-          />
+        {staffMember.photo ? (
+          <img src={staffMember.photo} alt={staffMember.name} style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }} />
         ) : (
-          <span>{staffMember.avatar || '👨‍🏫'}</span>
+          <span style={{ color: 'white', fontWeight: '700' }}>👨‍🏫</span>
         )}
       </div>
-
-      {/* Staff Info */}
-      <div style={{ flex: 1 }}>
-        <div style={{
+      <div>
+        <h5 style={{
+          margin: '0 0 0.25rem 0',
+          fontSize: '1.2rem',
           fontWeight: '700',
-          fontSize: '1.3rem',
-          color: '#2c3e50',
-          marginBottom: '0.25rem'
+          color: 'white',
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
         }}>
           {staffMember.name}
-        </div>
-        <div style={{
+        </h5>
+        <p style={{
+          margin: '0',
           fontSize: '1rem',
-          color: '#6c757d',
+          color: 'rgba(255, 255, 255, 0.9)',
           fontWeight: '600'
         }}>
           {staffMember.role}
-        </div>
-      </div>
-
-      {/* Teacher Icon */}
-      <div style={{
-        background: groupColor,
-        color: 'white',
-        padding: '12px',
-        borderRadius: '50%',
-        fontSize: '1.5rem',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-      }}>
-        👨‍🏫
+        </p>
       </div>
     </div>
   );
 
-  // Group Display Component
-  const GroupDisplay: React.FC<{ group: GroupAssignment }> = ({ group }) => {
-    const groupStudents = group.studentIds.map(id => getStudentById(id)).filter(Boolean) as Student[];
-    const groupColor = colorMap[group.color] || '#667eea';
+  // 🎯 Enhanced Group display component with better error handling
+  const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number }> = ({ group, groupIndex }) => {
+    console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
+    
+    const groupStudents = (group.studentIds || []).map(id => getStudentById(id)).filter(Boolean) as Student[];
+    
+    // Try multiple ways to get staff
+    let staffMember = null;
+    if (group.staffId) {
+      staffMember = getStaffById(group.staffId);
+    } else if (group.staffMember?.id) {
+      staffMember = getStaffById(group.staffMember.id) || group.staffMember;
+    }
+    
+    console.log(`👥 Group ${groupIndex + 1} data:`, {
+      name: group.groupName,
+      color: group.color,
+      students: groupStudents.length,
+      staff: staffMember?.name || 'None'
+    });
+
+    const groupColor = group.color || '#9C27B0';
 
     return (
       <div style={{
-        background: 'rgba(255, 255, 255, 0.15)',
-        backdropFilter: 'blur(10px)',
+        background: `linear-gradient(135deg, ${groupColor}20, ${groupColor}10)`,
         borderRadius: '20px',
         padding: '2rem',
         border: `4px solid ${groupColor}`,
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        marginBottom: '2rem',
-        minHeight: '300px'
+        marginBottom: '2rem'
       }}>
-        {/* Group Header */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '1.5rem',
-          paddingBottom: '1rem',
-          borderBottom: `2px solid ${groupColor}30`
+          alignItems: 'center',
+          marginBottom: '2rem'
         }}>
-          <div>
-            <h3 style={{
-              margin: '0',
-              fontSize: '1.8rem',
-              fontWeight: '700',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              {group.groupName}
-            </h3>
-            <p style={{
-              margin: '0.5rem 0 0 0',
-              fontSize: '1.1rem',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontWeight: '500'
-            }}>
-              📍 {group.location} • {groupStudents.length} students
-              {group.targetSkills && group.targetSkills.length > 0 && (
-                <span style={{ marginLeft: '1rem' }}>
-                  🎯 {group.targetSkills.slice(0, 2).join(', ')}
-                </span>
-              )}
-            </p>
-          </div>
-          
-          <div style={{
-            background: groupColor,
-            color: 'white',
-            borderRadius: '50%',
-            width: '60px',
-            height: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.5rem',
+          <h3 style={{
+            margin: '0',
+            fontSize: '2.5rem',
             fontWeight: '700',
-            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
-          }}>
-            {groupStudents.length}
-          </div>
-        </div>
-
-        {/* Staff Section */}
-        {group.staffMember && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h4 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '1.3rem',
-              fontWeight: '600',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              👨‍🏫 Teacher
-            </h4>
-            <StaffDisplayCard staffMember={group.staffMember} groupColor={groupColor} />
-          </div>
-        )}
-
-        {/* Students Section */}
-        <div>
-          <h4 style={{
-            margin: '0 0 1rem 0',
-            fontSize: '1.3rem',
-            fontWeight: '600',
             color: 'white',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
-            👥 Students ({groupStudents.length})
+            {group.groupName || `Group ${groupIndex + 1}`}
+          </h3>
+          <div style={{
+            background: groupColor,
+            borderRadius: '12px',
+            padding: '0.5rem 1rem',
+            color: 'white',
+            fontWeight: '600',
+            fontSize: '1.1rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+          }}>
+            {groupStudents.length} Student{groupStudents.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+
+        {/* Staff Member */}
+        {staffMember && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h4 style={{
+              margin: '0 0 1rem 0',
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              color: 'white',
+              textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+            }}>
+              Staff Member
+            </h4>
+            <StaffCard staffMember={staffMember} groupColor={groupColor} />
+          </div>
+        )}
+
+        {/* Students */}
+        <div>
+          <h4 style={{
+            margin: '0 0 1.5rem 0',
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            color: 'white',
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+          }}>
+            Students
           </h4>
-          
           {groupStudents.length === 0 ? (
             <div style={{
               textAlign: 'center',
@@ -429,15 +496,11 @@ const EnhancedSmartboardDisplay: React.FC<EnhancedSmartboardDisplayProps> = ({
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
               gap: '1rem'
             }}>
               {groupStudents.map(student => (
-                <StudentDisplayCard 
-                  key={student.id} 
-                  student={student} 
-                  groupColor={groupColor}
-                />
+                <StudentCard key={student.id} student={student} groupColor={groupColor} />
               ))}
             </div>
           )}
@@ -446,493 +509,205 @@ const EnhancedSmartboardDisplay: React.FC<EnhancedSmartboardDisplayProps> = ({
     );
   };
 
-  // Whole Class Display
-  const WholeClassDisplay: React.FC = () => (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.15)',
-      backdropFilter: 'blur(10px)',
-      borderRadius: '20px',
-      padding: '2rem',
-      border: '4px solid #28a745',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      textAlign: 'center',
-      marginBottom: '2rem'
-    }}>
-      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
-      <h3 style={{
-        margin: '0 0 1rem 0',
-        fontSize: '2.5rem',
-        fontWeight: '700',
-        color: 'white',
-        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-      }}>
-        Whole Class Activity
-      </h3>
-      <p style={{
-        margin: '0',
-        fontSize: '1.3rem',
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontWeight: '500'
-      }}>
-        All {realStudents.length} students participate together
-      </p>
-      
-      {/* Show some student photos in whole class view */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        marginTop: '2rem'
-      }}>
-        {realStudents.slice(0, 8).map(student => (
-          <div
-            key={student.id}
-            style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              overflow: 'hidden',
-              background: student.photo 
-                ? 'transparent' 
-                : 'linear-gradient(135deg, #28a745, #20c997)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '1.2rem',
-              fontWeight: '700',
-              border: '3px solid #28a745',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-            }}
-          >
-            {student.photo ? (
-              <img
-                src={student.photo}
-                alt={student.name}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
-              />
-            ) : (
-              student.name.charAt(0).toUpperCase()
-            )}
-          </div>
-        ))}
-        {realStudents.length > 8 && (
-          <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '50%',
-            background: 'rgba(255, 255, 255, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '0.9rem',
-            fontWeight: '700',
-            border: '3px solid #28a745'
-          }}>
-            +{realStudents.length - 8}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Debug info for troubleshooting
+  const debugInfo = {
+    hasAssignment: !!currentActivity?.assignment,
+    assignmentType: typeof currentActivity?.assignment,
+    assignmentData: currentActivity?.assignment,
+    hasDirectGroups: !!(currentActivity?.groupAssignments?.length),
+    hasAssignmentGroups: !!(currentActivity?.assignment?.groupAssignments?.length)
+  };
+
+  // Get group assignments
+  const groupAssignments = currentActivity.groupAssignments || currentActivity.assignment?.groupAssignments || [];
 
   return (
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      padding: '20px',
+      position: 'relative',
       overflow: 'auto'
     }}>
-      {/* Timer and Activity Header */}
+      {/* Header */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'rgba(255, 255, 255, 0.15)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '20px',
-        padding: '1.5rem 2rem',
-        marginBottom: '2rem',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        flexWrap: 'wrap',
-        gap: '1rem'
+        padding: '2rem',
+        textAlign: 'center',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
-        {/* Activity Info */}
+        <h1 style={{
+          margin: '0 0 1rem 0',
+          fontSize: '3rem',
+          fontWeight: '700',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+        }}>
+          {currentActivity.icon} {currentActivity.name}
+        </h1>
+        
+        {/* Timer */}
+        <div style={{
+          fontSize: '4rem',
+          fontWeight: '700',
+          color: getTimerColor(),
+          textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+          marginBottom: '1rem'
+        }}>
+          {formatTime(timeRemaining)}
+        </div>
+
+        {/* Timer Controls */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '1.5rem',
-          flex: '1',
-          minWidth: '300px'
+          justifyContent: 'center',
+          gap: '1rem',
+          marginBottom: '2rem'
         }}>
-          <div style={{
-            fontSize: '3rem',
-            background: 'rgba(255, 255, 255, 0.2)',
-            padding: '15px',
-            borderRadius: '20px',
-            minWidth: '80px',
-            textAlign: 'center'
-          }}>
-            {activity.icon}
-          </div>
-          <div>
-            <h1 style={{
-              margin: '0',
-              fontSize: '2.2rem',
-              fontWeight: '700',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              {activity.name}
-            </h1>
-            <p style={{
-              margin: '5px 0 0 0',
+          <button
+            onClick={() => onTimerControl('previous')}
+            disabled={currentActivityIndex === 0}
+            style={{
+              padding: '1rem 1.5rem',
               fontSize: '1.2rem',
-              opacity: 0.9
-            }}>
-              {activity.duration} minutes • {activity.category}
-              {(activity.groupAssignments || []).length > 0 && (
-                <span style={{
-                  marginLeft: '15px',
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  padding: '4px 12px',
-                  borderRadius: '15px',
-                  fontSize: '1rem'
-                }}>
-                  🎯 {(activity.groupAssignments || []).length} Groups
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Timer Display */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2rem'
-        }}>
-          <div style={{
-            textAlign: 'center',
-            background: 'rgba(255, 255, 255, 0.2)',
-            padding: '1.5rem 2rem',
-            borderRadius: '20px',
-            minWidth: '150px'
-          }}>
-            <p style={{
-              fontSize: '3rem',
-              fontWeight: '700',
-              margin: '0',
-              color: getTimerColor(),
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              {formatTime(timeRemaining)}
-            </p>
-            <p style={{
-              fontSize: '1rem',
-              margin: '0',
-              opacity: 0.9,
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
               fontWeight: '600'
-            }}>
-              Time Remaining
-            </p>
-          </div>
+            }}
+          >
+            ⏮️ Previous
+          </button>
+          
+          <button
+            onClick={() => onTimerControl(isRunning ? 'pause' : 'play')}
+            style={{
+              padding: '1rem 2rem',
+              fontSize: '1.2rem',
+              background: isRunning ? '#ff6b6b' : '#51cf66',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            {isRunning ? '⏸️ Pause' : '▶️ Play'}
+          </button>
+          
+          <button
+            onClick={() => onTimerControl('reset')}
+            style={{
+              padding: '1rem 1.5rem',
+              fontSize: '1.2rem',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            🔄 Reset
+          </button>
+          
+          <button
+            onClick={() => onTimerControl('next')}
+            disabled={currentActivityIndex === (activeSchedule?.activities.length || 0) - 1}
+            style={{
+              padding: '1rem 1.5rem',
+              fontSize: '1.2rem',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            Next ⏭️
+          </button>
+        </div>
 
-          {/* Timer Controls */}
-          {onTimerControl && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem'
-            }}>
-              <button
-                onClick={() => onTimerControl(isRunning ? 'pause' : 'start')}
-                style={{
-                  padding: '12px 20px',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  background: isRunning ? '#FF9800' : '#4CAF50',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                {isRunning ? '⏸ Pause' : '▶ Start'}
-              </button>
-              <button
-                onClick={() => onTimerControl('skip')}
-                style={{
-                  padding: '12px 20px',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  background: '#9C27B0',
-                  color: 'white',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                🎉 Complete
-              </button>
-            </div>
-          )}
+        <div style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+          Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
         </div>
       </div>
 
-      {/* Activity Content */}
-      <div style={{ marginBottom: '2rem' }}>
-        {/* Whole Class Activity */}
-        {(!(activity.groupAssignments || []).length || 
-          (activity.groupingType || 'whole-class') === 'whole-class') && (
-          <WholeClassDisplay />
-        )}
-
-        {/* Group Activities */}
-        {(activity.groupAssignments || []).length > 0 && 
-         (activity.groupingType || 'whole-class') !== 'whole-class' && (
-          <div>
-            <div style={{
+      {/* Content */}
+      <div style={{ padding: '2rem' }}>
+        {groupAssignments.length > 0 ? (
+          <>
+            <h2 style={{
               textAlign: 'center',
-              marginBottom: '2rem',
-              padding: '1rem',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '15px',
-              backdropFilter: 'blur(10px)'
+              fontSize: '2.5rem',
+              marginBottom: '3rem',
+              fontWeight: '600',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
             }}>
-              <h2 style={{
-                margin: '0 0 0.5rem 0',
-                fontSize: '1.8rem',
-                fontWeight: '700',
-                color: 'white',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-              }}>
-                🎯 Group Activities
-              </h2>
-              <p style={{
-                margin: '0',
-                fontSize: '1.2rem',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontWeight: '500'
-              }}>
-                {(activity.groupAssignments || []).length} groups working on {activity.name}
-              </p>
-            </div>
-
-            {/* Render each group */}
+              Group Assignments
+            </h2>
+            {groupAssignments.map((group, index) => (
+              <GroupDisplay key={group.id || index} group={group} groupIndex={index} />
+            ))}
+          </>
+        ) : (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '20px',
+            padding: '2rem',
+            border: '4px solid #28a745',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            textAlign: 'center',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
+            <h3 style={{
+              margin: '0 0 1rem 0',
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              color: 'white',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+            }}>
+              Whole Class Activity
+            </h3>
+            <p style={{
+              margin: '0',
+              fontSize: '1.3rem',
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: '500'
+            }}>
+              All {realStudents.length} students participate together
+            </p>
+            
+            {/* Enhanced Debug Information */}
             <div style={{
-              display: 'grid',
-              gap: '2rem',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))'
+              marginTop: '1.5rem',
+              padding: '1rem',
+              background: 'rgba(255, 255, 255, 0.05)',
+              borderRadius: '10px',
+              fontSize: '0.8rem',
+              opacity: 0.7,
+              textAlign: 'left'
             }}>
-              {(activity.groupAssignments || []).map(group => (
-                <GroupDisplay key={group.id} group={group} />
-              ))}
+              <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>🔍 Debug Info:</div>
+              <div>Activity: "{currentActivity.name}"</div>
+              <div>Has Assignment: {debugInfo.hasAssignment ? '✅' : '❌'}</div>
+              <div>Assignment Type: {debugInfo.assignmentType}</div>
+              <div>Direct Groups: {currentActivity.groupAssignments?.length || 0}</div>
+              <div>Assignment Groups: {currentActivity.assignment?.groupAssignments?.length || 0}</div>
+              {debugInfo.assignmentData && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  Assignment Keys: {Object.keys(debugInfo.assignmentData).join(', ')}
+                </div>
+              )}
             </div>
           </div>
         )}
-
-        {/* Individual Work Display */}
-        {(activity.groupingType || 'whole-class') === 'individual' && (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '20px',
-            padding: '2rem',
-            border: '4px solid #667eea',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧑‍💼</div>
-            <h3 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '2.5rem',
-              fontWeight: '700',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              Individual Work Time
-            </h3>
-            <p style={{
-              margin: '0',
-              fontSize: '1.3rem',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontWeight: '500'
-            }}>
-              Each student works independently on {activity.name}
-            </p>
-          </div>
-        )}
-
-        {/* Flexible Grouping Display */}
-        {(activity.groupingType || 'whole-class') === 'flexible' && (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '20px',
-            padding: '2rem',
-            border: '4px solid #17a2b8',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔄</div>
-            <h3 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '2.5rem',
-              fontWeight: '700',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              Flexible Grouping
-            </h3>
-            <p style={{
-              margin: '0',
-              fontSize: '1.3rem',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontWeight: '500'
-            }}>
-              Mixed arrangements - groups may change during the activity
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Activity Instructions */}
-      {(activity.description || '') && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: '15px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
-          border: '2px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <h4 style={{
-            margin: '0 0 1rem 0',
-            fontSize: '1.3rem',
-            fontWeight: '600',
-            color: 'white',
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-          }}>
-            📋 Activity Instructions
-          </h4>
-          <p style={{
-            margin: '0',
-            fontSize: '1.1rem',
-            color: 'rgba(255, 255, 255, 0.9)',
-            lineHeight: '1.6'
-          }}>
-            {activity.description || ''}
-          </p>
-        </div>
-      )}
-
-      {/* Statistics Footer */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        background: 'rgba(255, 255, 255, 0.1)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '15px',
-        padding: '1rem',
-        flexWrap: 'wrap',
-        gap: '1rem'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-            {realStudents.length}
-          </div>
-          <div style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-            Total Students
-          </div>
-        </div>
-        
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-            {realStaff.length}
-          </div>
-          <div style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-            Staff Members
-          </div>
-        </div>
-        
-        {(activity.groupAssignments || []).length > 0 && (
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-              {(activity.groupAssignments || []).length}
-            </div>
-            <div style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-              Active Groups
-            </div>
-          </div>
-        )}
-        
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-            {activity.duration}min
-          </div>
-          <div style={{ fontSize: '0.9rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-            Activity Duration
-          </div>
-        </div>
       </div>
     </div>
   );
 };
 
-// Regular SmartboardDisplay component for backward compatibility
-interface SmartboardDisplayProps {
-  isActive: boolean;
-  currentSchedule?: {
-    activities: any[];
-    startTime: string;
-    name: string;
-  };
-  staff: StaffMember[];
-  students: Student[];
-}
-
-const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({ 
-  isActive, 
-  currentSchedule, 
-  staff, 
-  students 
-}) => {
-  if (!isActive) return null;
-
-  // Convert currentSchedule to currentActivity format
-  const currentActivity = currentSchedule && currentSchedule.activities.length > 0 
-    ? {
-        id: 'current',
-        name: currentSchedule.activities[0].name || 'Current Activity',
-        icon: currentSchedule.activities[0].icon || '📋',
-        duration: currentSchedule.activities[0].duration || 30,
-        category: currentSchedule.activities[0].category || 'general',
-        description: currentSchedule.activities[0].description,
-        groupingType: currentSchedule.activities[0].groupingType || 'whole-class' as const,
-        groupAssignments: currentSchedule.activities[0].groupAssignments || []
-      }
-    : undefined;
-
-  return (
-    <EnhancedSmartboardDisplay
-      currentActivity={currentActivity}
-      staff={staff}
-      students={students}
-    />
-  );
-};
-
 export default SmartboardDisplay;
-export { EnhancedSmartboardDisplay };
