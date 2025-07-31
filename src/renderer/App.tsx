@@ -6,9 +6,8 @@ import ActivityLibrary from './components/common/ActivityLibrary';
 import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
 import Settings from './components/management/Settings';
-import CelebrationAnimations from './components/common/CelebrationAnimations';
 import DailyCheckIn from './components/calendar/DailyCheckIn';
-import IEPDataCollectionInterface from './components/data-collection/IEPDataCollectionInterface';
+import { IEPDataCollectionInterface } from './components/data-collection';
 import { useStaffData } from './hooks/useStaffData';
 import { useStudentData } from './hooks/useStudentData';
 import { ViewType, ScheduleVariation, Student, StaffMember } from './types';
@@ -257,10 +256,6 @@ const App: React.FC = () => {
             break;
           case '7':
             event.preventDefault();
-            setCurrentView('celebrations');
-            break;
-          case '8':
-            event.preventDefault();
             setCurrentView('data-collection');
             break;
           case ',':
@@ -455,10 +450,6 @@ const App: React.FC = () => {
         
         <ActivityLibrary 
           isActive={currentView === 'library'} 
-        />
-        
-        <CelebrationAnimations 
-          isActive={currentView === 'celebrations'} 
         />
         
         <IEPDataCollectionInterface 

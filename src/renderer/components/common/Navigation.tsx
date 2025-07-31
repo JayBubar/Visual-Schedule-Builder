@@ -12,17 +12,17 @@ const Navigation: React.FC<NavigationProps> = ({
   onViewChange, 
   selectedSchedule 
 }) => {
-  const navItems = [
-    { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
-    { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
-    { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
-    { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
-    { id: 'calendar', icon: '📅', label: 'Check-In', shortcut: 'Ctrl+5' },
-    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
-    { id: 'celebrations', icon: '🎉', label: 'Celebrations', shortcut: 'Ctrl+7' },
-    { id: 'data-collection', icon: '📊', label: 'IEP Data', shortcut: 'Ctrl+8' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+,' }
-  ] as const;
+const navItems = [
+  { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
+  { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
+  { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+5' },
+  { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
+  { id: 'data-collection', icon: '📋', label: 'IEP Data', shortcut: 'Ctrl+7' },
+  { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
+  { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
+  { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+r' },
+  { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+,' }
+] as const;
 
   return (
     <nav className="navigation">
@@ -86,7 +86,6 @@ const Navigation: React.FC<NavigationProps> = ({
         .brand-version {
           font-size: 0.75rem;
           opacity: 0.8;
-          line-height: 1;
         }
 
         .nav-buttons {
@@ -97,40 +96,39 @@ const Navigation: React.FC<NavigationProps> = ({
 
         .nav-button {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 0.25rem;
-          padding: 0.75rem 1rem;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          border: none;
           background: rgba(255, 255, 255, 0.1);
-          border: 2px solid rgba(255, 255, 255, 0.2);
-          border-radius: 12px;
           color: white;
+          border-radius: 0.5rem;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
+          font-size: 0.875rem;
+          font-weight: 500;
           backdrop-filter: blur(10px);
-          min-width: 80px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .nav-button:hover {
           background: rgba(255, 255, 255, 0.2);
-          border-color: rgba(255, 255, 255, 0.4);
           transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .nav-button.active {
           background: rgba(255, 255, 255, 0.25);
-          border-color: rgba(255, 255, 255, 0.5);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          transform: translateY(-1px);
         }
 
         .nav-icon {
-          font-size: 1.25rem;
+          font-size: 1rem;
         }
 
         .nav-label {
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-align: center;
+          white-space: nowrap;
         }
 
         .nav-status {
@@ -140,14 +138,15 @@ const Navigation: React.FC<NavigationProps> = ({
           margin-left: 2rem;
           padding: 0.5rem 1rem;
           background: rgba(255, 255, 255, 0.1);
-          border-radius: 20px;
+          border-radius: 0.5rem;
           backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .status-indicator {
-          width: 8px;
-          height: 8px;
-          background: #2ecc71;
+          width: 0.5rem;
+          height: 0.5rem;
+          background: #10b981;
           border-radius: 50%;
           animation: pulse 2s infinite;
         }
@@ -158,31 +157,58 @@ const Navigation: React.FC<NavigationProps> = ({
         }
 
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
 
         @media (max-width: 768px) {
           .navigation {
-            flex-wrap: wrap;
-            gap: 1rem;
+            padding: 0.5rem 1rem;
           }
 
           .nav-brand {
-            margin-right: 0;
+            margin-right: 1rem;
+          }
+
+          .brand-title {
+            display: none;
           }
 
           .nav-buttons {
-            flex-wrap: wrap;
-            justify-content: center;
+            gap: 0.25rem;
           }
 
           .nav-button {
-            min-width: 70px;
+            padding: 0.375rem 0.5rem;
+            font-size: 0.75rem;
+          }
+
+          .nav-label {
+            display: none;
           }
 
           .nav-status {
-            margin-left: 0;
+            margin-left: 1rem;
+            padding: 0.375rem 0.5rem;
+          }
+
+          .status-text {
+            display: none;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .nav-buttons {
+            overflow-x: auto;
+            scrollbar-width: none;
+          }
+
+          .nav-buttons::-webkit-scrollbar {
+            display: none;
           }
         }
       `}</style>

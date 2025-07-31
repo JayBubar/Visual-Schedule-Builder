@@ -1,5 +1,5 @@
 // Main view types
-export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' | 'celebrations' | 'data-collection' | 'settings';
+export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' |  'data-collection' | 'settings';
 
 // Schedule category type
 export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory';
@@ -556,93 +556,97 @@ export interface ChoiceFilter {
   [key: string]: any;
 }
 
-// IEP Data Collection Interfaces (Re-added)
+// IEP Data Collection Types
 export interface IEPGoal {
   id: string;
   studentId: string;
-  category: 'academic' | 'behavioral' | 'social-emotional' | 'physical';
-  title: string;
+  domain: string;
   description: string;
-  targetBehavior: string;
+  measurableObjective: string;
   measurementType: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
   targetCriteria: string;
-  currentLevel: string;
+  dataCollectionSchedule: string;
+  baseline?: {
+    value: number;
+    date: string;
+    notes?: string;
+  };
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  targetDate?: string;
-  notes?: string;
+  createdDate: string;
+  lastUpdated: string;
+  linkedActivityIds?: string[]; // Connect to existing Activity Library
 }
 
 export interface DataPoint {
   id: string;
   goalId: string;
-  sessionId: string;
-  timestamp: string;
-  value: number | string;
+  studentId: string;
+  date: string;
+  time: string;
+  value: number;
+  totalOpportunities?: number; // For frequency/accuracy data
   notes?: string;
   context?: string;
+  activityId?: string; // Link to existing activities
+  collector: string;
+  photos?: string[];
+  voiceNotes?: string[];
 }
 
-export interface FrequencyDataPoint extends DataPoint {
-  value: number;
-  timeInterval: number;
-  intervalUnit: 'minutes' | 'hours' | 'session';
+export interface IEPProgress {
+  goalId: string;
+  studentId: string;
+  currentLevel: number;
+  targetLevel: number;
+  progressPercentage: number;
+  trend: 'improving' | 'maintaining' | 'declining';
+  lastThreeDataPoints: DataPoint[];
+  averagePerformance: number;
+  meetingCriteria: boolean;
 }
 
-export interface AccuracyDataPoint extends DataPoint {
-  correct: number;
-  total: number;
-  value: number; // percentage
-}
-
-export interface DurationDataPoint extends DataPoint {
-  value: number; // in seconds
-  startTime?: string;
-  endTime?: string;
-}
-
-export interface IndependenceDataPoint extends DataPoint {
-  level: 'independent' | 'minimal-prompt' | 'moderate-prompt' | 'maximum-prompt' | 'hand-over-hand';
-  value: number; // 1-5 scale
-}
-
-export interface RatingDataPoint extends DataPoint {
-  value: number; // 1-5 scale
-  scale: string; // description of what the scale represents
+export interface IEPReport {
+  id: string;
+  studentId: string;
+  goalIds: string[];
+  reportType: 'weekly' | 'monthly' | 'quarterly' | 'annual';
+  startDate: string;
+  endDate: string;
+  generatedDate: string;
+  summary: string;
+  progressData: IEPProgress[];
+  recommendations: string[];
 }
 
 export interface DataCollectionSession {
   id: string;
   studentId: string;
-  goalIds: string[];
+  date: string;
   startTime: string;
-  endTime?: string;
-  activity?: string;
-  setting: string;
-  staffMember: string;
-  notes?: string;
+  endTime: string;
+  activityId?: string;
+  goalsAddressed: string[];
   dataPoints: DataPoint[];
-  isCompleted: boolean;
-  createdAt: string;
-  updatedAt: string;
+  sessionNotes?: string;
+  collector: string;
 }
 
-export interface ProgressSummary {
-  goalId: string;
-  totalSessions: number;
-  averageValue: number;
-  trend: 'improving' | 'declining' | 'stable' | 'insufficient-data';
-  lastUpdated: string;
-  recentValues: number[];
-  targetMet: boolean;
+export interface MeasurementConfig {
+  type: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
+  unit?: string;
+  scale?: {
+    min: number;
+    max: number;
+    labels?: string[];
+  };
+  prompt?: string;
 }
 
 export interface StudentWithIEP extends Student {
   hasIEP: true;
   iepGoals: IEPGoal[];
   dataCollectionSessions: DataCollectionSession[];
-  progressSummaries: ProgressSummary[];
+  progressSummaries: IEPProgress[];
   iepStartDate: string;
   iepEndDate: string;
   iepReviewDate?: string;
