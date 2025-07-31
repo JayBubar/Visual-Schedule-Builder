@@ -8,6 +8,7 @@ import StaffManagement from './components/management/StaffManagement';
 import Settings from './components/management/Settings';
 import CelebrationAnimations from './components/common/CelebrationAnimations';
 import DailyCheckIn from './components/calendar/DailyCheckIn';
+import IEPDataCollectionInterface from './components/data-collection/IEPDataCollectionInterface';
 import { useStaffData } from './hooks/useStaffData';
 import { useStudentData } from './hooks/useStudentData';
 import { ViewType, ScheduleVariation, Student, StaffMember } from './types';
@@ -258,6 +259,10 @@ const App: React.FC = () => {
             event.preventDefault();
             setCurrentView('celebrations');
             break;
+          case '8':
+            event.preventDefault();
+            setCurrentView('data-collection');
+            break;
           case ',':
             event.preventDefault();
             setCurrentView('settings');
@@ -454,6 +459,10 @@ const App: React.FC = () => {
         
         <CelebrationAnimations 
           isActive={currentView === 'celebrations'} 
+        />
+        
+        <IEPDataCollectionInterface 
+          isActive={currentView === 'data-collection'} 
         />
         
         <Settings 

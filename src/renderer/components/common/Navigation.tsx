@@ -20,6 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'calendar', icon: '📅', label: 'Check-In', shortcut: 'Ctrl+5' },
     { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
     { id: 'celebrations', icon: '🎉', label: 'Celebrations', shortcut: 'Ctrl+7' },
+    { id: 'data-collection', icon: '📊', label: 'IEP Data', shortcut: 'Ctrl+8' },
     { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+,' }
   ] as const;
 

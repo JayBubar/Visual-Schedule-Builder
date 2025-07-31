@@ -1,5 +1,5 @@
 // Main view types
-export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' | 'celebrations' | 'settings';
+export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' | 'celebrations' | 'data-collection' | 'settings';
 
 // Schedule category type
 export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory';
@@ -666,7 +666,7 @@ export interface ActivityPreview {
   startTime?: string;
   groupAssignments?: GroupAssignment[];
   isSpecial?: boolean;
-  status?: 'completed' | 'active' | 'upcoming';
+  status?: 'completed' | 'active' | 'upcoming' | 'current';
   [key: string]: any;
 }
 

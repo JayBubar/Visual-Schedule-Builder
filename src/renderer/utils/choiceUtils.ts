@@ -23,13 +23,13 @@ export class ChoiceManager {
       const activities: ActivityLibraryItem[] = JSON.parse(savedActivities);
       const updatedActivities = activities.map(activity => {
         if (activity.id === activityId) {
-          const currentUsage = activity.usageStats || {};
+          const currentUsage = activity.usageStats || { timesUsed: 0, averageRating: 0, studentPreferences: {} };
           const updatedUsage = {
             ...currentUsage,
             timesUsed: (currentUsage.timesUsed || 0) + 1,
             lastUsed: new Date().toISOString(),
-            averageRating: rating ? this.calculateNewAverageRating(currentUsage, rating) : currentUsage.averageRating,
-            studentPreferences: studentId ? this.updateStudentPreferences(currentUsage, studentId, rating) : currentUsage.studentPreferences
+            averageRating: rating ? this.calculateNewAverageRating(currentUsage, rating) : (currentUsage.averageRating || 0),
+            studentPreferences: studentId ? this.updateStudentPreferences(currentUsage, studentId, rating) : (currentUsage.studentPreferences || {})
           };
 
           return {
@@ -185,8 +185,7 @@ export class ChoiceManager {
         return {
           activityId: activity.id,
           score: Math.min(Math.max(score, 0), 100),
-          reason,
-          tags
+          reasons: [reason, ...tags]
         };
       })
       .sort((a, b) => b.score - a.score)
@@ -241,6 +240,9 @@ export class ChoiceManager {
     };
 
     return {
+      timesUsed: activities.reduce((total, a) => total + (a.usageStats?.timesUsed || 0), 0),
+      averageRating: activities.reduce((total, a) => total + (a.usageStats?.averageRating || 0), 0) / activities.length || 0,
+      studentPreferences: activities.reduce((prefs, a) => ({ ...prefs, ...a.usageStats?.studentPreferences }), {}),
       popularActivities,
       studentEngagement,
       timePatterns,
@@ -371,17 +373,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 3,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 1,
+        cleanupTime: 2,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'individual',
         quietActivity: true,
         messyActivity: false,
-        preparationTime: 1,
-        cleanupTime: 2
+        preparationTime: 1
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'low',
+        groupSize: 'small',
+        noiseLevel: 'quiet',
+        messiness: 'clean',
+        timeOfDay: 'any',
         academicConnection: ['Reading', 'Language Arts'],
         sensoryInput: 'visual'
       },
@@ -399,17 +407,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 4,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 3,
+        cleanupTime: 5,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'any',
         quietActivity: false,
         messyActivity: true,
-        preparationTime: 3,
-        cleanupTime: 5
+        preparationTime: 3
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'medium',
+        groupSize: 'small',
+        noiseLevel: 'moderate',
+        messiness: 'messy',
+        timeOfDay: 'any',
         academicConnection: ['Art', 'Fine Motor'],
         sensoryInput: 'tactile'
       },
@@ -427,17 +441,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 2,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 1,
+        cleanupTime: 3,
         skillLevel: 'independent',
         staffSupervision: 'none',
         socialInteraction: 'pair',
         quietActivity: true,
         messyActivity: false,
-        preparationTime: 1,
-        cleanupTime: 3
+        preparationTime: 1
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'low',
+        groupSize: 'small',
+        noiseLevel: 'quiet',
+        messiness: 'clean',
+        timeOfDay: 'any',
         academicConnection: ['Problem Solving', 'Visual Spatial'],
         sensoryInput: 'visual'
       },
@@ -455,17 +475,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 2,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 2,
+        cleanupTime: 4,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'individual',
         quietActivity: true,
         messyActivity: true,
-        preparationTime: 2,
-        cleanupTime: 4
+        preparationTime: 2
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'low',
+        groupSize: 'individual',
+        noiseLevel: 'quiet',
+        messiness: 'messy',
+        timeOfDay: 'any',
         academicConnection: ['Sensory Processing'],
         sensoryInput: 'tactile'
       },
@@ -483,17 +509,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 3,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 2,
+        cleanupTime: 4,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'small-group',
         quietActivity: false,
         messyActivity: false,
-        preparationTime: 2,
-        cleanupTime: 4
+        preparationTime: 2
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'medium',
+        groupSize: 'small',
+        noiseLevel: 'moderate',
+        messiness: 'clean',
+        timeOfDay: 'any',
         academicConnection: ['Engineering', 'Math', 'Spatial Reasoning'],
         sensoryInput: 'tactile'
       },
@@ -511,17 +543,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 4,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 1,
+        cleanupTime: 2,
         skillLevel: 'independent',
         staffSupervision: 'none',
         socialInteraction: 'individual',
         quietActivity: true,
         messyActivity: false,
-        preparationTime: 1,
-        cleanupTime: 2
+        preparationTime: 1
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'low',
+        groupSize: 'small',
+        noiseLevel: 'quiet',
+        messiness: 'clean',
+        timeOfDay: 'any',
         academicConnection: ['Listening Skills', 'Language Arts'],
         sensoryInput: 'auditory'
       },
@@ -539,17 +577,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 3,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 2,
+        cleanupTime: 3,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'small-group',
         quietActivity: false,
         messyActivity: false,
-        preparationTime: 2,
-        cleanupTime: 3
+        preparationTime: 2
       },
       recommendationTags: {
-        timeOfDay: 'morning',
         energyLevel: 'medium',
+        groupSize: 'small',
+        noiseLevel: 'moderate',
+        messiness: 'clean',
+        timeOfDay: 'morning',
         academicConnection: ['Math', 'Problem Solving'],
         sensoryInput: 'visual'
       },
@@ -567,17 +611,23 @@ export const getDefaultChoiceActivities = (): ActivityLibraryItem[] => {
       isChoiceEligible: true,
       choiceProperties: {
         maxStudents: 4,
+        requiresSupervision: false,
+        isIndoor: true,
+        setupTime: 3,
+        cleanupTime: 4,
         skillLevel: 'independent',
         staffSupervision: 'minimal',
         socialInteraction: 'small-group',
         quietActivity: false,
         messyActivity: false,
-        preparationTime: 3,
-        cleanupTime: 4
+        preparationTime: 3
       },
       recommendationTags: {
-        timeOfDay: 'any',
         energyLevel: 'high',
+        groupSize: 'small',
+        noiseLevel: 'loud',
+        messiness: 'moderate',
+        timeOfDay: 'any',
         academicConnection: ['Social Skills', 'Language Development'],
         sensoryInput: 'movement'
       },

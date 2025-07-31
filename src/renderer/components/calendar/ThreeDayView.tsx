@@ -95,14 +95,15 @@ const ThreeDayView: React.FC<ThreeDayViewProps> = ({
       }
 
       return {
-        id: activity.id,              // ← ADD THIS
-        name: activity.name,          // ← ADD THIS  
-        emoji: activity.emoji || '📝', // ← ADD THIS
+        id: activity.id,
+        name: activity.name,
+        emoji: activity.emoji || '📝',
+        duration: activity.duration || 30,
+        category: activity.category || 'academic',
         activityId: activity.id,
         activityName: activity.name,
         icon: activity.icon || activity.emoji || '📝',
         startTime: activityStartTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        duration: activity.duration || 30,
         groupAssignments: activity.groupAssignments || [],
         isSpecial: activity.category === 'special' || activity.isTransition || false,
         description: activity.description || '',

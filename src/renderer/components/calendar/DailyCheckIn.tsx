@@ -55,6 +55,13 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         setCalendarSettings(JSON.parse(savedSettings));
       } else {
         const defaultSettings: CalendarSettings = {
+          showWeather: true,
+          showBehaviorCommitments: true,
+          showIndependentChoices: true,
+          showDailyHighlights: true,
+          enableSoundEffects: true,
+          autoSaveInterval: 30,
+          defaultView: 'day',
           weatherLocation: 'Columbia, SC',
           temperatureUnit: 'F',
           autoWeatherUpdate: true,
@@ -65,7 +72,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           morningRoutineAutoStart: false,
           showThreeDayView: true,
           calendarTheme: 'standard',
-          defaultView: 'day',
           weekStartsOn: 0,
           showWeekends: false,
           timeFormat: '12h',
