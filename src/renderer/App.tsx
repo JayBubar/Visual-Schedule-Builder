@@ -7,6 +7,7 @@ import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
 import Settings from './components/management/Settings';
 import CelebrationAnimations from './components/common/CelebrationAnimations';
+import DailyCheckIn from './components/calendar/DailyCheckIn';
 import { useStaffData } from './hooks/useStaffData';
 import { useStudentData } from './hooks/useStudentData';
 import { ViewType, ScheduleVariation, Student, StaffMember } from './types';
@@ -247,9 +248,13 @@ const App: React.FC = () => {
             break;
           case '5':
             event.preventDefault();
-            setCurrentView('library');
+            setCurrentView('calendar');
             break;
           case '6':
+            event.preventDefault();
+            setCurrentView('library');
+            break;
+          case '7':
             event.preventDefault();
             setCurrentView('celebrations');
             break;
@@ -435,6 +440,12 @@ const App: React.FC = () => {
         
         <StaffManagement 
           isActive={currentView === 'staff'} 
+        />
+        
+        <DailyCheckIn 
+          isActive={currentView === 'calendar'}
+          selectedSchedule={selectedSchedule}
+          staff={staff}
         />
         
         <ActivityLibrary 

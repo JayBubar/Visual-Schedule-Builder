@@ -1,8 +1,8 @@
 // Main view types
-export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'library' | 'celebrations' | 'settings';
+export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' | 'celebrations' | 'settings';
 
 // Schedule category type
-export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition';
+export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory';
 
 // Staff interface
 export interface Staff {
@@ -299,6 +299,41 @@ export interface ActivityLibraryItem {
   autoStart?: boolean;
   soundEnabled?: boolean;
   customMessage?: string;
+  
+  // Calendar/Choice-related properties
+  isChoiceEligible?: boolean;
+  choiceProperties?: {
+    maxStudents: number;
+    minAge?: number;
+    maxAge?: number;
+    requiresSupervision: boolean;
+    isIndoor: boolean;
+    setupTime: number;
+    cleanupTime: number;
+    skillLevel?: string;
+    staffSupervision?: string;
+    socialInteraction?: string;
+    quietActivity?: boolean;
+    messyActivity?: boolean;
+    preparationTime?: number;
+    [key: string]: any;
+  };
+  usageStats?: {
+    timesChosen: number;
+    lastUsed?: string;
+    averageRating?: number;
+    [key: string]: any;
+  };
+  recommendationTags?: {
+    energyLevel: 'low' | 'medium' | 'high';
+    groupSize: 'individual' | 'small' | 'large';
+    noiseLevel: 'quiet' | 'moderate' | 'loud';
+    messiness: 'clean' | 'moderate' | 'messy';
+    timeOfDay?: string;
+    academicConnection?: string[];
+    sensoryInput?: string;
+    [key: string]: any;
+  };
 }
 
 // Photo upload result interface
@@ -400,4 +435,251 @@ export interface GroupTemplate {
   groupCount: number;
   suggestedColors: string[];
   typicalUse: string;
+}
+
+// Calendar and Daily Check-In Interfaces
+export interface WeatherData {
+  temperature: number;
+  condition: string;
+  icon: string;
+  description: string;
+  humidity?: number;
+  windSpeed?: number;
+  location: string;
+  lastUpdated?: string;
+  temperatureUnit?: 'F' | 'C';
+  apiSource?: string;
+  timestamp?: string;
+  [key: string]: any;
+}
+
+export interface CalendarSettings {
+  showWeather: boolean;
+  weatherLocation: string;
+  showBehaviorCommitments: boolean;
+  showIndependentChoices: boolean;
+  showDailyHighlights: boolean;
+  enableSoundEffects: boolean;
+  autoSaveInterval: number;
+  defaultView: 'dashboard' | 'commitments' | 'choices' | 'highlights' | 'day';
+  weatherUpdateInterval?: number;
+  weatherApiKey?: string;
+  temperatureUnit?: 'F' | 'C';
+  behaviorCategories?: string[];
+  independentChoiceCategories?: string[];
+  [key: string]: any;
+}
+
+export interface StudentBehaviorChoice {
+  id?: string;
+  studentId: string;
+  behaviorGoal?: string;
+  commitment: string;
+  isCompleted?: boolean;
+  completed?: boolean;
+  completedAt?: string;
+  notes?: string;
+  achieved?: boolean;
+  category?: string;
+  selectedAt?: string;
+  commitmentId?: string;
+  timestamp?: string;
+  studentName?: string;
+  studentPhoto?: string;
+  date?: string;
+  [key: string]: any;
+}
+
+export interface ActivityHighlight {
+  id: string;
+  activityId: string;
+  activityName: string;
+  studentId?: string;
+  studentName?: string;
+  achievement?: string;
+  description?: string;
+  timestamp: string;
+  category?: 'academic' | 'behavioral' | 'social' | 'creative' | 'physical';
+  staffMember?: string;
+  photo?: string;
+  emoji?: string;
+  studentIds?: string[];
+  studentReactions?: any[];
+  highlight?: string;
+  [key: string]: any;
+}
+
+export interface Achievement {
+  id: string;
+  studentId: string;
+  title: string;
+  description: string;
+  category: 'academic' | 'behavioral' | 'social' | 'creative' | 'physical';
+  timestamp: string;
+  staffMember?: string;
+  photo?: string;
+  isShared: boolean;
+  icon?: string;
+  date?: string;
+  [key: string]: any;
+}
+
+export interface DailyCheckIn {
+  id: string;
+  date: string;
+  weatherData?: WeatherData;
+  weather?: WeatherData;
+  behaviorCommitments?: StudentBehaviorChoice[];
+  independentChoices?: string[];
+  dailyHighlights?: ActivityHighlight[];
+  achievements?: Achievement[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  yesterdayHighlights?: ActivityHighlight[];
+  studentChoices?: any[];
+  independentActivitiesSelected?: any[];
+  behaviorCommitmentsSelected?: any[];
+  dailyHighlightsSelected?: any[];
+  [key: string]: any;
+}
+
+export interface ChoiceFilter {
+  category?: ScheduleCategory;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  maxDuration?: number;
+  requiresSupervision?: boolean;
+  isIndoor?: boolean;
+  maxStudents?: number;
+  quietActivity?: boolean;
+  skillLevel?: string;
+  [key: string]: any;
+}
+
+// IEP Data Collection Interfaces (Re-added)
+export interface IEPGoal {
+  id: string;
+  studentId: string;
+  category: 'academic' | 'behavioral' | 'social-emotional' | 'physical';
+  title: string;
+  description: string;
+  targetBehavior: string;
+  measurementType: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
+  targetCriteria: string;
+  currentLevel: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  targetDate?: string;
+  notes?: string;
+}
+
+export interface DataPoint {
+  id: string;
+  goalId: string;
+  sessionId: string;
+  timestamp: string;
+  value: number | string;
+  notes?: string;
+  context?: string;
+}
+
+export interface FrequencyDataPoint extends DataPoint {
+  value: number;
+  timeInterval: number;
+  intervalUnit: 'minutes' | 'hours' | 'session';
+}
+
+export interface AccuracyDataPoint extends DataPoint {
+  correct: number;
+  total: number;
+  value: number; // percentage
+}
+
+export interface DurationDataPoint extends DataPoint {
+  value: number; // in seconds
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface IndependenceDataPoint extends DataPoint {
+  level: 'independent' | 'minimal-prompt' | 'moderate-prompt' | 'maximum-prompt' | 'hand-over-hand';
+  value: number; // 1-5 scale
+}
+
+export interface RatingDataPoint extends DataPoint {
+  value: number; // 1-5 scale
+  scale: string; // description of what the scale represents
+}
+
+export interface DataCollectionSession {
+  id: string;
+  studentId: string;
+  goalIds: string[];
+  startTime: string;
+  endTime?: string;
+  activity?: string;
+  setting: string;
+  staffMember: string;
+  notes?: string;
+  dataPoints: DataPoint[];
+  isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProgressSummary {
+  goalId: string;
+  totalSessions: number;
+  averageValue: number;
+  trend: 'improving' | 'declining' | 'stable' | 'insufficient-data';
+  lastUpdated: string;
+  recentValues: number[];
+  targetMet: boolean;
+}
+
+export interface StudentWithIEP extends Student {
+  hasIEP: true;
+  iepGoals: IEPGoal[];
+  dataCollectionSessions: DataCollectionSession[];
+  progressSummaries: ProgressSummary[];
+  iepStartDate: string;
+  iepEndDate: string;
+  iepReviewDate?: string;
+  caseManager?: string;
+  relatedServices?: string[];
+}
+
+// Additional calendar types
+export interface ActivityPreview {
+  id: string;
+  name: string;
+  emoji: string;
+  duration: number;
+  category: ScheduleCategory;
+  description?: string;
+  isScheduled?: boolean;
+  scheduledTime?: string;
+  activityId?: string;
+  activityName?: string;
+  icon?: string;
+  startTime?: string;
+  groupAssignments?: GroupAssignment[];
+  isSpecial?: boolean;
+  status?: 'completed' | 'active' | 'upcoming';
+  [key: string]: any;
+}
+
+export interface ChoiceRecommendation {
+  activityId: string;
+  score: number;
+  reasons: string[];
+  [key: string]: any;
+}
+
+export interface ChoiceAnalytics {
+  timesUsed: number;
+  averageRating: number;
+  studentPreferences: { [studentId: string]: number };
+  [key: string]: any;
 }
