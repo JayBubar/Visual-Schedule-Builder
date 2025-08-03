@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Student, Staff, ActivityLibraryItem, ReportType } from '../../types';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 
 interface ReportsProps {
   isActive: boolean;
@@ -26,6 +27,24 @@ const Reports: React.FC<ReportsProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter'>('week');
+  const [systemStatus, setSystemStatus] = useState<any>(null);
+
+  // Load system status on component mount
+  useEffect(() => {
+    const status = UnifiedDataService.getSystemStatus();
+    setSystemStatus(status);
+    
+    // Auto-trigger data recovery if we have unified data but low data point count
+    if (status.hasUnifiedData && status.totalDataPoints < 50) {
+      console.log('Low data point count detected, attempting data recovery...');
+      const recovered = UnifiedDataService.recoverMissingDataPoints();
+      if (recovered) {
+        console.log('Data recovery completed, refreshing system status...');
+        const newStatus = UnifiedDataService.getSystemStatus();
+        setSystemStatus(newStatus);
+      }
+    }
+  }, []);
 
   // Available report templates
   const reportTemplates: ReportTemplate[] = [
@@ -110,15 +129,50 @@ const Reports: React.FC<ReportsProps> = ({
     setIsGenerating(false);
   };
 
-  const generateStudentProgressData = () => ({
-    totalStudents: students.length,
-    studentsWithProgress: Math.floor(students.length * 0.85),
-    averageProgress: 73,
-    goalsMet: 12,
-    goalsInProgress: 8,
-    topPerformers: students.slice(0, 3).map(s => s.name),
-    progressTrend: '+15% from last month'
-  });
+  const generateStudentProgressData = () => {
+    // Get real data from UnifiedDataService
+    const unifiedStudents = UnifiedDataService.getAllStudents();
+    const systemStatus = UnifiedDataService.getSystemStatus();
+    
+    // Calculate real statistics
+    const studentsWithGoals = unifiedStudents.filter(s => s.iepData.goals.length > 0);
+    const allGoals = unifiedStudents.flatMap(student => student.iepData.goals);
+    
+    // Calculate progress metrics
+    const goalsMet = allGoals.filter(goal => goal.currentProgress >= 90).length;
+    const goalsInProgress = allGoals.filter(goal => goal.currentProgress > 0 && goal.currentProgress < 90).length;
+    
+    // Calculate average progress across all students
+    const averageProgress = allGoals.length > 0 
+      ? Math.round(allGoals.reduce((sum, goal) => sum + (goal.currentProgress || 0), 0) / allGoals.length)
+      : 0;
+    
+    // Find top performers (students with highest average goal progress)
+    const topPerformers = unifiedStudents
+      .map(student => {
+        const studentGoals = student.iepData.goals;
+        const avgProgress = studentGoals.length > 0 
+          ? studentGoals.reduce((sum, goal) => sum + (goal.currentProgress || 0), 0) / studentGoals.length
+          : 0;
+        return { name: student.name, progress: avgProgress };
+      })
+      .sort((a, b) => b.progress - a.progress)
+      .slice(0, 3)
+      .map(s => `${s.name} (${Math.round(s.progress)}%)`);
+    
+    return {
+      totalStudents: systemStatus.totalStudents,
+      studentsWithProgress: studentsWithGoals.length,
+      averageProgress,
+      goalsMet,
+      goalsInProgress,
+      topPerformers,
+      progressTrend: 'Real-time data from unified system',
+      studentsWithGoals: studentsWithGoals.length,
+      totalGoals: systemStatus.totalGoals,
+      totalDataPoints: systemStatus.totalDataPoints
+    };
+  };
 
   const generateWeeklySummaryData = () => ({
     totalActivities: activities.length,
@@ -146,20 +200,51 @@ const Reports: React.FC<ReportsProps> = ({
     }
   });
 
-  const generateIEPGoalsData = () => ({
-    totalGoals: students.length * 3,
-    mastered: Math.floor(students.length * 0.4),
-    onTrack: Math.floor(students.length * 1.8),
-    needsAttention: Math.floor(students.length * 0.8),
-    dataPoints: 156,
-    averageProgress: 68,
-    domains: {
-      communication: 34,
-      academic: 28,
-      social: 22,
-      behavioral: 16
-    }
-  });
+  const generateIEPGoalsData = () => {
+    // Get real data from UnifiedDataService
+    const unifiedStudents = UnifiedDataService.getAllStudents();
+    const systemStatus = UnifiedDataService.getSystemStatus();
+    
+    // Calculate real statistics
+    const allGoals = unifiedStudents.flatMap(student => student.iepData.goals);
+    const allDataPoints = unifiedStudents.flatMap(student => student.iepData.dataCollection);
+    
+    // Calculate goal status based on progress
+    const mastered = allGoals.filter(goal => goal.currentProgress >= 90).length;
+    const onTrack = allGoals.filter(goal => goal.currentProgress >= 50 && goal.currentProgress < 90).length;
+    const needsAttention = allGoals.filter(goal => goal.currentProgress < 50).length;
+    
+    // Calculate domain breakdown
+    const domainCounts = allGoals.reduce((acc, goal) => {
+      const domain = goal.domain || 'other';
+      acc[domain] = (acc[domain] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Calculate average progress
+    const averageProgress = allGoals.length > 0 
+      ? Math.round(allGoals.reduce((sum, goal) => sum + (goal.currentProgress || 0), 0) / allGoals.length)
+      : 0;
+    
+    return {
+      totalGoals: systemStatus.totalGoals,
+      mastered,
+      onTrack,
+      needsAttention,
+      dataPoints: systemStatus.totalDataPoints,
+      averageProgress,
+      domains: {
+        academic: domainCounts.academic || 0,
+        behavioral: domainCounts.behavioral || 0,
+        'social-emotional': domainCounts['social-emotional'] || 0,
+        physical: domainCounts.physical || 0,
+        communication: domainCounts.communication || 0,
+        other: domainCounts.other || 0
+      },
+      studentsWithGoals: unifiedStudents.filter(s => s.iepData.goals.length > 0).length,
+      totalStudents: systemStatus.totalStudents
+    };
+  };
 
   const generateStaffUtilizationData = () => ({
     totalStaff: staff.length,
@@ -218,6 +303,27 @@ const Reports: React.FC<ReportsProps> = ({
         <div className="header-info">
           <h1>📈 Reports & Analytics</h1>
           <p>Generate insights from your Visual Schedule Builder data</p>
+          {systemStatus && (
+            <div style={{
+              display: 'inline-block',
+              background: systemStatus.hasUnifiedData 
+                ? 'rgba(34, 197, 94, 0.1)' 
+                : 'rgba(239, 68, 68, 0.1)',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              marginTop: '10px',
+              border: `1px solid ${systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444'}`,
+              color: systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444',
+              fontSize: '0.9rem'
+            }}>
+              {systemStatus.hasUnifiedData ? '✅ Unified Data Active' : '⚠️ Legacy Data Mode'}
+              {systemStatus.hasUnifiedData && (
+                <span style={{ marginLeft: '10px', fontSize: '0.8em', opacity: 0.8 }}>
+                  {systemStatus.totalStudents} students • {systemStatus.totalGoals} goals • {systemStatus.totalDataPoints} data points
+                </span>
+              )}
+            </div>
+          )}
         </div>
         
         <div className="header-controls">

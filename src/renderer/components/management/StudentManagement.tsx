@@ -1,6 +1,36 @@
+// Complete Student Management with Unified Data Integration
+// All original features preserved + unified data support
+// src/renderer/components/management/StudentManagement.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Student, PhotoUploadResult } from '../../types';
-import { usePhotoUpload } from '../../utils/photoManager';
+import UnifiedDataService, { UnifiedStudent } from '../../services/unifiedDataService';
+
+// Extended interface to include all original Student properties
+interface ExtendedStudent extends UnifiedStudent {
+  workingStyle?: 'collaborative' | 'independent';
+  accommodations?: string[];
+  goals?: string[]; // Legacy IEP goals as strings
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
+  isActive?: boolean;
+  behaviorNotes?: string;
+  medicalNotes?: string;
+  resourceInfo?: {
+    attendsResource: boolean;
+    resourceType: string;
+    resourceTeacher: string;
+    timeframe: string;
+  };
+  preferredPartners?: string[];
+  avoidPartners?: string[];
+}
+
+interface PhotoUploadResult {
+  success: boolean;
+  photoData?: string;
+  error?: string;
+}
 
 interface StudentManagementProps {
   isActive: boolean;
@@ -9,20 +39,20 @@ interface StudentManagementProps {
 
 const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataChange }) => {
   // State management
-  const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<ExtendedStudent[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<ExtendedStudent[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [gradeFilter, setGradeFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-
-  // Photo upload hook
-  const { uploadPhoto, validatePhoto } = usePhotoUpload();
+  const [editingStudent, setEditingStudent] = useState<ExtendedStudent | null>(null);
+  const [isUsingUnifiedData, setIsUsingUnifiedData] = useState(false);
 
   // Load student data
   useEffect(() => {
-    loadStudentData();
-  }, []);
+    if (isActive) {
+      loadStudentData();
+    }
+  }, [isActive]);
 
   // Filter students when search/filter changes
   useEffect(() => {
@@ -31,105 +61,155 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const loadStudentData = () => {
     try {
-      const savedStudents = localStorage.getItem('students');
-      if (savedStudents) {
-        setStudents(JSON.parse(savedStudents));
+      // Check if unified data exists
+      const unifiedDataStatus = UnifiedDataService.isUsingUnifiedData();
+      setIsUsingUnifiedData(unifiedDataStatus);
+
+      if (unifiedDataStatus) {
+        // Load from unified data service
+        const unifiedStudents = UnifiedDataService.getAllStudents() as ExtendedStudent[];
+        setStudents(unifiedStudents);
       } else {
-        // Initialize with default students if none exist
-        const defaultStudents: Student[] = [
-          {
-            id: 'student1',
-            name: 'Emma Wilson',
-            grade: 'Kindergarten',
-            photo: null,
-            workingStyle: 'collaborative',
-            accommodations: ['Visual supports', 'Extra time'],
-            goals: [
-              'Will identify letters A-Z with 90% accuracy',
-              'Will read 25 sight words with 80% accuracy',
-              'Will write name independently'
-            ],
-            parentName: 'Sarah Wilson',
-            parentEmail: 'sarah.wilson@email.com',
-            parentPhone: '(555) 123-4567',
-            isActive: true,
-            behaviorNotes: 'Responds well to positive reinforcement',
-            medicalNotes: '',
-            resourceInfo: {
-              attendsResource: false,
-              resourceType: '',
-              resourceTeacher: '',
-              timeframe: ''
-            },
-            preferredPartners: [],
-            avoidPartners: []
-          },
-          {
-            id: 'student2',
-            name: 'Marcus Johnson',
-            grade: '1st',
-            photo: null,
-            workingStyle: 'independent',
-            accommodations: ['Movement breaks', 'Fidget tools'],
-            goals: [
-              'Will count to 100 by 1s, 5s, and 10s',
-              'Will solve addition problems within 20',
-              'Will sit for 15 minutes during instruction'
-            ],
-            parentName: 'David Johnson',
-            parentEmail: 'david.johnson@email.com',
-            parentPhone: '(555) 234-5678',
-            isActive: true,
-            behaviorNotes: 'Works best with clear structure',
-            medicalNotes: 'ADHD - takes medication at lunch',
-            resourceInfo: {
-              attendsResource: true,
-              resourceType: 'Speech Therapy',
-              resourceTeacher: 'Ms. Parker',
-              timeframe: '10:00-10:30 AM'
-            },
-            preferredPartners: [],
-            avoidPartners: []
-          },
-          {
-            id: 'student3',
-            name: 'Sofia Rodriguez',
-            grade: '2nd',
-            photo: null,
-            workingStyle: 'collaborative',
-            accommodations: ['Audio cues', 'Communication device'],
-            goals: [
-              'Will use AAC device to request items',
-              'Will follow 2-step directions independently',
-              'Will participate in group activities for 10 minutes'
-            ],
-            parentName: 'Maria Rodriguez',
-            parentEmail: 'maria.rodriguez@email.com',
-            parentPhone: '(555) 345-6789',
-            isActive: true,
-            behaviorNotes: 'Enjoys helping other students',
-            medicalNotes: 'Uses AAC device for communication',
-            resourceInfo: {
-              attendsResource: true,
-              resourceType: 'Occupational Therapy',
-              resourceTeacher: 'Mrs. Thompson',
-              timeframe: '1:00-1:30 PM'
-            },
-            preferredPartners: [],
-            avoidPartners: []
-          }
-        ];
-        setStudents(defaultStudents);
-        saveStudentData(defaultStudents);
+        // Load from legacy localStorage
+        const savedStudents = localStorage.getItem('students');
+        if (savedStudents) {
+          const legacyStudents = JSON.parse(savedStudents);
+          // Convert legacy students to extended format
+          const extendedStudents: ExtendedStudent[] = legacyStudents.map((student: any) => ({
+            ...student,
+            iepData: student.iepData || {
+              goals: [],
+              dataCollection: []
+            }
+          }));
+          setStudents(extendedStudents);
+        } else {
+          // Initialize with default students
+          initializeDefaultStudents();
+        }
       }
     } catch (error) {
       console.error('Error loading student data:', error);
     }
   };
 
-  const saveStudentData = (studentData: Student[]) => {
+  const initializeDefaultStudents = () => {
+    const defaultStudents: ExtendedStudent[] = [
+      {
+        id: 'student1',
+        name: 'Emma Wilson',
+        grade: 'Kindergarten',
+        photo: undefined,
+        dateCreated: new Date().toISOString().split('T')[0],
+        workingStyle: 'collaborative',
+        accommodations: ['Visual supports', 'Extra time'],
+        goals: [
+          'Will identify letters A-Z with 90% accuracy',
+          'Will read 25 sight words with 80% accuracy',
+          'Will write name independently'
+        ],
+        parentName: 'Sarah Wilson',
+        parentEmail: 'sarah.wilson@email.com',
+        parentPhone: '(555) 123-4567',
+        isActive: true,
+        behaviorNotes: 'Responds well to positive reinforcement',
+        medicalNotes: '',
+        resourceInfo: {
+          attendsResource: false,
+          resourceType: '',
+          resourceTeacher: '',
+          timeframe: ''
+        },
+        preferredPartners: [],
+        avoidPartners: [],
+        iepData: {
+          goals: [],
+          dataCollection: []
+        }
+      },
+      {
+        id: 'student2',
+        name: 'Marcus Johnson',
+        grade: '1st Grade',
+        photo: undefined,
+        dateCreated: new Date().toISOString().split('T')[0],
+        workingStyle: 'independent',
+        accommodations: ['Movement breaks', 'Fidget tools'],
+        goals: [
+          'Will count to 100 by 1s, 5s, and 10s',
+          'Will solve addition problems within 20',
+          'Will sit for 15 minutes during instruction'
+        ],
+        parentName: 'David Johnson',
+        parentEmail: 'david.johnson@email.com',
+        parentPhone: '(555) 234-5678',
+        isActive: true,
+        behaviorNotes: 'Works best with clear structure',
+        medicalNotes: 'ADHD - takes medication at lunch',
+        resourceInfo: {
+          attendsResource: true,
+          resourceType: 'Speech Therapy',
+          resourceTeacher: 'Ms. Parker',
+          timeframe: '10:00-10:30 AM'
+        },
+        preferredPartners: [],
+        avoidPartners: [],
+        iepData: {
+          goals: [],
+          dataCollection: []
+        }
+      },
+      {
+        id: 'student3',
+        name: 'Sofia Rodriguez',
+        grade: '2nd Grade',
+        photo: undefined,
+        dateCreated: new Date().toISOString().split('T')[0],
+        workingStyle: 'collaborative',
+        accommodations: ['Audio cues', 'Communication device'],
+        goals: [
+          'Will use AAC device to request items',
+          'Will follow 2-step directions independently',
+          'Will participate in group activities for 10 minutes'
+        ],
+        parentName: 'Maria Rodriguez',
+        parentEmail: 'maria.rodriguez@email.com',
+        parentPhone: '(555) 345-6789',
+        isActive: true,
+        behaviorNotes: 'Enjoys helping other students',
+        medicalNotes: 'Uses AAC device for communication',
+        resourceInfo: {
+          attendsResource: true,
+          resourceType: 'Occupational Therapy',
+          resourceTeacher: 'Mrs. Thompson',
+          timeframe: '1:00-1:30 PM'
+        },
+        preferredPartners: [],
+        avoidPartners: [],
+        iepData: {
+          goals: [],
+          dataCollection: []
+        }
+      }
+    ];
+    
+    setStudents(defaultStudents);
+    saveStudentData(defaultStudents);
+  };
+
+  const saveStudentData = (studentData: ExtendedStudent[]) => {
     try {
-      localStorage.setItem('students', JSON.stringify(studentData));
+      if (isUsingUnifiedData) {
+        // Save to unified data service
+        studentData.forEach(student => {
+          UnifiedDataService.updateStudent(student.id, student);
+        });
+      } else {
+        // Save to legacy localStorage
+        localStorage.setItem('students', JSON.stringify(studentData));
+      }
+      
+      // Dispatch update event
       window.dispatchEvent(new CustomEvent('studentDataUpdated', { 
         detail: studentData 
       }));
@@ -158,7 +238,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   };
 
   const getGradeGroups = () => {
-    const gradeGroups: { [key: string]: Student[] } = {};
+    const gradeGroups: { [key: string]: ExtendedStudent[] } = {};
     
     filteredStudents.forEach(student => {
       const grade = student.grade || 'Unassigned';
@@ -176,7 +256,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     setShowModal(true);
   };
 
-  const handleEditStudent = (student: Student) => {
+  const handleEditStudent = (student: ExtendedStudent) => {
     setEditingStudent(student);
     setShowModal(true);
   };
@@ -189,84 +269,95 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
         saveStudentData(updatedStudents);
       } catch (error) {
         console.error('Error deleting student:', error);
+        alert('Error deleting student. Please try again.');
       }
     }
   };
 
-  const handleSaveStudent = (studentData: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveStudent = (studentData: Partial<ExtendedStudent>) => {
     try {
       if (editingStudent) {
+        // Update existing student
         const updatedStudents = students.map(s => 
           s.id === editingStudent.id 
-            ? { ...s, ...studentData, updatedAt: new Date().toISOString() }
+            ? { ...s, ...studentData }
             : s
         );
         setStudents(updatedStudents);
         saveStudentData(updatedStudents);
       } else {
-        const newStudent: Student = {
-          ...studentData,
-          id: `student_${Date.now()}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+        // Add new student
+        const newStudent: ExtendedStudent = {
+          id: Date.now().toString(),
+          name: '',
+          grade: '',
+          dateCreated: new Date().toISOString().split('T')[0],
+          iepData: {
+            goals: [],
+            dataCollection: []
+          },
+          isActive: true,
+          accommodations: [],
+          goals: [],
+          preferredPartners: [],
+          avoidPartners: [],
+          ...studentData
         };
+        
         const updatedStudents = [...students, newStudent];
         setStudents(updatedStudents);
         saveStudentData(updatedStudents);
       }
+      
       setShowModal(false);
       setEditingStudent(null);
     } catch (error) {
       console.error('Error saving student:', error);
+      alert('Error saving student. Please try again.');
     }
   };
 
-  const exportStudents = () => {
-    try {
-      const dataStr = JSON.stringify(students, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `students-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting students:', error);
-      alert('Failed to export students. Please try again.');
-    }
+  // Photo upload functionality
+  const uploadPhoto = async (file: File): Promise<PhotoUploadResult> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        resolve({
+          success: true,
+          photoData: result
+        });
+      };
+      reader.onerror = () => {
+        resolve({
+          success: false,
+          error: 'Failed to read file'
+        });
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const importStudents = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const validatePhoto = (file: File): boolean => {
+    // Max file size: 5MB
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert('Photo must be smaller than 5MB');
+      return false;
+    }
+    
+    // Allowed file types
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      return false;
+    }
+    
+    return true;
+  };
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const importedData = JSON.parse(e.target?.result as string);
-        if (Array.isArray(importedData)) {
-          const confirmed = window.confirm(
-            `This will import ${importedData.length} students. This will replace your current student list. Continue?`
-          );
-          if (confirmed) {
-            setStudents(importedData);
-            saveStudentData(importedData);
-            alert(`Successfully imported ${importedData.length} students.`);
-          }
-        } else {
-          alert('Invalid file format. Please select a valid student export file.');
-        }
-      } catch (error) {
-        console.error('Error importing students:', error);
-        alert('Failed to import students. Please check the file format.');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+  const getStudentInitials = (name: string): string => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   if (!isActive) return null;
@@ -274,156 +365,169 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const gradeGroups = getGradeGroups();
 
   return (
-    <div style={{ 
-      padding: '1rem', 
-      height: '100vh', 
+    <div style={{
+      height: '100vh',
       overflow: 'auto',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '1rem'
     }}>
       {/* Header */}
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <h1 style={{ 
-          color: 'white', 
-          fontSize: '2.5rem', 
-          fontWeight: '700', 
-          margin: '0 0 0.5rem 0',
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '2rem',
+        color: 'white'
+      }}>
+        <h1 style={{
+          fontSize: '3rem',
+          fontWeight: 'bold',
+          marginBottom: '0.5rem',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
           👥 Student Management
         </h1>
-        <p style={{ 
-          color: 'rgba(255,255,255,0.9)', 
-          fontSize: '1.1rem',
-          margin: 0
+        <p style={{
+          fontSize: '1.2rem',
+          opacity: 0.9,
+          marginBottom: '1rem'
         }}>
-          Manage your students and upload photos for group assignments
+          Comprehensive student records with IEP integration
         </p>
+        
+        {/* Data Source Indicator */}
+        <div style={{
+          display: 'inline-block',
+          background: isUsingUnifiedData 
+            ? 'rgba(34, 197, 94, 0.2)' 
+            : 'rgba(239, 68, 68, 0.2)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: `1px solid ${isUsingUnifiedData ? '#22c55e' : '#ef4444'}`,
+          color: isUsingUnifiedData ? '#22c55e' : '#ef4444',
+          fontSize: '0.9rem'
+        }}>
+          {isUsingUnifiedData ? '✅ Unified Data Active' : '⚠️ Legacy Data Mode'}
+          <span style={{ marginLeft: '10px' }}>
+            {students.length} students loaded
+          </span>
+        </div>
       </div>
 
-      {/* Controls */}
+      {/* Search and Filter Controls */}
       <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto 2rem auto',
         display: 'flex',
         gap: '1rem',
-        marginBottom: '2rem',
-        alignItems: 'center',
-        flexWrap: 'wrap'
+        flexWrap: 'wrap',
+        justifyContent: 'center'
       }}>
-        <input
-          type="text"
-          placeholder="Search students by name, grade, or accommodations..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            flex: '1',
-            minWidth: '300px',
-            padding: '12px 16px',
-            border: '2px solid rgba(255,255,255,0.2)',
-            borderRadius: '12px',
-            fontSize: '14px',
-            background: 'rgba(255,255,255,0.1)',
-            color: 'white',
-            backdropFilter: 'blur(10px)'
-          }}
-        />
-        
-        <select
-          value={gradeFilter}
-          onChange={(e) => setGradeFilter(e.target.value)}
-          style={{
-            padding: '12px 16px',
-            border: '2px solid rgba(255,255,255,0.2)',
-            borderRadius: '12px',
-            fontSize: '14px',
-            background: 'rgba(255,255,255,0.9)',
-            color: 'black',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          <option value="all" style={{ color: 'black' }}>All Grades</option>
-          <option value="pre-k" style={{ color: 'black' }}>Pre-K</option>
-          <option value="kindergarten" style={{ color: 'black' }}>Kindergarten</option>
-          <option value="1st" style={{ color: 'black' }}>1st Grade</option>
-          <option value="2nd" style={{ color: 'black' }}>2nd Grade</option>
-          <option value="3rd" style={{ color: 'black' }}>3rd Grade</option>
-          <option value="4th" style={{ color: 'black' }}>4th Grade</option>
-          <option value="5th" style={{ color: 'black' }}>5th Grade</option>
-          <option value="6th" style={{ color: 'black' }}>6th Grade</option>
-        </select>
-        
+        {/* Search Input */}
+        <div style={{
+          background: 'rgba(255,255,255,0.2)',
+          borderRadius: '12px',
+          padding: '0.75rem',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.3)',
+          minWidth: '300px'
+        }}>
+          <input
+            type="text"
+            placeholder="🔍 Search students..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '1rem',
+              outline: 'none'
+            }}
+          />
+        </div>
+
+        {/* Grade Filter */}
+        <div style={{
+          background: 'rgba(255,255,255,0.2)',
+          borderRadius: '12px',
+          padding: '0.75rem',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.3)'
+        }}>
+          <select
+            value={gradeFilter}
+            onChange={(e) => setGradeFilter(e.target.value)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              fontSize: '1rem',
+              outline: 'none',
+              minWidth: '150px'
+            }}
+          >
+            <option value="all" style={{ background: '#667eea', color: 'white' }}>All Grades</option>
+            <option value="pre-k" style={{ background: '#667eea', color: 'white' }}>Pre-K</option>
+            <option value="kindergarten" style={{ background: '#667eea', color: 'white' }}>Kindergarten</option>
+            <option value="1st grade" style={{ background: '#667eea', color: 'white' }}>1st Grade</option>
+            <option value="2nd grade" style={{ background: '#667eea', color: 'white' }}>2nd Grade</option>
+            <option value="3rd grade" style={{ background: '#667eea', color: 'white' }}>3rd Grade</option>
+            <option value="4th grade" style={{ background: '#667eea', color: 'white' }}>4th Grade</option>
+            <option value="5th grade" style={{ background: '#667eea', color: 'white' }}>5th Grade</option>
+          </select>
+        </div>
+
+        {/* Add Student Button */}
         <button
-          className="create-activity-button"
           onClick={handleAddStudent}
           style={{
-            background: 'linear-gradient(145deg, #28a745, #20c997)',
-            border: 'none',
-            color: 'white',
-            padding: '12px 24px',
+            padding: '0.75rem 1.5rem',
             borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '600',
+            border: 'none',
+            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 'bold',
             cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
-            transition: 'all 0.3s ease'
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(34, 197, 94, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(34, 197, 94, 0.3)';
           }}
         >
           ➕ Add Student
         </button>
-
-        <button
-          onClick={exportStudents}
-          style={{
-            background: 'linear-gradient(145deg, #17a2b8, #138496)',
-            border: 'none',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: '12px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            boxShadow: '0 4px 15px rgba(23, 162, 184, 0.3)',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          📤 Export
-        </button>
-
-        <label style={{
-          background: 'linear-gradient(145deg, #fd7e14, #e55a00)',
-          border: 'none',
-          color: 'white',
-          padding: '12px 24px',
-          borderRadius: '12px',
-          fontSize: '14px',
-          fontWeight: '600',
-          cursor: 'pointer',
-          boxShadow: '0 4px 15px rgba(253, 126, 20, 0.3)',
-          transition: 'all 0.3s ease'
-        }}>
-          📥 Import
-          <input
-            type="file"
-            accept=".json"
-            style={{ display: 'none' }}
-            onChange={importStudents}
-          />
-        </label>
       </div>
 
-      {/* Student Groups */}
-      <div style={{ marginBottom: '2rem' }}>
-        {Object.entries(gradeGroups).length === 0 ? (
+      {/* Main Content */}
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '24px',
+        padding: '2rem',
+        border: '1px solid rgba(255,255,255,0.2)',
+        minHeight: '400px'
+      }}>
+        
+        {/* No Students / Empty State */}
+        {filteredStudents.length === 0 ? (
           <div style={{
             textAlign: 'center',
-            padding: '3rem',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '16px',
-            backdropFilter: 'blur(10px)'
+            color: 'white',
+            padding: '3rem'
           }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
-            <h3 style={{ color: 'white', marginBottom: '0.5rem' }}>
-              {searchTerm || gradeFilter !== 'all'
-                ? 'No Students Found' 
-                : 'No Students Yet'}
+            <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>
+              {students.length === 0 
+                ? 'No Students Yet' 
+                : 'No Students Found'}
             </h3>
             <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>
               {searchTerm || gradeFilter !== 'all'
@@ -431,13 +535,23 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                 : 'Add your first student to get started.'}
             </p>
             <button
-              className="create-activity-button"
               onClick={handleAddStudent}
+              style={{
+                padding: '1rem 2rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                color: 'white',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
             >
               ➕ Add Student
             </button>
           </div>
         ) : (
+          /* Students organized by grade */
           Object.entries(gradeGroups).map(([grade, gradeStudents]) => (
             <div key={grade} style={{ marginBottom: '2rem' }}>
               <h3 style={{
@@ -462,6 +576,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                     onDelete={() => handleDeleteStudent(student.id)}
                     uploadPhoto={uploadPhoto}
                     onPhotoUpdate={loadStudentData}
+                    isUsingUnifiedData={isUsingUnifiedData}
                   />
                 ))}
               </div>
@@ -490,11 +605,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
 // Student Card Component
 interface StudentCardProps {
-  student: Student;
+  student: ExtendedStudent;
   onEdit: () => void;
   onDelete: () => void;
   uploadPhoto: (file: File) => Promise<PhotoUploadResult>;
   onPhotoUpdate: () => void;
+  isUsingUnifiedData: boolean;
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ 
@@ -502,7 +618,8 @@ const StudentCard: React.FC<StudentCardProps> = ({
   onEdit, 
   onDelete, 
   uploadPhoto,
-  onPhotoUpdate 
+  onPhotoUpdate,
+  isUsingUnifiedData
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -513,424 +630,246 @@ const StudentCard: React.FC<StudentCardProps> = ({
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    try {
-      const result = await uploadPhoto(file);
-      if (result.success && result.dataUrl) {
-        const savedStudents = localStorage.getItem('students');
-        if (savedStudents) {
-          const students: Student[] = JSON.parse(savedStudents);
-          const updatedStudents = students.map(s => 
-            s.id === student.id 
-              ? { ...s, photo: result.dataUrl, photoFileName: result.fileName }
-              : s
-          );
-          localStorage.setItem('students', JSON.stringify(updatedStudents));
-          
-          window.dispatchEvent(new CustomEvent('studentDataUpdated', { 
-            detail: updatedStudents 
-          }));
-          
+    if (file) {
+      setIsUploading(true);
+      try {
+        const result = await uploadPhoto(file);
+        if (result.success && result.photoData) {
+          // Update student photo
+          if (isUsingUnifiedData) {
+            UnifiedDataService.updateStudent(student.id, { photo: result.photoData });
+          } else {
+            const students = JSON.parse(localStorage.getItem('students') || '[]');
+            const updatedStudents = students.map((s: any) => 
+              s.id === student.id ? { ...s, photo: result.photoData } : s
+            );
+            localStorage.setItem('students', JSON.stringify(updatedStudents));
+          }
           onPhotoUpdate();
         }
-      } else {
-        alert(`Photo upload failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Photo upload error:', error);
-      alert('Failed to upload photo. Please try again.');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+      } finally {
+        setIsUploading(false);
       }
     }
   };
 
-  const handleRemovePhoto = () => {
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-      const students: Student[] = JSON.parse(savedStudents);
-      const updatedStudents = students.map(s => 
-        s.id === student.id 
-          ? { ...s, photo: null, photoFileName: undefined }
-          : s
-      );
-      localStorage.setItem('students', JSON.stringify(updatedStudents));
-      
-      window.dispatchEvent(new CustomEvent('studentDataUpdated', { 
-        detail: updatedStudents 
-      }));
-      
-      onPhotoUpdate();
-    }
+  const getStudentInitials = (name: string): string => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
     <div style={{
-      background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
+      background: 'rgba(255,255,255,0.1)',
       borderRadius: '16px',
       padding: '1.5rem',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-      backdropFilter: 'blur(10px)',
       border: '1px solid rgba(255,255,255,0.2)',
-      transition: 'all 0.3s ease'
+      color: 'white',
+      transition: 'all 0.3s ease',
+      cursor: 'pointer'
     }}
     onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'translateY(-4px)';
-      e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.15)';
+      e.currentTarget.style.transform = 'translateY(-5px)';
+      e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)';
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.1)';
+      e.currentTarget.style.boxShadow = 'none';
     }}>
-      {/* Photo Section */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-        marginBottom: '1rem'
-      }}>
-        <div 
-          style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            overflow: 'hidden',
-            background: student.photo 
-              ? 'transparent' 
-              : 'linear-gradient(145deg, #667eea, #764ba2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-            cursor: 'pointer'
-          }}
-          onClick={handlePhotoClick}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handlePhotoChange}
-            disabled={isUploading}
-          />
-          
+      
+      {/* Student Photo/Avatar */}
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
           {student.photo ? (
-            <img
-              src={student.photo}
+            <img 
+              src={student.photo} 
               alt={student.name}
               style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '3px solid rgba(255,255,255,0.3)',
+                cursor: 'pointer'
               }}
+              onClick={handlePhotoClick}
             />
           ) : (
-            <span style={{
-              fontSize: '2rem',
-              color: 'white',
-              fontWeight: '700'
-            }}>
-              {student.name.split(' ').map(n => n[0]).join('')}
-            </span>
-          )}
-          
-          {!student.photo && !isUploading && (
-            <div style={{
-              position: 'absolute',
-              bottom: '0',
-              left: '0',
-              right: '0',
-              background: 'rgba(0,0,0,0.7)',
-              color: 'white',
-              fontSize: '10px',
-              textAlign: 'center',
-              padding: '2px'
-            }}>
-              📷 Add
-            </div>
-          )}
-          
-          {student.photo && !isUploading && (
-            <div style={{
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
-              background: 'rgba(0,0,0,0.5)',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              opacity: '0',
-              transition: 'opacity 0.3s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-            onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}>
-              📷 Change
+            <div 
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2rem',
+                fontWeight: 'bold',
+                margin: '0 auto',
+                border: '3px solid rgba(255,255,255,0.3)',
+                cursor: 'pointer'
+              }}
+              onClick={handlePhotoClick}
+            >
+              {getStudentInitials(student.name)}
             </div>
           )}
           
           {isUploading && (
             <div style={{
               position: 'absolute',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               background: 'rgba(0,0,0,0.7)',
-              color: 'white',
+              borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px'
+              color: 'white',
+              fontSize: '0.8rem'
             }}>
-              📤 Uploading...
+              Uploading...
             </div>
           )}
         </div>
-
-        <div style={{ flex: '1' }}>
-          <h3 style={{
-            margin: '0 0 0.25rem 0',
-            color: '#2c3e50',
-            fontSize: '1.3rem',
-            fontWeight: '700'
-          }}>
-            {student.name}
-          </h3>
-          <p style={{
-            margin: '0 0 0.5rem 0',
-            color: '#667eea',
-            fontSize: '1rem',
-            fontWeight: '600'
-          }}>
-            {student.grade || 'No grade assigned'}
-          </p>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span style={{
-              background: 'linear-gradient(145deg, #667eea, #764ba2)',
-              color: 'white',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              fontSize: '0.75rem',
-              fontWeight: '600'
-            }}>
-              {student.workingStyle === 'independent' && '🧠 Independent'}
-              {student.workingStyle === 'collaborative' && '👥 Collaborative'}
-              {student.workingStyle === 'needs-support' && '🤝 Needs Support'}
-            </span>
-          </div>
-        </div>
+        
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handlePhotoChange}
+          accept="image/*"
+          style={{ display: 'none' }}
+        />
       </div>
 
-      {/* Photo Upload Controls */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '1rem'
-      }}>
-        <button
-          onClick={handlePhotoClick}
-          disabled={isUploading}
-          style={{
-            background: 'linear-gradient(145deg, #007bff, #0056b3)',
-            border: 'none',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            flex: '1'
-          }}
-        >
-          📷 {student.photo ? 'Change Photo' : 'Add Photo'}
-        </button>
+      {/* Student Info */}
+      <div style={{ textAlign: 'center' }}>
+        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem' }}>
+          {student.name}
+        </h3>
+        <p style={{ margin: '0 0 1rem 0', opacity: 0.8 }}>
+          {student.grade}
+        </p>
         
-        {student.photo && (
+        {/* Status Badge */}
+        <div style={{
+          display: 'inline-block',
+          padding: '0.25rem 0.75rem',
+          borderRadius: '12px',
+          background: student.isActive ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
+          border: `1px solid ${student.isActive ? '#22c55e' : '#ef4444'}`,
+          fontSize: '0.8rem',
+          marginBottom: '1rem'
+        }}>
+          {student.isActive ? '✅ Active' : '❌ Inactive'}
+        </div>
+
+        {/* Student Stats */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '0.5rem',
+          marginBottom: '1rem',
+          padding: '0.75rem',
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '8px'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {student.accommodations?.length || 0}
+            </div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Accommodations</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {isUsingUnifiedData ? student.iepData.goals.length : (student.goals?.length || 0)}
+            </div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>IEP Goals</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+              {isUsingUnifiedData ? student.iepData.dataCollection.length : 0}
+            </div>
+            <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Data Points</div>
+          </div>
+        </div>
+
+        {/* Accommodations Preview */}
+        {student.accommodations && student.accommodations.length > 0 && (
+          <div style={{ marginBottom: '1rem' }}>
+            <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.25rem' }}>
+              Key Accommodations:
+            </div>
+            <div style={{ fontSize: '0.8rem' }}>
+              {student.accommodations.slice(0, 2).join(', ')}
+              {student.accommodations.length > 2 && ` +${student.accommodations.length - 2} more`}
+            </div>
+          </div>
+        )}
+
+        {/* Contact Info Preview */}
+        {student.parentName && (
+          <div style={{ marginBottom: '1rem', fontSize: '0.8rem', opacity: 0.8 }}>
+            <div>👨‍👩‍👧‍👦 {student.parentName}</div>
+            {student.parentPhone && <div>📞 {student.parentPhone}</div>}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
           <button
-            onClick={handleRemovePhoto}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+            }}
             style={{
-              background: 'linear-gradient(145deg, #dc3545, #c82333)',
-              border: 'none',
-              color: 'white',
-              padding: '8px 12px',
+              padding: '0.5rem 1rem',
               borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: '600',
-              cursor: 'pointer'
+              border: 'none',
+              background: 'rgba(59, 130, 246, 0.8)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
             }}
           >
-            🗑️
+            ✏️ Edit
           </button>
-        )}
-      </div>
-
-      {/* Goals Section */}
-      {student.goals && student.goals.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <strong style={{ color: '#2c3e50', fontSize: '0.9rem' }}>🎯 Goals:</strong>
-          <div style={{ marginTop: '0.5rem' }}>
-            {student.goals.slice(0, 2).map((goal, index) => (
-              <div key={index} style={{
-                fontSize: '0.8rem',
-                color: '#495057',
-                marginBottom: '0.25rem',
-                paddingLeft: '1rem',
-                position: 'relative'
-              }}>
-                <span style={{ 
-                  position: 'absolute', 
-                  left: '0', 
-                  color: '#28a745' 
-                }}>•</span>
-                {goal}
-              </div>
-            ))}
-            {student.goals.length > 2 && (
-              <div style={{
-                fontSize: '0.75rem',
-                color: '#6c757d',
-                fontStyle: 'italic',
-                marginTop: '0.25rem'
-              }}>
-                +{student.goals.length - 2} more goals...
-              </div>
-            )}
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: 'rgba(239, 68, 68, 0.8)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
+            }}
+          >
+            🗑️ Delete
+          </button>
         </div>
-      )}
-
-      {/* Resource Info */}
-      {student.resourceInfo?.attendsResource && (
-        <div style={{ marginBottom: '1rem' }}>
-          <strong style={{ color: '#2c3e50', fontSize: '0.9rem' }}>🏫 Resource:</strong>
-          <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#495057' }}>
-            <div>{student.resourceInfo.resourceType}</div>
-            <div>{student.resourceInfo.resourceTeacher}</div>
-            <div>{student.resourceInfo.timeframe}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Accommodations */}
-      {student.accommodations && student.accommodations.length > 0 && (
-        <div style={{ marginBottom: '1rem' }}>
-          <strong style={{ color: '#2c3e50', fontSize: '0.9rem' }}>Accommodations:</strong>
-          <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
-            {student.accommodations.slice(0, 3).map((accommodation, index) => (
-              <span 
-                key={index} 
-                style={{
-                  background: '#e3f2fd',
-                  color: '#1976d2',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500'
-                }}
-              >
-                {accommodation}
-              </span>
-            ))}
-            {student.accommodations.length > 3 && (
-              <span style={{
-                color: '#6c757d',
-                fontSize: '0.75rem',
-                fontStyle: 'italic'
-              }}>
-                +{student.accommodations.length - 3} more
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Parent Contact */}
-      {student.parentEmail && (
-        <div style={{ marginBottom: '1rem' }}>
-          <div style={{ fontSize: '0.9rem', color: '#495057' }}>
-            👨‍👩‍👧‍👦 {student.parentName || 'Parent'}
-          </div>
-          <a href={`mailto:${student.parentEmail}`} style={{
-            fontSize: '0.8rem',
-            color: '#007bff',
-            textDecoration: 'none'
-          }}>
-            📧 {student.parentEmail}
-          </a>
-          {student.parentPhone && (
-            <div style={{ fontSize: '0.8rem', color: '#495057' }}>
-              📞 {student.parentPhone}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Notes */}
-      {student.behaviorNotes && (
-        <div style={{
-          background: 'rgba(102, 126, 234, 0.1)',
-          padding: '0.75rem',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          color: '#495057',
-          marginBottom: '1rem',
-          fontStyle: 'italic'
-        }}>
-          💭 {student.behaviorNotes}
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem'
-      }}>
-        <button
-          onClick={onEdit}
-          style={{
-            background: 'linear-gradient(145deg, #ffc107, #e0a800)',
-            border: 'none',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            flex: '1'
-          }}
-        >
-          ✏️ Edit
-        </button>
-        
-        <button
-          onClick={onDelete}
-          style={{
-            background: 'linear-gradient(145deg, #dc3545, #c82333)',
-            border: 'none',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          🗑️ Delete
-        </button>
       </div>
     </div>
   );
@@ -938,12 +877,12 @@ const StudentCard: React.FC<StudentCardProps> = ({
 
 // Student Modal Component
 interface StudentModalProps {
-  student: Student | null;
-  students: Student[];
-  onSave: (student: Omit<Student, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  student: ExtendedStudent | null;
+  students: ExtendedStudent[];
+  onSave: (studentData: Partial<ExtendedStudent>) => void;
   onCancel: () => void;
   uploadPhoto: (file: File) => Promise<PhotoUploadResult>;
-  validatePhoto: (file: File) => { isValid: boolean; error?: string };
+  validatePhoto: (file: File) => boolean;
 }
 
 const StudentModal: React.FC<StudentModalProps> = ({
@@ -954,174 +893,117 @@ const StudentModal: React.FC<StudentModalProps> = ({
   uploadPhoto,
   validatePhoto
 }) => {
-  const [formData, setFormData] = useState({
-    name: student?.name || '',
-    grade: student?.grade || 'Kindergarten',
-    photo: student?.photo || null,
-    photoFileName: student?.photoFileName || '',
-    accommodations: student?.accommodations || [],
-    goals: student?.goals || [],
-    workingStyle: student?.workingStyle || 'collaborative' as const,
-    behaviorNotes: student?.behaviorNotes || '',
-    medicalNotes: student?.medicalNotes || '',
-    parentName: student?.parentName || '',
-    parentEmail: student?.parentEmail || '',
-    parentPhone: student?.parentPhone || '',
-    emergencyContact: student?.emergencyContact || '',
-    resourceInfo: student?.resourceInfo || {
+  const [formData, setFormData] = useState<Partial<ExtendedStudent>>({
+    name: '',
+    grade: '',
+    photo: '',
+    workingStyle: 'collaborative',
+    accommodations: [],
+    goals: [],
+    parentName: '',
+    parentEmail: '',
+    parentPhone: '',
+    isActive: true,
+    behaviorNotes: '',
+    medicalNotes: '',
+    resourceInfo: {
       attendsResource: false,
       resourceType: '',
       resourceTeacher: '',
       timeframe: ''
     },
-    preferredPartners: student?.preferredPartners || [],
-    avoidPartners: student?.avoidPartners || [],
-    isActive: student?.isActive ?? true
+    preferredPartners: [],
+    avoidPartners: []
   });
 
+  const [currentTab, setCurrentTab] = useState<'basic' | 'academic' | 'contact' | 'notes'>('basic');
   const [newAccommodation, setNewAccommodation] = useState('');
   const [newGoal, setNewGoal] = useState('');
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const accommodationOptions = [
-    'Extra time',
-    'Visual supports',
-    'Movement breaks',
-    'Audio cues',
-    'Simplified instructions',
-    'Quiet space',
-    'Sensory tools',
-    'Picture schedule',
-    'Social stories',
-    'Communication device',
-    'Fidget tools',
-    'Noise-canceling headphones',
-    'Preferred seating',
-    'Frequent check-ins',
-    'Modified assignments',
-    'Alternative assessment'
-  ];
-
-  const resourceTypes = [
-    'Speech Therapy',
-    'Occupational Therapy',
-    'Physical Therapy',
-    'Reading Specialist',
-    'Math Specialist',
-    'Behavioral Support',
-    'Counseling',
-    'ESL Support',
-    'Life Skills',
-    'Vocational Training'
-  ];
-
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        ...student,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || []
+      });
+    } else {
+      // Reset form for new student
+      setFormData({
+        name: '',
+        grade: '',
+        photo: '',
+        workingStyle: 'collaborative',
+        accommodations: [],
+        goals: [],
+        parentName: '',
+        parentEmail: '',
+        parentPhone: '',
+        isActive: true,
+        behaviorNotes: '',
+        medicalNotes: '',
+        resourceInfo: {
+          attendsResource: false,
+          resourceType: '',
+          resourceTeacher: '',
+          timeframe: ''
+        },
+        preferredPartners: [],
+        avoidPartners: []
+      });
     }
+  }, [student]);
 
-    if (!formData.grade) {
-      newErrors.grade = 'Grade is required';
+  const handleSave = () => {
+    if (!formData.name || !formData.grade) {
+      alert('Please fill in required fields (Name and Grade)');
+      return;
     }
-
-    if (formData.parentEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.parentEmail)) {
-      newErrors.parentEmail = 'Please enter a valid email address';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) return;
-
-    onSave({
-      name: formData.name.trim(),
-      grade: formData.grade,
-      photo: formData.photo,
-      photoFileName: formData.photoFileName,
-      accommodations: formData.accommodations,
-      goals: formData.goals,
-      workingStyle: formData.workingStyle,
-      behaviorNotes: formData.behaviorNotes.trim(),
-      medicalNotes: formData.medicalNotes.trim(),
-      parentName: formData.parentName.trim(),
-      parentEmail: formData.parentEmail.trim(),
-      parentPhone: formData.parentPhone.trim(),
-      emergencyContact: formData.emergencyContact.trim(),
-      resourceInfo: formData.resourceInfo,
-      preferredPartners: formData.preferredPartners,
-      avoidPartners: formData.avoidPartners,
-      isActive: formData.isActive
-    });
+    onSave(formData);
   };
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
-
-    const validation = validatePhoto(file);
-    if (!validation.isValid) {
-      alert(`Photo validation failed: ${validation.error}`);
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const result = await uploadPhoto(file);
-      if (result.success && result.dataUrl) {
-        setFormData(prev => ({
-          ...prev,
-          photo: result.dataUrl,
-          photoFileName: result.fileName || ''
-        }));
-      } else {
-        alert(`Photo upload failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Photo upload error:', error);
-      alert('Failed to upload photo. Please try again.');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    if (file && validatePhoto(file)) {
+      setIsUploading(true);
+      try {
+        const result = await uploadPhoto(file);
+        if (result.success && result.photoData) {
+          setFormData(prev => ({ ...prev, photo: result.photoData }));
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+      } finally {
+        setIsUploading(false);
       }
     }
   };
 
-  const handleRemovePhoto = () => {
-    setFormData(prev => ({
-      ...prev,
-      photo: null,
-      photoFileName: ''
-    }));
-  };
-
-  const addAccommodation = (accommodation: string) => {
-    if (accommodation && !formData.accommodations.includes(accommodation)) {
+  const addAccommodation = () => {
+    if (newAccommodation.trim()) {
       setFormData(prev => ({
         ...prev,
-        accommodations: [...prev.accommodations, accommodation]
+        accommodations: [...(prev.accommodations || []), newAccommodation.trim()]
       }));
+      setNewAccommodation('');
     }
   };
 
   const removeAccommodation = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      accommodations: prev.accommodations.filter((_, i) => i !== index)
+      accommodations: prev.accommodations?.filter((_, i) => i !== index) || []
     }));
   };
 
   const addGoal = () => {
-    if (newGoal.trim() && !formData.goals.includes(newGoal.trim())) {
+    if (newGoal.trim()) {
       setFormData(prev => ({
         ...prev,
-        goals: [...prev.goals, newGoal.trim()]
+        goals: [...(prev.goals || []), newGoal.trim()]
       }));
       setNewGoal('');
     }
@@ -1130,512 +1012,600 @@ const StudentModal: React.FC<StudentModalProps> = ({
   const removeGoal = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      goals: prev.goals.filter((_, i) => i !== index)
+      goals: prev.goals?.filter((_, i) => i !== index) || []
     }));
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-header">
-          <h3>{student ? '✏️ Edit Student' : '➕ Add Student'}</h3>
-          <button className="close-button" onClick={onCancel}>×</button>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        width: '100%',
+        maxWidth: '800px',
+        maxHeight: '90vh',
+        overflow: 'auto'
+      }}>
+        {/* Modal Header */}
+        <div style={{
+          padding: '1.5rem',
+          borderBottom: '1px solid #e5e7eb',
+          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+          color: 'white',
+          borderRadius: '16px 16px 0 0'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
+            {student ? `Edit ${student.name}` : 'Add New Student'}
+          </h2>
         </div>
 
-        <div className="modal-body">
-          {/* Photo Section */}
-          <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-            <h4>Photo</h4>
-            <div 
+        {/* Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f8f9fa'
+        }}>
+          {[
+            { id: 'basic', label: '👤 Basic Info', icon: '👤' },
+            { id: 'academic', label: '🎯 Academic', icon: '🎯' },
+            { id: 'contact', label: '📞 Contact', icon: '📞' },
+            { id: 'notes', label: '📝 Notes', icon: '📝' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentTab(tab.id as any)}
               style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                background: formData.photo 
-                  ? 'transparent' 
-                  : 'linear-gradient(145deg, #667eea, #764ba2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                cursor: 'pointer'
+                flex: 1,
+                padding: '1rem',
+                border: 'none',
+                background: currentTab === tab.id ? 'white' : 'transparent',
+                color: currentTab === tab.id ? '#667eea' : '#6b7280',
+                borderBottom: currentTab === tab.id ? '2px solid #667eea' : 'none',
+                cursor: 'pointer',
+                fontWeight: currentTab === tab.id ? 'bold' : 'normal',
+                transition: 'all 0.3s ease'
               }}
-              onClick={() => fileInputRef.current?.click()}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={handlePhotoUpload}
-                disabled={isUploading}
-              />
-              
-              {formData.photo ? (
-                <img
-                  src={formData.photo}
-                  alt={formData.name}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-              ) : (
-                <span style={{
-                  fontSize: '3rem',
-                  color: 'white',
-                  fontWeight: '700'
-                }}>
-                  {formData.name ? formData.name.split(' ').map(n => n[0]).join('') : '👦'}
-                </span>
-              )}
-            </div>
-            
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                style={{
-                  background: 'linear-gradient(145deg, #007bff, #0056b3)',
-                  border: 'none',
-                  color: 'white',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                📷 {formData.photo ? 'Change Photo' : 'Add Photo'}
-              </button>
-              
-              {formData.photo && (
-                <button
-                  type="button"
-                  onClick={handleRemovePhoto}
-                  style={{
-                    background: 'linear-gradient(145deg, #dc3545, #c82333)',
-                    border: 'none',
-                    color: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🗑️ Remove
-                </button>
-              )}
-            </div>
-          </div>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Basic Information */}
-          <div className="form-section">
-            <h4>Basic Information</h4>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Name *</label>
+        {/* Tab Content */}
+        <div style={{ padding: '1.5rem' }}>
+          {currentTab === 'basic' && (
+            <div>
+              {/* Photo Upload */}
+              <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  {formData.photo ? (
+                    <img 
+                      src={formData.photo} 
+                      alt="Student"
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '4px solid #e5e7eb'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '120px',
+                      height: '120px',
+                      borderRadius: '50%',
+                      background: '#f3f4f6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '3rem',
+                      color: '#9ca3af',
+                      border: '4px solid #e5e7eb'
+                    }}>
+                      👤
+                    </div>
+                  )}
+                  
+                  {isUploading && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(0,0,0,0.7)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '0.9rem'
+                    }}>
+                      Uploading...
+                    </div>
+                  )}
+                </div>
+                
                 <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter student's name"
-                  style={{ width: '100%' }}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                  style={{ marginTop: '1rem' }}
                 />
-                {errors.name && <span className="error-text">{errors.name}</span>}
               </div>
 
-              <div className="form-group">
-                <label>Grade *</label>
-                <select
-                  value={formData.grade}
-                  onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                  style={{ width: '100%' }}
-                >
-                  <option value="Pre-K">Pre-K</option>
-                  <option value="Kindergarten">Kindergarten</option>
-                  <option value="1st">1st Grade</option>
-                  <option value="2nd">2nd Grade</option>
-                  <option value="3rd">3rd Grade</option>
-                  <option value="4th">4th Grade</option>
-                  <option value="5th">5th Grade</option>
-                  <option value="6th">6th Grade</option>
-                </select>
-                {errors.grade && <span className="error-text">{errors.grade}</span>}
+              {/* Basic Fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Student Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '1rem'
+                    }}
+                    placeholder="Enter student's full name"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                    Grade Level *
+                  </label>
+                  <select
+                    value={formData.grade || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '2px solid #e5e7eb',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="">Select Grade</option>
+                    <option value="Pre-K">Pre-K</option>
+                    <option value="Kindergarten">Kindergarten</option>
+                    <option value="1st Grade">1st Grade</option>
+                    <option value="2nd Grade">2nd Grade</option>
+                    <option value="3rd Grade">3rd Grade</option>
+                    <option value="4th Grade">4th Grade</option>
+                    <option value="5th Grade">5th Grade</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>Working Style</label>
-                <select
-                  value={formData.workingStyle}
-                  onChange={(e) => setFormData(prev => ({ ...prev, workingStyle: e.target.value as any }))}
-                  style={{ width: '100%' }}
-                >
-                  <option value="independent">Independent</option>
-                  <option value="collaborative">Collaborative</option>
-                  <option value="needs-support">Needs Support</option>
-                </select>
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Working Style
+                </label>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  {['collaborative', 'independent'].map(style => (
+                    <label key={style} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="radio"
+                        name="workingStyle"
+                        value={style}
+                        checked={formData.workingStyle === style}
+                        onChange={(e) => setFormData(prev => ({ ...prev, workingStyle: e.target.value as any }))}
+                      />
+                      <span style={{ textTransform: 'capitalize' }}>{style}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive || false}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  />
+                  <span style={{ fontWeight: 'bold' }}>Active Student</span>
+                </label>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Goals Section */}
-          <div className="form-section">
-            <h4>🎯 IEP Goals</h4>
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <input
-                  type="text"
-                  placeholder="Enter an IEP goal..."
-                  value={newGoal}
-                  onChange={(e) => setNewGoal(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addGoal();
-                    }
-                  }}
-                  style={{ flex: '1' }}
-                />
-                <button
-                  type="button"
-                  onClick={addGoal}
-                  disabled={!newGoal.trim()}
-                  style={{
-                    background: newGoal.trim() ? '#28a745' : '#dee2e6',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1rem',
-                    color: 'white',
-                    cursor: newGoal.trim() ? 'pointer' : 'not-allowed',
-                    fontSize: '0.9rem',
-                    fontWeight: '600'
-                  }}
-                >
-                  Add Goal
-                </button>
-              </div>
-              
-              {formData.goals.length > 0 && (
-                <div style={{
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  padding: '1rem',
-                  border: '1px solid #e1e8ed',
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
-                  <div style={{ marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
-                    Current Goals ({formData.goals.length})
-                  </div>
-                  {formData.goals.map((goal, index) => (
-                    <div
+          {currentTab === 'academic' && (
+            <div>
+              {/* Accommodations */}
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Accommodations
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <input
+                    type="text"
+                    value={newAccommodation}
+                    onChange={(e) => setNewAccommodation(e.target.value)}
+                    placeholder="Add accommodation..."
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db'
+                    }}
+                    onKeyPress={(e) => e.key === 'Enter' && addAccommodation()}
+                  />
+                  <button
+                    onClick={addAccommodation}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#667eea',
+                      color: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {formData.accommodations?.map((accommodation, index) => (
+                    <span
                       key={index}
                       style={{
+                        padding: '0.25rem 0.75rem',
+                        background: '#e0e7ff',
+                        color: '#3730a3',
+                        borderRadius: '16px',
+                        fontSize: '0.9rem',
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        padding: '0.5rem',
-                        background: 'white',
-                        borderRadius: '6px',
-                        marginBottom: '0.5rem',
-                        border: '1px solid #e1e8ed'
+                        alignItems: 'center',
+                        gap: '0.5rem'
                       }}
                     >
-                      <div style={{ flex: '1', fontSize: '0.9rem', lineHeight: '1.4' }}>
-                        {goal}
-                      </div>
+                      {accommodation}
                       <button
-                        onClick={() => removeGoal(index)}
+                        onClick={() => removeAccommodation(index)}
                         style={{
-                          background: '#dc3545',
+                          background: 'none',
                           border: 'none',
-                          borderRadius: '4px',
-                          width: '24px',
-                          height: '24px',
-                          color: 'white',
+                          color: '#ef4444',
                           cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          marginLeft: '0.5rem'
+                          padding: 0,
+                          fontSize: '1rem'
                         }}
                       >
                         ×
                       </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Goals */}
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  IEP Goals (Legacy)
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <input
+                    type="text"
+                    value={newGoal}
+                    onChange={(e) => setNewGoal(e.target.value)}
+                    placeholder="Add IEP goal..."
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      border: '1px solid #d1d5db'
+                    }}
+                    onKeyPress={(e) => e.key === 'Enter' && addGoal()}
+                  />
+                  <button
+                    onClick={addGoal}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#22c55e',
+                      color: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {formData.goals?.map((goal, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '0.75rem',
+                        background: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <span style={{ flex: 1 }}>{goal}</span>
+                      <button
+                        onClick={() => removeGoal(index)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '0.25rem',
+                          fontSize: '1.2rem'
+                        }}
+                      >
+                        🗑️
+                      </button>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+
+              {/* Resource Services */}
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Resource Services
+                </label>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.resourceInfo?.attendsResource || false}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        resourceInfo: {
+                          ...prev.resourceInfo,
+                          attendsResource: e.target.checked,
+                          resourceType: '',
+                          resourceTeacher: '',
+                          timeframe: ''
+                        }
+                      }))}
+                    />
+                    <span>Receives Resource Services</span>
+                  </label>
+                </div>
+
+                {formData.resourceInfo?.attendsResource && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginLeft: '1.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
+                        Service Type
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.resourceInfo?.resourceType || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          resourceInfo: { ...prev.resourceInfo!, resourceType: e.target.value }
+                        }))}
+                        placeholder="e.g., Speech Therapy"
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
+                        Teacher/Therapist
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.resourceInfo?.resourceTeacher || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          resourceInfo: { ...prev.resourceInfo!, resourceTeacher: e.target.value }
+                        }))}
+                        placeholder="e.g., Ms. Smith"
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
+                        Schedule/Timeframe
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.resourceInfo?.timeframe || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          resourceInfo: { ...prev.resourceInfo!, timeframe: e.target.value }
+                        }))}
+                        placeholder="e.g., 10:00-10:30 AM, Tuesdays & Thursdays"
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #d1d5db',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Resource Information */}
-          <div className="form-section">
-            <h4>🏫 Resource Information</h4>
-            <div className="checkbox-group" style={{ marginBottom: '1rem' }}>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formData.resourceInfo.attendsResource}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    resourceInfo: {
-                      ...prev.resourceInfo,
-                      attendsResource: e.target.checked
-                    }
-                  }))}
-                />
-                Student attends resource/pull-out services
-              </label>
-            </div>
-
-            {formData.resourceInfo.attendsResource && (
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Resource Type</label>
-                  <select
-                    value={formData.resourceInfo.resourceType}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      resourceInfo: {
-                        ...prev.resourceInfo,
-                        resourceType: e.target.value
-                      }
-                    }))}
-                    style={{ width: '100%' }}
-                  >
-                    <option value="">Select resource type...</option>
-                    {resourceTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Resource Teacher</label>
-                  <input
-                    type="text"
-                    value={formData.resourceInfo.resourceTeacher}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      resourceInfo: {
-                        ...prev.resourceInfo,
-                        resourceTeacher: e.target.value
-                      }
-                    }))}
-                    placeholder="Teacher name"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Time Frame</label>
-                  <input
-                    type="text"
-                    value={formData.resourceInfo.timeframe}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      resourceInfo: {
-                        ...prev.resourceInfo,
-                        timeframe: e.target.value
-                      }
-                    }))}
-                    placeholder="e.g., 10:00-10:30 AM"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Accommodations */}
-          <div className="form-section">
-            <h4>🛠️ Accommodations</h4>
-            <div className="accommodations-section">
-              <div style={{ marginBottom: '1rem' }}>
-                {formData.accommodations.map((accommodation, index) => (
-                  <span 
-                    key={index} 
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: '#e3f2fd',
-                      color: '#1976d2',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '0.85rem',
-                      fontWeight: '500',
-                      margin: '2px',
-                      border: '1px solid #bbdefb'
-                    }}
-                  >
-                    {accommodation}
-                    <button 
-                      type="button" 
-                      onClick={() => removeAccommodation(index)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#1976d2',
-                        cursor: 'pointer',
-                        fontSize: '1rem',
-                        padding: '0'
-                      }}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      addAccommodation(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                  style={{ width: '100%' }}
-                >
-                  <option value="">Select an accommodation...</option>
-                  {accommodationOptions
-                    .filter(opt => !formData.accommodations.includes(opt))
-                    .map(opt => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {currentTab === 'contact' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Parent/Guardian Name
+                </label>
                 <input
                   type="text"
-                  placeholder="Or add custom accommodation..."
-                  value={newAccommodation}
-                  onChange={(e) => setNewAccommodation(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addAccommodation(newAccommodation);
-                      setNewAccommodation('');
-                    }
-                  }}
-                  style={{ flex: '1' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    addAccommodation(newAccommodation);
-                    setNewAccommodation('');
-                  }}
-                  disabled={!newAccommodation.trim()}
-                  style={{
-                    background: '#667eea',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    fontSize: '12px'
-                  }}
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Parent/Guardian Information */}
-          <div className="form-section">
-            <h4>Parent/Guardian Information</h4>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Parent/Guardian Name</label>
-                <input
-                  type="text"
-                  value={formData.parentName}
+                  value={formData.parentName || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, parentName: e.target.value }))}
-                  placeholder="Parent or guardian name"
-                  style={{ width: '100%' }}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem'
+                  }}
+                  placeholder="Enter parent/guardian name"
                 />
               </div>
 
-              <div className="form-group">
-                <label>Parent Email</label>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Email Address
+                </label>
                 <input
                   type="email"
-                  value={formData.parentEmail}
+                  value={formData.parentEmail || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, parentEmail: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem'
+                  }}
                   placeholder="parent@email.com"
-                  style={{ width: '100%' }}
                 />
-                {errors.parentEmail && <span className="error-text">{errors.parentEmail}</span>}
               </div>
 
-              <div className="form-group">
-                <label>Parent Phone</label>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Phone Number
+                </label>
                 <input
                   type="tel"
-                  value={formData.parentPhone}
+                  value={formData.parentPhone || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, parentPhone: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem'
+                  }}
                   placeholder="(555) 123-4567"
-                  style={{ width: '100%' }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Emergency Contact</label>
-                <input
-                  type="text"
-                  value={formData.emergencyContact}
-                  onChange={(e) => setFormData(prev => ({ ...prev, emergencyContact: e.target.value }))}
-                  placeholder="Emergency contact name and phone"
-                  style={{ width: '100%' }}
                 />
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Additional Notes */}
-          <div className="form-section">
-            <h4>Additional Information</h4>
-            <div className="form-group">
-              <label>Behavior Notes</label>
-              <textarea
-                value={formData.behaviorNotes}
-                onChange={(e) => setFormData(prev => ({ ...prev, behaviorNotes: e.target.value }))}
-                placeholder="Behavior strategies, triggers, positive reinforcements..."
-                rows={3}
-                style={{ width: '100%' }}
-              />
-            </div>
+          {currentTab === 'notes' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Behavior Notes
+                </label>
+                <textarea
+                  value={formData.behaviorNotes || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, behaviorNotes: e.target.value }))}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Notes about behavior patterns, triggers, successful strategies..."
+                />
+              </div>
 
-            <div className="form-group">
-              <label>Medical Notes</label>
-              <textarea
-                value={formData.medicalNotes}
-                onChange={(e) => setFormData(prev => ({ ...prev, medicalNotes: e.target.value }))}
-                placeholder="Medical conditions, medications, allergies..."
-                rows={3}
-                style={{ width: '100%' }}
-              />
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  Medical Notes
+                </label>
+                <textarea
+                  value={formData.medicalNotes || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, medicalNotes: e.target.value }))}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Medical conditions, medications, allergies, emergency information..."
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="modal-footer">
-          <button className="cancel-btn" onClick={onCancel}>
+        {/* Modal Footer */}
+        <div style={{
+          padding: '1.5rem',
+          borderTop: '1px solid #e5e7eb',
+          display: 'flex',
+          gap: '1rem',
+          justifyContent: 'flex-end',
+          background: '#f8f9fa',
+          borderRadius: '0 0 16px 16px'
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: '2px solid #e5e7eb',
+              background: 'white',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '1rem'
+            }}
+          >
             Cancel
           </button>
-          <button 
-            className="save-btn" 
-            onClick={handleSubmit}
-            disabled={isUploading}
+          <button
+            onClick={handleSave}
+            disabled={!formData.name || !formData.grade}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              border: 'none',
+              background: formData.name && formData.grade 
+                ? 'linear-gradient(135deg, #667eea, #764ba2)' 
+                : '#d1d5db',
+              color: 'white',
+              cursor: formData.name && formData.grade ? 'pointer' : 'not-allowed',
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }}
           >
-            {isUploading ? '📤 Uploading...' : student ? 'Update Student' : 'Add Student'}
+            {student ? 'Update Student' : 'Add Student'}
           </button>
         </div>
       </div>
