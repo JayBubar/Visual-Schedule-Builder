@@ -28,6 +28,18 @@ export interface UnifiedStudent {
   workingStyle?: string;
   dateCreated: string;
   
+  // Legacy properties for backward compatibility
+  accommodations?: string[];
+  goals?: string[]; // Legacy IEP goals as strings
+  preferredPartners?: string[];
+  avoidPartners?: string[];
+  parentName?: string;
+  parentEmail?: string;
+  parentPhone?: string;
+  isActive?: boolean;
+  behaviorNotes?: string;
+  medicalNotes?: string;
+  
   // Resource & accommodation info
   resourceInformation?: {
     attendsResourceServices: boolean;
@@ -226,7 +238,20 @@ class UnifiedDataService {
   static getAllStudents(): UnifiedStudent[] {
     const unifiedData = this.getUnifiedData();
     if (unifiedData) {
-      return unifiedData.students;
+      // Ensure all students have properly initialized properties
+      return unifiedData.students.map(student => ({
+        ...student,
+        iepData: {
+          goals: student.iepData?.goals || [],
+          dataCollection: student.iepData?.dataCollection || [],
+          progressAnalytics: student.iepData?.progressAnalytics
+        },
+        // Ensure other properties are initialized
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || []
+      }));
     }
     
     // Fallback to legacy data if unified doesn't exist

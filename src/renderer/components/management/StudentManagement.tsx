@@ -623,11 +623,11 @@ interface ProgressGraphicProps {
 
 const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifiedData }) => {
   const calculateStudentProgress = () => {
-    if (!isUsingUnifiedData || !student.iepData.goals.length) {
+    if (!isUsingUnifiedData || !(student.iepData?.goals || []).length) {
       return { percentage: 0, trend: '➡️', goalCount: 0 };
     }
 
-    const activeGoals = student.iepData.goals.filter(goal => goal.isActive);
+    const activeGoals = (student.iepData?.goals || []).filter(goal => goal.isActive);
     if (activeGoals.length === 0) {
       return { percentage: 0, trend: '➡️', goalCount: 0 };
     }
@@ -636,7 +636,7 @@ const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifi
     const averageProgress = totalProgress / activeGoals.length;
 
     // Determine trend based on recent data points
-    const recentDataPoints = student.iepData.dataCollection
+    const recentDataPoints = (student.iepData?.dataCollection || [])
       .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime())
       .slice(0, 10);
 
@@ -1130,19 +1130,19 @@ const StudentCard: React.FC<StudentCardProps> = ({
         }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-              {student.accommodations?.length || 0}
+              {(student.accommodations || []).length}
             </div>
             <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Accommodations</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-              {isUsingUnifiedData ? student.iepData.goals.length : (student.goals?.length || 0)}
+              {isUsingUnifiedData ? (student.iepData?.goals || []).length : (student.goals || []).length}
             </div>
             <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>IEP Goals</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
-              {isUsingUnifiedData ? student.iepData.dataCollection.length : 0}
+              {isUsingUnifiedData ? (student.iepData?.dataCollection || []).length : 0}
             </div>
             <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>Data Points</div>
           </div>
