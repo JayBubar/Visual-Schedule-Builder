@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import EnhancedDataEntry from './EnhancedDataEntry';
 import ProgressDashboard from './ProgressDashboard';
+import PrintDataSheetSystem from './PrintDataSheetSystem';
 import GoalManager from './GoalManager';
+import { IEPIntelligenceIntegration } from '../intelligence/enhanced-intelligence-integration';
+import type { GoalSuggestion } from '../intelligence/enhanced-goal-intelligence-core';
 
 // Types
 interface Student {
@@ -38,7 +41,7 @@ interface DataSession {
   collector: string;
 }
 
-type ViewType = 'dashboard' | 'progress' | 'data-entry' | 'goal-selection' | 'reports'
+type ViewType = 'dashboard' | 'print-sheets' | 'data-entry' | 'progress' | 'goal-selection'
 
 interface IEPDataCollectionInterfaceProps {
   isActive: boolean;
@@ -53,6 +56,8 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   const [view, setView] = useState<ViewType>('dashboard');
   const [currentValue, setCurrentValue] = useState<string>('');
   const [currentNotes, setCurrentNotes] = useState<string>('');
+  const [showIntelligence, setShowIntelligence] = useState(false);
+  const [intelligenceEnabled, setIntelligenceEnabled] = useState(true);
   
 
   // Load data on component mount
@@ -125,6 +130,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           dataPoints: 8,
           currentProgress: 75
         },
+
         {
           id: 'goal-3',
           studentId: '2',
@@ -168,6 +174,29 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
     if (savedSessions) {
       setDataSessions(JSON.parse(savedSessions));
     }
+  };
+
+  const handleAISuggestedGoalAdd = (suggestion: GoalSuggestion) => {
+    const newGoal: IEPGoal = {
+      id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      studentId: selectedStudent?.id || '',
+      domain: suggestion.domain as 'academic' | 'behavioral' | 'social-emotional' | 'physical',
+      title: suggestion.goalText.split(' ').slice(0, 3).join(' '), // First 3 words as title
+      description: suggestion.goalText,
+      shortTermObjective: suggestion.goalText,
+      measurementType: 'percentage',
+      criteria: '4 out of 5 opportunities',
+      target: 80,
+      isActive: true,
+      priority: 'medium',
+      dateCreated: new Date().toISOString().split('T')[0],
+      dataPoints: 0,
+      currentProgress: 0
+    };
+
+    const updatedGoals = [...goals, newGoal];
+    setGoals(updatedGoals);
+    localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
   };
 
   const getStudentGoals = (studentId: string): IEPGoal[] => {
@@ -217,9 +246,10 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'auto',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '2rem'
+      padding: '1rem'
     }}>
       {/* Header */}
       <div style={{
@@ -243,7 +273,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
         </p>
       </div>
 
-      {/* Navigation Tabs */}
+{/* Navigation Tabs */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -258,8 +288,11 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           border: '1px solid rgba(255,255,255,0.2)'
         }}>
+        
+          
           {[
             { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
+            { id: 'print-sheets', icon: '🖨️', label: 'Print Sheets' },
             { id: 'data-entry', icon: '📝', label: 'Data Entry' },
             { id: 'progress', icon: '📈', label: 'Progress' },
             { id: 'goal-selection', icon: '🎯', label: 'Goal Manager' }
@@ -294,10 +327,56 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
               <span>{tab.label}</span>
             </button>
           ))}
+          
+          {/* AI Intelligence Toggle Button */}
+          <button 
+            onClick={() => setShowIntelligence(!showIntelligence)}
+            style={{
+              padding: '12px 24px',
+              borderRadius: '12px',
+              border: 'none',
+              fontWeight: '600',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: showIntelligence 
+                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                : 'rgba(255,255,255,0.3)',
+              color: 'white',
+              transform: showIntelligence ? 'scale(1.05)' : 'scale(1)',
+              boxShadow: showIntelligence 
+                ? '0 4px 20px rgba(0,0,0,0.3)' 
+                : 'none'
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>🧠</span>
+            <span>{showIntelligence ? 'Hide AI' : 'AI Intelligence'}</span>
+          </button>
         </div>
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* ADD THIS ENTIRE SECTION RIGHT HERE: */}
+        {/* Enhanced Goal Intelligence Section */}
+        {showIntelligence && selectedStudent && (
+          <div style={{ marginBottom: '2rem' }}>
+            <IEPIntelligenceIntegration
+              selectedStudentId={selectedStudent.id}
+              students={students}
+              goals={goals.filter(g => g.studentId === selectedStudent.id)}
+              onGoalAdd={handleAISuggestedGoalAdd}
+              onGoalUpdate={(goalId, updates) => {
+                console.log('Goal update requested:', goalId, updates);
+                // Goal update logic will be implemented later
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Your existing Dashboard View, Data Entry View, etc. continue below... */}
         {/* Dashboard View */}
         {view === 'dashboard' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -676,6 +755,15 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
               Progress Dashboard
             </button>
           </div>
+        )}
+
+        {/* Print Sheets View */}
+        {view === 'print-sheets' && (
+          <PrintDataSheetSystem 
+            students={students}
+            goals={goals}
+            onBack={() => setView('dashboard')}
+          />
         )}
 
       {/* Progress View */}

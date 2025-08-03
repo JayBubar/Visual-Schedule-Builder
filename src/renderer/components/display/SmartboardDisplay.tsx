@@ -237,9 +237,10 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     
     return (
       <div className="smartboard-display-container" style={{ 
-        minHeight: '100vh',
+        height: '100vh',
+        overflow: 'auto',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: '2rem',
+        padding: '1rem',
         position: 'relative',
         zIndex: 1
       }}>
@@ -277,11 +278,12 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh',
+        height: '100vh',
+        overflow: 'auto',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         textAlign: 'center',
-        padding: '2rem'
+        padding: '1rem'
       }}>
         <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>📅</div>
         <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>No Schedule Available</h2>
@@ -523,15 +525,15 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'auto',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      position: 'relative',
-      overflow: 'auto'
+      position: 'relative'
     }}>
       {/* Header */}
       <div style={{
-        padding: '2rem',
+        padding: '1rem',
         textAlign: 'center',
         borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
       }}>
@@ -635,7 +637,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       </div>
 
       {/* Content */}
-      <div style={{ padding: '2rem' }}>
+      <div style={{ padding: '1rem' }}>
         {groupAssignments.length > 0 ? (
           <>
             <h2 style={{

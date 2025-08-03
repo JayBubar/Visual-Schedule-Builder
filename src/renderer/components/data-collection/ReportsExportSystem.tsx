@@ -3,6 +3,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Download, FileText, Printer, Mail, Calendar, User, Target, TrendingUp } from 'lucide-react';
 
 // Interface definitions
+interface ReportsExportSystemProps {
+  isActive: boolean;
+}
+
 interface DataPoint {
   id: string;
   studentId: string;
@@ -48,7 +52,7 @@ interface ReportConfig {
   reportType: 'individual' | 'progress' | 'summary' | 'quarterly';
 }
 
-const ReportsExportSystem: React.FC = () => {
+const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
@@ -356,8 +360,9 @@ const ReportsExportSystem: React.FC = () => {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      minHeight: '100vh',
-      padding: '2rem'
+      height: '100vh',
+      overflow: 'auto',
+      padding: '1rem'
     }}>
       {/* Header */}
       <div style={{

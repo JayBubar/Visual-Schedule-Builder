@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState, useEffect, useRef } from 'react';
+import { useReactToPrint } from 'react-to-print';
+import PrintDataSheetSystem from './PrintDataSheetSystem';
 // Enhanced types for robust data collection
 interface DataPoint {
   id: string;
@@ -53,6 +54,9 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
   onBack,
   onDataSaved
 }) => {
+  // Print functionality state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printDateRange, setPrintDateRange] = useState('week');
   const [currentEntry, setCurrentEntry] = useState<Partial<DataPoint>>({
     value: '',
     notes: '',
@@ -780,9 +784,10 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'auto',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '2rem'
+      padding: '1rem'
     }}>
       {/* Header */}
       <div style={{
@@ -823,7 +828,10 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
           borderRadius: '20px',
           padding: '1.5rem',
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          border: '1px solid rgba(255,255,255,0.2)'
+          border: '1px solid rgba(255,255,255,0.2)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{
@@ -871,6 +879,37 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
               </p>
             </div>
           </div>
+          
+          {/* Print Button */}
+          <button
+            onClick={() => setShowPrintModal(true)}
+            style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 20px',
+              fontSize: '0.95rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              transition: 'all 0.2s ease',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+            }}
+          >
+            🖨️ Print Data Sheet
+          </button>
         </div>
       </div>
 
@@ -946,6 +985,238 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         {isQuickMode ? renderQuickEntry() : renderDetailedEntry()}
       </div>
+
+      {/* Print Modal */}
+      {showPrintModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h3 style={{ 
+              fontSize: '1.5rem', 
+              fontWeight: 'bold', 
+              marginBottom: '1.5rem',
+              color: '#1f2937'
+            }}>
+              🖨️ Generate Print Data Sheet
+            </h3>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#4b5563' }}>
+                <strong>Student:</strong> {selectedStudent?.name}<br/>
+                <strong>Goal:</strong> {selectedGoal?.description}<br/>
+                <strong>Measurement:</strong> {selectedGoal?.measurementType}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '2rem' }}>
+              <h4 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#1f2937' }}>
+                Select Date Range:
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <button
+                  onClick={() => setPrintDateRange('week')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    border: `2px solid ${printDateRange === 'week' ? '#3b82f6' : '#d1d5db'}`,
+                    background: printDateRange === 'week' ? '#eff6ff' : '#f9fafb',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ fontWeight: '600', color: '#1f2937' }}>📅 One Week</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>5 weekdays</div>
+                </button>
+                <button
+                  onClick={() => setPrintDateRange('month')}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '8px',
+                    border: `2px solid ${printDateRange === 'month' ? '#3b82f6' : '#d1d5db'}`,
+                    background: printDateRange === 'month' ? '#eff6ff' : '#f9fafb',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ fontWeight: '600', color: '#1f2937' }}>📅 One Month</div>
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>20 weekdays</div>
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowPrintModal(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: '1px solid #d1d5db',
+                  background: '#f9fafb',
+                  color: '#374151',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Create and open print window with data sheet
+                  const getDatesForRange = () => {
+                    const dates = [];
+                    const today = new Date();
+                    
+                    if (printDateRange === 'week') {
+                      let currentDate = new Date(today);
+                      let daysAdded = 0;
+                      while (daysAdded < 5) {
+                        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+                          dates.push(new Date(currentDate));
+                          daysAdded++;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                      }
+                    } else if (printDateRange === 'month') {
+                      let currentDate = new Date(today);
+                      let daysAdded = 0;
+                      while (daysAdded < 20) {
+                        if (currentDate.getDay() !== 0 && currentDate.getDay() !== 6) {
+                          dates.push(new Date(currentDate));
+                          daysAdded++;
+                        }
+                        currentDate.setDate(currentDate.getDate() + 1);
+                      }
+                    }
+                    return dates;
+                  };
+                  
+                  const dates = getDatesForRange();
+                  const printWindow = window.open('', '_blank');
+                  const printContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                      <title>Data Sheet - ${selectedStudent.name}</title>
+                      <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; max-width: 8.5in; margin: 0 auto; }
+                        .header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+                        .header h1 { color: #2563eb; margin: 0; font-size: 24px; }
+                        .info { margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                        .info-box { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+                        .objective { background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+                        th { background-color: #f8f9fa; font-weight: bold; }
+                        .date-col { font-weight: bold; }
+                        .data-cell { height: 40px; }
+                        .instructions { background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; margin-top: 30px; }
+                        .signature { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 12px; }
+                        @media print { body { -webkit-print-color-adjust: exact; } }
+                      </style>
+                    </head>
+                    <body>
+                      <div class="header">
+                        <h1>IEP Data Collection Sheet</h1>
+                        <p style="margin: 10px 0 0 0; color: #666;">Visual Schedule Builder Platform</p>
+                      </div>
+                      
+                      <div class="info">
+                        <div class="info-box">
+                          <h3 style="margin-top: 0;">Student Information</h3>
+                          <p><strong>Name:</strong> ${selectedStudent.name}</p>
+                          <p><strong>Date Range:</strong> ${dates[0]?.toLocaleDateString()} - ${dates[dates.length - 1]?.toLocaleDateString()}</p>
+                        </div>
+                        <div class="info-box">
+                          <h3 style="margin-top: 0;">Goal Information</h3>
+                          <p><strong>Domain:</strong> ${selectedGoal.domain}</p>
+                          <p><strong>Measurement:</strong> ${selectedGoal.measurementType}</p>
+                        </div>
+                      </div>
+                      
+                      <div class="objective">
+                        <h4 style="color: #1e40af; margin-top: 0;">Goal Description:</h4>
+                        <p style="margin: 0;">${selectedGoal.description}</p>
+                      </div>
+                      
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width: 20%;">Date</th>
+                            <th style="width: 20%;">Data Value</th>
+                            <th style="width: 15%;">Accuracy %</th>
+                            <th style="width: 45%;">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${dates.map(date => `
+                            <tr>
+                              <td class="date-col">${date.toLocaleDateString()}</td>
+                              <td class="data-cell"></td>
+                              <td class="data-cell"></td>
+                              <td class="data-cell"></td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                      
+                      <div class="instructions">
+                        <h4 style="margin-top: 0;">Data Collection Instructions:</h4>
+                        <ul style="margin: 0; padding-left: 20px;">
+                          <li>Fill out data immediately after each opportunity when possible</li>
+                          <li>Use notes section to record context, prompts used, or environmental factors</li>
+                          <li>Enter data into digital system daily for progress tracking</li>
+                          <li>Contact IEP team if student consistently exceeds or falls below target criteria</li>
+                        </ul>
+                      </div>
+                      
+                      <div class="signature">
+                        <div><strong>Teacher Signature:</strong> ____________________________</div>
+                        <div><strong>Date Completed:</strong> ____________________________</div>
+                      </div>
+                    </body>
+                    </html>
+                  `;
+                  
+                  printWindow.document.write(printContent);
+                  printWindow.document.close();
+                  printWindow.print();
+                  setShowPrintModal(false);
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#3b82f6',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                🖨️ Generate & Print
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success/Error Messages */}
       {savingStatus === 'saved' && (

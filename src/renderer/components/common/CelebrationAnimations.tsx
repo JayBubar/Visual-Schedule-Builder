@@ -200,9 +200,9 @@ const CelebrationAnimations: React.FC<CelebrationAnimationsProps> = ({
       <div style={{
         padding: '40px',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        minHeight: '100vh',
-        position: 'relative',
-        overflow: 'hidden'
+        height: '100vh',
+        overflow: 'auto',
+        position: 'relative'
       }}>
         {/* Header */}
         <div style={{

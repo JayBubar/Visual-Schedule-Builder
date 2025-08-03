@@ -12,17 +12,18 @@ const Navigation: React.FC<NavigationProps> = ({
   onViewChange, 
   selectedSchedule 
 }) => {
-const navItems = [
-  { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
-  { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
-  { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+5' },
-  { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
-  { id: 'data-collection', icon: '📋', label: 'IEP Data', shortcut: 'Ctrl+7' },
-  { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
-  { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
-  { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+r' },
-  { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+,' }
-] as const;
+  // ✅ FIXED: Consistent navigation with Reports tab included
+  const navItems = [
+    { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
+    { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
+    { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
+    { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
+    { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+5' },
+    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
+    { id: 'data-collection', icon: '📋', label: 'IEP Data', shortcut: 'Ctrl+7' },
+    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+8' }, // ✅ ADDED
+    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+,' }
+  ] as const;
 
   return (
     <nav className="navigation">
@@ -99,28 +100,24 @@ const navItems = [
           align-items: center;
           gap: 0.5rem;
           padding: 0.5rem 1rem;
-          border: none;
           background: rgba(255, 255, 255, 0.1);
-          color: white;
+          border: none;
           border-radius: 0.5rem;
+          color: white;
           cursor: pointer;
           transition: all 0.2s ease;
           font-size: 0.875rem;
           font-weight: 500;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .nav-button:hover {
           background: rgba(255, 255, 255, 0.2);
           transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .nav-button.active {
           background: rgba(255, 255, 255, 0.25);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
         .nav-icon {
@@ -128,32 +125,27 @@ const navItems = [
         }
 
         .nav-label {
-          white-space: nowrap;
+          font-size: 0.875rem;
         }
 
         .nav-status {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          margin-left: 2rem;
-          padding: 0.5rem 1rem;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 0.5rem;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          margin-left: 1rem;
         }
 
         .status-indicator {
-          width: 0.5rem;
-          height: 0.5rem;
-          background: #10b981;
+          width: 8px;
+          height: 8px;
           border-radius: 50%;
-          animation: pulse 2s infinite;
+          background: #10b981;
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
         .status-text {
-          font-size: 0.875rem;
-          font-weight: 500;
+          font-size: 0.75rem;
+          opacity: 0.9;
         }
 
         @keyframes pulse {
@@ -165,49 +157,8 @@ const navItems = [
           }
         }
 
-        @media (max-width: 768px) {
-          .navigation {
-            padding: 0.5rem 1rem;
-          }
-
-          .nav-brand {
-            margin-right: 1rem;
-          }
-
-          .brand-title {
-            display: none;
-          }
-
-          .nav-buttons {
-            gap: 0.25rem;
-          }
-
-          .nav-button {
-            padding: 0.375rem 0.5rem;
-            font-size: 0.75rem;
-          }
-
+        @media (max-width: 1024px) {
           .nav-label {
-            display: none;
-          }
-
-          .nav-status {
-            margin-left: 1rem;
-            padding: 0.375rem 0.5rem;
-          }
-
-          .status-text {
-            display: none;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .nav-buttons {
-            overflow-x: auto;
-            scrollbar-width: none;
-          }
-
-          .nav-buttons::-webkit-scrollbar {
             display: none;
           }
         }

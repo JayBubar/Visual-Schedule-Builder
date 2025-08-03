@@ -1,5 +1,15 @@
-// Main view types
-export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' |  'data-collection' | 'settings';
+// ===== VIEW TYPES =====
+// ✅ FIXED: Added 'reports' to ViewType enum
+export type ViewType = 
+  | 'builder' 
+  | 'display' 
+  | 'students' 
+  | 'staff' 
+  | 'calendar' 
+  | 'library' 
+  | 'data-collection' 
+  | 'reports'        // ✅ ADDED - this was missing!
+  | 'settings';
 
 // Schedule category type
 export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory';
@@ -686,4 +696,70 @@ export interface ChoiceAnalytics {
   averageRating: number;
   studentPreferences: { [studentId: string]: number };
   [key: string]: any;
+}
+
+// ===== REPORT INTERFACES =====
+// New interfaces to support the Reports component
+
+export interface ReportData {
+  id: string;
+  type: ReportType;
+  title: string;
+  generatedAt: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  data: any; // Flexible data structure for different report types
+  metadata?: {
+    totalRecords: number;
+    filters: string[];
+    exportFormat?: 'pdf' | 'csv' | 'json';
+  };
+}
+
+export type ReportType = 
+  | 'student-progress' 
+  | 'schedule-usage' 
+  | 'activity-analytics' 
+  | 'iep-goals' 
+  | 'staff-utilization'
+  | 'weekly-summary'
+  | 'monthly-overview';
+
+export interface ReportFilter {
+  studentId?: string;
+  dateRange: 'week' | 'month' | 'quarter' | 'year';
+  includeInactive?: boolean;
+  categories?: string[];
+}
+
+export interface ProgressMetric {
+  studentId: string;
+  goalId: string;
+  currentValue: number;
+  targetValue: number;
+  progressPercentage: number;
+  lastUpdated: string;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+export interface ActivityUsageStats {
+  activityId: string;
+  activityName: string;
+  usageCount: number;
+  averageDuration: number;
+  engagementScore: number;
+  lastUsed: string;
+  popularTimeSlots: string[];
+}
+
+export interface ScheduleAnalytics {
+  scheduleId: string;
+  scheduleName: string;
+  usageFrequency: number;
+  averageCompletionTime: number;
+  successRate: number;
+  mostSkippedActivities: string[];
+  peakUsageTimes: string[];
 }

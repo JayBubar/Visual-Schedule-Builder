@@ -216,7 +216,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '100vh',
+        height: '100vh',
+        overflow: 'auto',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white'
       }}>
@@ -230,10 +231,11 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'auto',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      padding: '2rem'
+      padding: '1rem'
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>

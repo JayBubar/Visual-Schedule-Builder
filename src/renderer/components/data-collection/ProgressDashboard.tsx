@@ -166,8 +166,9 @@ const ProgressDashboard: React.FC = () => {
   return (
     <div style={{
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      minHeight: '100vh',
-      padding: '2rem'
+      height: '100vh',
+      overflow: 'auto',
+      padding: '1rem'
     }}>
       {/* Header */}
       <div style={{

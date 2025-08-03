@@ -1569,8 +1569,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
 
   return (
     <div style={{
-      padding: '2rem',
-      minHeight: '100vh',
+      padding: '1rem',
+      height: '100vh',
+      overflow: 'auto',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
       <style>{`
