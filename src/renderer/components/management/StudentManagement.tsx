@@ -666,28 +666,32 @@ const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifi
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      padding: '0.75rem',
+      padding: '1rem',
       background: 'rgba(255,255,255,0.1)',
       borderRadius: '12px',
-      minWidth: '100px'
+      minWidth: '120px',
+      height: 'fit-content'
     }}>
       <div style={{
-        fontSize: '1.5rem',
+        fontSize: '1.8rem',
         fontWeight: 'bold',
-        marginBottom: '0.25rem'
+        marginBottom: '0.5rem',
+        lineHeight: '1'
       }}>
         {progress.percentage}%
       </div>
       <div style={{
-        fontSize: '1.2rem',
-        marginBottom: '0.25rem'
+        fontSize: '1.4rem',
+        marginBottom: '0.75rem',
+        lineHeight: '1'
       }}>
         {progress.trend}
       </div>
       <div style={{
-        fontSize: '0.7rem',
+        fontSize: '0.75rem',
         opacity: 0.8,
-        textAlign: 'center'
+        textAlign: 'center',
+        lineHeight: '1.2'
       }}>
         {progress.goalCount} goals
       </div>
@@ -937,11 +941,11 @@ const StudentCard: React.FC<StudentCardProps> = ({
         "content-area content-area content-area"
         "admin-left contact-info reference-right"
       `,
-      gridTemplateColumns: '200px 1fr 200px',
+      gridTemplateColumns: '220px 1fr 220px',
       gridTemplateRows: 'auto 1fr auto',
-      gap: '16px',
-      padding: '20px',
-      minHeight: '300px'
+      gap: '24px',
+      padding: '28px',
+      minHeight: '320px'
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-5px)';
@@ -954,26 +958,28 @@ const StudentCard: React.FC<StudentCardProps> = ({
       
       {/* Top Left - Data Entry & Print Sheets Buttons */}
       <div style={{ gridArea: 'actions-left' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleDataEntry(student.id);
             }}
             style={{
-              padding: '0.75rem',
+              padding: '0.875rem 1rem',
               borderRadius: '12px',
               border: 'none',
               background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              minHeight: '44px',
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
@@ -992,19 +998,21 @@ const StudentCard: React.FC<StudentCardProps> = ({
               handlePrintSheets(student.id);
             }}
             style={{
-              padding: '0.75rem',
+              padding: '0.875rem 1rem',
               borderRadius: '12px',
               border: 'none',
               background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem'
+              gap: '0.5rem',
+              minHeight: '44px',
+              whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1184,15 +1192,25 @@ const StudentCard: React.FC<StudentCardProps> = ({
       {/* Bottom Right - Reference Information */}
       <div style={{ gridArea: 'reference-right' }}>
         <div style={{
-          padding: '0.75rem',
+          padding: '1rem',
           background: 'rgba(255,255,255,0.05)',
           borderRadius: '8px',
           fontSize: '0.8rem'
         }}>
-          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', opacity: 0.9 }}>
+          <div style={{ 
+            marginBottom: '0.75rem', 
+            fontWeight: 'bold', 
+            opacity: 0.9,
+            fontSize: '0.85rem'
+          }}>
             Quick Reference:
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.5rem',
+            lineHeight: '1.3'
+          }}>
             <div>📋 {student.accommodations?.length || 0} accommodations</div>
             <div>🎯 {isUsingUnifiedData ? student.iepData.goals.filter(g => g.isActive).length : (student.goals?.length || 0)} active goals</div>
             <div>📊 {isUsingUnifiedData ? student.iepData.dataCollection.length : 0} data points</div>
