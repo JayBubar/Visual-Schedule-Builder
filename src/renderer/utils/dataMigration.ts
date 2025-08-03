@@ -230,9 +230,50 @@ export class DataMigrationManager {
         migrationLog.push(`[${new Date().toISOString()}] Migrated ${Object.keys(unifiedData.staff).length} staff members`);
       }
 
-      // Step 6: Save unified data
-      localStorage.setItem(this.UNIFIED_STORAGE_KEY, JSON.stringify(unifiedData));
-      migrationLog.push(`[${new Date().toISOString()}] Saved unified data structure`);
+      // Step 6: Save unified data with quota handling
+      try {
+        const unifiedDataString = JSON.stringify(unifiedData);
+        
+        // Check if data is too large
+        if (unifiedDataString.length > 5 * 1024 * 1024) { // 5MB limit
+          migrationLog.push(`[${new Date().toISOString()}] Warning: Unified data is large (${Math.round(unifiedDataString.length / 1024 / 1024)}MB)`);
+          
+          // Try to clear space first
+          this.clearNonEssentialData();
+        }
+        
+        localStorage.setItem(this.UNIFIED_STORAGE_KEY, unifiedDataString);
+        migrationLog.push(`[${new Date().toISOString()}] Saved unified data structure`);
+      } catch (saveError) {
+        if (saveError instanceof DOMException && saveError.name === 'QuotaExceededError') {
+          // Handle quota exceeded error
+          migrationLog.push(`[${new Date().toISOString()}] Storage quota exceeded, attempting recovery`);
+          
+          // Clear non-essential data and try again
+          this.clearNonEssentialData();
+          
+          try {
+            // Try to save a minimal version
+            const minimalData = {
+              students: unifiedData.students,
+              metadata: unifiedData.metadata
+            };
+            
+            localStorage.setItem(this.UNIFIED_STORAGE_KEY, JSON.stringify(minimalData));
+            migrationLog.push(`[${new Date().toISOString()}] Saved minimal unified data structure due to storage constraints`);
+          } catch (minimalError) {
+            const errorMsg = `Failed to save even minimal unified data: ${minimalError}`;
+            errors.push(errorMsg);
+            migrationLog.push(`[${new Date().toISOString()}] CRITICAL ERROR: ${errorMsg}`);
+            throw new Error(errorMsg);
+          }
+        } else {
+          const errorMsg = `Failed to save unified data: ${saveError}`;
+          errors.push(errorMsg);
+          migrationLog.push(`[${new Date().toISOString()}] ERROR: ${errorMsg}`);
+          throw saveError;
+        }
+      }
 
       // Step 7: Verify data integrity
       const verificationResult = this.verifyDataIntegrity(unifiedData);
@@ -456,27 +497,109 @@ export class DataMigrationManager {
   }
 
   /**
-   * Create backup of all existing data
+   * Create backup of all existing data with storage quota handling
    */
   private static createDataBackup(): { [key: string]: any } {
     const backup: { [key: string]: any } = {};
     const backupKey = `data-backup-${Date.now()}`;
 
-    // Backup all localStorage data
-    for (let i = 0; i < localStorage.length; i++) {
+    // Only backup essential data to avoid quota issues
+    const essentialKeys = [
+      'students',
+      'staff_members', 
+      'iepDataPoints',
+      'iepGoals',
+      'calendarSettings',
+      'dailyCheckIns',
+      'saved_schedules',
+      'custom_activities'
+    ];
+
+    // Backup only essential data
+    essentialKeys.forEach(key => {
+      try {
+        const data = localStorage.getItem(key);
+        if (data) {
+          backup[key] = data;
+        }
+      } catch (error) {
+        console.warn(`Failed to backup key ${key}:`, error);
+      }
+    });
+
+    // Try to save backup with error handling
+    try {
+      const backupString = JSON.stringify(backup);
+      
+      // Check if backup is too large (> 4MB, leaving room for other data)
+      if (backupString.length > 4 * 1024 * 1024) {
+        console.warn('Backup too large, creating minimal backup');
+        
+        // Create minimal backup with just students and goals
+        const minimalBackup = {
+          students: backup.students,
+          iepGoals: backup.iepGoals,
+          iepDataPoints: backup.iepDataPoints
+        };
+        
+        localStorage.setItem(backupKey, JSON.stringify(minimalBackup));
+        return minimalBackup;
+      } else {
+        localStorage.setItem(backupKey, backupString);
+        return backup;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('Storage quota exceeded, creating emergency backup');
+        
+        // Emergency backup - just save critical student data
+        try {
+          const emergencyBackup = {
+            students: backup.students || '[]',
+            timestamp: new Date().toISOString()
+          };
+          
+          // Try to clear some space first
+          this.clearNonEssentialData();
+          
+          localStorage.setItem(`emergency-backup-${Date.now()}`, JSON.stringify(emergencyBackup));
+          return emergencyBackup;
+        } catch (emergencyError) {
+          console.error('Failed to create emergency backup:', emergencyError);
+          return {};
+        }
+      } else {
+        console.error('Failed to create backup:', error);
+        return backup;
+      }
+    }
+  }
+
+  /**
+   * Clear non-essential data to free up storage space
+   */
+  private static clearNonEssentialData(): void {
+    const nonEssentialPatterns = [
+      'data-backup-',
+      'migration-log-',
+      'temp-',
+      'cache-',
+      'debug-'
+    ];
+
+    for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
       if (key) {
-        try {
-          backup[key] = localStorage.getItem(key);
-        } catch (error) {
-          console.warn(`Failed to backup key ${key}:`, error);
+        const shouldRemove = nonEssentialPatterns.some(pattern => key.startsWith(pattern));
+        if (shouldRemove) {
+          try {
+            localStorage.removeItem(key);
+          } catch (error) {
+            console.warn(`Failed to remove non-essential key ${key}:`, error);
+          }
         }
       }
     }
-
-    // Save backup
-    localStorage.setItem(backupKey, JSON.stringify(backup));
-    return backup;
   }
 
   /**
