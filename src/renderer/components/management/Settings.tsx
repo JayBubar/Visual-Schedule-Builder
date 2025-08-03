@@ -1,4 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
+import { DataMigrationManager } from '../../utils/dataMigration';
+import DataMigrationInterface from '../migration/DataMigrationInterface';
 
 interface SettingsProps {
   isActive: boolean;
@@ -109,6 +111,8 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showMigrationInterface, setShowMigrationInterface] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState<'unknown' | 'needed' | 'completed'>('unknown');
 
   // Settings state
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
@@ -347,7 +351,38 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   // Load settings on mount
   useEffect(() => {
     loadSettings();
+    checkMigrationStatus();
   }, [loadSettings]);
+
+  const checkMigrationStatus = () => {
+    try {
+      const isMigrationNeeded = DataMigrationManager.isMigrationNeeded();
+      const existingUnifiedData = DataMigrationManager.getUnifiedData();
+      
+      if (existingUnifiedData && !isMigrationNeeded) {
+        setMigrationStatus('completed');
+      } else if (isMigrationNeeded) {
+        setMigrationStatus('needed');
+      } else {
+        setMigrationStatus('unknown');
+      }
+    } catch (error) {
+      console.error('Error checking migration status:', error);
+      setMigrationStatus('unknown');
+    }
+  };
+
+  const handleMigrationComplete = (success: boolean) => {
+    if (success) {
+      setShowMigrationInterface(false);
+      setMigrationStatus('completed');
+      // Refresh the page to reload with unified data
+      window.location.reload();
+    } else {
+      console.error('Migration failed');
+      // Keep the migration interface open for retry
+    }
+  };
 
   // Auto-save when enabled
   useEffect(() => {
@@ -957,6 +992,108 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   <p className="setting-description">Include student photos and custom images in backups</p>
                 </div>
               </div>
+
+              {/* Data Migration Section */}
+              <div className="settings-group">
+                <label className="setting-label">Data Architecture Migration</label>
+                <div style={{
+                  background: migrationStatus === 'completed' ? 'rgba(16, 185, 129, 0.1)' : 
+                             migrationStatus === 'needed' ? 'rgba(245, 158, 11, 0.1)' : 
+                             'rgba(107, 114, 128, 0.1)',
+                  border: `2px solid ${migrationStatus === 'completed' ? 'rgba(16, 185, 129, 0.3)' : 
+                                     migrationStatus === 'needed' ? 'rgba(245, 158, 11, 0.3)' : 
+                                     'rgba(107, 114, 128, 0.3)'}`,
+                  borderRadius: '8px',
+                  padding: '1rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>
+                      {migrationStatus === 'completed' ? '✅' : 
+                       migrationStatus === 'needed' ? '⚠️' : '🔧'}
+                    </span>
+                    <div>
+                      <div style={{ fontWeight: '600', color: '#374151' }}>
+                        {migrationStatus === 'completed' ? 'Migration Completed' : 
+                         migrationStatus === 'needed' ? 'Migration Required' : 
+                         'Migration Status Unknown'}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                        {migrationStatus === 'completed' ? 'Your data has been successfully migrated to the unified architecture' : 
+                         migrationStatus === 'needed' ? 'Your data needs to be migrated to fix report issues' : 
+                         'Checking migration status...'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {migrationStatus === 'needed' && (
+                    <div style={{ marginTop: '1rem' }}>
+                      <button
+                        onClick={() => setShowMigrationInterface(true)}
+                        style={{
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '0.75rem 1.5rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        🚀 Start Data Migration
+                      </button>
+                    </div>
+                  )}
+                  
+                  {migrationStatus === 'completed' && (
+                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => setShowMigrationInterface(true)}
+                        style={{
+                          background: 'rgba(107, 114, 128, 0.1)',
+                          color: '#374151',
+                          border: '1px solid rgba(107, 114, 128, 0.3)',
+                          borderRadius: '6px',
+                          padding: '0.5rem 1rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        📋 View Migration Details
+                      </button>
+                      <button
+                        onClick={checkMigrationStatus}
+                        style={{
+                          background: 'rgba(107, 114, 128, 0.1)',
+                          color: '#374151',
+                          border: '1px solid rgba(107, 114, 128, 0.3)',
+                          borderRadius: '6px',
+                          padding: '0.5rem 1rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        🔄 Refresh Status
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="setting-description">
+                  The unified data architecture consolidates all student data, IEP goals, and progress tracking into a single, 
+                  connected system. This resolves issues with reports showing 0 goals and improves data consistency.
+                </p>
+              </div>
             </div>
           )}
 
@@ -1042,6 +1179,58 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                 Reset All Settings
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Migration Interface Overlay */}
+      {showMigrationInterface && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            maxWidth: '900px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowMigrationInterface(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'rgba(107, 114, 128, 0.1)',
+                border: '1px solid rgba(107, 114, 128, 0.3)',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '1.2rem',
+                color: '#6b7280',
+                zIndex: 1
+              }}
+              title="Close migration interface"
+            >
+              ×
+            </button>
+            <DataMigrationInterface onMigrationComplete={handleMigrationComplete} />
           </div>
         </div>
       )}
