@@ -189,8 +189,10 @@ const App: React.FC = () => {
             maxWidth: '900px',
             width: '100%',
             maxHeight: '90vh',
-            overflow: 'auto',
-            position: 'relative'
+            overflow: 'hidden',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
             <button
               onClick={handleCloseMigration}

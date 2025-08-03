@@ -1,45 +1,13 @@
+// Updated IEP Data Collection Interface - Now uses Unified Data
+// src/renderer/components/data-collection/IEPDataCollectionInterface.tsx
+
 import React, { useState, useEffect } from 'react';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
+import { DataPoint } from '../../types';
 import EnhancedDataEntry from './EnhancedDataEntry';
 import ProgressDashboard from './ProgressDashboard';
 import PrintDataSheetSystem from './PrintDataSheetSystem';
 import GoalManager from './GoalManager';
-import { IEPIntelligenceIntegration } from '../intelligence/enhanced-intelligence-integration';
-import type { GoalSuggestion } from '../intelligence/enhanced-goal-intelligence-core';
-
-// Types
-interface Student {
-  id: string;
-  name: string;
-  grade: string;
-  photo?: string;
-}
-
-interface IEPGoal {
-  id: string;
-  studentId: string;
-  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical';
-  title: string;
-  description: string;
-  shortTermObjective: string;
-  measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
-  criteria: string;
-  target: number;
-  isActive: boolean;
-  priority: 'high' | 'medium' | 'low';
-  dateCreated: string;
-  lastDataPoint?: string;
-  dataPoints: number;
-  currentProgress: number;
-}
-
-interface DataSession {
-  id: string;
-  goalId: string;
-  date: string;
-  value: string | number;
-  notes?: string;
-  collector: string;
-}
 
 type ViewType = 'dashboard' | 'print-sheets' | 'data-entry' | 'progress' | 'goal-selection'
 
@@ -48,194 +16,72 @@ interface IEPDataCollectionInterfaceProps {
 }
 
 const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({ isActive }) => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [goals, setGoals] = useState<IEPGoal[]>([]);
-  const [dataSessions, setDataSessions] = useState<DataSession[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [students, setStudents] = useState<UnifiedStudent[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<UnifiedStudent | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
   const [view, setView] = useState<ViewType>('dashboard');
-  const [currentValue, setCurrentValue] = useState<string>('');
-  const [currentNotes, setCurrentNotes] = useState<string>('');
-  const [showIntelligence, setShowIntelligence] = useState(false);
-  const [intelligenceEnabled, setIntelligenceEnabled] = useState(true);
-  
+  const [systemStatus, setSystemStatus] = useState<any>(null);
 
   // Load data on component mount
   useEffect(() => {
-    loadStudentsData();
-    loadGoalsData();
-    loadDataSessions();
+    loadUnifiedData();
+    checkSystemStatus();
   }, []);
 
-  const loadStudentsData = () => {
+  const loadUnifiedData = () => {
     try {
-      const savedStudents = localStorage.getItem('students');
-      if (savedStudents) {
-        const studentsData = JSON.parse(savedStudents);
-        setStudents(studentsData);
-      } else {
-        // Default sample students if none exist
-        const sampleStudents = [
-          { id: '1', name: 'Alex Johnson', grade: '3rd Grade' },
-          { id: '2', name: 'Maria Garcia', grade: '4th Grade' },
-          { id: '3', name: 'Jordan Smith', grade: '2nd Grade' },
-          { id: '4', name: 'Emma Wilson', grade: '3rd Grade' },
-          { id: '5', name: 'Liam Brown', grade: '4th Grade' },
-          { id: '6', name: 'Sophia Davis', grade: '2nd Grade' }
-        ];
-        setStudents(sampleStudents);
-        localStorage.setItem('students', JSON.stringify(sampleStudents));
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      setStudents(unifiedStudents);
+      
+      // If we have students but no selected student, select the first one
+      if (unifiedStudents.length > 0 && !selectedStudent) {
+        setSelectedStudent(unifiedStudents[0]);
       }
     } catch (error) {
-      console.error('Error loading students:', error);
+      console.error('Error loading unified data:', error);
     }
   };
 
-  const loadGoalsData = () => {
-    const savedGoals = localStorage.getItem('iepGoals');
-    if (savedGoals) {
-      setGoals(JSON.parse(savedGoals));
-    } else {
-      // Sample goals for demonstration
-      const sampleGoals: IEPGoal[] = [
-        {
-          id: 'goal-1',
-          studentId: '1',
-          domain: 'academic',
-          title: 'Reading Comprehension',
-          description: 'Reading comprehension improvement',
-          shortTermObjective: 'Will answer comprehension questions with 80% accuracy',
-          measurementType: 'percentage',
-          criteria: '80% accuracy over 5 consecutive trials',
-          target: 80,
-          isActive: true,
-          priority: 'high',
-          dateCreated: '2024-01-15',
-          dataPoints: 5,
-          currentProgress: 65
-        },
-        {
-          id: 'goal-2',
-          studentId: '1',
-          domain: 'behavioral',
-          title: 'On-Task Behavior',
-          description: 'On-task behavior during instruction',
-          shortTermObjective: 'Will remain on task for 15-minute periods',
-          measurementType: 'duration',
-          criteria: '15 minutes sustained attention',
-          target: 15,
-          isActive: true,
-          priority: 'medium',
-          dateCreated: '2024-01-15',
-          dataPoints: 8,
-          currentProgress: 75
-        },
-
-        {
-          id: 'goal-3',
-          studentId: '2',
-          domain: 'social-emotional',
-          title: 'Peer Interaction',
-          description: 'Peer interaction skills',
-          shortTermObjective: 'Will initiate positive interactions with peers',
-          measurementType: 'frequency',
-          criteria: '3 positive interactions per session',
-          target: 3,
-          isActive: true,
-          priority: 'high',
-          dateCreated: '2024-01-20',
-          dataPoints: 3,
-          currentProgress: 60
-        },
-        {
-          id: 'goal-4',
-          studentId: '3',
-          domain: 'physical',
-          title: 'Fine Motor Skills',
-          description: 'Fine motor coordination',
-          shortTermObjective: 'Will complete writing tasks with proper grip',
-          measurementType: 'rating',
-          criteria: 'Rating of 4 or higher on 5-point scale',
-          target: 4,
-          isActive: true,
-          priority: 'medium',
-          dateCreated: '2024-02-01',
-          dataPoints: 6,
-          currentProgress: 70
-        }
-      ];
-      setGoals(sampleGoals);
-      localStorage.setItem('iepGoals', JSON.stringify(sampleGoals));
-    }
+  const checkSystemStatus = () => {
+    const status = UnifiedDataService.getSystemStatus();
+    setSystemStatus(status);
+    console.log('System Status:', status);
   };
 
-  const loadDataSessions = () => {
-    const savedSessions = localStorage.getItem('iepDataSessions');
-    if (savedSessions) {
-      setDataSessions(JSON.parse(savedSessions));
-    }
+  // Event handlers
+  const handleStudentSelect = (student: UnifiedStudent) => {
+    setSelectedStudent(student);
+    setSelectedGoal(null); // Reset goal selection when changing students
   };
 
-  const handleAISuggestedGoalAdd = (suggestion: GoalSuggestion) => {
-    const newGoal: IEPGoal = {
-      id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      studentId: selectedStudent?.id || '',
-      domain: suggestion.domain as 'academic' | 'behavioral' | 'social-emotional' | 'physical',
-      title: suggestion.goalText.split(' ').slice(0, 3).join(' '), // First 3 words as title
-      description: suggestion.goalText,
-      shortTermObjective: suggestion.goalText,
-      measurementType: 'percentage',
-      criteria: '4 out of 5 opportunities',
-      target: 80,
-      isActive: true,
-      priority: 'medium',
-      dateCreated: new Date().toISOString().split('T')[0],
-      dataPoints: 0,
-      currentProgress: 0
-    };
-
-    const updatedGoals = [...goals, newGoal];
-    setGoals(updatedGoals);
-    localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
-  };
-
-  const getStudentGoals = (studentId: string): IEPGoal[] => {
-    return goals.filter(goal => goal.studentId === studentId && goal.isActive);
-  };
-
-  const getActiveGoalsCount = (studentId: string): number => {
-    return getStudentGoals(studentId).length;
-  };
-
-  const handleStartSession = (goal: IEPGoal) => {
+  const handleGoalSelect = (goal: IEPGoal) => {
     setSelectedGoal(goal);
-    setView('data-entry');
-    setCurrentValue('');
-    setCurrentNotes('');
   };
 
-  const handleSubmitData = () => {
-    if (!selectedGoal || !selectedStudent || !currentValue) return;
-
-    const newSession: DataSession = {
-      id: Date.now().toString(),
-      goalId: selectedGoal.id,
-      date: new Date().toISOString().split('T')[0],
-      value: selectedGoal.measurementType === 'percentage' ? parseFloat(currentValue) : currentValue,
-      notes: currentNotes,
-      collector: 'Current User'
-    };
-
-    const updatedSessions = [...dataSessions, newSession];
-    setDataSessions(updatedSessions);
-    localStorage.setItem('iepDataSessions', JSON.stringify(updatedSessions));
-
-    // Reset form
-    setCurrentValue('');
-    setCurrentNotes('');
+  const handleDataSaved = () => {
+    // Refresh data after saving
+    loadUnifiedData();
     
-    // Show success message
-    alert(`✅ Data recorded successfully for ${selectedStudent.name}!`);
+    // Update selected student data
+    if (selectedStudent) {
+      const updatedStudent = UnifiedDataService.getStudent(selectedStudent.id);
+      if (updatedStudent) {
+        setSelectedStudent(updatedStudent);
+      }
+    }
+  };
+
+  const handleGoalAdded = (goalData: Omit<IEPGoal, 'id' | 'studentId'>) => {
+    if (selectedStudent) {
+      try {
+        const newGoal = UnifiedDataService.addGoalToStudent(selectedStudent.id, goalData);
+        loadUnifiedData(); // Refresh all data
+        setSelectedGoal(newGoal); // Select the new goal
+      } catch (error) {
+        console.error('Error adding goal:', error);
+        alert('Error adding goal. Please try again.');
+      }
+    }
   };
 
   const getStudentInitials = (name: string): string => {
@@ -269,11 +115,33 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           fontSize: '1.2rem',
           opacity: 0.9
         }}>
-          Professional data collection for IEP goals and objectives
+          Professional data collection with unified student records
         </p>
+        
+        {/* System Status Indicator */}
+        {systemStatus && (
+          <div style={{
+            display: 'inline-block',
+            background: systemStatus.hasUnifiedData 
+              ? 'rgba(34, 197, 94, 0.2)' 
+              : 'rgba(239, 68, 68, 0.2)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            marginTop: '10px',
+            border: `1px solid ${systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444'}`,
+            color: systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444'
+          }}>
+            {systemStatus.hasUnifiedData ? '✅ Unified Data Active' : '⚠️ Legacy Data Mode'}
+            {systemStatus.hasUnifiedData && (
+              <span style={{ marginLeft: '10px', fontSize: '0.9em' }}>
+                {systemStatus.totalStudents} students • {systemStatus.totalGoals} goals • {systemStatus.totalDataPoints} data points
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-{/* Navigation Tabs */}
+      {/* Navigation Tabs */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -288,14 +156,12 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
           border: '1px solid rgba(255,255,255,0.2)'
         }}>
-        
-          
           {[
             { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
-            { id: 'print-sheets', icon: '🖨️', label: 'Print Sheets' },
             { id: 'data-entry', icon: '📝', label: 'Data Entry' },
             { id: 'progress', icon: '📈', label: 'Progress' },
-            { id: 'goal-selection', icon: '🎯', label: 'Goal Manager' }
+            { id: 'goal-selection', icon: '🎯', label: 'Goal Manager' },
+            { id: 'print-sheets', icon: '🖨️', label: 'Print Sheets' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -317,458 +183,225 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                 color: view === tab.id 
                   ? '#667eea' 
                   : 'white',
-                transform: view === tab.id ? 'scale(1.05)' : 'scale(1)',
-                boxShadow: view === tab.id 
-                  ? '0 4px 20px rgba(0,0,0,0.2)' 
-                  : 'none'
+                transform: view === tab.id ? 'scale(1.05)' : 'scale(1)'
               }}
             >
-              <span style={{ fontSize: '1.2rem' }}>{tab.icon}</span>
+              <span>{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
           ))}
-          
-          {/* AI Intelligence Toggle Button */}
-          <button 
-            onClick={() => setShowIntelligence(!showIntelligence)}
-            style={{
-              padding: '12px 24px',
-              borderRadius: '12px',
-              border: 'none',
-              fontWeight: '600',
-              fontSize: '1rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: showIntelligence 
-                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
-                : 'rgba(255,255,255,0.3)',
-              color: 'white',
-              transform: showIntelligence ? 'scale(1.05)' : 'scale(1)',
-              boxShadow: showIntelligence 
-                ? '0 4px 20px rgba(0,0,0,0.3)' 
-                : 'none'
-            }}
-          >
-            <span style={{ fontSize: '1.2rem' }}>🧠</span>
-            <span>{showIntelligence ? 'Hide AI' : 'AI Intelligence'}</span>
-          </button>
         </div>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* ADD THIS ENTIRE SECTION RIGHT HERE: */}
-        {/* Enhanced Goal Intelligence Section */}
-        {showIntelligence && selectedStudent && (
-          <div style={{ marginBottom: '2rem' }}>
-            <IEPIntelligenceIntegration
-              selectedStudentId={selectedStudent.id}
-              students={students}
-              goals={goals.filter(g => g.studentId === selectedStudent.id)}
-              onGoalAdd={handleAISuggestedGoalAdd}
-              onGoalUpdate={(goalId, updates) => {
-                console.log('Goal update requested:', goalId, updates);
-                // Goal update logic will be implemented later
-              }}
-            />
-          </div>
-        )}
+      {/* Main Content */}
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '24px',
+        padding: '2rem',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
         
-        {/* Your existing Dashboard View, Data Entry View, etc. continue below... */}
-        {/* Dashboard View */}
-        {view === 'dashboard' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {/* Student Selection */}
+        {/* Student Selection */}
+        {students.length > 0 && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ color: 'white', marginBottom: '1rem' }}>Select Student:</h3>
             <div style={{
-              background: 'rgba(255,255,255,0.15)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '20px',
-              padding: '2rem',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)'
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap'
             }}>
-              <h2 style={{
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                color: 'white',
-                marginBottom: '1.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <span style={{ fontSize: '2rem' }}>👥</span>
-                Select Student
-              </h2>
-              
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '1rem'
-              }}>
-                {students.map((student) => (
-                  <div
-                    key={student.id}
-                    onClick={() => setSelectedStudent(student)}
-                    style={{
-                      padding: '1.5rem',
-                      borderRadius: '16px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      transform: selectedStudent?.id === student.id ? 'scale(1.02)' : 'scale(1)',
-                      background: selectedStudent?.id === student.id
-                        ? 'rgba(255,255,255,0.9)'
-                        : 'rgba(255,255,255,0.1)',
-                      color: selectedStudent?.id === student.id ? '#2c3e50' : 'white',
-                      boxShadow: selectedStudent?.id === student.id
-                        ? '0 8px 25px rgba(0,0,0,0.2)'
-                        : '0 4px 15px rgba(0,0,0,0.1)',
-                      border: '1px solid rgba(255,255,255,0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedStudent?.id !== student.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                        e.currentTarget.style.transform = 'scale(1.02)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedStudent?.id !== student.id) {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{
-                        width: '60px',
-                        height: '60px',
+              {students.map(student => (
+                <button
+                  key={student.id}
+                  onClick={() => handleStudentSelect(student)}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: selectedStudent?.id === student.id 
+                      ? '3px solid #22c55e' 
+                      : '2px solid rgba(255,255,255,0.3)',
+                    background: selectedStudent?.id === student.id
+                      ? 'rgba(34, 197, 94, 0.2)'
+                      : 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {student.photo ? (
+                    <img 
+                      src={student.photo} 
+                      alt={student.name}
+                      style={{
+                        width: '40px',
+                        height: '40px',
                         borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.5rem',
-                        fontWeight: 'bold',
-                        background: selectedStudent?.id === student.id
-                          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                          : 'rgba(255,255,255,0.2)',
-                        color: 'white',
-                        border: '3px solid rgba(255,255,255,0.3)'
-                      }}>
-                        {student.photo ? (
-                          <img 
-                            src={student.photo} 
-                            alt={student.name} 
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              borderRadius: '50%',
-                              objectFit: 'cover'
-                            }}
-                          />
-                        ) : (
-                          getStudentInitials(student.name)
-                        )}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{
-                          fontWeight: '700',
-                          fontSize: '1.3rem',
-                          marginBottom: '4px'
-                        }}>
-                          {student.name}
-                        </h3>
-                        <p style={{
-                          fontSize: '1rem',
-                          opacity: 0.8,
-                          marginBottom: '4px'
-                        }}>
-                          {student.grade}
-                        </p>
-                        <p style={{
-                          fontSize: '0.9rem',
-                          opacity: 0.7
-                        }}>
-                          {getActiveGoalsCount(student.id)} active goals
-                        </p>
-                      </div>
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#667eea',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold'
+                    }}>
+                      {getStudentInitials(student.name)}
+                    </div>
+                  )}
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold' }}>{student.name}</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{student.grade}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                      {student.iepData.goals.length} goals • {student.iepData.dataCollection.length} data points
                     </div>
                   </div>
-                ))}
-              </div>
+                </button>
+              ))}
             </div>
+          </div>
+        )}
 
-            {/* Goals Overview */}
-            {selectedStudent && (
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(20px)',
-                borderRadius: '20px',
-                padding: '2rem',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
-                <h2 style={{
-                  fontSize: '2rem',
-                  fontWeight: 'bold',
-                  color: 'white',
-                  marginBottom: '1.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <span style={{ fontSize: '2rem' }}>🎯</span>
-                  Active Goals for {selectedStudent.name}
-                </h2>
-                
+        {/* Content based on selected view */}
+        {view === 'dashboard' && (
+          <div style={{ color: 'white' }}>
+            <h2 style={{ marginBottom: '1rem' }}>📊 Dashboard</h2>
+            {selectedStudent ? (
+              <div>
+                <h3>Student: {selectedStudent.name}</h3>
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-                  gap: '1.5rem'
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem',
+                  marginTop: '1rem'
                 }}>
-                  {getStudentGoals(selectedStudent.id).map((goal) => (
-                    <div
-                      key={goal.id}
-                      style={{
-                        background: 'rgba(255,255,255,0.9)',
-                        borderRadius: '16px',
-                        padding: '1.5rem',
-                        color: '#2c3e50',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
-                      }}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: '1rem'
-                      }}>
-                        <span style={{
-                          padding: '6px 12px',
-                          borderRadius: '20px',
-                          fontSize: '0.8rem',
-                          fontWeight: '600',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          ...(goal.domain === 'academic' && { background: '#e3f2fd', color: '#1565c0' }),
-                          ...(goal.domain === 'behavioral' && { background: '#fff3e0', color: '#ef6c00' }),
-                          ...(goal.domain === 'social-emotional' && { background: '#f3e5f5', color: '#7b1fa2' }),
-                          ...(goal.domain === 'physical' && { background: '#e8f5e8', color: '#2e7d32' })
-                        }}>
-                          {goal.domain.replace('-', ' ')}
-                        </span>
-                        <span style={{
-                          padding: '4px 8px',
-                          background: '#f8f9fa',
-                          color: '#6c757d',
-                          borderRadius: '6px',
-                          fontSize: '0.75rem',
-                          fontWeight: '500'
-                        }}>
-                          {goal.measurementType}
-                        </span>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>🎯 Active Goals</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData.goals.filter(g => g.isActive).length}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>📝 Data Points</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData.dataCollection.length}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>📈 Active Goals</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData.goals.filter(g => g.isActive).length}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Recent Goals */}
+                <div style={{ marginTop: '2rem' }}>
+                  <h3>Recent Goals:</h3>
+                  {selectedStudent.iepData.goals.slice(0, 3).map(goal => (
+                    <div key={goal.id} style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '1rem',
+                      marginBottom: '0.5rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer'
+                    }}
+                    onClick={() => {
+                      setSelectedGoal(goal);
+                      setView('data-entry');
+                    }}>
+                      <div style={{ fontWeight: 'bold' }}>{goal.description}</div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                        {goal.domain} • {goal.isActive ? 'Active' : 'Inactive'}
                       </div>
-                      
-                      <h3 style={{
-                        fontWeight: '700',
-                        fontSize: '1.2rem',
-                        marginBottom: '8px',
-                        color: '#2c3e50'
-                      }}>
-                        {goal.title}
-                      </h3>
-                      <p style={{
-                        color: '#6c757d',
-                        fontSize: '1rem',
-                        marginBottom: '8px',
-                        lineHeight: '1.4'
-                      }}>
-                        {goal.description}
-                      </p>
-                      <p style={{
-                        color: '#868e96',
-                        fontSize: '0.9rem',
-                        marginBottom: '1.5rem',
-                        lineHeight: '1.4'
-                      }}>
-                        <strong>Criteria:</strong> {goal.criteria}
-                      </p>
-                      
-                      <button
-                        onClick={() => handleStartSession(goal)}
-                        style={{
-                          width: '100%',
-                          background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                          color: 'white',
-                          fontWeight: '600',
-                          fontSize: '1.1rem',
-                          padding: '12px 16px',
-                          borderRadius: '12px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'scale(1.02)';
-                          e.currentTarget.style.boxShadow = '0 6px 20px rgba(40, 167, 69, 0.4)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'scale(1)';
-                          e.currentTarget.style.boxShadow = 'none';
-                        }}
-                      >
-                        <span style={{ fontSize: '1.2rem' }}>📝</span>
-                        Start Data Session
-                      </button>
                     </div>
                   ))}
                 </div>
-
-                {getStudentGoals(selectedStudent.id).length === 0 && (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '3rem',
-                    color: 'white'
-                  }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
-                    <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-                      No active goals found for this student.
-                    </h3>
-                    <p style={{ fontSize: '1rem', opacity: 0.8 }}>
-                      Goals can be added through the IEP management system.
-                    </p>
-                  </div>
-                )}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <h3>Select a student to view their dashboard</h3>
               </div>
             )}
           </div>
         )}
 
-        {/* Data Entry View - Using EnhancedDataEntry */}   
-        {view === 'data-entry' && selectedGoal && selectedStudent && (
+        {view === 'data-entry' && selectedStudent && selectedGoal && (
           <EnhancedDataEntry
             selectedStudent={selectedStudent}
             selectedGoal={selectedGoal}
             onBack={() => setView('dashboard')}
-            onDataSaved={() => {
-              loadDataSessions();
-            }}
+            onDataSaved={handleDataSaved}
           />
         )}
 
-        {/* Fallback for Data Entry without selection */}
-        {view === 'data-entry' && (!selectedGoal || !selectedStudent) && (
-          <div style={{
-            background: 'rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            padding: '3rem',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📝</div>
-            <h3 style={{
-              fontSize: '1.8rem',
-              fontWeight: 'bold',
-              color: 'white',
-              marginBottom: '0.5rem'
-            }}>
-              No Data Session Active
-            </h3>
-            <p style={{
-              color: 'rgba(255,255,255,0.8)',
-              fontSize: '1.1rem',
-              marginBottom: '2rem'
-            }}>
-              Select a student and goal from the dashboard to start a data collection session.
-            </p>
-            <button
-              onClick={() => setView('dashboard')}
-              style={{
-                background: 'rgba(255,255,255,0.9)',
-                color: '#667eea',
-                padding: '16px 32px',
-                borderRadius: '12px',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontWeight: '600',
-                fontSize: '1.1rem'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.05)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <span style={{ fontSize: '1.2rem' }}>🏠</span>
-              Go to Dashboard
-            </button>
-            <button
-              onClick={() => setView('progress')}
-              style={{
-                background: 'rgba(255,255,255,0.9)',
-                color: '#667eea',
-                padding: '16px 32px',
-                borderRadius: '12px',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontWeight: '600',
-                fontSize: '1.1rem',
-                marginLeft: '1rem'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.05)';
-                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
-            >
-              <span style={{ fontSize: '1.2rem' }}>📊</span>
-              Progress Dashboard
-            </button>
+        {view === 'progress' && selectedStudent && (
+          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
+            <h3>📈 Progress Dashboard</h3>
+            <p>Progress tracking component will be integrated with unified data system.</p>
           </div>
         )}
 
-        {/* Print Sheets View */}
-        {view === 'print-sheets' && (
-          <PrintDataSheetSystem 
-            students={students}
-            goals={goals}
-            onBack={() => setView('dashboard')}
-          />
+        {view === 'goal-selection' && selectedStudent && (
+          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
+            <h3>🎯 Goal Manager</h3>
+            <p>Goal management component will be integrated with unified data system.</p>
+          </div>
         )}
 
-      {/* Progress View */}
-{view === 'progress' && <ProgressDashboard />}
-{view === 'goal-selection' && <GoalManager />}
+        {view === 'print-sheets' && selectedStudent && (
+          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
+            <h3>🖨️ Print Data Sheets</h3>
+            <p>Print functionality component will be integrated with unified data system.</p>
+          </div>
+        )}
+
+        {/* No students message */}
+        {students.length === 0 && (
+          <div style={{
+            textAlign: 'center',
+            color: 'white',
+            padding: '3rem'
+          }}>
+            <h2>No Students Found</h2>
+            <p>Add students in the Student Management section to begin IEP data collection.</p>
+            {systemStatus && !systemStatus.hasUnifiedData && (
+              <div style={{
+                marginTop: '2rem',
+                padding: '1rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                borderRadius: '12px',
+                border: '1px solid #ef4444'
+              }}>
+                <h3>⚠️ Migration Required</h3>
+                <p>It looks like you have data in the old format. Please run the data migration to use the new unified system.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

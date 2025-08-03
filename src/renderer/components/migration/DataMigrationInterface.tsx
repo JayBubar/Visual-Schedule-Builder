@@ -475,11 +475,15 @@ const DataMigrationInterface: React.FC<DataMigrationInterfaceProps> = ({ onMigra
 
   return (
     <div style={{
-      maxWidth: '800px',
-      margin: '0 auto',
-      padding: '2rem',
+      height: '100%',
+      overflow: 'auto',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        padding: '2rem'
+      }}>
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -553,6 +557,7 @@ const DataMigrationInterface: React.FC<DataMigrationInterfaceProps> = ({ onMigra
           </ul>
         </div>
       )}
+      </div>
     </div>
   );
 };
