@@ -31,11 +31,22 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   const loadUnifiedData = () => {
     try {
       const unifiedStudents = UnifiedDataService.getAllStudents();
-      setStudents(unifiedStudents);
+      
+      // Ensure all students have properly initialized iepData
+      const safeStudents = unifiedStudents.map(student => ({
+        ...student,
+        iepData: {
+          goals: student.iepData?.goals || [],
+          dataCollection: student.iepData?.dataCollection || [],
+          progressAnalytics: student.iepData?.progressAnalytics
+        }
+      }));
+      
+      setStudents(safeStudents);
       
       // If we have students but no selected student, select the first one
-      if (unifiedStudents.length > 0 && !selectedStudent) {
-        setSelectedStudent(unifiedStudents[0]);
+      if (safeStudents.length > 0 && !selectedStudent) {
+        setSelectedStudent(safeStudents[0]);
       }
     } catch (error) {
       console.error('Error loading unified data:', error);
@@ -264,7 +275,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                     <div style={{ fontWeight: 'bold' }}>{student.name}</div>
                     <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{student.grade}</div>
                     <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
-                      {student.iepData.goals.length} goals • {student.iepData.dataCollection.length} data points
+                      {student.iepData?.goals?.length || 0} goals • {student.iepData?.dataCollection?.length || 0} data points
                     </div>
                   </div>
                 </button>
@@ -293,7 +304,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                   }}>
                     <h4>🎯 Active Goals</h4>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                      {selectedStudent.iepData.goals.filter(g => g.isActive).length}
+                      {selectedStudent.iepData?.goals?.filter(g => g.isActive)?.length || 0}
                     </div>
                   </div>
                   <div style={{
@@ -303,7 +314,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                   }}>
                     <h4>📝 Data Points</h4>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                      {selectedStudent.iepData.dataCollection.length}
+                      {selectedStudent.iepData?.dataCollection?.length || 0}
                     </div>
                   </div>
                   <div style={{
@@ -311,9 +322,9 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                     padding: '1rem',
                     borderRadius: '12px'
                   }}>
-                    <h4>📈 Active Goals</h4>
+                    <h4>📈 Total Goals</h4>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                      {selectedStudent.iepData.goals.filter(g => g.isActive).length}
+                      {selectedStudent.iepData?.goals?.length || 0}
                     </div>
                   </div>
                 </div>
@@ -321,24 +332,37 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
                 {/* Recent Goals */}
                 <div style={{ marginTop: '2rem' }}>
                   <h3>Recent Goals:</h3>
-                  {selectedStudent.iepData.goals.slice(0, 3).map(goal => (
-                    <div key={goal.id} style={{
-                      background: 'rgba(255,255,255,0.1)',
-                      padding: '1rem',
-                      marginBottom: '0.5rem',
-                      borderRadius: '8px',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => {
-                      setSelectedGoal(goal);
-                      setView('data-entry');
-                    }}>
-                      <div style={{ fontWeight: 'bold' }}>{goal.description}</div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                        {goal.domain} • {goal.isActive ? 'Active' : 'Inactive'}
+                  {selectedStudent.iepData?.goals?.length > 0 ? (
+                    selectedStudent.iepData.goals.slice(0, 3).map(goal => (
+                      <div key={goal.id} style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        padding: '1rem',
+                        marginBottom: '0.5rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        setSelectedGoal(goal);
+                        setView('data-entry');
+                      }}>
+                        <div style={{ fontWeight: 'bold' }}>{goal.description}</div>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                          {goal.domain} • {goal.isActive ? 'Active' : 'Inactive'}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '2rem',
+                      borderRadius: '8px',
+                      textAlign: 'center',
+                      opacity: 0.7
+                    }}>
+                      <p>No goals found for this student.</p>
+                      <p style={{ fontSize: '0.9rem' }}>Add goals in the Goal Manager section.</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             ) : (

@@ -1,9 +1,11 @@
-// Complete Student Management with Unified Data Integration
-// All original features preserved + unified data support
+// Enhanced Student Management Hub - UX Workflow Optimized
+// Complete IEP integration with contextual quick access
 // src/renderer/components/management/StudentManagement.tsx
 
 import React, { useState, useEffect, useRef } from 'react';
-import UnifiedDataService, { UnifiedStudent } from '../../services/unifiedDataService';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
+import QuickDataEntry from '../data-collection/QuickDataEntry';
+import ProgressPanel from '../data-collection/ProgressPanel';
 
 // Extended interface to include all original Student properties
 interface ExtendedStudent extends UnifiedStudent {
@@ -603,7 +605,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   );
 };
 
-// Student Card Component
+// Student Card Component - OPTIMIZED LAYOUT
 interface StudentCardProps {
   student: ExtendedStudent;
   onEdit: () => void;
@@ -612,6 +614,243 @@ interface StudentCardProps {
   onPhotoUpdate: () => void;
   isUsingUnifiedData: boolean;
 }
+
+// Progress Graphic Component
+interface ProgressGraphicProps {
+  student: ExtendedStudent;
+  isUsingUnifiedData: boolean;
+}
+
+const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifiedData }) => {
+  const calculateStudentProgress = () => {
+    if (!isUsingUnifiedData || !student.iepData.goals.length) {
+      return { percentage: 0, trend: '➡️', goalCount: 0 };
+    }
+
+    const activeGoals = student.iepData.goals.filter(goal => goal.isActive);
+    if (activeGoals.length === 0) {
+      return { percentage: 0, trend: '➡️', goalCount: 0 };
+    }
+
+    const totalProgress = activeGoals.reduce((sum, goal) => sum + (goal.currentProgress || 0), 0);
+    const averageProgress = totalProgress / activeGoals.length;
+
+    // Determine trend based on recent data points
+    const recentDataPoints = student.iepData.dataCollection
+      .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime())
+      .slice(0, 10);
+
+    let trend = '➡️'; // stable
+    if (recentDataPoints.length >= 3) {
+      const recent = recentDataPoints.slice(0, 3);
+      const older = recentDataPoints.slice(3, 6);
+      if (recent.length && older.length) {
+        const recentAvg = recent.reduce((sum, dp) => sum + dp.value, 0) / recent.length;
+        const olderAvg = older.reduce((sum, dp) => sum + dp.value, 0) / older.length;
+        if (recentAvg > olderAvg * 1.1) trend = '↗️'; // improving
+        else if (recentAvg < olderAvg * 0.9) trend = '↘️'; // declining
+      }
+    }
+
+    return {
+      percentage: Math.round(averageProgress),
+      trend,
+      goalCount: activeGoals.length
+    };
+  };
+
+  const progress = calculateStudentProgress();
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '0.75rem',
+      background: 'rgba(255,255,255,0.1)',
+      borderRadius: '12px',
+      minWidth: '100px'
+    }}>
+      <div style={{
+        fontSize: '1.5rem',
+        fontWeight: 'bold',
+        marginBottom: '0.25rem'
+      }}>
+        {progress.percentage}%
+      </div>
+      <div style={{
+        fontSize: '1.2rem',
+        marginBottom: '0.25rem'
+      }}>
+        {progress.trend}
+      </div>
+      <div style={{
+        fontSize: '0.7rem',
+        opacity: 0.8,
+        textAlign: 'center'
+      }}>
+        {progress.goalCount} goals
+      </div>
+    </div>
+  );
+};
+
+// Actions Dropdown Component
+interface ActionsDropdownProps {
+  onEdit: () => void;
+  onDelete: () => void;
+  studentId: string;
+}
+
+const ActionsDropdown: React.FC<ActionsDropdownProps> = ({ onEdit, onDelete, studentId }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleTransferStudent = () => {
+    console.log('Transfer student feature - coming soon!');
+    alert('Transfer Student feature will be available in a future update.');
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={dropdownRef} style={{ position: 'relative' }}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        style={{
+          padding: '0.5rem 0.75rem',
+          borderRadius: '8px',
+          border: 'none',
+          background: 'rgba(239, 68, 68, 0.8)',
+          color: 'white',
+          cursor: 'pointer',
+          fontSize: '0.8rem',
+          fontWeight: 'bold',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.25rem'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
+        }}
+      >
+        🔴 Actions ▼
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          marginTop: '0.25rem',
+          background: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          border: '1px solid rgba(0,0,0,0.1)',
+          minWidth: '160px',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit();
+              setIsOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              border: 'none',
+              background: 'transparent',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              borderRadius: '8px 8px 0 0'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f3f4f6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            ✏️ Edit Student
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+              setIsOpen(false);
+            }}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              border: 'none',
+              background: 'transparent',
+              color: '#374151',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f3f4f6';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            🗑️ Delete Student
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTransferStudent();
+            }}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              border: 'none',
+              background: 'transparent',
+              color: '#9ca3af',
+              cursor: 'not-allowed',
+              fontSize: '0.9rem',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              borderRadius: '0 0 8px 8px'
+            }}
+          >
+            🔄 Transfer Student
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const StudentCard: React.FC<StudentCardProps> = ({ 
   student, 
@@ -623,6 +862,9 @@ const StudentCard: React.FC<StudentCardProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showQuickDataEntry, setShowQuickDataEntry] = useState(false);
+  const [showProgressPanel, setShowProgressPanel] = useState(false);
+  const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -659,15 +901,47 @@ const StudentCard: React.FC<StudentCardProps> = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const calculateIEPExpiration = (iepStartDate: string): string => {
+    const startDate = new Date(iepStartDate);
+    const expirationDate = new Date(startDate.setFullYear(startDate.getFullYear() + 1));
+    return expirationDate.toLocaleDateString('en-US', { 
+      month: 'numeric', 
+      day: 'numeric', 
+      year: '2-digit' 
+    });
+  };
+
+  const handleDataEntry = (studentId: string) => {
+    setShowQuickDataEntry(true);
+  };
+
+  const handlePrintSheets = (studentId: string) => {
+    // Navigate to Reports with student pre-selected
+    console.log(`Opening print sheets for student: ${studentId}`);
+    // This would typically trigger navigation to the Reports component
+    // For now, we'll show an alert
+    alert(`Print Sheets feature will open for ${student.name}. This will integrate with the Reports system.`);
+  };
+
   return (
     <div style={{
       background: 'rgba(255,255,255,0.1)',
       borderRadius: '16px',
-      padding: '1.5rem',
       border: '1px solid rgba(255,255,255,0.2)',
       color: 'white',
       transition: 'all 0.3s ease',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      display: 'grid',
+      gridTemplateAreas: `
+        "actions-left student-info progress-right"
+        "content-area content-area content-area"
+        "admin-left contact-info reference-right"
+      `,
+      gridTemplateColumns: '200px 1fr 200px',
+      gridTemplateRows: 'auto 1fr auto',
+      gap: '16px',
+      padding: '20px',
+      minHeight: '300px'
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'translateY(-5px)';
@@ -678,76 +952,144 @@ const StudentCard: React.FC<StudentCardProps> = ({
       e.currentTarget.style.boxShadow = 'none';
     }}>
       
-      {/* Student Photo/Avatar */}
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          {student.photo ? (
-            <img 
-              src={student.photo} 
-              alt={student.name}
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '3px solid rgba(255,255,255,0.3)',
-                cursor: 'pointer'
-              }}
-              onClick={handlePhotoClick}
-            />
-          ) : (
-            <div 
-              style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2rem',
-                fontWeight: 'bold',
-                margin: '0 auto',
-                border: '3px solid rgba(255,255,255,0.3)',
-                cursor: 'pointer'
-              }}
-              onClick={handlePhotoClick}
-            >
-              {getStudentInitials(student.name)}
-            </div>
-          )}
-          
-          {isUploading && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0,0,0,0.7)',
-              borderRadius: '50%',
+      {/* Top Left - Data Entry & Print Sheets Buttons */}
+      <div style={{ gridArea: 'actions-left' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDataEntry(student.id);
+            }}
+            style={{
+              padding: '0.75rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            📊 Data Entry
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrintSheets(student.id);
+            }}
+            style={{
+              padding: '0.75rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
               color: 'white',
-              fontSize: '0.8rem'
-            }}>
-              Uploading...
-            </div>
-          )}
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            🖨️ Print Sheets
+          </button>
         </div>
-        
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handlePhotoChange}
-          accept="image/*"
-          style={{ display: 'none' }}
-        />
       </div>
 
-      {/* Student Info */}
-      <div style={{ textAlign: 'center' }}>
+      {/* Center - Student Info */}
+      <div style={{ gridArea: 'student-info', textAlign: 'center' }}>
+        {/* Student Photo/Avatar */}
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            {student.photo ? (
+              <img 
+                src={student.photo} 
+                alt={student.name}
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  cursor: 'pointer'
+                }}
+                onClick={handlePhotoClick}
+              />
+            ) : (
+              <div 
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '2rem',
+                  fontWeight: 'bold',
+                  margin: '0 auto',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  cursor: 'pointer'
+                }}
+                onClick={handlePhotoClick}
+              >
+                {getStudentInitials(student.name)}
+              </div>
+            )}
+            
+            {isUploading && (
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0,0,0,0.7)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '0.8rem'
+              }}>
+                Uploading...
+              </div>
+            )}
+          </div>
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handlePhotoChange}
+            accept="image/*"
+            style={{ display: 'none' }}
+          />
+        </div>
+
         <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.3rem' }}>
           {student.name}
         </h3>
@@ -767,7 +1109,15 @@ const StudentCard: React.FC<StudentCardProps> = ({
         }}>
           {student.isActive ? '✅ Active' : '❌ Inactive'}
         </div>
+      </div>
 
+      {/* Top Right - Progress Graphic */}
+      <div style={{ gridArea: 'progress-right' }}>
+        <ProgressGraphic student={student} isUsingUnifiedData={isUsingUnifiedData} />
+      </div>
+
+      {/* Content Area - Main Information */}
+      <div style={{ gridArea: 'content-area' }}>
         {/* Student Stats */}
         <div style={{
           display: 'grid',
@@ -810,67 +1160,76 @@ const StudentCard: React.FC<StudentCardProps> = ({
             </div>
           </div>
         )}
+      </div>
 
-        {/* Contact Info Preview */}
+      {/* Bottom Left - Actions Dropdown */}
+      <div style={{ gridArea: 'admin-left' }}>
+        <ActionsDropdown 
+          onEdit={onEdit}
+          onDelete={onDelete}
+          studentId={student.id}
+        />
+      </div>
+
+      {/* Bottom Center - Contact Info */}
+      <div style={{ gridArea: 'contact-info' }}>
         {student.parentName && (
-          <div style={{ marginBottom: '1rem', fontSize: '0.8rem', opacity: 0.8 }}>
+          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
             <div>👨‍👩‍👧‍👦 {student.parentName}</div>
             {student.parentPhone && <div>📞 {student.parentPhone}</div>}
           </div>
         )}
+      </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'rgba(59, 130, 246, 0.8)',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
-            }}
-          >
-            ✏️ Edit
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'rgba(239, 68, 68, 0.8)',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
-            }}
-          >
-            🗑️ Delete
-          </button>
+      {/* Bottom Right - Reference Information */}
+      <div style={{ gridArea: 'reference-right' }}>
+        <div style={{
+          padding: '0.75rem',
+          background: 'rgba(255,255,255,0.05)',
+          borderRadius: '8px',
+          fontSize: '0.8rem'
+        }}>
+          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', opacity: 0.9 }}>
+            Quick Reference:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div>📋 {student.accommodations?.length || 0} accommodations</div>
+            <div>🎯 {isUsingUnifiedData ? student.iepData.goals.filter(g => g.isActive).length : (student.goals?.length || 0)} active goals</div>
+            <div>📊 {isUsingUnifiedData ? student.iepData.dataCollection.length : 0} data points</div>
+            {student.dateCreated && (
+              <div>📅 IEP expires: {calculateIEPExpiration(student.dateCreated)}</div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Quick Data Entry Modal */}
+      <QuickDataEntry
+        studentId={student.id}
+        isOpen={showQuickDataEntry}
+        onClose={() => {
+          setShowQuickDataEntry(false);
+          setSelectedGoalId(undefined);
+        }}
+        onDataSaved={() => {
+          setShowQuickDataEntry(false);
+          setSelectedGoalId(undefined);
+          onPhotoUpdate(); // Refresh data
+        }}
+        preselectedGoal={selectedGoalId}
+      />
+
+      {/* Progress Panel Modal */}
+      <ProgressPanel
+        studentId={student.id}
+        isOpen={showProgressPanel}
+        onClose={() => setShowProgressPanel(false)}
+        onAddData={(goalId: string) => {
+          setShowProgressPanel(false);
+          setSelectedGoalId(goalId);
+          setShowQuickDataEntry(true);
+        }}
+      />
     </div>
   );
 };
