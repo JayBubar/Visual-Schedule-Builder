@@ -1,4 +1,4 @@
-// Unified Data Service - Single source of truth for all student data
+// Unified Data Service - UPDATED to fix migration issues
 // src/renderer/services/unifiedDataService.ts
 
 import { IEPGoal as BaseIEPGoal, DataPoint, Student } from '../types';
@@ -68,7 +68,6 @@ export interface UnifiedStudent {
   };
 }
 
-
 export interface UnifiedData {
   students: UnifiedStudent[];
   metadata: {
@@ -80,14 +79,28 @@ export interface UnifiedData {
 }
 
 class UnifiedDataService {
-  private static readonly UNIFIED_KEY = 'vsb_unified_data';
+  // 🔧 FIXED: Use the correct key that migration created
+  private static readonly UNIFIED_KEY = 'visual-schedule-builder-unified-data';
   private static readonly LEGACY_STUDENT_KEY = 'students';
   
   // Get all unified data
   static getUnifiedData(): UnifiedData | null {
     try {
       const data = localStorage.getItem(this.UNIFIED_KEY);
-      return data ? JSON.parse(data) : null;
+      if (!data) return null;
+      
+      const parsedData = JSON.parse(data);
+      
+      // 🔧 FIXED: Convert object structure to array structure if needed
+      if (parsedData.students && !Array.isArray(parsedData.students)) {
+        console.log('Converting students object to array format...');
+        parsedData.students = Object.values(parsedData.students);
+        
+        // Save the converted structure
+        this.saveUnifiedData(parsedData);
+      }
+      
+      return parsedData;
     } catch (error) {
       console.error('Error reading unified data:', error);
       return null;
@@ -100,6 +113,112 @@ class UnifiedDataService {
       localStorage.setItem(this.UNIFIED_KEY, JSON.stringify(data));
     } catch (error) {
       console.error('Error saving unified data:', error);
+    }
+  }
+  
+  // 🔧 NEW: Recover missing data points from legacy data
+  static recoverMissingDataPoints(): boolean {
+    try {
+      // Get current unified data
+      const unifiedData = this.getUnifiedData();
+      if (!unifiedData) {
+        console.error('No unified data found');
+        return false;
+      }
+      
+      // Get legacy data points
+      const legacyDataPointsStr = localStorage.getItem('iepDataPoints') || localStorage.getItem('archived_iepDataPoints');
+      const legacyGoalsStr = localStorage.getItem('iepGoals') || localStorage.getItem('archived_iepGoals');
+      
+      if (!legacyDataPointsStr) {
+        console.log('No legacy data points found to recover');
+        return false;
+      }
+      
+      const legacyDataPoints = JSON.parse(legacyDataPointsStr);
+      const legacyGoals = legacyGoalsStr ? JSON.parse(legacyGoalsStr) : [];
+      
+      console.log(`Found ${legacyDataPoints.length} legacy data points to recover`);
+      
+      // Create a map of legacy goal IDs to new goal IDs
+      const goalIdMap = new Map();
+      
+      // Build goal ID mapping
+      unifiedData.students.forEach(student => {
+        student.iepData.goals.forEach(unifiedGoal => {
+          // Find matching legacy goal by description or other identifier
+          const matchingLegacyGoal = legacyGoals.find(lg => 
+            lg.description === unifiedGoal.description || 
+            lg.measurableObjective === unifiedGoal.shortTermObjective ||
+            lg.studentId === student.id
+          );
+          
+          if (matchingLegacyGoal) {
+            goalIdMap.set(matchingLegacyGoal.id, {
+              newGoalId: unifiedGoal.id,
+              studentId: student.id
+            });
+          }
+        });
+      });
+      
+      // Recover data points
+      let recoveredCount = 0;
+      
+      legacyDataPoints.forEach(legacyDataPoint => {
+        const mapping = goalIdMap.get(legacyDataPoint.goalId);
+        if (mapping) {
+          const student = unifiedData.students.find(s => s.id === mapping.studentId);
+          if (student) {
+            // Convert legacy data point to unified format
+            const recoveredDataPoint: DataPoint = {
+              id: legacyDataPoint.id || Date.now().toString() + Math.random(),
+              goalId: mapping.newGoalId,
+              studentId: mapping.studentId,
+              date: legacyDataPoint.date,
+              time: legacyDataPoint.time,
+              value: legacyDataPoint.value,
+              totalOpportunities: legacyDataPoint.totalOpportunities,
+              notes: legacyDataPoint.notes,
+              context: legacyDataPoint.context,
+              activityId: legacyDataPoint.activityId,
+              collector: legacyDataPoint.collector || 'Unknown',
+              photos: legacyDataPoint.photos || [],
+              voiceNotes: legacyDataPoint.voiceNotes || []
+            };
+            
+            // Check if data point already exists
+            const exists = student.iepData.dataCollection.some(dp => 
+              dp.date === recoveredDataPoint.date && 
+              dp.time === recoveredDataPoint.time && 
+              dp.goalId === recoveredDataPoint.goalId
+            );
+            
+            if (!exists) {
+              student.iepData.dataCollection.push(recoveredDataPoint);
+              recoveredCount++;
+            }
+          }
+        }
+      });
+      
+      // Update metadata
+      unifiedData.metadata.totalDataPoints = unifiedData.students.reduce(
+        (total, s) => total + s.iepData.dataCollection.length, 0
+      );
+      unifiedData.metadata.totalGoals = unifiedData.students.reduce(
+        (total, s) => total + s.iepData.goals.length, 0
+      );
+      
+      // Save updated data
+      this.saveUnifiedData(unifiedData);
+      
+      console.log(`Successfully recovered ${recoveredCount} data points`);
+      return recoveredCount > 0;
+      
+    } catch (error) {
+      console.error('Error recovering data points:', error);
+      return false;
     }
   }
   
@@ -230,10 +349,6 @@ class UnifiedDataService {
       };
       
       student.iepData.dataCollection.push(newDataPoint);
-      
-      // Note: Goal progress tracking would need to be implemented separately
-      // as the IEPGoal interface doesn't include progress tracking properties
-      
       this.saveStudents(students);
       return newDataPoint;
     }
