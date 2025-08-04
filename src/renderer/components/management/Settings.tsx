@@ -1,6 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { DataMigrationManager } from '../../utils/dataMigration';
-import DataMigrationInterface from '../migration/DataMigrationInterface';
 
 interface SettingsProps {
   isActive: boolean;
@@ -1230,7 +1229,11 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
             >
               ×
             </button>
-            <DataMigrationInterface onMigrationComplete={handleMigrationComplete} />
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <h3>Migration Interface Temporarily Unavailable</h3>
+              <p>The migration interface has been disabled to resolve display issues.</p>
+              <p>Your data is safe and accessible through the existing interface.</p>
+            </div>
           </div>
         </div>
       )}
