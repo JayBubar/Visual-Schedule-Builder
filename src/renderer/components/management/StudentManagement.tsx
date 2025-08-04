@@ -6,6 +6,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
+import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
+import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
 
 // Extended interface to include all original Student properties
 interface ExtendedStudent extends UnifiedStudent {
@@ -48,6 +50,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<ExtendedStudent | null>(null);
   const [isUsingUnifiedData, setIsUsingUnifiedData] = useState(false);
+  
+  // Integration modal states
+  const [showDataEntryModal, setShowDataEntryModal] = useState(false);
+  const [showPrintSheetsModal, setShowPrintSheetsModal] = useState(false);
+  const [selectedStudentForIntegration, setSelectedStudentForIntegration] = useState<ExtendedStudent | null>(null);
+  const [selectedGoalForDataEntry, setSelectedGoalForDataEntry] = useState<IEPGoal | null>(null);
 
   // Load student data
   useEffect(() => {
@@ -362,6 +370,38 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const handleDataEntry = (student: ExtendedStudent) => {
+    // Check if student has IEP goals
+    const studentGoals = isUsingUnifiedData 
+      ? student.iepData?.goals || []
+      : [];
+
+    if (studentGoals.length === 0) {
+      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
+      return;
+    }
+
+    // Set up for data entry modal
+    setSelectedStudentForIntegration(student);
+    setShowDataEntryModal(true);
+  };
+
+  const handlePrintSheets = (student: ExtendedStudent) => {
+    // Check if student has IEP goals
+    const studentGoals = isUsingUnifiedData 
+      ? student.iepData?.goals || []
+      : [];
+
+    if (studentGoals.length === 0) {
+      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
+      return;
+    }
+
+    // Set up for print sheets modal
+    setSelectedStudentForIntegration(student);
+    setShowPrintSheetsModal(true);
+  };
+
   if (!isActive) return null;
 
   const gradeGroups = getGradeGroups();
@@ -579,6 +619,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                     uploadPhoto={uploadPhoto}
                     onPhotoUpdate={loadStudentData}
                     isUsingUnifiedData={isUsingUnifiedData}
+                    onDataEntry={handleDataEntry}
+                    onPrintSheets={handlePrintSheets}
                   />
                 ))}
               </div>
@@ -600,6 +642,180 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           uploadPhoto={uploadPhoto}
           validatePhoto={validatePhoto}
         />
+      )}
+
+      {/* Data Entry Modal */}
+      {showDataEntryModal && selectedStudentForIntegration && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowDataEntryModal(false);
+                setSelectedStudentForIntegration(null);
+                setSelectedGoalForDataEntry(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            {selectedGoalForDataEntry ? (
+              <EnhancedDataEntry
+                selectedStudent={selectedStudentForIntegration}
+                selectedGoal={selectedGoalForDataEntry}
+                onBack={() => setSelectedGoalForDataEntry(null)}
+                onDataSaved={() => {
+                  setShowDataEntryModal(false);
+                  setSelectedStudentForIntegration(null);
+                  setSelectedGoalForDataEntry(null);
+                  loadStudentData(); // Refresh data
+                }}
+              />
+            ) : (
+              <div style={{
+                padding: '2rem',
+                height: '100%',
+                overflow: 'auto',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+              }}>
+                <h2 style={{ color: 'white', marginBottom: '2rem', textAlign: 'center' }}>
+                  Select Goal for Data Entry - {selectedStudentForIntegration.name}
+                </h2>
+                <div style={{ display: 'grid', gap: '1rem', maxWidth: '800px', margin: '0 auto' }}>
+                  {selectedStudentForIntegration.iepData.goals.map((goal) => (
+                    <button
+                      key={goal.id}
+                      onClick={() => setSelectedGoalForDataEntry(goal)}
+                      style={{
+                        padding: '1.5rem',
+                        background: 'rgba(255,255,255,0.15)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '12px',
+                        color: 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                        {goal.title}
+                      </div>
+                      <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+                        {goal.description}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.5rem' }}>
+                        Type: {goal.measurementType} | Progress: {goal.currentProgress}%
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Print Sheets Modal */}
+      {showPrintSheetsModal && selectedStudentForIntegration && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowPrintSheetsModal(false);
+                setSelectedStudentForIntegration(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <PrintDataSheetSystem
+              students={[selectedStudentForIntegration]}
+              goals={selectedStudentForIntegration.iepData.goals}
+              onBack={() => {
+                setShowPrintSheetsModal(false);
+                setSelectedStudentForIntegration(null);
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
@@ -856,13 +1072,26 @@ const ActionsDropdown: React.FC<ActionsDropdownProps> = ({ onEdit, onDelete, stu
   );
 };
 
+interface StudentCardProps {
+  student: ExtendedStudent;
+  onEdit: () => void;
+  onDelete: () => void;
+  uploadPhoto: (file: File) => Promise<PhotoUploadResult>;
+  onPhotoUpdate: () => void;
+  isUsingUnifiedData: boolean;
+  onDataEntry: (student: ExtendedStudent) => void;
+  onPrintSheets: (student: ExtendedStudent) => void;
+}
+
 const StudentCard: React.FC<StudentCardProps> = ({ 
   student, 
   onEdit, 
   onDelete, 
   uploadPhoto,
   onPhotoUpdate,
-  isUsingUnifiedData
+  isUsingUnifiedData,
+  onDataEntry,
+  onPrintSheets
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -915,16 +1144,12 @@ const StudentCard: React.FC<StudentCardProps> = ({
     });
   };
 
-  const handleDataEntry = (studentId: string) => {
-    setShowQuickDataEntry(true);
+  const handleDataEntry = () => {
+    onDataEntry(student);
   };
 
-  const handlePrintSheets = (studentId: string) => {
-    // Navigate to Reports with student pre-selected
-    console.log(`Opening print sheets for student: ${studentId}`);
-    // This would typically trigger navigation to the Reports component
-    // For now, we'll show an alert
-    alert(`Print Sheets feature will open for ${student.name}. This will integrate with the Reports system.`);
+  const handlePrintSheets = () => {
+    onPrintSheets(student);
   };
 
   return (
@@ -962,7 +1187,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleDataEntry(student.id);
+              handleDataEntry();
             }}
             style={{
               padding: '0.875rem 1rem',
@@ -995,7 +1220,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handlePrintSheets(student.id);
+              handlePrintSheets();
             }}
             style={{
               padding: '0.875rem 1rem',
