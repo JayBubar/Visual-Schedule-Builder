@@ -924,14 +924,3 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
 };
 
 export default StaffManagement;
-
-// Global function to get staff data for other components
-export const getStaffData = (): StaffMember[] => {
-  try {
-    const savedStaff = localStorage.getItem('staff_members');
-    return savedStaff ? JSON.parse(savedStaff) : [];
-  } catch (error) {
-    console.error('Error getting staff data:', error);
-    return [];
-  }
-};

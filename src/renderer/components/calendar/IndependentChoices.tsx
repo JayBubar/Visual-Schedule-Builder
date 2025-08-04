@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityLibraryItem, Student, Staff, ChoiceFilter } from '../../types';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 // 🎨 GLASSMORPHISM STYLES FOR IndependentChoices
 const styles = `
@@ -649,21 +650,65 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     return () => clearInterval(interval);
   }, [isTimerRunning, timeRemaining]);
 
-  // 🎯 Load students from localStorage
+  // 🎯 Load students from UnifiedDataService
   const loadStudents = () => {
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
+    try {
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      // Convert UnifiedStudent to Student format for compatibility
+      const convertedStudents: Student[] = unifiedStudents.map(student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes,
+        workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent"
+      }));
+      setStudents(convertedStudents);
+    } catch (error) {
+      console.error('Error loading students:', error);
+      setStudents([]);
     }
   };
 
-  // 🎯 Load choice-eligible activities from Activity Library
+  // 🎯 Load choice-eligible activities from UnifiedDataService
   const loadChoiceEligibleActivities = () => {
-    const savedActivities = localStorage.getItem('activityLibrary');
-    if (savedActivities) {
-      const allActivities: ActivityLibraryItem[] = JSON.parse(savedActivities);
-      const choiceEligible = allActivities.filter(activity => activity.isChoiceEligible);
-      setChoiceEligibleActivities(choiceEligible);
+    try {
+      const allActivities = UnifiedDataService.getAllActivities();
+      // Convert UnifiedActivity to ActivityLibraryItem format for compatibility
+      const convertedActivities: ActivityLibraryItem[] = allActivities.map(activity => ({
+        id: activity.id,
+        name: activity.name,
+        description: activity.description,
+        emoji: '📝', // Default emoji since UnifiedActivity doesn't have this
+        defaultDuration: 20, // Default duration since UnifiedActivity doesn't have this
+        category: activity.category as any, // Type conversion for compatibility
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        isChoiceEligible: false, // Default to false since UnifiedActivity doesn't have this
+        choiceProperties: undefined, // UnifiedActivity doesn't have this
+        usageStats: undefined, // UnifiedActivity doesn't have this
+        tags: [], // Default empty array since UnifiedActivity doesn't have this
+        difficulty: 'medium' as const, // Default difficulty since UnifiedActivity doesn't have this
+        ageRange: { min: 5, max: 12 }, // Default age range since UnifiedActivity doesn't have this
+        createdAt: new Date().toISOString(), // Default to current time since UnifiedActivity doesn't have this
+        updatedAt: new Date().toISOString(), // Default to current time since UnifiedActivity doesn't have this
+        isCustom: false // Required field for ActivityLibraryItem
+      }));
+      // Since UnifiedActivity doesn't have isChoiceEligible, we'll use an empty array for now
+      // This component will need to be updated when the unified system supports choice-eligible activities
+      setChoiceEligibleActivities([]);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      setChoiceEligibleActivities([]);
     }
   };
 

@@ -71,35 +71,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const loadStudentData = () => {
     try {
-      // Check if unified data exists
-      const unifiedDataStatus = UnifiedDataService.isUsingUnifiedData();
-      setIsUsingUnifiedData(unifiedDataStatus);
-
-      if (unifiedDataStatus) {
-        // Load from unified data service
-        const unifiedStudents = UnifiedDataService.getAllStudents() as ExtendedStudent[];
-        setStudents(unifiedStudents);
-      } else {
-        // Load from legacy localStorage
-        const savedStudents = localStorage.getItem('students');
-        if (savedStudents) {
-          const legacyStudents = JSON.parse(savedStudents);
-          // Convert legacy students to extended format
-          const extendedStudents: ExtendedStudent[] = legacyStudents.map((student: any) => ({
-            ...student,
-            iepData: student.iepData || {
-              goals: [],
-              dataCollection: []
-            }
-          }));
-          setStudents(extendedStudents);
-        } else {
-          // Initialize with default students
-          initializeDefaultStudents();
-        }
-      }
+      // Always use unified data service - no legacy fallback
+      const unifiedStudents = UnifiedDataService.getAllStudents() as ExtendedStudent[];
+      setStudents(unifiedStudents);
+      setIsUsingUnifiedData(true);
     } catch (error) {
       console.error('Error loading student data:', error);
+      setStudents([]);
     }
   };
 
@@ -209,15 +187,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const saveStudentData = (studentData: ExtendedStudent[]) => {
     try {
-      if (isUsingUnifiedData) {
-        // Save to unified data service
-        studentData.forEach(student => {
-          UnifiedDataService.updateStudent(student.id, student);
-        });
-      } else {
-        // Save to legacy localStorage
-        localStorage.setItem('students', JSON.stringify(studentData));
-      }
+      // Always save to unified data service - no legacy fallback
+      studentData.forEach(student => {
+        UnifiedDataService.updateStudent(student.id, student);
+      });
       
       // Dispatch update event
       window.dispatchEvent(new CustomEvent('studentDataUpdated', { 

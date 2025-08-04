@@ -340,8 +340,7 @@ class UnifiedDataService {
       }));
     }
     
-    // Fallback to legacy data if unified doesn't exist
-    return this.getLegacyStudents();
+    return [];
   }
   
   // Get specific student by ID
@@ -498,12 +497,7 @@ class UnifiedDataService {
   // Get all staff members
   static getAllStaff(): UnifiedStaff[] {
     const unifiedData = this.getUnifiedData();
-    if (unifiedData?.staff) {
-      return unifiedData.staff;
-    }
-    
-    // Fallback to legacy staff data
-    return this.getLegacyStaff();
+    return unifiedData?.staff || [];
   }
   
   // Get specific staff member by ID
@@ -557,42 +551,13 @@ class UnifiedDataService {
     }
   }
   
-  // Get legacy staff data
-  private static getLegacyStaff(): UnifiedStaff[] {
-    try {
-      const legacyStaff = localStorage.getItem('staff_members');
-      if (legacyStaff) {
-        const staff = JSON.parse(legacyStaff);
-        return staff.map((member: any) => ({
-          id: member.id || Date.now().toString(),
-          name: member.name || '',
-          role: member.role || '',
-          email: member.email,
-          phone: member.phone,
-          photo: member.photo,
-          isActive: member.isActive !== undefined ? member.isActive : true,
-          dateCreated: member.dateCreated || new Date().toISOString().split('T')[0],
-          permissions: member.permissions
-        }));
-      }
-    } catch (error) {
-      console.error('Error reading legacy staff:', error);
-    }
-    
-    return [];
-  }
 
   // ===== ACTIVITY MANAGEMENT METHODS =====
   
   // Get all activities
   static getAllActivities(): UnifiedActivity[] {
     const unifiedData = this.getUnifiedData();
-    if (unifiedData?.activities) {
-      return unifiedData.activities;
-    }
-    
-    // Fallback to legacy activities
-    return this.getLegacyActivities();
+    return unifiedData?.activities || [];
   }
   
   // Get specific activity by ID
@@ -646,39 +611,13 @@ class UnifiedDataService {
     }
   }
   
-  // Get legacy activities
-  private static getLegacyActivities(): UnifiedActivity[] {
-    try {
-      const legacyActivities = localStorage.getItem('custom_activities');
-      if (legacyActivities) {
-        const activities = JSON.parse(legacyActivities);
-        return activities.map((activity: any) => ({
-          id: activity.id || Date.now().toString(),
-          name: activity.name || activity.title || '',
-          category: activity.category || 'custom',
-          description: activity.description,
-          duration: activity.duration,
-          materials: activity.materials || [],
-          instructions: activity.instructions,
-          adaptations: activity.adaptations || [],
-          linkedGoalIds: activity.linkedGoalIds || [],
-          isCustom: true,
-          dateCreated: activity.dateCreated || new Date().toISOString().split('T')[0]
-        }));
-      }
-    } catch (error) {
-      console.error('Error reading legacy activities:', error);
-    }
-    
-    return [];
-  }
 
   // ===== CALENDAR DATA METHODS =====
   
   // Get behavior commitments
   static getBehaviorCommitments(studentId?: string): BehaviorCommitment[] {
     const unifiedData = this.getUnifiedData();
-    const commitments = unifiedData?.calendar?.behaviorCommitments || this.getLegacyBehaviorCommitments();
+    const commitments = unifiedData?.calendar?.behaviorCommitments || [];
     
     if (studentId) {
       return commitments.filter(c => c.studentId === studentId);
@@ -750,7 +689,7 @@ class UnifiedDataService {
   // Get daily highlights
   static getDailyHighlights(studentId?: string): DailyHighlight[] {
     const unifiedData = this.getUnifiedData();
-    const highlights = unifiedData?.calendar?.dailyHighlights || this.getLegacyDailyHighlights();
+    const highlights = unifiedData?.calendar?.dailyHighlights || [];
     
     if (studentId) {
       return highlights.filter(h => h.studentId === studentId);
@@ -811,7 +750,7 @@ class UnifiedDataService {
   // Get independent choices
   static getIndependentChoices(studentId?: string): IndependentChoice[] {
     const unifiedData = this.getUnifiedData();
-    const choices = unifiedData?.calendar?.independentChoices || this.getLegacyIndependentChoices();
+    const choices = unifiedData?.calendar?.independentChoices || [];
     
     if (studentId) {
       return choices.filter(c => c.studentId === studentId);
@@ -934,10 +873,10 @@ class UnifiedDataService {
       }
       
       // Migrate staff
-      unifiedData.staff = this.getLegacyStaff();
+      unifiedData.staff = [];
       
       // Migrate activities
-      unifiedData.activities = this.getLegacyActivities();
+      unifiedData.activities = [];
       
       // Migrate calendar data
       unifiedData.calendar.behaviorCommitments = this.getLegacyBehaviorCommitments();

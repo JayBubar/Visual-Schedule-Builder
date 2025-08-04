@@ -41,73 +41,51 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     try {
       // Load students from unified data service
       const unifiedStudents = UnifiedDataService.getAllStudents();
-      if (unifiedStudents.length > 0) {
-        // Convert UnifiedStudent to Student format for compatibility
-        const convertedStudents: Student[] = unifiedStudents.map(student => ({
-          id: student.id,
-          name: student.name,
-          grade: student.grade,
-          photo: student.photo,
-          accommodations: student.accommodations || [],
-          goals: student.goals || [],
-          preferredPartners: student.preferredPartners || [],
-          avoidPartners: student.avoidPartners || [],
-          parentName: student.parentName,
-          parentEmail: student.parentEmail,
-          parentPhone: student.parentPhone,
-          isActive: student.isActive !== false,
-          behaviorNotes: student.behaviorNotes,
-          medicalNotes: student.medicalNotes,
-          workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent"
-        }));
-        setRealStudents(convertedStudents);
-      } else {
-        // Fallback to legacy data
-        const savedStudents = localStorage.getItem('students');
-        if (savedStudents) {
-          const studentData = JSON.parse(savedStudents);
-          setRealStudents(studentData);
-        }
-      }
+      // Convert UnifiedStudent to Student format for compatibility
+      const convertedStudents: Student[] = unifiedStudents.map(student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes,
+        workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent"
+      }));
+      setRealStudents(convertedStudents);
 
       // Load staff from unified data service
       const unifiedStaff = UnifiedDataService.getAllStaff();
-      if (unifiedStaff.length > 0) {
-        // Convert UnifiedStaff to StaffMember format for compatibility
-        const convertedStaff: StaffMember[] = unifiedStaff.map(member => ({
-          id: member.id,
-          name: member.name,
-          role: member.role,
-          email: member.email || '',
-          phone: member.phone || '',
-          specialties: [], // Will need to map from permissions
-          photo: member.photo || null,
-          isActive: member.isActive,
-          startDate: member.dateCreated,
-          notes: '',
-          isResourceTeacher: false,
-          isRelatedArtsTeacher: false
-        }));
-        setRealStaff(convertedStaff);
-      } else {
-        // Fallback to legacy data
-        const savedStaff = localStorage.getItem('staff_members');
-        if (savedStaff) {
-          const staffData = JSON.parse(savedStaff);
-          setRealStaff(staffData);
-        }
-      }
+      // Convert UnifiedStaff to StaffMember format for compatibility
+      const convertedStaff: StaffMember[] = unifiedStaff.map(member => ({
+        id: member.id,
+        name: member.name,
+        role: member.role,
+        email: member.email || '',
+        phone: member.phone || '',
+        specialties: member.specialties || [],
+        photo: member.photo || null,
+        isActive: member.isActive,
+        startDate: member.dateCreated,
+        notes: member.notes || '',
+        isResourceTeacher: member.isResourceTeacher || false,
+        isRelatedArtsTeacher: member.isRelatedArtsTeacher || false
+      }));
+      setRealStaff(convertedStaff);
 
       // Load calendar settings from unified data service
       const unifiedSettings = UnifiedDataService.getSettings();
       if (unifiedSettings.calendarSettings) {
         setCalendarSettings(unifiedSettings.calendarSettings);
       } else {
-        // Check legacy localStorage
-        const savedSettings = localStorage.getItem('calendarSettings');
-        if (savedSettings) {
-          setCalendarSettings(JSON.parse(savedSettings));
-        } else {
+        // Create default settings and save to unified data
         const defaultSettings: CalendarSettings = {
           showWeather: true,
           showBehaviorCommitments: true,
@@ -134,8 +112,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           showWeatherAlerts: false
         };
         setCalendarSettings(defaultSettings);
-        localStorage.setItem('calendarSettings', JSON.stringify(defaultSettings));
-        }
+        UnifiedDataService.updateSettings({ calendarSettings: defaultSettings });
       }
 
       setIsLoading(false);
@@ -234,7 +211,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   const saveCalendarSettings = (newSettings: CalendarSettings) => {
     try {
-      localStorage.setItem('calendarSettings', JSON.stringify(newSettings));
+      UnifiedDataService.updateSettings({ calendarSettings: newSettings });
       setCalendarSettings(newSettings);
     } catch (error) {
       console.error('Error saving calendar settings:', error);

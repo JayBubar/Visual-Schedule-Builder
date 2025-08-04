@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import PrintDataSheetSystem from './PrintDataSheetSystem';
-// Enhanced types for robust data collection
-interface DataPoint {
-  id: string;
-  goalId: string;
-  studentId: string;
-  date: string;
-  time: string;
-  value: number | string;
-  notes?: string;
-  context?: string; // Activity during which data was collected
-  collectedBy: string;
-  accuracy?: number; // For percentage calculations
-  duration?: number; // For time-based measurements
-  prompt_level?: 1 | 2 | 3 | 4 | 5; // Independence levels
-  created_at: string;
+import UnifiedDataService from '../../services/unifiedDataService';
+import { DataPoint as BaseDataPoint } from '../../types';
+
+// Extended DataPoint interface for this component
+interface DataPoint extends BaseDataPoint {
+  collectedBy?: string;
+  created_at?: string;
+  accuracy?: number;
+  duration?: number;
+  prompt_level?: 1 | 2 | 3 | 4 | 5;
 }
 
 interface QuickDataEntry {
@@ -58,12 +53,9 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printDateRange, setPrintDateRange] = useState('week');
   const [currentEntry, setCurrentEntry] = useState<Partial<DataPoint>>({
-    value: '',
+    value: 0,
     notes: '',
-    context: '',
-    accuracy: undefined,
-    duration: undefined,
-    prompt_level: undefined
+    context: ''
   });
   
   const [isQuickMode, setIsQuickMode] = useState(false);
@@ -77,15 +69,10 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
 
   const loadRecentDataPoints = () => {
     try {
-      const savedData = localStorage.getItem('iepDataPoints');
-      if (savedData) {
-        const allDataPoints: DataPoint[] = JSON.parse(savedData);
-        const goalData = allDataPoints
-          .filter(dp => dp.goalId === selectedGoal.id)
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5); // Last 5 entries
-        setRecentDataPoints(goalData);
-      }
+      // Use UnifiedDataService instead of localStorage
+      const goalData = UnifiedDataService.getGoalDataPoints(selectedGoal.id)
+        .slice(0, 5); // Last 5 entries
+      setRecentDataPoints(goalData);
     } catch (error) {
       console.error('Error loading recent data points:', error);
     }
@@ -94,15 +81,20 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
   const handleQuickSave = async (quickValue: number | string) => {
     setSavingStatus('saving');
     
+    const numericValue = typeof quickValue === 'string' ? 
+      (quickValue === 'Yes' ? 1 : quickValue === 'No' ? 0 : parseFloat(quickValue) || 0) : 
+      quickValue;
+    
     const dataPoint: DataPoint = {
       id: Date.now().toString(),
       goalId: selectedGoal.id,
       studentId: selectedStudent.id,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString(),
-      value: quickValue,
+      value: numericValue,
       context: currentEntry.context || 'Quick entry',
-      collectedBy: 'Current User', // In production, this would be the logged-in user
+      collector: 'Current User', // Use collector instead of collectedBy
+      collectedBy: 'Current User', // Keep for backward compatibility
       created_at: new Date().toISOString(),
       ...currentEntry
     };
@@ -123,16 +115,21 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
     
     setSavingStatus('saving');
     
+    const numericValue = typeof currentEntry.value === 'string' ? 
+      parseFloat(currentEntry.value) || 0 : 
+      currentEntry.value;
+    
     const dataPoint: DataPoint = {
       id: Date.now().toString(),
       goalId: selectedGoal.id,
       studentId: selectedStudent.id,
       date: new Date().toISOString().split('T')[0],
       time: new Date().toLocaleTimeString(),
-      value: currentEntry.value,
+      value: numericValue,
       notes: currentEntry.notes,
       context: currentEntry.context || 'Detailed entry',
-      collectedBy: 'Current User',
+      collector: 'Current User', // Required field
+      collectedBy: 'Current User', // Backward compatibility
       created_at: new Date().toISOString(),
       accuracy: currentEntry.accuracy,
       duration: currentEntry.duration,
@@ -142,7 +139,7 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
     try {
       await saveDataPoint(dataPoint);
       setSavingStatus('saved');
-      setCurrentEntry({ value: '', notes: '', context: '' });
+      setCurrentEntry({ value: 0, notes: '', context: '' });
       setTimeout(() => setSavingStatus('idle'), 2000);
       onDataSaved();
     } catch (error) {
@@ -152,32 +149,44 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
   };
 
   const saveDataPoint = async (dataPoint: DataPoint) => {
-    const savedData = localStorage.getItem('iepDataPoints');
-    const existingData: DataPoint[] = savedData ? JSON.parse(savedData) : [];
-    const updatedData = [...existingData, dataPoint];
-    localStorage.setItem('iepDataPoints', JSON.stringify(updatedData));
-    
-    // Update goal progress
-    updateGoalProgress(dataPoint);
+    try {
+      // Use UnifiedDataService with correct signature
+      const dataPointToSave = {
+        goalId: dataPoint.goalId,
+        studentId: dataPoint.studentId,
+        date: dataPoint.date,
+        time: dataPoint.time,
+        value: dataPoint.value,
+        totalOpportunities: dataPoint.totalOpportunities,
+        notes: dataPoint.notes,
+        context: dataPoint.context,
+        activityId: dataPoint.activityId,
+        collector: dataPoint.collector || 'Current User',
+        photos: dataPoint.photos || [],
+        voiceNotes: dataPoint.voiceNotes || []
+      };
+      
+      UnifiedDataService.addDataPoint(dataPointToSave);
+      
+      // Update goal progress
+      updateGoalProgress(dataPoint);
+    } catch (error) {
+      console.error('Error saving data point:', error);
+      throw error;
+    }
   };
 
   const updateGoalProgress = (dataPoint: DataPoint) => {
-    // Calculate new progress based on measurement type
-    const savedGoals = localStorage.getItem('iepGoals');
-    if (savedGoals) {
-      const goals: IEPGoal[] = JSON.parse(savedGoals);
-      const updatedGoals = goals.map(goal => {
-        if (goal.id === selectedGoal.id) {
-          return {
-            ...goal,
-            dataPoints: goal.dataPoints + 1,
-            lastDataPoint: new Date().toISOString(),
-            currentProgress: calculateProgress(goal, dataPoint)
-          };
-        }
-        return goal;
+    try {
+      // Use UnifiedDataService to update goal progress
+      const progress = calculateProgress(selectedGoal, dataPoint);
+      UnifiedDataService.updateGoal(selectedGoal.id, { 
+        currentProgress: progress,
+        lastDataPoint: new Date().toISOString(),
+        dataPoints: selectedGoal.dataPoints + 1
       });
-      localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
+    } catch (error) {
+      console.error('Error updating goal progress:', error);
     }
   };
 
@@ -189,7 +198,8 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
       case 'rating':
         return typeof dataPoint.value === 'number' ? (dataPoint.value / 5) * 100 : 0;
       case 'independence':
-        return dataPoint.prompt_level ? (dataPoint.prompt_level / 5) * 100 : 0;
+        // For independence, assume higher values mean more independent
+        return typeof dataPoint.value === 'number' ? (dataPoint.value / 5) * 100 : 0;
       default:
         return goal.currentProgress;
     }
