@@ -21,98 +21,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
 
   const loadStaffData = () => {
     try {
-      // Always use UnifiedDataService - no dual handling
       const unifiedStaff = UnifiedDataService.getAllStaff();
-      
-      // If no staff exists, initialize with defaults
-      if (unifiedStaff.length === 0) {
-        const defaultStaff: Omit<UnifiedStaff, 'id'>[] = [
-          {
-            name: 'Ms. Johnson',
-            role: 'Special Education Teacher',
-            email: 'johnson@school.edu',
-            phone: '(555) 123-4567',
-            photo: null,
-            isActive: true,
-            dateCreated: '2023-08-15',
-            specialties: ['Autism Support', 'Behavior Management'],
-            notes: 'Lead teacher with 8 years experience',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false,
-            permissions: {
-              canEditStudents: true,
-              canViewReports: true,
-              canManageGoals: true
-            }
-          },
-          {
-            name: 'Mr. Rodriguez',
-            role: 'Paraprofessional',
-            email: 'rodriguez@school.edu',
-            phone: '(555) 234-5678',
-            photo: null,
-            isActive: true,
-            dateCreated: '2024-01-08',
-            specialties: ['Math Support', 'Individual Assistance'],
-            notes: 'Excellent with one-on-one instruction',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false,
-            permissions: {
-              canEditStudents: false,
-              canViewReports: true,
-              canManageGoals: false
-            }
-          },
-          {
-            name: 'Dr. Williams',
-            role: 'Speech Therapist',
-            email: 'williams@school.edu',
-            phone: '(555) 345-6789',
-            photo: null,
-            isActive: true,
-            dateCreated: '2022-09-01',
-            specialties: ['Speech Therapy', 'Communication Devices'],
-            notes: 'Specialist in AAC devices',
-            isResourceTeacher: true,
-            isRelatedArtsTeacher: false,
-            permissions: {
-              canEditStudents: false,
-              canViewReports: true,
-              canManageGoals: true
-            }
-          },
-          {
-            name: 'Mrs. Chen',
-            role: 'Art Teacher',
-            email: 'chen@school.edu',
-            phone: '(555) 456-7890',
-            photo: null,
-            isActive: true,
-            dateCreated: '2023-01-15',
-            specialties: ['Art Therapy', 'Creative Expression'],
-            notes: 'Comes to classroom for art sessions',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: true,
-            permissions: {
-              canEditStudents: false,
-              canViewReports: false,
-              canManageGoals: false
-            }
-          }
-        ];
-        
-        // Add default staff to unified data
-        defaultStaff.forEach(staffData => {
-          UnifiedDataService.addStaff(staffData);
-        });
-        
-        // Reload after adding defaults
-        setStaff(UnifiedDataService.getAllStaff());
-      } else {
-        setStaff(unifiedStaff);
-      }
+      setStaff(unifiedStaff);
     } catch (error) {
       console.error('Error loading staff data:', error);
+      setStaff([]);
     }
   };
 

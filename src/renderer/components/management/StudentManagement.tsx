@@ -71,7 +71,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const loadStudentData = () => {
     try {
-      // Always use unified data service - no legacy fallback
       const unifiedStudents = UnifiedDataService.getAllStudents() as ExtendedStudent[];
       setStudents(unifiedStudents);
       setIsUsingUnifiedData(true);
@@ -79,110 +78,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       console.error('Error loading student data:', error);
       setStudents([]);
     }
-  };
-
-  const initializeDefaultStudents = () => {
-    const defaultStudents: ExtendedStudent[] = [
-      {
-        id: 'student1',
-        name: 'Emma Wilson',
-        grade: 'Kindergarten',
-        photo: undefined,
-        dateCreated: new Date().toISOString().split('T')[0],
-        workingStyle: 'collaborative',
-        accommodations: ['Visual supports', 'Extra time'],
-        goals: [
-          'Will identify letters A-Z with 90% accuracy',
-          'Will read 25 sight words with 80% accuracy',
-          'Will write name independently'
-        ],
-        parentName: 'Sarah Wilson',
-        parentEmail: 'sarah.wilson@email.com',
-        parentPhone: '(555) 123-4567',
-        isActive: true,
-        behaviorNotes: 'Responds well to positive reinforcement',
-        medicalNotes: '',
-        resourceInfo: {
-          attendsResource: false,
-          resourceType: '',
-          resourceTeacher: '',
-          timeframe: ''
-        },
-        preferredPartners: [],
-        avoidPartners: [],
-        iepData: {
-          goals: [],
-          dataCollection: []
-        }
-      },
-      {
-        id: 'student2',
-        name: 'Marcus Johnson',
-        grade: '1st Grade',
-        photo: undefined,
-        dateCreated: new Date().toISOString().split('T')[0],
-        workingStyle: 'independent',
-        accommodations: ['Movement breaks', 'Fidget tools'],
-        goals: [
-          'Will count to 100 by 1s, 5s, and 10s',
-          'Will solve addition problems within 20',
-          'Will sit for 15 minutes during instruction'
-        ],
-        parentName: 'David Johnson',
-        parentEmail: 'david.johnson@email.com',
-        parentPhone: '(555) 234-5678',
-        isActive: true,
-        behaviorNotes: 'Works best with clear structure',
-        medicalNotes: 'ADHD - takes medication at lunch',
-        resourceInfo: {
-          attendsResource: true,
-          resourceType: 'Speech Therapy',
-          resourceTeacher: 'Ms. Parker',
-          timeframe: '10:00-10:30 AM'
-        },
-        preferredPartners: [],
-        avoidPartners: [],
-        iepData: {
-          goals: [],
-          dataCollection: []
-        }
-      },
-      {
-        id: 'student3',
-        name: 'Sofia Rodriguez',
-        grade: '2nd Grade',
-        photo: undefined,
-        dateCreated: new Date().toISOString().split('T')[0],
-        workingStyle: 'collaborative',
-        accommodations: ['Audio cues', 'Communication device'],
-        goals: [
-          'Will use AAC device to request items',
-          'Will follow 2-step directions independently',
-          'Will participate in group activities for 10 minutes'
-        ],
-        parentName: 'Maria Rodriguez',
-        parentEmail: 'maria.rodriguez@email.com',
-        parentPhone: '(555) 345-6789',
-        isActive: true,
-        behaviorNotes: 'Enjoys helping other students',
-        medicalNotes: 'Uses AAC device for communication',
-        resourceInfo: {
-          attendsResource: true,
-          resourceType: 'Occupational Therapy',
-          resourceTeacher: 'Mrs. Thompson',
-          timeframe: '1:00-1:30 PM'
-        },
-        preferredPartners: [],
-        avoidPartners: [],
-        iepData: {
-          goals: [],
-          dataCollection: []
-        }
-      }
-    ];
-    
-    setStudents(defaultStudents);
-    saveStudentData(defaultStudents);
   };
 
   const saveStudentData = (studentData: ExtendedStudent[]) => {
