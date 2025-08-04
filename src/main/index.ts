@@ -10,7 +10,10 @@ const isDev = process.env.NODE_ENV === 'development';
 let mainWindow: BrowserWindow | null = null;
 
 // Data directory for storing schedules and settings
-const dataDir = join(homedir(), '.visual-schedule-builder');
+// Use different directory for development to avoid conflicts
+const dataDir = isDev 
+  ? join(homedir(), '.visual-schedule-builder-dev') 
+  : join(homedir(), '.visual-schedule-builder');
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }

@@ -30,7 +30,12 @@ const Navigation: React.FC<NavigationProps> = ({
       <div className="nav-brand">
         <div className="brand-icon">📅</div>
         <div className="brand-info">
-          <div className="brand-title">Visual Schedule Builder</div>
+          <div className="brand-title">
+            Visual Schedule Builder
+            {window.location.hostname === 'localhost' && (
+              <span className="dev-indicator">DEV</span>
+            )}
+          </div>
           <div className="brand-version">v1.0.0</div>
         </div>
       </div>
@@ -87,6 +92,22 @@ const Navigation: React.FC<NavigationProps> = ({
         .brand-version {
           font-size: 0.75rem;
           opacity: 0.8;
+        }
+
+        .dev-indicator {
+          background: #ff453a;
+          color: white;
+          font-size: 0.625rem;
+          font-weight: 800;
+          padding: 0.125rem 0.375rem;
+          border-radius: 0.25rem;
+          margin-left: 0.5rem;
+          animation: devPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes devPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
 
         .nav-buttons {
