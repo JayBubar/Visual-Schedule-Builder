@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
+import UnifiedDataService from './services/unifiedDataService';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
@@ -24,19 +25,89 @@ const App: React.FC = () => {
   const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
 
   useEffect(() => {
-    const savedStudents = loadFromStorage<Student[]>('vsb_students', []);
-    const savedStaff = loadFromStorage<Staff[]>('vsb_staff', []);
-    const savedActivities = loadFromStorage<ActivityLibraryItem[]>('vsb_activities', []);
-    
-    setStudents(savedStudents);
-    setStaff(savedStaff);
-    setActivities(savedActivities);
-    
-    console.log('App initialized with data:', {
-      students: savedStudents.length,
-      staff: savedStaff.length,
-      activities: savedActivities.length
-    });
+    try {
+      // Load from unified data service first
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      // Convert unified data to legacy format for components that still expect it
+      const legacyStudents: Student[] = unifiedStudents.map(student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade || '',
+        photo: student.photo,
+        workingStyle: student.workingStyle as any,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive ?? true,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes,
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || []
+      }));
+
+      const legacyStaff: Staff[] = unifiedStaff.map(staff => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email || '',
+        phone: staff.phone || '',
+        photo: staff.photo,
+        isActive: staff.isActive ?? true,
+        specialties: staff.specialties || [],
+        notes: staff.notes,
+        startDate: staff.dateCreated,
+        isResourceTeacher: staff.isResourceTeacher ?? false,
+        isRelatedArtsTeacher: staff.isRelatedArtsTeacher ?? false
+      }));
+
+      const legacyActivities: ActivityLibraryItem[] = unifiedActivities.map(activity => ({
+        id: activity.id,
+        name: activity.name,
+        category: activity.category as any, // Cast to match ScheduleCategory
+        description: activity.description || '',
+        duration: activity.duration || 30,
+        defaultDuration: activity.duration || 30,
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        adaptations: activity.adaptations || [],
+        isCustom: activity.isCustom,
+        dateCreated: activity.dateCreated,
+        emoji: '📚' // Default emoji for activities
+      }));
+      
+      setStudents(legacyStudents);
+      setStaff(legacyStaff);
+      setActivities(legacyActivities);
+      
+      console.log('App initialized with unified data:', {
+        students: legacyStudents.length,
+        staff: legacyStaff.length,
+        activities: legacyActivities.length
+      });
+      
+    } catch (error) {
+      console.error('Error loading unified data, falling back to legacy storage:', error);
+      
+      // Fallback to legacy storage if unified data fails
+      const savedStudents = loadFromStorage<Student[]>('vsb_students', []);
+      const savedStaff = loadFromStorage<Staff[]>('vsb_staff', []);
+      const savedActivities = loadFromStorage<ActivityLibraryItem[]>('vsb_activities', []);
+      
+      setStudents(savedStudents);
+      setStaff(savedStaff);
+      setActivities(savedActivities);
+      
+      console.log('App initialized with legacy data:', {
+        students: savedStudents.length,
+        staff: savedStaff.length,
+        activities: savedActivities.length
+      });
+    }
   }, []);
 
   const handleViewChange = (view: ViewType) => {
