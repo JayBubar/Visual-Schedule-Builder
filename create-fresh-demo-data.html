@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Fresh Demo Data</title>
+</head>
+<body>
+    <h1>Creating Fresh Demo Data</h1>
+    <div id="output"></div>
+    <button onclick="createData()">Create Demo Data</button>
+    <button onclick="clearAll()">Clear All Data</button>
+    
+    <script>
+        function createData() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Create 8 students with IEP goals and accommodations
+                const students = [
+                    {
+                        id: 'student-001',
+                        name: 'Emma Johnson',
+                        grade: '3rd Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Visual learner, needs structure',
+                        accommodations: ['Extended time', 'Visual supports', 'Movement breaks'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Extended time (1.5x)', 'Visual schedules', 'Preferential seating'],
+                            relatedServices: ['Speech Therapy', 'Occupational Therapy'],
+                            allergies: ['Tree nuts'],
+                            medicalNeeds: ['ADHD medication'],
+                            emergencyContact: {
+                                name: 'Sarah Johnson',
+                                phone: '555-0101',
+                                relationship: 'Mother'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-001-1',
+                                    studentId: 'student-001',
+                                    domain: 'academic',
+                                    title: 'Reading Comprehension',
+                                    description: 'Emma will demonstrate reading comprehension of grade-level texts',
+                                    shortTermObjective: 'Answer 4 out of 5 comprehension questions correctly',
+                                    criteria: 'With 80% accuracy over 3 consecutive sessions',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 65,
+                                    dataPoints: 12
+                                },
+                                {
+                                    id: 'goal-001-2',
+                                    studentId: 'student-001',
+                                    domain: 'behavioral',
+                                    title: 'On-Task Behavior',
+                                    description: 'Emma will remain on-task during independent work',
+                                    shortTermObjective: 'Stay focused for 15-minute periods',
+                                    criteria: 'With minimal prompting in 4 out of 5 trials',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'medium',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 70,
+                                    dataPoints: 8
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-002',
+                        name: 'Marcus Williams',
+                        grade: '4th Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Kinesthetic learner, needs movement',
+                        accommodations: ['Movement breaks', 'Fidget tools', 'Standing desk option'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Movement breaks every 20 minutes', 'Fidget tools', 'Alternative seating'],
+                            relatedServices: ['Physical Therapy'],
+                            allergies: [],
+                            medicalNeeds: ['Sensory processing needs'],
+                            emergencyContact: {
+                                name: 'David Williams',
+                                phone: '555-0102',
+                                relationship: 'Father'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-002-1',
+                                    studentId: 'student-002',
+                                    domain: 'academic',
+                                    title: 'Math Problem Solving',
+                                    description: 'Marcus will solve multi-step word problems',
+                                    shortTermObjective: 'Complete 3 out of 4 word problems correctly',
+                                    criteria: 'With 75% accuracy over 5 consecutive sessions',
+                                    target: 75,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 60,
+                                    dataPoints: 10
+                                },
+                                {
+                                    id: 'goal-002-2',
+                                    studentId: 'student-002',
+                                    domain: 'social-emotional',
+                                    title: 'Self-Regulation',
+                                    description: 'Marcus will use appropriate self-regulation strategies',
+                                    shortTermObjective: 'Use calming strategies when frustrated',
+                                    criteria: 'In 4 out of 5 opportunities',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 45,
+                                    dataPoints: 15
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-003',
+                        name: 'Sophia Chen',
+                        grade: '2nd Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Auditory learner, needs quiet environment',
+                        accommodations: ['Noise-canceling headphones', 'Quiet workspace', 'Audio instructions'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Noise-canceling headphones', 'Preferential seating away from distractions'],
+                            relatedServices: ['Speech Therapy'],
+                            allergies: ['Dairy'],
+                            medicalNeeds: ['Hearing aids'],
+                            emergencyContact: {
+                                name: 'Linda Chen',
+                                phone: '555-0103',
+                                relationship: 'Mother'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-003-1',
+                                    studentId: 'student-003',
+                                    domain: 'academic',
+                                    title: 'Letter Sound Recognition',
+                                    description: 'Sophia will identify letter sounds accurately',
+                                    shortTermObjective: 'Name 20 out of 26 letter sounds',
+                                    criteria: 'With 80% accuracy in 3 consecutive trials',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 75,
+                                    dataPoints: 18
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-004',
+                        name: 'Jayden Rodriguez',
+                        grade: '5th Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Collaborative learner, needs peer support',
+                        accommodations: ['Peer support', 'Group work opportunities', 'Visual aids'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Peer tutoring', 'Collaborative learning opportunities'],
+                            relatedServices: ['Social Skills Group'],
+                            allergies: [],
+                            medicalNeeds: [],
+                            emergencyContact: {
+                                name: 'Maria Rodriguez',
+                                phone: '555-0104',
+                                relationship: 'Mother'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-004-1',
+                                    studentId: 'student-004',
+                                    domain: 'social-emotional',
+                                    title: 'Social Interaction',
+                                    description: 'Jayden will initiate appropriate social interactions',
+                                    shortTermObjective: 'Start conversations with peers 3 times per day',
+                                    criteria: 'Using appropriate social skills in 4 out of 5 attempts',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 55,
+                                    dataPoints: 20
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-005',
+                        name: 'Ava Thompson',
+                        grade: '1st Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Needs structure and routine',
+                        accommodations: ['Visual schedule', 'Clear expectations', 'Consistent routine'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Visual schedule', 'Structured environment', 'Clear expectations'],
+                            relatedServices: ['Occupational Therapy', 'Behavioral Support'],
+                            allergies: ['Peanuts'],
+                            medicalNeeds: ['Autism spectrum disorder'],
+                            emergencyContact: {
+                                name: 'Jennifer Thompson',
+                                phone: '555-0105',
+                                relationship: 'Mother'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-005-1',
+                                    studentId: 'student-005',
+                                    domain: 'behavioral',
+                                    title: 'Following Directions',
+                                    description: 'Ava will follow 2-step directions independently',
+                                    shortTermObjective: 'Complete 2-step directions without prompting',
+                                    criteria: 'In 3 out of 4 opportunities',
+                                    target: 75,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 40,
+                                    dataPoints: 25
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-006',
+                        name: 'Liam Davis',
+                        grade: '3rd Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Technology-assisted learning',
+                        accommodations: ['Assistive technology', 'Large print materials', 'Audio support'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Text-to-speech software', 'Large print materials', 'Extended time'],
+                            relatedServices: ['Vision Support'],
+                            allergies: [],
+                            medicalNeeds: ['Visual impairment'],
+                            emergencyContact: {
+                                name: 'Michael Davis',
+                                phone: '555-0106',
+                                relationship: 'Father'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-006-1',
+                                    studentId: 'student-006',
+                                    domain: 'academic',
+                                    title: 'Reading Fluency',
+                                    description: 'Liam will read grade-level text with fluency using assistive technology',
+                                    shortTermObjective: 'Read 100 words per minute with 95% accuracy',
+                                    criteria: 'Using text-to-speech support when needed',
+                                    target: 95,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 85,
+                                    dataPoints: 14
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-007',
+                        name: 'Mia Garcia',
+                        grade: '4th Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Needs frequent breaks and encouragement',
+                        accommodations: ['Frequent breaks', 'Positive reinforcement', 'Modified assignments'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Breaks every 15 minutes', 'Modified homework', 'Positive behavior support'],
+                            relatedServices: ['Counseling', 'Social Work'],
+                            allergies: [],
+                            medicalNeeds: ['Anxiety disorder'],
+                            emergencyContact: {
+                                name: 'Carlos Garcia',
+                                phone: '555-0107',
+                                relationship: 'Father'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-007-1',
+                                    studentId: 'student-007',
+                                    domain: 'social-emotional',
+                                    title: 'Anxiety Management',
+                                    description: 'Mia will use coping strategies to manage anxiety',
+                                    shortTermObjective: 'Use deep breathing when feeling anxious',
+                                    criteria: 'In 4 out of 5 opportunities without prompting',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 60,
+                                    dataPoints: 16
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    },
+                    {
+                        id: 'student-008',
+                        name: 'Noah Martinez',
+                        grade: '5th Grade',
+                        dateCreated: '2024-08-01',
+                        workingStyle: 'Hands-on learner, needs concrete examples',
+                        accommodations: ['Manipulatives', 'Hands-on activities', 'Real-world examples'],
+                        resourceInformation: {
+                            attendsResourceServices: true,
+                            accommodations: ['Math manipulatives', 'Hands-on learning materials', 'Extended time'],
+                            relatedServices: ['Resource Room Support'],
+                            allergies: [],
+                            medicalNeeds: ['Learning disability in math'],
+                            emergencyContact: {
+                                name: 'Rosa Martinez',
+                                phone: '555-0108',
+                                relationship: 'Mother'
+                            }
+                        },
+                        iepData: {
+                            goals: [
+                                {
+                                    id: 'goal-008-1',
+                                    studentId: 'student-008',
+                                    domain: 'academic',
+                                    title: 'Mathematical Operations',
+                                    description: 'Noah will solve multi-digit multiplication problems',
+                                    shortTermObjective: 'Complete 8 out of 10 multiplication problems correctly',
+                                    criteria: 'Using manipulatives or visual aids as needed',
+                                    target: 80,
+                                    measurementType: 'percentage',
+                                    priority: 'high',
+                                    dateCreated: '2024-08-01',
+                                    currentProgress: 50,
+                                    dataPoints: 22
+                                }
+                            ],
+                            dataCollection: []
+                        }
+                    }
+                ];
+
+                // Create 4 staff members
+                const staff = [
+                    {
+                        id: 'staff-001',
+                        name: 'Ms. Sarah Anderson',
+                        role: 'Special Education Teacher',
+                        email: 'sanderson@school.edu',
+                        phone: '555-1001',
+                        isActive: true,
+                        dateCreated: '2024-08-01',
+                        specialties: ['IEP Development', 'Behavior Management', 'Autism Support'],
+                        isResourceTeacher: true,
+                        isRelatedArtsTeacher: false,
+                        permissions: {
+                            canEditStudents: true,
+                            canViewReports: true,
+                            canManageGoals: true
+                        }
+                    },
+                    {
+                        id: 'staff-002',
+                        name: 'Mr. James Wilson',
+                        role: 'General Education Teacher',
+                        email: 'jwilson@school.edu',
+                        phone: '555-1002',
+                        isActive: true,
+                        dateCreated: '2024-08-01',
+                        specialties: ['Elementary Education', 'Differentiated Instruction', 'Reading Intervention'],
+                        isResourceTeacher: false,
+                        isRelatedArtsTeacher: false,
+                        permissions: {
+                            canEditStudents: false,
+                            canViewReports: true,
+                            canManageGoals: false
+                        }
+                    },
+                    {
+                        id: 'staff-003',
+                        name: 'Ms. Emily Parker',
+                        role: 'Speech-Language Pathologist',
+                        email: 'eparker@school.edu',
+                        phone: '555-1003',
+                        isActive: true,
+                        dateCreated: '2024-08-01',
+                        specialties: ['Speech Therapy', 'Language Development', 'Communication Devices'],
+                        isResourceTeacher: true,
+                        isRelatedArtsTeacher: false,
+                        permissions: {
+                            canEditStudents: false,
+                            canViewReports: true,
+                            canManageGoals: true
+                        }
+                    },
+                    {
+                        id: 'staff-004',
+                        name: 'Mr. David Kim',
+                        role: 'Occupational Therapist',
+                        email: 'dkim@school.edu',
+                        phone: '555-1004',
+                        isActive: true,
+                        dateCreated: '2024-08-01',
+                        specialties: ['Fine Motor Skills', 'Sensory Integration', 'Adaptive Equipment'],
+                        isResourceTeacher: true,
+                        isRelatedArtsTeacher: false,
+                        permissions: {
+                            canEditStudents: false,
+                            canViewReports: true,
+                            canManageGoals: true
+                        }
+                    }
+                ];
+
+                // Create unified data structure
+                const unifiedData = {
+                    students: students,
+                    staff: staff,
+                    activities: [],
+                    calendar: {
+                        behaviorCommitments: [],
+                        dailyHighlights: [],
+                        independentChoices: []
+                    },
+                    settings: {},
+                    metadata: {
+                        version: '2.0',
+                        migratedAt: new Date().toISOString(),
+                        totalGoals: students.reduce((total, s) => total + s.iepData.goals.length, 0),
+                        totalDataPoints: students.reduce((total, s) => total + s.iepData.dataCollection.length, 0),
+                        totalStaff: staff.length,
+                        totalActivities: 0
+                    }
+                };
+
+                // Save to localStorage
+                localStorage.setItem('visual-schedule-builder-unified-data', JSON.stringify(unifiedData));
+
+                output.innerHTML = `
+                    <h2>✅ Demo Data Created Successfully!</h2>
+                    <p><strong>Students Created:</strong> ${students.length}</p>
+                    <p><strong>Staff Created:</strong> ${staff.length}</p>
+                    <p><strong>Total IEP Goals:</strong> ${unifiedData.metadata.totalGoals}</p>
+                    <p><strong>Data Structure:</strong> Unified Data v2.0</p>
+                    <br>
+                    <h3>Students with IEP Goals:</h3>
+                    <ul>
+                        ${students.map(s => `<li><strong>${s.name}</strong> (${s.grade}) - ${s.iepData.goals.length} IEP goal(s)</li>`).join('')}
+                    </ul>
+                    <h3>Staff Members:</h3>
+                    <ul>
+                        ${staff.map(s => `<li><strong>${s.name}</strong> - ${s.role}</li>`).join('')}
+                    </ul>
+                    <p><em>You can now refresh your Visual Schedule Builder app to see the data!</em></p>
+                `;
+            } catch (error) {
+                output.innerHTML = `<h2>❌ Error Creating Data</h2><p>${error.message}</p>`;
+            }
+        }
+
+        function clearAll() {
+            localStorage.clear();
+            document.getElementById('output').innerHTML = '<h2>🗑️ All localStorage data cleared</h2>';
+        }
+    </script>
+</body>
+</html>
