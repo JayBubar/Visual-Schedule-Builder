@@ -1,6 +1,7 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import { Activity, ActivityLibraryItem } from '../../types';
 import { defaultTransitionActivities, addTransitionsToLibrary } from '../../data/defaultTransitionActivities';
+import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
 
 interface ActivityLibraryProps {
   isActive: boolean;
@@ -338,100 +339,119 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     { id: '28', name: 'Resource Room', icon: '🎯', category: 'resource', description: 'Special education support', defaultDuration: 30, tags: ['support', 'individualized', 'academic'], isCustom: false }
   ];
 
-  // Load custom activities from localStorage
+  // Load custom activities from UnifiedDataService
   useEffect(() => {
-    const stored = localStorage.getItem('custom_activities');
-    if (stored) {
-      try {
-        setCustomActivities(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading custom activities:', error);
-      }
-    }
+    loadCustomActivities();
   }, []);
 
-// 🎯 CRITICAL FIX: Add transition activities automatically AND include them in display
-useEffect(() => {
-  console.log('🎯 ActivityLibrary - Checking for transition activities...');
-  
-  // Get current activities from localStorage
-  const currentCustomActivities = JSON.parse(localStorage.getItem('custom_activities') || '[]');
-  
-  // Check if transitions already exist to avoid duplicates
-  const hasTransitions = currentCustomActivities.some((activity: any) => activity.isTransition);
-  
-  if (!hasTransitions) {
-    console.log('➕ Adding transition activities to library...');
-    
-    // Add transition activities to existing activities (returns ActivityLibraryItem[])
-    const activitiesWithTransitions = addTransitionsToLibrary(currentCustomActivities);
-    
-    // ✅ FIXED: Convert ActivityLibraryItem[] to CustomActivity[] by ensuring all required properties
-    const customActivitiesWithTransitions: CustomActivity[] = activitiesWithTransitions.map((activity: ActivityLibraryItem): CustomActivity => {
-      return {
-        // Required LibraryActivity properties
+  const loadCustomActivities = () => {
+    try {
+      // Get activities from UnifiedDataService
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      // Convert UnifiedActivity[] to CustomActivity[] format
+      const customActivitiesFromUnified: CustomActivity[] = unifiedActivities.map((activity: UnifiedActivity): CustomActivity => ({
         id: activity.id,
         name: activity.name,
-        emoji: activity.emoji,
-        icon: activity.icon,
-        category: activity.category,
-        defaultDuration: activity.defaultDuration,
+        icon: activity.name, // UnifiedActivity doesn't have icon, use name as fallback
+        category: activity.category as any,
+        defaultDuration: activity.duration || 30,
         description: activity.description || '',
-        tags: activity.tags || [],
-        
-        // Optional Activity properties that LibraryActivity inherits
+        tags: [], // UnifiedActivity doesn't have tags
         materials: activity.materials || [],
         instructions: activity.instructions || '',
         isCustom: activity.isCustom,
-        ageGroup: activity.ageGroup,
-        difficulty: activity.difficulty,
+        createdAt: activity.dateCreated,
+        updatedAt: activity.dateCreated,
+        usageCount: 0,
+        // Add transition properties if they exist
+        isTransition: (activity as any).isTransition || false,
+        transitionType: (activity as any).transitionType,
+        animationStyle: (activity as any).animationStyle,
+        showNextActivity: (activity as any).showNextActivity,
+        movementPrompts: (activity as any).movementPrompts,
+        autoStart: (activity as any).autoStart,
+        soundEnabled: (activity as any).soundEnabled,
+        customMessage: (activity as any).customMessage
+      }));
+
+      // If no activities exist, initialize with transition activities
+      if (customActivitiesFromUnified.length === 0) {
+        console.log('🎯 ActivityLibrary - No activities found, adding transition activities...');
         
-        // ✅ FIXED: Always include transition properties (don't use conditional spread)
-        isTransition: activity.isTransition || false,
-        transitionType: activity.transitionType,
-        animationStyle: activity.animationStyle,
-        showNextActivity: activity.showNextActivity,
-        movementPrompts: activity.movementPrompts,
-        autoStart: activity.autoStart,
-        soundEnabled: activity.soundEnabled,
-        customMessage: activity.customMessage,
+        // Add transition activities to empty array
+        const activitiesWithTransitions = addTransitionsToLibrary([]);
         
-        // Required CustomActivity properties
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        usageCount: 0
+        // Convert and save to UnifiedDataService
+        activitiesWithTransitions.forEach((activity: ActivityLibraryItem) => {
+          const unifiedActivity: Partial<UnifiedActivity> = {
+            name: activity.name,
+            category: activity.category,
+            description: activity.description || '',
+            duration: activity.defaultDuration,
+            materials: activity.materials || [],
+            instructions: activity.instructions || '',
+            isCustom: activity.isCustom,
+            // Add transition properties
+            ...(activity.isTransition && {
+              isTransition: activity.isTransition,
+              transitionType: activity.transitionType,
+              animationStyle: activity.animationStyle,
+              showNextActivity: activity.showNextActivity,
+              movementPrompts: activity.movementPrompts,
+              autoStart: activity.autoStart,
+              soundEnabled: activity.soundEnabled,
+              customMessage: activity.customMessage
+            })
+          };
+          
+          UnifiedDataService.addActivity(unifiedActivity);
+        });
+        
+        // Reload activities after adding
+        loadCustomActivities();
+      } else {
+        setCustomActivities(customActivitiesFromUnified);
+      }
+    } catch (error) {
+      console.error('Error loading custom activities:', error);
+    }
+  };
+
+  // Save custom activities via UnifiedDataService
+  const saveCustomActivities = (activities: CustomActivity[]) => {
+    // Update each activity in UnifiedDataService
+    activities.forEach(activity => {
+      const unifiedActivity: Partial<UnifiedActivity> = {
+        name: activity.name,
+        category: activity.category,
+        description: activity.description,
+        duration: activity.defaultDuration,
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        isCustom: activity.isCustom,
+        // Add transition properties if they exist
+        ...(activity.isTransition && {
+          isTransition: activity.isTransition,
+          transitionType: activity.transitionType,
+          animationStyle: activity.animationStyle,
+          showNextActivity: activity.showNextActivity,
+          movementPrompts: activity.movementPrompts,
+          autoStart: activity.autoStart,
+          soundEnabled: activity.soundEnabled,
+          customMessage: activity.customMessage
+        })
       };
+      
+      // Check if activity exists, update or add
+      const existingActivity = UnifiedDataService.getActivity(activity.id);
+      if (existingActivity) {
+        UnifiedDataService.updateActivity(activity.id, unifiedActivity);
+      } else {
+        UnifiedDataService.addActivity(unifiedActivity);
+      }
     });
     
-    // Save the updated activities back to localStorage
-    localStorage.setItem('custom_activities', JSON.stringify(customActivitiesWithTransitions));
-    
-    // Update state with the new activities
-    setCustomActivities(customActivitiesWithTransitions);
-    
-    console.log('✅ Transition activities added to library!');
-  } else {
-    console.log('✅ Transition activities already exist in library');
-    // Just set the current activities - but ensure they conform to CustomActivity interface
-    const validatedActivities: CustomActivity[] = currentCustomActivities.map((activity: any): CustomActivity => ({
-      ...activity,
-      // ✅ FIXED: Ensure all required properties exist
-      description: activity.description || '',
-      tags: activity.tags || [],
-      materials: activity.materials || [],
-      instructions: activity.instructions || '',
-      createdAt: activity.createdAt || new Date().toISOString(),
-      updatedAt: activity.updatedAt || new Date().toISOString(),
-      usageCount: activity.usageCount || 0
-    }));
-    
-    setCustomActivities(validatedActivities);
-  }
-}, []); // Run once on component mount
-
-  // Save custom activities to localStorage
-  const saveCustomActivities = (activities: CustomActivity[]) => {
-    localStorage.setItem('custom_activities', JSON.stringify(activities));
     setCustomActivities(activities);
     
     // Notify Schedule Builder of changes with enhanced payload

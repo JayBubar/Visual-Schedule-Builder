@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
+import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 
 interface SmartboardDisplayProps {
   isActive: boolean;
@@ -94,24 +95,74 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     }
   }, [currentSchedule]);
 
-  // Load real data from localStorage
+  // Load real data from UnifiedDataService
   useEffect(() => {
     try {
-      const savedStudents = localStorage.getItem('students');
-      if (savedStudents) {
-        const studentData = JSON.parse(savedStudents);
-        setRealStudents(studentData);
-        console.log('📚 Loaded students from localStorage:', studentData.length);
-      }
+      // Load students from UnifiedDataService
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      // Convert UnifiedStudent[] to Student[] format for compatibility
+      const studentData = unifiedStudents.map((student: UnifiedStudent): Student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        workingStyle: student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support" | undefined,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes
+      }));
+      
+      setRealStudents(studentData);
+      console.log('📚 Loaded students from UnifiedDataService:', studentData.length);
 
-      const savedStaff = localStorage.getItem('staff_members');
-      if (savedStaff) {
-        const staffData = JSON.parse(savedStaff);
-        setRealStaff(staffData);
-        console.log('👨‍🏫 Loaded staff from localStorage:', staffData.length);
-      }
+      // Load staff from UnifiedDataService
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      // Convert UnifiedStaff[] to StaffMember[] format for compatibility
+      const staffData = unifiedStaff.map((staff: UnifiedStaff): StaffMember => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email,
+        phone: staff.phone,
+        photo: staff.photo,
+        isActive: staff.isActive,
+        startDate: staff.dateCreated,
+        specialties: staff.specialties || [],
+        notes: staff.notes,
+        isResourceTeacher: staff.isResourceTeacher,
+        isRelatedArtsTeacher: staff.isRelatedArtsTeacher
+      }));
+      
+      setRealStaff(staffData);
+      console.log('👨‍🏫 Loaded staff from UnifiedDataService:', staffData.length);
     } catch (error) {
-      console.error('Error loading data from localStorage:', error);
+      console.error('Error loading data from UnifiedDataService:', error);
+      
+      // Fallback to localStorage if UnifiedDataService fails
+      try {
+        const savedStudents = localStorage.getItem('students');
+        if (savedStudents) {
+          const studentData = JSON.parse(savedStudents);
+          setRealStudents(studentData);
+          console.log('📚 Fallback: Loaded students from localStorage:', studentData.length);
+        }
+
+        const savedStaff = localStorage.getItem('staff_members');
+        if (savedStaff) {
+          const staffData = JSON.parse(savedStaff);
+          setRealStaff(staffData);
+          console.log('👨‍🏫 Fallback: Loaded staff from localStorage:', staffData.length);
+        }
+      } catch (fallbackError) {
+        console.error('Error loading fallback data from localStorage:', fallbackError);
+      }
     }
   }, []);
 

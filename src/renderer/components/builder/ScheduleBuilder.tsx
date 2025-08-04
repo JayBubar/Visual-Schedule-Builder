@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GroupCreator from './GroupCreator';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
+import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 
 // Type aliases to avoid conflicts with enhanced components
 type BuilderStudent = ProjectStudent;
@@ -2993,26 +2994,76 @@ const ClassroomGroupAssignment: React.FC<AssignmentPanelProps> = ({
   const [unassignedStudents, setUnassignedStudents] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load real student data
+    // Load real student data from UnifiedDataService
     try {
-      const savedStudents = localStorage.getItem('students');
-      const studentData = savedStudents ? JSON.parse(savedStudents) : propStudents || [];
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      // Convert UnifiedStudent[] to compatible format
+      const studentData = unifiedStudents.map((student: UnifiedStudent) => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        workingStyle: student.workingStyle,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes
+      }));
+      
       setRealStudents(studentData);
       setUnassignedStudents(studentData.map((s: any) => s.id));
     } catch (error) {
-      console.error('Error loading students:', error);
-      setRealStudents(propStudents || []);
-      setUnassignedStudents((propStudents || []).map((s: any) => s.id));
+      console.error('Error loading students from UnifiedDataService:', error);
+      // Fallback to localStorage
+      try {
+        const savedStudents = localStorage.getItem('students');
+        const studentData = savedStudents ? JSON.parse(savedStudents) : propStudents || [];
+        setRealStudents(studentData);
+        setUnassignedStudents(studentData.map((s: any) => s.id));
+      } catch (fallbackError) {
+        console.error('Error loading students from localStorage:', fallbackError);
+        setRealStudents(propStudents || []);
+        setUnassignedStudents((propStudents || []).map((s: any) => s.id));
+      }
     }
 
-    // Load real staff data
+    // Load real staff data from UnifiedDataService
     try {
-      const savedStaff = localStorage.getItem('staff_members');
-      const staffData = savedStaff ? JSON.parse(savedStaff) : propStaff || [];
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      // Convert UnifiedStaff[] to compatible format
+      const staffData = unifiedStaff.map((staff: UnifiedStaff) => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email,
+        phone: staff.phone,
+        photo: staff.photo,
+        isActive: staff.isActive,
+        startDate: staff.dateCreated,
+        specialties: staff.specialties || [],
+        notes: staff.notes,
+        isResourceTeacher: staff.isResourceTeacher,
+        isRelatedArtsTeacher: staff.isRelatedArtsTeacher
+      }));
+      
       setRealStaff(staffData);
     } catch (error) {
-      console.error('Error loading staff:', error);
-      setRealStaff(propStaff || []);
+      console.error('Error loading staff from UnifiedDataService:', error);
+      // Fallback to localStorage
+      try {
+        const savedStaff = localStorage.getItem('staff_members');
+        const staffData = savedStaff ? JSON.parse(savedStaff) : propStaff || [];
+        setRealStaff(staffData);
+      } catch (fallbackError) {
+        console.error('Error loading staff from localStorage:', fallbackError);
+        setRealStaff(propStaff || []);
+      }
     }
   }, [propStudents, propStaff]);
 

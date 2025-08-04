@@ -90,6 +90,10 @@ export interface UnifiedStaff {
   photo?: string;
   isActive: boolean;
   dateCreated: string;
+  specialties?: string[];
+  notes?: string;
+  isResourceTeacher?: boolean;
+  isRelatedArtsTeacher?: boolean;
   permissions?: {
     canEditStudents: boolean;
     canViewReports: boolean;

@@ -7,11 +7,10 @@ interface StaffManagementProps {
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [staff, setStaff] = useState<UnifiedStaff[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editingStaff, setEditingStaff] = useState<UnifiedStaff | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isUsingUnifiedData, setIsUsingUnifiedData] = useState(false);
 
   // Load staff data on mount
   useEffect(() => {
@@ -22,166 +21,132 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
 
   const loadStaffData = () => {
     try {
-      // Check if unified data exists
-      const unifiedDataStatus = UnifiedDataService.isUsingUnifiedData();
-      setIsUsingUnifiedData(unifiedDataStatus);
-
-      if (unifiedDataStatus) {
-        // Load from unified data service
-        const unifiedStaff = UnifiedDataService.getAllStaff();
-        // Convert UnifiedStaff to StaffMember format
-        const convertedStaff: StaffMember[] = unifiedStaff.map(member => ({
-          id: member.id,
-          name: member.name,
-          role: member.role,
-          email: member.email || '',
-          phone: member.phone || '',
-          specialties: [], // Will need to map this from permissions or add to UnifiedStaff
-          photo: member.photo || null,
-          isActive: member.isActive,
-          startDate: member.dateCreated,
-          notes: '',
-          isResourceTeacher: false,
-          isRelatedArtsTeacher: false
-        }));
-        setStaff(convertedStaff);
-      } else {
-        // Load from legacy localStorage or initialize defaults
-        const savedStaff = localStorage.getItem('staff_members');
-        if (savedStaff) {
-          setStaff(JSON.parse(savedStaff));
-        } else {
-          // Initialize with default staff if none exist
-          const defaultStaff: StaffMember[] = [
-            {
-              id: 'staff1',
-              name: 'Ms. Johnson',
-              role: 'Special Education Teacher',
-              email: 'johnson@school.edu',
-              phone: '(555) 123-4567',
-              specialties: ['Autism Support', 'Behavior Management'],
-              photo: null,
-              isActive: true,
-              startDate: '2023-08-15',
-              notes: 'Lead teacher with 8 years experience',
-              isResourceTeacher: false,
-              isRelatedArtsTeacher: false
-            },
-            {
-              id: 'staff2',
-              name: 'Mr. Rodriguez',
-              role: 'Paraprofessional',
-              email: 'rodriguez@school.edu',
-              phone: '(555) 234-5678',
-              specialties: ['Math Support', 'Individual Assistance'],
-              photo: null,
-              isActive: true,
-              startDate: '2024-01-08',
-              notes: 'Excellent with one-on-one instruction',
-              isResourceTeacher: false,
-              isRelatedArtsTeacher: false
-            },
-            {
-              id: 'staff3',
-              name: 'Dr. Williams',
-              role: 'Speech Therapist',
-              email: 'williams@school.edu',
-              phone: '(555) 345-6789',
-              specialties: ['Speech Therapy', 'Communication Devices'],
-              photo: null,
-              isActive: true,
-              startDate: '2022-09-01',
-              notes: 'Specialist in AAC devices',
-              isResourceTeacher: true,
-              isRelatedArtsTeacher: false
-            },
-            {
-              id: 'staff4',
-              name: 'Mrs. Chen',
-              role: 'Art Teacher',
-              email: 'chen@school.edu',
-              phone: '(555) 456-7890',
-              specialties: ['Art Therapy', 'Creative Expression'],
-              photo: null,
-              isActive: true,
-              startDate: '2023-01-15',
-              notes: 'Comes to classroom for art sessions',
-              isResourceTeacher: false,
-              isRelatedArtsTeacher: true
+      // Always use UnifiedDataService - no dual handling
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      
+      // If no staff exists, initialize with defaults
+      if (unifiedStaff.length === 0) {
+        const defaultStaff: Omit<UnifiedStaff, 'id'>[] = [
+          {
+            name: 'Ms. Johnson',
+            role: 'Special Education Teacher',
+            email: 'johnson@school.edu',
+            phone: '(555) 123-4567',
+            photo: null,
+            isActive: true,
+            dateCreated: '2023-08-15',
+            specialties: ['Autism Support', 'Behavior Management'],
+            notes: 'Lead teacher with 8 years experience',
+            isResourceTeacher: false,
+            isRelatedArtsTeacher: false,
+            permissions: {
+              canEditStudents: true,
+              canViewReports: true,
+              canManageGoals: true
             }
-          ];
-          setStaff(defaultStaff);
-          saveStaffData(defaultStaff);
-        }
+          },
+          {
+            name: 'Mr. Rodriguez',
+            role: 'Paraprofessional',
+            email: 'rodriguez@school.edu',
+            phone: '(555) 234-5678',
+            photo: null,
+            isActive: true,
+            dateCreated: '2024-01-08',
+            specialties: ['Math Support', 'Individual Assistance'],
+            notes: 'Excellent with one-on-one instruction',
+            isResourceTeacher: false,
+            isRelatedArtsTeacher: false,
+            permissions: {
+              canEditStudents: false,
+              canViewReports: true,
+              canManageGoals: false
+            }
+          },
+          {
+            name: 'Dr. Williams',
+            role: 'Speech Therapist',
+            email: 'williams@school.edu',
+            phone: '(555) 345-6789',
+            photo: null,
+            isActive: true,
+            dateCreated: '2022-09-01',
+            specialties: ['Speech Therapy', 'Communication Devices'],
+            notes: 'Specialist in AAC devices',
+            isResourceTeacher: true,
+            isRelatedArtsTeacher: false,
+            permissions: {
+              canEditStudents: false,
+              canViewReports: true,
+              canManageGoals: true
+            }
+          },
+          {
+            name: 'Mrs. Chen',
+            role: 'Art Teacher',
+            email: 'chen@school.edu',
+            phone: '(555) 456-7890',
+            photo: null,
+            isActive: true,
+            dateCreated: '2023-01-15',
+            specialties: ['Art Therapy', 'Creative Expression'],
+            notes: 'Comes to classroom for art sessions',
+            isResourceTeacher: false,
+            isRelatedArtsTeacher: true,
+            permissions: {
+              canEditStudents: false,
+              canViewReports: false,
+              canManageGoals: false
+            }
+          }
+        ];
+        
+        // Add default staff to unified data
+        defaultStaff.forEach(staffData => {
+          UnifiedDataService.addStaff(staffData);
+        });
+        
+        // Reload after adding defaults
+        setStaff(UnifiedDataService.getAllStaff());
+      } else {
+        setStaff(unifiedStaff);
       }
     } catch (error) {
       console.error('Error loading staff data:', error);
     }
   };
 
-  const saveStaffData = (staffData: StaffMember[]) => {
-    try {
-      if (isUsingUnifiedData) {
-        // Save to unified data service
-        staffData.forEach(member => {
-          const unifiedStaff: UnifiedStaff = {
-            id: member.id,
-            name: member.name,
-            role: member.role,
-            email: member.email,
-            phone: member.phone,
-            photo: member.photo,
-            isActive: member.isActive,
-            dateCreated: member.startDate,
-            permissions: {
-              canEditStudents: true,
-              canViewReports: true,
-              canManageGoals: member.role.includes('Teacher')
-            }
-          };
-          
-          // Check if staff member exists, update or add
-          const existingStaff = UnifiedDataService.getStaff(member.id);
-          if (existingStaff) {
-            UnifiedDataService.updateStaff(member.id, unifiedStaff);
-          } else {
-            UnifiedDataService.addStaff(unifiedStaff);
-          }
-        });
-      } else {
-        // Save to legacy localStorage
-        localStorage.setItem('staff_members', JSON.stringify(staffData));
-      }
-      
-      // Trigger global data update event for other components
-      window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
-        detail: staffData 
-      }));
-    } catch (error) {
-      console.error('Error saving staff data:', error);
-    }
+  const saveStaffData = () => {
+    // No need for explicit save - UnifiedDataService handles persistence
+    // Trigger global data update event for other components
+    window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
+      detail: staff 
+    }));
   };
 
   const handlePhotoUpload = async (staffId: string, file: File) => {
     try {
-      console.log('Uploading photo for staff ID:', staffId); // Debug log
+      console.log('Uploading photo for staff ID:', staffId);
       
       // Convert file to base64 for local storage
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64Photo = e.target?.result as string;
-        console.log('Photo loaded for staff ID:', staffId); // Debug log
+        console.log('Photo loaded for staff ID:', staffId);
         
-        setStaff(currentStaff => {
-          const updatedStaff = currentStaff.map(member => 
+        // Update via UnifiedDataService
+        UnifiedDataService.updateStaff(staffId, { photo: base64Photo });
+        
+        // Update local state
+        setStaff(currentStaff => 
+          currentStaff.map(member => 
             member.id === staffId 
               ? { ...member, photo: base64Photo }
               : member
-          );
-          console.log('Updated staff array:', updatedStaff); // Debug log
-          saveStaffData(updatedStaff);
-          return updatedStaff;
-        });
+          )
+        );
+        
+        saveStaffData();
       };
       
       reader.readAsDataURL(file);
@@ -192,43 +157,56 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
   };
 
   const handleRemovePhoto = (staffId: string) => {
-    const updatedStaff = staff.map(member => 
-      member.id === staffId 
-        ? { ...member, photo: null }
-        : member
+    // Update via UnifiedDataService
+    UnifiedDataService.updateStaff(staffId, { photo: null });
+    
+    // Update local state
+    setStaff(currentStaff => 
+      currentStaff.map(member => 
+        member.id === staffId 
+          ? { ...member, photo: null }
+          : member
+      )
     );
     
-    setStaff(updatedStaff);
-    saveStaffData(updatedStaff);
+    saveStaffData();
   };
 
-  const handleAddStaff = (newStaff: Omit<StaffMember, 'id'>) => {
-    const staffWithId: StaffMember = {
-      ...newStaff,
-      id: `staff_${Date.now()}`
-    };
+  const handleAddStaff = (newStaff: Omit<UnifiedStaff, 'id'>) => {
+    // Add via UnifiedDataService
+    const addedStaff = UnifiedDataService.addStaff(newStaff);
     
-    const updatedStaff = [...staff, staffWithId];
-    setStaff(updatedStaff);
-    saveStaffData(updatedStaff);
+    // Update local state
+    setStaff(currentStaff => [...currentStaff, addedStaff]);
+    
+    saveStaffData();
     setShowAddModal(false);
   };
 
-  const handleEditStaff = (updatedStaff: StaffMember) => {
-    const newStaffList = staff.map(member => 
-      member.id === updatedStaff.id ? updatedStaff : member
+  const handleEditStaff = (updatedStaff: UnifiedStaff) => {
+    // Update via UnifiedDataService
+    UnifiedDataService.updateStaff(updatedStaff.id, updatedStaff);
+    
+    // Update local state
+    setStaff(currentStaff => 
+      currentStaff.map(member => 
+        member.id === updatedStaff.id ? updatedStaff : member
+      )
     );
     
-    setStaff(newStaffList);
-    saveStaffData(newStaffList);
+    saveStaffData();
     setEditingStaff(null);
   };
 
   const handleDeleteStaff = (staffId: string) => {
     if (window.confirm('Are you sure you want to remove this staff member?')) {
-      const updatedStaff = staff.filter(member => member.id !== staffId);
-      setStaff(updatedStaff);
-      saveStaffData(updatedStaff);
+      // Delete via UnifiedDataService
+      UnifiedDataService.deleteStaff(staffId);
+      
+      // Update local state
+      setStaff(currentStaff => currentStaff.filter(member => member.id !== staffId));
+      
+      saveStaffData();
     }
   };
 
@@ -537,7 +515,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
                 📞 {member.phone}
               </div>
               <div>
-                📅 Started: {new Date(member.startDate).toLocaleDateString()}
+                📅 Started: {new Date(member.dateCreated).toLocaleDateString()}
               </div>
             </div>
 
@@ -648,8 +626,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
 
 // Staff Modal Component
 interface StaffModalProps {
-  staff?: StaffMember;
-  onSave: (staff: StaffMember | Omit<StaffMember, 'id'>) => void;
+  staff?: UnifiedStaff;
+  onSave: (staff: UnifiedStaff | Omit<UnifiedStaff, 'id'>) => void;
   onCancel: () => void;
 }
 
@@ -662,10 +640,15 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
     specialties: staff?.specialties || [],
     photo: staff?.photo || null,
     isActive: staff?.isActive ?? true,
-    startDate: staff?.startDate || new Date().toISOString().split('T')[0],
+    dateCreated: staff?.dateCreated || new Date().toISOString().split('T')[0],
     notes: staff?.notes || '',
     isResourceTeacher: staff?.isResourceTeacher ?? false,
-    isRelatedArtsTeacher: staff?.isRelatedArtsTeacher ?? false
+    isRelatedArtsTeacher: staff?.isRelatedArtsTeacher ?? false,
+    permissions: staff?.permissions || {
+      canEditStudents: false,
+      canViewReports: true,
+      canManageGoals: false
+    }
   });
 
   const [newSpecialty, setNewSpecialty] = useState('');
@@ -794,8 +777,8 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
                 <label>Start Date</label>
                 <input
                   type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                  value={formData.dateCreated}
+                  onChange={(e) => setFormData({...formData, dateCreated: e.target.value})}
                   style={{ width: '100%' }}
                 />
               </div>
