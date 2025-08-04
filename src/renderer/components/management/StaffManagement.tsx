@@ -126,9 +126,9 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
   const filteredStaff = staff.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.specialties.some(specialty => 
+    (member.specialties && member.specialties.some(specialty => 
       specialty.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    ))
   );
 
   if (!isActive) return null;
@@ -336,7 +336,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
                   gap: '0.5rem',
                   flexWrap: 'wrap'
                 }}>
-                  {member.specialties.slice(0, 2).map(specialty => (
+                  {(member.specialties || []).slice(0, 2).map(specialty => (
                     <span
                       key={specialty}
                       style={{
