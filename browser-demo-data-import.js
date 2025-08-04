@@ -156,13 +156,71 @@ const demoSettings = {
 try {
     console.log('📥 Importing demo data...');
     
-    // Primary storage keys
+    // Convert demo data to unified format that the app expects
+    const unifiedData = {
+        students: demoStudents.map(student => ({
+            ...student,
+            dateCreated: student.created,
+            iepData: {
+                goals: [],
+                dataCollection: []
+            },
+            resourceInformation: {
+                attendsResourceServices: false,
+                accommodations: [],
+                relatedServices: [],
+                allergies: [],
+                medicalNeeds: []
+            },
+            accommodations: [],
+            goals: student.goals || [],
+            preferredPartners: [],
+            avoidPartners: [],
+            isActive: true
+        })),
+        staff: demoTeachers.map(teacher => ({
+            ...teacher,
+            dateCreated: teacher.created,
+            isActive: true,
+            specialties: teacher.certifications || [],
+            permissions: {
+                canEditStudents: true,
+                canViewReports: true,
+                canManageGoals: true
+            }
+        })),
+        activities: demoActivities.map(activity => ({
+            ...activity,
+            dateCreated: new Date().toISOString(),
+            isCustom: true,
+            linkedGoalIds: []
+        })),
+        calendar: {
+            behaviorCommitments: [],
+            dailyHighlights: [],
+            independentChoices: []
+        },
+        settings: {
+            visualScheduleBuilderSettings: demoSettings
+        },
+        metadata: {
+            version: '2.0',
+            migratedAt: new Date().toISOString(),
+            totalGoals: 0,
+            totalDataPoints: 0,
+            totalStaff: demoTeachers.length,
+            totalActivities: demoActivities.length
+        }
+    };
+    
+    // Save to the unified data key that the app expects
+    localStorage.setItem('visual-schedule-builder-unified-data', JSON.stringify(unifiedData));
+    
+    // Also save in legacy format for compatibility
     localStorage.setItem('vsb_staff', JSON.stringify(demoTeachers));
     localStorage.setItem('vsb_students', JSON.stringify(demoStudents));
     localStorage.setItem('activityLibrary', JSON.stringify(demoActivities));
     localStorage.setItem('vsb_settings', JSON.stringify(demoSettings));
-    
-    // Alternative storage keys for compatibility
     localStorage.setItem('staff', JSON.stringify(demoTeachers));
     localStorage.setItem('students', JSON.stringify(demoStudents));
     
