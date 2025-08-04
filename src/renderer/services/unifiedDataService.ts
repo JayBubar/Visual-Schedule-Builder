@@ -189,6 +189,15 @@ class UnifiedDataService {
         this.saveUnifiedData(parsedData);
       }
       
+      // 🔧 FIXED: Convert staff object structure to array structure if needed
+      if (parsedData.staff && !Array.isArray(parsedData.staff)) {
+        console.log('Converting staff object to array format...');
+        parsedData.staff = Object.values(parsedData.staff);
+        
+        // Save the converted structure
+        this.saveUnifiedData(parsedData);
+      }
+      
       return parsedData;
     } catch (error) {
       console.error('Error reading unified data:', error);
