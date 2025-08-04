@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
-import { DataMigrationManager } from './utils/dataMigration';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
@@ -16,7 +15,6 @@ import IEPDataCollectionInterface from './components/data-collection/IEPDataColl
 import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
-import DataMigrationInterface from './components/migration/DataMigrationInterface';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>('builder');
@@ -24,29 +22,8 @@ const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
-  const [showMigrationInterface, setShowMigrationInterface] = useState(false);
-  const [migrationChecked, setMigrationChecked] = useState(false);
 
   useEffect(() => {
-    // Check if migration is needed on app startup
-    const checkMigration = async () => {
-      try {
-        const isMigrationNeeded = DataMigrationManager.isMigrationNeeded();
-        if (isMigrationNeeded) {
-          setShowMigrationInterface(true);
-          console.log('🔄 Migration needed - showing migration interface');
-        } else {
-          console.log('✅ Data migration not needed or already completed');
-        }
-      } catch (error) {
-        console.error('Error checking migration status:', error);
-      } finally {
-        setMigrationChecked(true);
-      }
-    };
-
-    checkMigration();
-
     const savedStudents = loadFromStorage<Student[]>('vsb_students', []);
     const savedStaff = loadFromStorage<Staff[]>('vsb_staff', []);
     const savedActivities = loadFromStorage<ActivityLibraryItem[]>('vsb_activities', []);
@@ -87,20 +64,6 @@ const App: React.FC = () => {
     saveToStorage('vsb_activities', updatedActivities);
   };
 
-  const handleMigrationComplete = (success: boolean) => {
-    if (success) {
-      setShowMigrationInterface(false);
-      // Refresh the page to reload with unified data
-      window.location.reload();
-    } else {
-      console.error('Migration failed');
-      // Keep the migration interface open for retry
-    }
-  };
-
-  const handleCloseMigration = () => {
-    setShowMigrationInterface(false);
-  };
 
   // Convert Staff[] to StaffMember[] for components that expect StaffMember
   const staffMembers = useMemo(() => {
@@ -168,60 +131,6 @@ const App: React.FC = () => {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Migration Interface Overlay */}
-      {showMigrationInterface && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 10000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '2rem'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            maxWidth: '900px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'hidden',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <button
-              onClick={handleCloseMigration}
-              style={{
-                position: 'absolute',
-                top: '1rem',
-                right: '1rem',
-                background: 'rgba(107, 114, 128, 0.1)',
-                border: '1px solid rgba(107, 114, 128, 0.3)',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                fontSize: '1.2rem',
-                color: '#6b7280',
-                zIndex: 1
-              }}
-              title="Close (migration can be accessed later from Settings)"
-            >
-              ×
-            </button>
-            <DataMigrationInterface onMigrationComplete={handleMigrationComplete} />
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <Navigation 
         currentView={currentView} 
