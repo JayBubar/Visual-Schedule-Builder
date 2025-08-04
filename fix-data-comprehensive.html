@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Schedule Builder - Data Fix</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        button {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        .check-btn { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .clear-btn { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .log {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Visual Schedule Builder - Data Fix</h1>
+        
+        <button onclick="checkAllData()" class="check-btn">🔍 Check All Data Sources</button>
+        <button onclick="comprehensiveReset()">🚀 Complete Reset + 8 Students & 4 Staff</button>
+        <button onclick="clearEverything()" class="clear-btn">🗑️ Nuclear Clear (Everything)</button>
+        
+        <div id="log" class="log" style="display: none;"></div>
+    </div>
+
+    <script>
+        function log(message, color = '#3b82f6') {
+            const logDiv = document.getElementById('log');
+            logDiv.style.display = 'block';
+            
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function checkAllData() {
+            log('🔍 Checking all possible data sources...', '#3b82f6');
+            
+            const possibleKeys = [
+                'visual-schedule-builder-unified-data',
+                'students',
+                'staff_members',
+                'iepGoals',
+                'iepDataPoints',
+                'behavior_commitments',
+                'daily_highlights',
+                'calendar_choices',
+                'visualScheduleBuilderSettings'
+            ];
+            
+            let foundKeys = 0;
+            possibleKeys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    foundKeys++;
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (key === 'visual-schedule-builder-unified-data') {
+                            const studentCount = parsed.students ? parsed.students.length : 0;
+                            const staffCount = parsed.staff ? parsed.staff.length : 0;
+                            log(`  ✅ ${key}: UNIFIED DATA - ${studentCount} students, ${staffCount} staff`, '#22c55e');
+                        } else if (Array.isArray(parsed)) {
+                            log(`  ✓ ${key}: Array with ${parsed.length} items`, '#22c55e');
+                        } else {
+                            log(`  ✓ ${key}: Object`, '#22c55e');
+                        }
+                    } catch (error) {
+                        log(`  ❌ ${key}: Invalid JSON`, '#ef4444');
+                    }
+                }
+            });
+            
+            log(`📊 Total: Found ${foundKeys} active data keys`, foundKeys > 0 ? '#22c55e' : '#ef4444');
+        }
+
+        function clearEverything() {
+            if (!confirm('⚠️ NUCLEAR CLEAR: This will delete ALL localStorage data. Are you sure?')) {
+                return;
+            }
+            
+            localStorage.clear();
+            log('✅ Nuclear clear complete - ALL localStorage data removed', '#22c55e');
+        }
+
+        function comprehensiveReset() {
+            log('🔄 Starting comprehensive data reset...', '#3b82f6');
+            
+            // Clear all Visual Schedule Builder keys
+            const keysToRemove = [
+                'visual-schedule-builder-unified-data',
+                'students',
+                'staff_members', 
+                'iepGoals',
+                'iepDataPoints',
+                'behavior_commitments',
+                'daily_highlights',
+                'calendar_choices',
+                'visualScheduleBuilderSettings'
+            ];
+            
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    log(`  Removed: ${key}`, '#fbbf24');
+                }
+            });
+
+            // Create comprehensive unified data with 8 students
+            const unifiedData = {
+                students: createStudents(),
+                staff: createStaff(),
+                activities: [],
+                calendar: {
+                    behaviorCommitments: [],
+                    dailyHighlights: [],
+                    independentChoices: []
+                },
+                settings: {},
+                metadata: {
+                    version: '2.0',
+                    migratedAt: new Date().toISOString(),
+                    totalGoals: 16,
+                    totalDataPoints: 3,
+                    totalStaff: 4,
+                    totalActivities: 0
+                }
+            };
+
+            // Save to the EXACT key the app uses
+            localStorage.setItem('visual-schedule-builder-unified-data', JSON.stringify(unifiedData));
+            
+            log('✅ Created unified data with:', '#22c55e');
+            log(`  📚 ${unifiedData.students.length} students with IEP goals`, '#22c55e');
+            log(`  👥 ${unifiedData.staff.length} staff members`, '#22c55e');
+            log(`  🎯 ${unifiedData.metadata.totalGoals} total IEP goals`, '#22c55e');
+            log(`  📊 ${unifiedData.metadata.totalDataPoints} data points`, '#22c55e');
+            log('', '#22c55e');
+            log('🎉 COMPLETE! Your Visual Schedule Builder app should now show the new data.', '#22c55e');
+            log('Please refresh your Visual Schedule Builder app to see the changes.', '#fbbf24');
+        }
+
+        function createStudents() {
+            return [
+                {
+                    id: 'student_001',
+                    name: 'Emma Wilson',
+                    grade: 'Kindergarten',
+                    photo: null,
+                    workingStyle: 'collaborative',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Visual supports', 'Extra time', 'Movement breaks'],
+                    goals: ['Letter recognition', 'Sight words'],
+                    preferredPartners: ['Marcus Johnson'],
+                    avoidPartners: [],
+                    parentName: 'Sarah Wilson',
+                    parentEmail: 'sarah.wilson@email.com',
+                    parentPhone: '(555) 123-4567',
+                    isActive: true,
+                    behaviorNotes: 'Responds well to positive reinforcement.',
+                    medicalNotes: 'No medical concerns',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_001_001',
+                            studentId: 'student_001',
+                            title: 'Letter Recognition',
+                            description: 'Will identify letters A-Z with 90% accuracy',
+                            shortTermObjective: 'Identify 5 new letters each week',
+                            domain: 'academic',
+                            measurementType: 'percentage',
+                            criteria: '90% accuracy over 3 sessions',
+                            target: 90,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 1,
+                            currentProgress: 75,
+                            isActive: true
+                        }, {
+                            id: 'goal_001_002',
+                            studentId: 'student_001',
+                            title: 'Sight Word Reading',
+                            description: 'Will read 25 sight words with 80% accuracy',
+                            shortTermObjective: 'Read 5 new sight words weekly',
+                            domain: 'academic',
+                            measurementType: 'percentage',
+                            criteria: '80% accuracy over 3 sessions',
+                            target: 80,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 1,
+                            currentProgress: 60,
+                            isActive: true
+                        }],
+                        dataCollection: [{
+                            id: 'dp_001_001',
+                            goalId: 'goal_001_001',
+                            studentId: 'student_001',
+                            date: '2025-01-20',
+                            time: '09:30',
+                            value: 19,
+                            totalOpportunities: 26,
+                            notes: 'Great progress with letters M, N, O',
+                            context: 'Morning literacy center',
+                            collector: 'Ms. Johnson',
+                            photos: [],
+                            voiceNotes: []
+                        }]
+                    }
+                },
+                {
+                    id: 'student_002',
+                    name: 'Marcus Johnson',
+                    grade: '1st Grade',
+                    photo: null,
+                    workingStyle: 'independent',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Movement breaks', 'Fidget tools'],
+                    goals: ['Math counting', 'Attention span'],
+                    preferredPartners: ['Emma Wilson'],
+                    avoidPartners: [],
+                    parentName: 'David Johnson',
+                    parentEmail: 'david.johnson@email.com',
+                    parentPhone: '(555) 234-5678',
+                    isActive: true,
+                    behaviorNotes: 'Works best with clear structure.',
+                    medicalNotes: 'ADHD - medication at lunch',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_002_001',
+                            studentId: 'student_002',
+                            title: 'Math Counting Skills',
+                            description: 'Will count to 100 by 1s, 5s, and 10s with 90% accuracy',
+                            shortTermObjective: 'Count by 10s to 100',
+                            domain: 'academic',
+                            measurementType: 'percentage',
+                            criteria: '90% accuracy over 3 sessions',
+                            target: 90,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 1,
+                            currentProgress: 85,
+                            isActive: true
+                        }, {
+                            id: 'goal_002_002',
+                            studentId: 'student_002',
+                            title: 'Sustained Attention',
+                            description: 'Will maintain attention for 15 minutes',
+                            shortTermObjective: 'Focus on task for 10 minutes',
+                            domain: 'behavioral',
+                            measurementType: 'duration',
+                            criteria: '15 minutes for 5 consecutive days',
+                            target: 15,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 1,
+                            currentProgress: 12,
+                            isActive: true
+                        }],
+                        dataCollection: [{
+                            id: 'dp_002_001',
+                            goalId: 'goal_002_001',
+                            studentId: 'student_002',
+                            date: '2025-01-19',
+                            time: '11:00',
+                            value: 85,
+                            totalOpportunities: 100,
+                            notes: 'Excellent counting by 10s',
+                            context: 'Math center',
+                            collector: 'Ms. Johnson',
+                            photos: [],
+                            voiceNotes: []
+                        }]
+                    }
+                },
+                {
+                    id: 'student_003',
+                    name: 'Sofia Rodriguez',
+                    grade: '2nd Grade',
+                    photo: null,
+                    workingStyle: 'collaborative',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['AAC device', 'Visual cues'],
+                    goals: ['AAC usage', 'Social interaction'],
+                    preferredPartners: ['Emma Wilson'],
+                    avoidPartners: [],
+                    parentName: 'Maria Rodriguez',
+                    parentEmail: 'maria.rodriguez@email.com',
+                    parentPhone: '(555) 345-6789',
+                    isActive: true,
+                    behaviorNotes: 'Non-verbal, uses AAC device.',
+                    medicalNotes: 'Autism spectrum disorder',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_003_001',
+                            studentId: 'student_003',
+                            title: 'AAC Communication',
+                            description: 'Will use AAC device to make 10 requests per day',
+                            shortTermObjective: 'Make requests using AAC',
+                            domain: 'social-emotional',
+                            measurementType: 'frequency',
+                            criteria: '10 requests per day for 5 days',
+                            target: 10,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 7,
+                            isActive: true
+                        }, {
+                            id: 'goal_003_002',
+                            studentId: 'student_003',
+                            title: 'Peer Interaction',
+                            description: 'Will initiate interaction with peers 3 times daily',
+                            shortTermObjective: 'Approach peers during free time',
+                            domain: 'social-emotional',
+                            measurementType: 'frequency',
+                            criteria: '3 interactions daily for 1 week',
+                            target: 3,
+                            priority: 'medium',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 2,
+                            isActive: true
+                        }],
+                        dataCollection: []
+                    }
+                },
+                {
+                    id: 'student_004',
+                    name: 'Lily Chen',
+                    grade: '3rd Grade',
+                    photo: null,
+                    workingStyle: 'independent',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Extended time', 'Quiet workspace'],
+                    goals: ['Reading comprehension', 'Written expression'],
+                    preferredPartners: [],
+                    avoidPartners: [],
+                    parentName: 'Wei Chen',
+                    parentEmail: 'wei.chen@email.com',
+                    parentPhone: '(555) 456-7890',
+                    isActive: true,
+                    behaviorNotes: 'Detail-oriented student.',
+                    medicalNotes: 'Learning disability in writing',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_004_001',
+                            studentId: 'student_004',
+                            title: 'Reading Comprehension',
+                            description: 'Will answer comprehension questions with 85% accuracy',
+                            shortTermObjective: 'Answer who, what, where questions',
+                            domain: 'academic',
+                            measurementType: 'percentage',
+                            criteria: '85% accuracy over 3 sessions',
+                            target: 85,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 78,
+                            isActive: true
+                        }, {
+                            id: 'goal_004_002',
+                            studentId: 'student_004',
+                            title: 'Written Expression',
+                            description: 'Will write 3 complete sentences about a topic',
+                            shortTermObjective: 'Write simple sentences with support',
+                            domain: 'academic',
+                            measurementType: 'rating',
+                            criteria: '3 sentences with 80% accuracy',
+                            target: 3,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 2,
+                            isActive: true
+                        }],
+                        dataCollection: []
+                    }
+                },
+                {
+                    id: 'student_005',
+                    name: 'Tyler Brown',
+                    grade: '4th Grade',
+                    photo: null,
+                    workingStyle: 'independent',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Cool-down breaks', 'Clear expectations'],
+                    goals: ['Emotional regulation', 'Task completion'],
+                    preferredPartners: [],
+                    avoidPartners: [],
+                    parentName: 'Jennifer Brown',
+                    parentEmail: 'jennifer.brown@email.com',
+                    parentPhone: '(555) 567-8901',
+                    isActive: true,
+                    behaviorNotes: 'Can become frustrated quickly.',
+                    medicalNotes: 'Anxiety disorder',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_005_001',
+                            studentId: 'student_005',
+                            title: 'Emotional Self-Regulation',
+                            description: 'Will use coping strategies when frustrated with 80% success',
+                            shortTermObjective: 'Use deep breathing when upset',
+                            domain: 'behavioral',
+                            measurementType: 'percentage',
+                            criteria: '80% success over 2 weeks',
+                            target: 80,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 70,
+                            isActive: true
+                        }, {
+                            id: 'goal_005_002',
+                            studentId: 'student_005',
+                            title: 'Task Completion',
+                            description: 'Will complete assignments within given timeframe',
+                            shortTermObjective: 'Finish work before breaks',
+                            domain: 'behavioral',
+                            measurementType: 'percentage',
+                            criteria: '75% completion rate',
+                            target: 75,
+                            priority: 'medium',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 65,
+                            isActive: true
+                        }],
+                        dataCollection: []
+                    }
+                },
+                {
+                    id: 'student_006',
+                    name: 'Aiden Murphy',
+                    grade: '5th Grade',
+                    photo: null,
+                    workingStyle: 'collaborative',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Calculator', 'Math manipulatives'],
+                    goals: ['Multi-step math', 'Problem solving'],
+                    preferredPartners: ['Isabella Garcia'],
+                    avoidPartners: [],
+                    parentName: 'Patrick Murphy',
+                    parentEmail: 'patrick.murphy@email.com',
+                    parentPhone: '(555) 678-9012',
+                    isActive: true,
+                    behaviorNotes: 'Very social, needs task redirection.',
+                    medicalNotes: 'Math learning disability',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_006_001',
+                            studentId: 'student_006',
+                            title: 'Multi-Step Math Problems',
+                            description: 'Will solve 2-step word problems with 75% accuracy',
+                            shortTermObjective: 'Identify key information in problems',
+                            domain: 'academic',
+                            measurementType: 'percentage',
+                            criteria: '75% accuracy over 3 sessions',
+                            target: 75,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 68,
+                            isActive: true
+                        }, {
+                            id: 'goal_006_002',
+                            studentId: 'student_006',
+                            title: 'Problem Solving Strategies',
+                            description: 'Will use visual organizers for word problems',
+                            shortTermObjective: 'Draw pictures to solve problems',
+                            domain: 'academic',
+                            measurementType: 'yes-no',
+                            criteria: 'Uses organizer independently',
+                            target: 1,
+                            priority: 'medium',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 0,
+                            isActive: true
+                        }],
+                        dataCollection: []
+                    }
+                },
+                {
+                    id: 'student_007',
+                    name: 'Isabella Garcia',
+                    grade: 'Kindergarten',
+                    photo: null,
+                    workingStyle: 'collaborative',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Bilingual support', 'Visual vocabulary'],
+                    goals: ['English vocabulary', 'Letter recognition'],
+                    preferredPartners: ['Aiden Murphy'],
+                    avoidPartners: [],
+                    parentName: 'Carmen Garcia',
+                    parentEmail: 'carmen.garcia@email.com',
+                    parentPhone: '(555) 789-0123',
+                    isActive: true,
+                    behaviorNotes: 'Spanish first language, eager learner.',
+                    medicalNotes: 'English Language Learner',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_007_001',
+                            studentId: 'student_007',
+                            title: 'English Vocabulary',
+                            description: 'Will use 50 English vocabulary words in context',
+                            shortTermObjective: 'Learn 5 new words weekly',
+                            domain: 'academic',
+                            measurementType: 'frequency',
+                            criteria: '80% usage accuracy',
+                            target: 40,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 1,
+                            currentProgress: 36,
+                            isActive: true
+                        }],
+                        dataCollection: [{
+                            id: 'dp_007_001',
+                            goalId: 'goal_007_001',
+                            studentId: 'student_007',
+                            date: '2025-01-18',
+                            time: '10:15',
+                            value: 36,
+                            totalOpportunities: 50,
+                            notes: 'Great progress with school vocabulary',
+                            context: 'ESL support time',
+                            collector: 'Ms. Martinez',
+                            photos: [],
+                            voiceNotes: []
+                        }]
+                    }
+                },
+                {
+                    id: 'student_008',
+                    name: 'Noah Kim',
+                    grade: '1st Grade',
+                    photo: null,
+                    workingStyle: 'independent',
+                    dateCreated: '2024-08-15',
+                    accommodations: ['Sensory breaks', 'Noise-canceling headphones'],
+                    goals: ['Sensory regulation', 'Fine motor skills'],
+                    preferredPartners: [],
+                    avoidPartners: [],
+                    parentName: 'Min-jun Kim',
+                    parentEmail: 'minjun.kim@email.com',
+                    parentPhone: '(555) 890-1234',
+                    isActive: true,
+                    behaviorNotes: 'Sensory sensitive, very creative.',
+                    medicalNotes: 'Sensory processing differences',
+                    iepData: {
+                        goals: [{
+                            id: 'goal_008_001',
+                            studentId: 'student_008',
+                            title: 'Sensory Self-Regulation',
+                            description: 'Will use sensory tools to maintain calm state',
+                            shortTermObjective: 'Request breaks when overstimulated',
+                            domain: 'behavioral',
+                            measurementType: 'frequency',
+                            criteria: '5 appropriate requests daily',
+                            target: 5,
+                            priority: 'high',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 4,
+                            isActive: true
+                        }, {
+                            id: 'goal_008_002',
+                            studentId: 'student_008',
+                            title: 'Fine Motor Skills',
+                            description: 'Will write letters with proper formation',
+                            shortTermObjective: 'Hold pencil with tripod grip',
+                            domain: 'physical',
+                            measurementType: 'percentage',
+                            criteria: '80% proper formation',
+                            target: 80,
+                            priority: 'medium',
+                            dateCreated: '2024-08-15',
+                            dataPoints: 0,
+                            currentProgress: 65,
+                            isActive: true
+                        }],
+                        dataCollection: []
+                    }
+                }
+            ];
+        }
+
+        function createStaff() {
+            return [
+                {
+                    id: 'staff_001',
+                    name: 'Ms. Sarah Johnson',
+                    role: 'Special Education Teacher',
+                    email: 'sarah.johnson@school.edu',
+                    phone: '(555) 100-0001',
+                    photo: null,
+                    isActive: true,
+                    dateCreated: '2024-08-15',
+                    specialties: ['IEP Development', 'Behavior Management', 'Data Collection'],
+                    notes: 'Lead special education teacher with 8 years experience',
+                    isResourceTeacher: true,
+                    isRelatedArtsTeacher: false,
+                    permissions: {
+                        canEditStudents: true,
+                        canViewReports: true,
+                        canManageGoals: true
+                    }
+                },
+                {
+                    id: 'staff_002',
+                    name: 'Mr. David Martinez',
+                    role: 'Speech Language Pathologist',
+                    email: 'david.martinez@school.edu',
+                    phone: '(555) 100-0002',
+                    photo: null,
+                    isActive: true,
+                    dateCreated: '2024-08-15',
+                    specialties: ['Speech Therapy', 'AAC Support', 'Language Development'],
+                    notes: 'Certified SLP specializing in AAC devices',
+                    isResourceTeacher: true,
+                    isRelatedArtsTeacher: false,
+                    permissions: {
+                        canEditStudents: false,
+                        canViewReports: true,
+                        canManageGoals: true
+                    }
+                },
+                {
+                    id: 'staff_003',
+                    name: 'Ms. Emily Chen',
+                    role: 'Occupational Therapist',
+                    email: 'emily.chen@school.edu',
+                    phone: '(555) 100-0003',
+                    photo: null,
+                    isActive: true,
+                    dateCreated: '2024-08-15',
+                    specialties: ['Fine Motor Skills', 'Sensory Integration', 'Adaptive Equipment'],
+                    notes: 'OT with expertise in sensory processing',
+                    isResourceTeacher: true,
+                    isRelatedArtsTeacher: false,
+                    permissions: {
+                        canEditStudents: false,
+                        canViewReports: true,
+                        canManageGoals: true
+                    }
+                },
+                {
+                    id: 'staff_004',
+                    name: 'Ms. Rachel Thompson',
+                    role: 'Paraprofessional',
+                    email: 'rachel.thompson@school.edu',
+                    phone: '(555) 100-0004',
+                    photo: null,
+                    isActive: true,
+                    dateCreated: '2024-08-15',
+                    specialties: ['Classroom Support', 'Data Collection', 'Student Assistance'],
+                    notes: 'Experienced paraprofessional, great with data collection',
+                    isResourceTeacher: false,
+                    isRelatedArtsTeacher: false,
+                    permissions: {
+                        canEditStudents: false,
+                        canViewReports: false,
+                        canManageGoals: false
+                    }
+                }
+            ];
+        }
+    </script>
+</body>
+</html>
