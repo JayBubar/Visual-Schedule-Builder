@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StaffMember } from '../../types';
+import UnifiedDataService, { UnifiedStaff } from '../../services/unifiedDataService';
 
 interface StaffManagementProps {
   isActive: boolean;
@@ -10,79 +11,108 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isUsingUnifiedData, setIsUsingUnifiedData] = useState(false);
 
   // Load staff data on mount
   useEffect(() => {
-    loadStaffData();
-  }, []);
+    if (isActive) {
+      loadStaffData();
+    }
+  }, [isActive]);
 
   const loadStaffData = () => {
     try {
-      const savedStaff = localStorage.getItem('staff_members');
-      if (savedStaff) {
-        setStaff(JSON.parse(savedStaff));
+      // Check if unified data exists
+      const unifiedDataStatus = UnifiedDataService.isUsingUnifiedData();
+      setIsUsingUnifiedData(unifiedDataStatus);
+
+      if (unifiedDataStatus) {
+        // Load from unified data service
+        const unifiedStaff = UnifiedDataService.getAllStaff();
+        // Convert UnifiedStaff to StaffMember format
+        const convertedStaff: StaffMember[] = unifiedStaff.map(member => ({
+          id: member.id,
+          name: member.name,
+          role: member.role,
+          email: member.email || '',
+          phone: member.phone || '',
+          specialties: [], // Will need to map this from permissions or add to UnifiedStaff
+          photo: member.photo || null,
+          isActive: member.isActive,
+          startDate: member.dateCreated,
+          notes: '',
+          isResourceTeacher: false,
+          isRelatedArtsTeacher: false
+        }));
+        setStaff(convertedStaff);
       } else {
-        // Initialize with default staff if none exist
-        const defaultStaff: StaffMember[] = [
-          {
-            id: 'staff1',
-            name: 'Ms. Johnson',
-            role: 'Special Education Teacher',
-            email: 'johnson@school.edu',
-            phone: '(555) 123-4567',
-            specialties: ['Autism Support', 'Behavior Management'],
-            photo: null,
-            isActive: true,
-            startDate: '2023-08-15',
-            notes: 'Lead teacher with 8 years experience',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff2',
-            name: 'Mr. Rodriguez',
-            role: 'Paraprofessional',
-            email: 'rodriguez@school.edu',
-            phone: '(555) 234-5678',
-            specialties: ['Math Support', 'Individual Assistance'],
-            photo: null,
-            isActive: true,
-            startDate: '2024-01-08',
-            notes: 'Excellent with one-on-one instruction',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff3',
-            name: 'Dr. Williams',
-            role: 'Speech Therapist',
-            email: 'williams@school.edu',
-            phone: '(555) 345-6789',
-            specialties: ['Speech Therapy', 'Communication Devices'],
-            photo: null,
-            isActive: true,
-            startDate: '2022-09-01',
-            notes: 'Specialist in AAC devices',
-            isResourceTeacher: true,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff4',
-            name: 'Mrs. Chen',
-            role: 'Art Teacher',
-            email: 'chen@school.edu',
-            phone: '(555) 456-7890',
-            specialties: ['Art Therapy', 'Creative Expression'],
-            photo: null,
-            isActive: true,
-            startDate: '2023-01-15',
-            notes: 'Comes to classroom for art sessions',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: true
-          }
-        ];
-        setStaff(defaultStaff);
-        saveStaffData(defaultStaff);
+        // Load from legacy localStorage or initialize defaults
+        const savedStaff = localStorage.getItem('staff_members');
+        if (savedStaff) {
+          setStaff(JSON.parse(savedStaff));
+        } else {
+          // Initialize with default staff if none exist
+          const defaultStaff: StaffMember[] = [
+            {
+              id: 'staff1',
+              name: 'Ms. Johnson',
+              role: 'Special Education Teacher',
+              email: 'johnson@school.edu',
+              phone: '(555) 123-4567',
+              specialties: ['Autism Support', 'Behavior Management'],
+              photo: null,
+              isActive: true,
+              startDate: '2023-08-15',
+              notes: 'Lead teacher with 8 years experience',
+              isResourceTeacher: false,
+              isRelatedArtsTeacher: false
+            },
+            {
+              id: 'staff2',
+              name: 'Mr. Rodriguez',
+              role: 'Paraprofessional',
+              email: 'rodriguez@school.edu',
+              phone: '(555) 234-5678',
+              specialties: ['Math Support', 'Individual Assistance'],
+              photo: null,
+              isActive: true,
+              startDate: '2024-01-08',
+              notes: 'Excellent with one-on-one instruction',
+              isResourceTeacher: false,
+              isRelatedArtsTeacher: false
+            },
+            {
+              id: 'staff3',
+              name: 'Dr. Williams',
+              role: 'Speech Therapist',
+              email: 'williams@school.edu',
+              phone: '(555) 345-6789',
+              specialties: ['Speech Therapy', 'Communication Devices'],
+              photo: null,
+              isActive: true,
+              startDate: '2022-09-01',
+              notes: 'Specialist in AAC devices',
+              isResourceTeacher: true,
+              isRelatedArtsTeacher: false
+            },
+            {
+              id: 'staff4',
+              name: 'Mrs. Chen',
+              role: 'Art Teacher',
+              email: 'chen@school.edu',
+              phone: '(555) 456-7890',
+              specialties: ['Art Therapy', 'Creative Expression'],
+              photo: null,
+              isActive: true,
+              startDate: '2023-01-15',
+              notes: 'Comes to classroom for art sessions',
+              isResourceTeacher: false,
+              isRelatedArtsTeacher: true
+            }
+          ];
+          setStaff(defaultStaff);
+          saveStaffData(defaultStaff);
+        }
       }
     } catch (error) {
       console.error('Error loading staff data:', error);
@@ -91,8 +121,39 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
 
   const saveStaffData = (staffData: StaffMember[]) => {
     try {
-      localStorage.setItem('staff_members', JSON.stringify(staffData));
-      // Also trigger a global data update event for other components
+      if (isUsingUnifiedData) {
+        // Save to unified data service
+        staffData.forEach(member => {
+          const unifiedStaff: UnifiedStaff = {
+            id: member.id,
+            name: member.name,
+            role: member.role,
+            email: member.email,
+            phone: member.phone,
+            photo: member.photo,
+            isActive: member.isActive,
+            dateCreated: member.startDate,
+            permissions: {
+              canEditStudents: true,
+              canViewReports: true,
+              canManageGoals: member.role.includes('Teacher')
+            }
+          };
+          
+          // Check if staff member exists, update or add
+          const existingStaff = UnifiedDataService.getStaff(member.id);
+          if (existingStaff) {
+            UnifiedDataService.updateStaff(member.id, unifiedStaff);
+          } else {
+            UnifiedDataService.addStaff(unifiedStaff);
+          }
+        });
+      } else {
+        // Save to legacy localStorage
+        localStorage.setItem('staff_members', JSON.stringify(staffData));
+      }
+      
+      // Trigger global data update event for other components
       window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
         detail: staffData 
       }));
