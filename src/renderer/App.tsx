@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
+import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
@@ -18,6 +19,7 @@ import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
 
 const App: React.FC = () => {
+  const [showStartScreen, setShowStartScreen] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('builder');
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleVariation | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -135,6 +137,20 @@ const App: React.FC = () => {
     saveToStorage('vsb_activities', updatedActivities);
   };
 
+  // StartScreen handlers
+  const handleStartMyDay = () => {
+    setShowStartScreen(false);
+    setCurrentView('calendar'); // Goes to Daily Check-In
+  };
+
+  const handleManageClassroom = () => {
+    setShowStartScreen(false);
+    // Keep current view logic for navigation
+  };
+
+  const handleBackToStart = () => {
+    setShowStartScreen(true);
+  };
 
   // Convert Staff[] to StaffMember[] for components that expect StaffMember
   const staffMembers = useMemo(() => {
@@ -202,90 +218,104 @@ const App: React.FC = () => {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Navigation */}
-      <Navigation 
-        currentView={currentView} 
-        onViewChange={handleViewChange}
-        selectedSchedule={selectedSchedule}
-      />
+      {/* Start Screen */}
+      {showStartScreen && (
+        <StartScreen 
+          onStartMyDay={handleStartMyDay}
+          onManageClassroom={handleManageClassroom}
+        />
+      )}
 
-      {/* Main Content */}
-      <div className="main-content">
-        {/* Schedule Builder */}
-        {currentView === 'builder' && (
-          <ScheduleBuilder 
-            isActive={true}
+      {/* App Content - Only show when not on start screen */}
+      {!showStartScreen && (
+        <>
+          {/* Navigation */}
+          <Navigation 
+            currentView={currentView} 
+            onViewChange={handleViewChange}
+            selectedSchedule={selectedSchedule}
+            onBackToStart={handleBackToStart}
           />
-        )}
 
-        {/* Smartboard Display */}
-        {currentView === 'display' && (
-          <SmartboardDisplay
-            isActive={true}
-            students={students}
-            staff={staffMembers}
-            currentSchedule={selectedSchedule ? {
-              activities: selectedSchedule.activities,
-              startTime: selectedSchedule.startTime,
-              name: selectedSchedule.name
-            } : undefined}
-          />
-        )}
+          {/* Main Content */}
+          <div className="main-content">
+            {/* Schedule Builder */}
+            {currentView === 'builder' && (
+              <ScheduleBuilder 
+                isActive={true}
+              />
+            )}
 
-        {/* Student Management */}
-        {currentView === 'students' && (
-          <StudentManagement 
-            isActive={true}
-          />
-        )}
+            {/* Smartboard Display */}
+            {currentView === 'display' && (
+              <SmartboardDisplay
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                currentSchedule={selectedSchedule ? {
+                  activities: selectedSchedule.activities,
+                  startTime: selectedSchedule.startTime,
+                  name: selectedSchedule.name
+                } : undefined}
+              />
+            )}
 
-        {/* Staff Management */}
-        {currentView === 'staff' && (
-          <StaffManagement 
-            isActive={true}
-          />
-        )}
+            {/* Student Management */}
+            {currentView === 'students' && (
+              <StudentManagement 
+                isActive={true}
+              />
+            )}
 
-        {/* Daily Check-In Calendar */}
-        {currentView === 'calendar' && (
-          <DailyCheckIn 
-            isActive={true}
-            students={students}
-            staff={staffMembers}
-          />
-        )}
+            {/* Staff Management */}
+            {currentView === 'staff' && (
+              <StaffManagement 
+                isActive={true}
+              />
+            )}
 
-        {/* Activity Library */}
-        {currentView === 'library' && (
-          <ActivityLibrary 
-            isActive={true}
-          />
-        )}
+            {/* Daily Check-In Calendar */}
+            {currentView === 'calendar' && (
+              <DailyCheckIn 
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+              />
+            )}
 
-        {/* Data Collection - IEP System */}
-        {currentView === 'data-collection' && (
-          <IEPDataCollectionInterface 
-            isActive={true}
-          />
-        )}
+            {/* Activity Library */}
+            {currentView === 'library' && (
+              <ActivityLibrary 
+                isActive={true}
+              />
+            )}
 
-        {/* Reports */}
-        {currentView === 'reports' && (
-          <Reports 
-            isActive={true}
-            students={students}
-            staff={staffMembers}
-            activities={activities}
-          />
-        )}
+            {/* Data Collection - IEP System */}
+            {currentView === 'data-collection' && (
+              <IEPDataCollectionInterface 
+                isActive={true}
+              />
+            )}
 
-        {/* Settings */}
-        {currentView === 'settings' && (
-          <Settings 
-            isActive={true}
-          />
-        )}
-      </div>
+            {/* Reports */}
+            {currentView === 'reports' && (
+              <Reports 
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                activities={activities}
+              />
+            )}
+
+            {/* Settings */}
+            {currentView === 'settings' && (
+              <Settings 
+                isActive={true}
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

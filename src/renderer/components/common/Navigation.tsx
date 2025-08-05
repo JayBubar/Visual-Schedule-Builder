@@ -5,12 +5,14 @@ interface NavigationProps {
   currentView: ViewType;
   onViewChange: (view: ViewType) => void;
   selectedSchedule?: ScheduleVariation | null;
+  onBackToStart?: () => void; // NEW: Option to return to start screen
 }
 
 const Navigation: React.FC<NavigationProps> = ({ 
   currentView, 
   onViewChange, 
-  selectedSchedule 
+  selectedSchedule,
+  onBackToStart
 }) => {
   // ✅ FIXED: Consistent navigation with Reports tab included
   const navItems = [
@@ -27,16 +29,27 @@ const Navigation: React.FC<NavigationProps> = ({
   return (
     <nav className="navigation">
       <div className="nav-brand">
-        <div className="brand-icon">📅</div>
+        <div className="brand-icon">🌸</div>
         <div className="brand-info">
           <div className="brand-title">
-            Visual Schedule Builder
+            Bloom Classroom
             {window.location.hostname === 'localhost' && (
               <span className="dev-indicator">DEV</span>
             )}
           </div>
           <div className="brand-version">v1.0.0</div>
         </div>
+        
+        {/* NEW: Back to Start button */}
+        {onBackToStart && (
+          <button
+            onClick={onBackToStart}
+            className="back-to-start-btn"
+            title="Back to Start Screen"
+          >
+            🏠
+          </button>
+        )}
       </div>
 
       <div className="nav-buttons">
@@ -91,6 +104,23 @@ const Navigation: React.FC<NavigationProps> = ({
         .brand-version {
           font-size: 0.75rem;
           opacity: 0.8;
+        }
+
+        .back-to-start-btn {
+          background: rgba(255,255,255,0.2);
+          border: 1px solid rgba(255,255,255,0.3);
+          color: white;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1.2rem;
+          transition: all 0.3s ease;
+          margin-left: 1rem;
+        }
+
+        .back-to-start-btn:hover {
+          background: rgba(255,255,255,0.3);
+          transform: translateY(-1px);
         }
 
         .dev-indicator {

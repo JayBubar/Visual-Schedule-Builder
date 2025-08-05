@@ -1,380 +1,319 @@
-// Updated Navigation Component - Removed IEP Data Tab
-// File: src/renderer/components/common/Navigation.tsx
+// 🌸 Bloom Classroom - Start Screen Component
+// File: src/renderer/components/common/StartScreen.tsx
 
 import React from 'react';
-import { ViewType, ScheduleVariation } from '../../types';
 
-interface NavigationProps {
-  currentView: ViewType;
-  onViewChange: (view: ViewType) => void;
-  selectedSchedule?: ScheduleVariation | null;
-  onBackToStart?: () => void; // NEW: Option to return to start screen
+interface StartScreenProps {
+  onStartMyDay: () => void;
+  onManageClassroom: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ 
-  currentView, 
-  onViewChange, 
-  selectedSchedule,
-  onBackToStart
-}) => {
-  // UPDATED: Removed IEP Data tab, moved IEP features to Student Management
-  const navItems = [
-    { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
-    { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
-    { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
-    { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
-    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+5' },
-    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+6' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+7' }
-  ] as const;
-
+const StartScreen: React.FC<StartScreenProps> = ({ onStartMyDay, onManageClassroom }) => {
   return (
-    <nav className="navigation">
-      <div className="nav-brand">
-        <div className="brand-icon">🌸</div>
-        <div className="brand-info">
-          <div className="brand-title">
-            Bloom Classroom
-            {window.location.hostname === 'localhost' && (
-              <span className="dev-indicator">DEV</span>
-            )}
+    <div className="start-screen">
+      <div className="start-screen-container">
+        {/* Header Section */}
+        <div className="header-section">
+          <div className="logo-container">
+            {/* Bloom Classroom Logo */}
+            <div className="logo-placeholder">
+              <img 
+                src="/src/renderer/assets/bloom-logo.png" 
+                alt="Bloom Classroom Logo" 
+                className="logo-image"
+              />
+            </div>
           </div>
-          <div className="brand-version">v1.0.0</div>
+          <h1 className="app-title">Bloom Classroom</h1>
+          <p className="app-subtitle">Where Every Student Flourishes</p>
         </div>
-        
-        {/* NEW: Back to Start button */}
-        {onBackToStart && (
-          <button
-            onClick={onBackToStart}
-            className="back-to-start-btn"
-            title="Back to Start Screen"
-          >
-            🏠
-          </button>
-        )}
-      </div>
 
-      <div className="nav-buttons">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => onViewChange(item.id as ViewType)}
-            className={`nav-button ${currentView === item.id ? 'active' : ''}`}
-            title={`${item.label} (${item.shortcut})`}
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button 
+            className="action-button primary"
+            onClick={onStartMyDay}
           >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-            <span className="nav-shortcut">{item.shortcut}</span>
+            <div className="button-icon">📅</div>
+            <div className="button-content">
+              <h3>Start My Day</h3>
+              <p>Daily check-in and schedule overview</p>
+            </div>
           </button>
-        ))}
-      </div>
 
-      <div className="nav-status">
-        <div className="status-indicator">
-          <div className="status-dot"></div>
-          <span className="status-text">Ready</span>
+          <button 
+            className="action-button secondary"
+            onClick={onManageClassroom}
+          >
+            <div className="button-icon">🛠️</div>
+            <div className="button-content">
+              <h3>Manage My Classroom</h3>
+              <p>Students, schedules, and classroom tools</p>
+            </div>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="footer-section">
+          <p className="version-info">Version 1.0.0</p>
+          <p className="tagline">Empowering educators, inspiring students</p>
         </div>
       </div>
 
       <style>{`
-        .navigation {
+        .start-screen {
+          min-height: 100vh;
           display: flex;
           align-items: center;
-          padding: 0.75rem 1.5rem;
+          justify-content: center;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          position: sticky;
+          padding: 2rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .start-screen::before {
+          content: '';
+          position: absolute;
           top: 0;
-          z-index: 100;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+          pointer-events: none;
         }
 
-        .nav-brand {
+        .start-screen-container {
+          background: rgba(255, 255, 255, 0.95);
+          border-radius: 24px;
+          padding: 3rem;
+          max-width: 600px;
+          width: 100%;
+          text-align: center;
+          box-shadow: 
+            0 20px 60px rgba(0, 0, 0, 0.2),
+            0 8px 32px rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          position: relative;
+          z-index: 1;
+        }
+
+        .header-section {
+          margin-bottom: 3rem;
+        }
+
+        .logo-container {
+          margin-bottom: 1.5rem;
+        }
+
+        .logo-placeholder {
+          width: 120px;
+          height: 120px;
+          margin: 0 auto;
+          background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+          border-radius: 50%;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          margin-right: 2rem;
+          justify-content: center;
+          box-shadow: 
+            0 12px 40px rgba(255, 154, 158, 0.3),
+            0 4px 16px rgba(255, 154, 158, 0.2);
+          animation: logoFloat 3s ease-in-out infinite;
         }
 
-        .brand-icon {
-          font-size: 1.5rem;
+        .logo-emoji {
+          font-size: 3rem;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
 
-        .brand-info {
-          display: flex;
-          flex-direction: column;
+        .logo-image {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          border-radius: 50%;
         }
 
-        .brand-title {
-          font-size: 1.125rem;
-          font-weight: 700;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
+        @keyframes logoFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
         }
 
-        .brand-version {
-          font-size: 0.75rem;
-          opacity: 0.8;
+        .app-title {
+          font-size: 3rem;
+          font-weight: 800;
+          color: #2d3748;
+          margin: 0 0 0.5rem 0;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-subtitle {
+          font-size: 1.25rem;
+          color: #718096;
+          margin: 0;
           font-weight: 500;
         }
 
-        .dev-indicator {
-          background: #ef4444;
-          color: white;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 0.7rem;
-          font-weight: 600;
-        }
-
-        .back-to-start-btn {
-          background: rgba(255,255,255,0.2);
-          border: 1px solid rgba(255,255,255,0.3);
-          color: white;
-          padding: 8px 12px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 1.2rem;
-          transition: all 0.3s ease;
-          margin-left: 1rem;
-        }
-
-        .back-to-start-btn:hover {
-          background: rgba(255,255,255,0.3);
-          transform: translateY(-1px);
-        }
-
-        .nav-buttons {
-          display: flex;
-          gap: 8px;
-          padding: 8px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 16px;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-          flex: 1;
-          justify-content: center;
-          max-width: 800px;
-        }
-
-        .nav-button {
+        .action-buttons {
           display: flex;
           flex-direction: column;
+          gap: 1.5rem;
+          margin-bottom: 3rem;
+        }
+
+        .action-button {
+          display: flex;
           align-items: center;
-          padding: 14px 18px;
+          gap: 1.5rem;
+          padding: 1.5rem 2rem;
           border: none;
-          border-radius: 12px;
-          background: transparent;
-          color: white;
+          border-radius: 16px;
           cursor: pointer;
           transition: all 0.3s ease;
-          min-width: 90px;
-          position: relative;
+          text-align: left;
+          background: white;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
           border: 2px solid transparent;
         }
 
-        .nav-button:hover {
-          background: rgba(255, 255, 255, 0.15);
+        .action-button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
         }
 
-        .nav-button.active {
-          background: rgba(255, 255, 255, 0.9);
-          color: #667eea;
-          border-color: rgba(255, 255, 255, 0.3);
-          box-shadow: 
-            0 8px 30px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        .action-button.primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
         }
 
-        .nav-icon {
-          font-size: 1.8rem;
-          margin-bottom: 6px;
-          transition: transform 0.3s ease;
+        .action-button.primary:hover {
+          box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
         }
 
-        .nav-button:hover .nav-icon {
-          transform: scale(1.1);
+        .action-button.secondary {
+          background: white;
+          color: #2d3748;
+          border-color: #e2e8f0;
         }
 
-        .nav-label {
-          font-size: 13px;
+        .action-button.secondary:hover {
+          border-color: #667eea;
+          box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+        }
+
+        .button-icon {
+          font-size: 2.5rem;
+          flex-shrink: 0;
+        }
+
+        .button-content h3 {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .button-content p {
+          font-size: 1rem;
+          margin: 0;
+          opacity: 0.8;
+        }
+
+        .footer-section {
+          border-top: 1px solid #e2e8f0;
+          padding-top: 2rem;
+          color: #718096;
+        }
+
+        .version-info {
+          font-size: 0.875rem;
+          margin: 0 0 0.5rem 0;
           font-weight: 600;
-          text-align: center;
-          line-height: 1.2;
         }
 
-        .nav-shortcut {
-          font-size: 10px;
-          opacity: 0;
-          background: rgba(0, 0, 0, 0.1);
-          padding: 2px 6px;
-          border-radius: 4px;
-          margin-top: 2px;
-          transition: all 0.3s ease;
+        .tagline {
+          font-size: 1rem;
+          margin: 0;
+          font-style: italic;
         }
 
-        .nav-button:hover .nav-shortcut {
-          opacity: 1;
-          background: rgba(0, 0, 0, 0.15);
-          color: white;
-        }
-
-        .nav-button.active .nav-shortcut {
-          opacity: 0.9;
-          background: rgba(0, 0, 0, 0.2);
-          color: white;
-        }
-
-        .nav-status {
-          display: flex;
-          align-items: center;
-          margin-left: 2rem;
-        }
-
-        .status-indicator {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 20px;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          background: #2ecc71;
-          border-radius: 50%;
-          box-shadow: 
-            0 0 8px rgba(46, 204, 113, 0.5),
-            0 0 16px rgba(46, 204, 113, 0.3);
-          animation: statusPulse 2s ease infinite;
-        }
-
-        @keyframes statusPulse {
-          0%, 100% { 
-            opacity: 1; 
-            transform: scale(1);
-          }
-          50% { 
-            opacity: 0.7; 
-            transform: scale(1.1);
-          }
-        }
-
-        .status-text {
-          font-size: 12px;
-          font-weight: 600;
-          color: white;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .nav-button:focus {
-          outline: none;
-          border-color: rgba(255, 255, 255, 0.5);
-          box-shadow: 
-            0 0 0 3px rgba(255, 255, 255, 0.2),
-            0 8px 30px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-
-        @media (max-width: 1024px) {
-          .navigation {
-            padding: 12px 20px;
-          }
-          
-          .nav-buttons {
-            gap: 6px;
-            padding: 6px;
-          }
-          
-          .nav-button {
-            padding: 12px 16px;
-            min-width: 85px;
-          }
-          
-          .nav-icon {
-            font-size: 1.6rem;
-            margin-bottom: 4px;
-          }
-          
-          .nav-label {
-            font-size: 12px;
-          }
-          
-          .nav-shortcut {
-            font-size: 9px;
-          }
-        }
-
+        /* Responsive Design */
         @media (max-width: 768px) {
-          .navigation {
-            flex-direction: column;
-            gap: 16px;
-            padding: 16px;
+          .start-screen {
+            padding: 1rem;
           }
-          
-          .nav-buttons {
-            order: 2;
-            flex-wrap: wrap;
-            justify-content: center;
-            max-width: 100%;
+
+          .start-screen-container {
+            padding: 2rem;
           }
-          
-          .nav-brand {
-            order: 1;
-            margin-right: 0;
+
+          .app-title {
+            font-size: 2.5rem;
           }
-          
-          .nav-status {
-            order: 3;
-            margin-left: 0;
+
+          .logo-placeholder {
+            width: 100px;
+            height: 100px;
           }
-          
-          .nav-button {
-            flex: 1;
-            min-width: 70px;
-            max-width: 90px;
+
+          .logo-emoji {
+            font-size: 2.5rem;
           }
-          
-          .brand-title {
-            font-size: 1.3rem;
+
+          .action-button {
+            padding: 1.25rem 1.5rem;
+            gap: 1rem;
+          }
+
+          .button-icon {
+            font-size: 2rem;
+          }
+
+          .button-content h3 {
+            font-size: 1.25rem;
+          }
+
+          .button-content p {
+            font-size: 0.875rem;
           }
         }
 
         @media (max-width: 480px) {
-          .nav-button {
-            padding: 10px 12px;
-            min-width: 60px;
+          .start-screen-container {
+            padding: 1.5rem;
           }
-          
-          .nav-icon {
-            font-size: 1.4rem;
+
+          .app-title {
+            font-size: 2rem;
           }
-          
-          .nav-label {
-            font-size: 11px;
+
+          .app-subtitle {
+            font-size: 1rem;
           }
-          
-          .nav-shortcut {
-            display: none;
+
+          .action-buttons {
+            gap: 1rem;
           }
-          
-          .brand-title {
-            font-size: 1.1rem;
+
+          .action-button {
+            flex-direction: column;
+            text-align: center;
+            gap: 0.75rem;
+            padding: 1.5rem 1rem;
+          }
+
+          .button-content h3 {
+            font-size: 1.125rem;
           }
         }
       `}</style>
-    </nav>
+    </div>
   );
 };
 
-export default Navigation;
+export default StartScreen;
