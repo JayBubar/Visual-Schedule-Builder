@@ -71,25 +71,8 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     // Check for celebrations on this date
     const celebrations = [];
     
-    // Check for birthdays
-    const birthdayStudents = students.filter(student => {
-      if (student.birthday) {
-        const birthday = new Date(student.birthday);
-        return birthday.getMonth() === currentDate.getMonth() && 
-               birthday.getDate() === currentDate.getDate();
-      }
-      return false;
-    });
-
-    if (birthdayStudents.length > 0) {
-      celebrations.push({
-        type: 'birthday',
-        students: birthdayStudents,
-        icon: '🎂',
-        title: `Happy Birthday!`,
-        description: `Celebrating ${birthdayStudents.map(s => s.name).join(' and ')}`
-      });
-    }
+    // Note: Birthday functionality removed as Student type doesn't include birthday property
+    // This can be added back when the Student interface is updated to include birthday: string
 
     // Check for holidays (simplified - you'd want more sophisticated date matching)
     const todayHolidays = getTodaysHolidays();
@@ -568,4 +551,4 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
   );
 };
 
-export default CelebrationSystem;\
+export default CelebrationSystem;
