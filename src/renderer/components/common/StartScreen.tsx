@@ -18,7 +18,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStartMyDay, onManageClassro
             {/* Bloom Classroom Logo */}
             <div className="logo-placeholder">
               <img 
-                src="/src/renderer/assets/bloom-logo.png" 
+                src="/src/renderer/assets/blom-log.png" 
                 alt="Bloom Classroom Logo" 
                 className="logo-image"
               />
