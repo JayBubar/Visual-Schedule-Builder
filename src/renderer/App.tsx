@@ -280,6 +280,8 @@ const App: React.FC = () => {
                 isActive={true}
                 students={students}
                 staff={staffMembers}
+                selectedSchedule={selectedSchedule}
+                onSwitchToScheduleBuilder={() => handleViewChange('builder')}
               />
             )}
 
