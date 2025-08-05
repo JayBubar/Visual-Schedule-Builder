@@ -23,10 +23,6 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
   onBack
 }) => {
   const [celebrationItems, setCelebrationItems] = useState<any[]>([]);
-  const [showDanceParty, setShowDanceParty] = useState(false);
-  const [dancePartyUsed, setDancePartyUsed] = useState(false);
-  const [dancePartyTimer, setDancePartyTimer] = useState(60);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Holiday database - you can expand this!
   const holidayDatabase: Holiday[] = [
@@ -89,11 +85,6 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     celebrations.push(...specialEvents);
 
     setCelebrationItems(celebrations);
-
-    // Check if dance party was used today
-    const today = currentDate.toDateString();
-    const lastDanceParty = localStorage.getItem('lastDanceParty');
-    setDancePartyUsed(lastDanceParty === today);
   }, [currentDate, students]);
 
   const getTodaysHolidays = (): Holiday[] => {
@@ -155,30 +146,6 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     return events;
   };
 
-  const startDanceParty = () => {
-    setShowDanceParty(true);
-    setIsPlaying(true);
-    setDancePartyTimer(60);
-    
-    // Mark dance party as used today
-    const today = currentDate.toDateString();
-    localStorage.setItem('lastDanceParty', today);
-    setDancePartyUsed(true);
-
-    // Start countdown
-    const interval = setInterval(() => {
-      setDancePartyTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setIsPlaying(false);
-          setTimeout(() => setShowDanceParty(false), 2000);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -187,107 +154,6 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
       day: 'numeric'
     });
   };
-
-  if (showDanceParty) {
-    return (
-      <div style={{
-        padding: '2rem',
-        textAlign: 'center',
-        minHeight: '600px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: isPlaying 
-          ? 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #fd79a8)'
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        backgroundSize: isPlaying ? '400% 400%' : '100% 100%',
-        animation: isPlaying ? 'danceColors 2s ease-in-out infinite' : 'none'
-      }}>
-        <div style={{
-          fontSize: isPlaying ? '8rem' : '6rem',
-          marginBottom: '2rem',
-          animation: isPlaying ? 'dance 1s ease-in-out infinite' : 'none'
-        }}>
-          {isPlaying ? '🕺💃🎵' : '🎉'}
-        </div>
-        
-        <h2 style={{
-          fontSize: '3rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '1rem',
-          textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-          animation: isPlaying ? 'bounce 1s ease-in-out infinite' : 'none'
-        }}>
-          {isPlaying ? 'DANCE PARTY!' : 'Dance Party Complete!'}
-        </h2>
-
-        {isPlaying && (
-          <div style={{
-            fontSize: '4rem',
-            fontWeight: '700',
-            color: 'white',
-            marginBottom: '2rem',
-            textShadow: '0 4px 8px rgba(0,0,0,0.5)',
-            border: '4px solid white',
-            borderRadius: '50%',
-            width: '120px',
-            height: '120px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'pulse 1s ease-in-out infinite'
-          }}>
-            {dancePartyTimer}
-          </div>
-        )}
-
-        {!isPlaying && (
-          <button
-            onClick={onNext}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: '3px solid white',
-              borderRadius: '16px',
-              color: 'white',
-              padding: '1.5rem 3rem',
-              fontSize: '1.5rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            Continue to Behavior Goals
-          </button>
-        )}
-
-        <style>{`
-          @keyframes danceColors {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          
-          @keyframes dance {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-20px) rotate(-5deg); }
-            75% { transform: translateY(-10px) rotate(5deg); }
-          }
-          
-          @keyframes bounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-          }
-        `}</style>
-      </div>
-    );
-  }
 
   return (
     <div style={{
@@ -437,59 +303,49 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
         </div>
       )}
 
-      {/* Dance Party Button */}
-      {!dancePartyUsed && (
-        <div style={{
-          background: 'linear-gradient(135deg, #ff6b6b, #4ecdc4)',
-          borderRadius: '20px',
-          padding: '2rem',
-          maxWidth: '600px',
-          margin: '0 auto',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+      {/* Teacher Celebration Management Interface - Placeholder for future development */}
+      <div style={{
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '20px',
+        padding: '2rem',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎊</div>
+        <h3 style={{
+          fontSize: '1.5rem',
+          color: 'white',
+          marginBottom: '1rem',
+          fontWeight: '600'
         }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🕺💃</div>
-          <h3 style={{
-            fontSize: '1.8rem',
+          Custom Celebrations
+        </h3>
+        <p style={{
+          fontSize: '1rem',
+          color: 'rgba(255,255,255,0.8)',
+          marginBottom: '1.5rem'
+        }}>
+          Teacher interface for adding classroom-specific celebrations coming soon!
+        </p>
+        <button
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
             color: 'white',
-            marginBottom: '1rem',
-            fontWeight: '700'
-          }}>
-            Daily Dance Party!
-          </h3>
-          <p style={{
-            fontSize: '1rem',
-            color: 'white',
-            marginBottom: '1.5rem',
-            opacity: 0.9
-          }}>
-            Ready for a 1-minute dance party? You can only do this once per day!
-          </p>
-          <button
-            onClick={startDanceParty}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: '3px solid white',
-              borderRadius: '16px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1.3rem',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'white';
-              e.currentTarget.style.color = '#ff6b6b';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-              e.currentTarget.style.color = 'white';
-            }}
-          >
-            🎵 Start Dance Party! 🎵
-          </button>
-        </div>
-      )}
+            padding: '0.8rem 1.5rem',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            cursor: 'not-allowed',
+            opacity: 0.6
+          }}
+          disabled
+        >
+          + Add Custom Celebration (Coming Soon)
+        </button>
+      </div>
 
       {/* Navigation */}
       <div style={{

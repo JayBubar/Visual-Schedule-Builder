@@ -235,6 +235,7 @@ const App: React.FC = () => {
             onViewChange={handleViewChange}
             selectedSchedule={selectedSchedule}
             onBackToStart={handleBackToStart}
+            isInDailyCheckIn={currentView === 'calendar'}
           />
 
           {/* Main Content */}

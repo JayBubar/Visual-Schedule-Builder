@@ -6,13 +6,15 @@ interface NavigationProps {
   onViewChange: (view: ViewType) => void;
   selectedSchedule?: ScheduleVariation | null;
   onBackToStart?: () => void; // NEW: Option to return to start screen
+  isInDailyCheckIn?: boolean; // NEW: Hide buttons during check-in
 }
 
 const Navigation: React.FC<NavigationProps> = ({ 
   currentView, 
   onViewChange, 
   selectedSchedule,
-  onBackToStart
+  onBackToStart,
+  isInDailyCheckIn
 }) => {
   // ✅ FIXED: Consistent navigation with Reports tab included
   const navItems = [
@@ -52,18 +54,24 @@ const Navigation: React.FC<NavigationProps> = ({
         )}
       </div>
 
-      <div className="nav-buttons">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => onViewChange(item.id as ViewType)}
-            className={`nav-button ${currentView === item.id ? 'active' : ''}`}
-            title={`${item.label} (${item.shortcut})`}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </button>
-        ))}
+      <div className={`nav-buttons ${isInDailyCheckIn ? 'daily-checkin-mode' : ''}`}>
+        {navItems.map(item => {
+          // During Daily Check-In, only show the Daily Check-In button as active
+          const isHidden = isInDailyCheckIn && item.id !== 'calendar';
+          
+          return (
+            <button
+              key={item.id}
+              onClick={() => !isHidden && onViewChange(item.id as ViewType)}
+              className={`nav-button ${currentView === item.id ? 'active' : ''} ${isHidden ? 'hidden-during-checkin' : ''}`}
+              title={isHidden ? 'Available after Daily Check-In' : `${item.label} (${item.shortcut})`}
+              disabled={isHidden}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="nav-status">
@@ -168,6 +176,23 @@ const Navigation: React.FC<NavigationProps> = ({
         .nav-button.active {
           background: rgba(255, 255, 255, 0.25);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Daily Check-In Mode Styles */
+        .nav-button.hidden-during-checkin {
+          opacity: 0.3;
+          filter: blur(1px);
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+
+        .nav-button.hidden-during-checkin:hover {
+          background: rgba(255, 255, 255, 0.1);
+          transform: none;
+        }
+
+        .daily-checkin-mode .nav-button:not(.hidden-during-checkin) {
+          box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
         }
 
         .nav-icon {

@@ -11,6 +11,8 @@ interface BehaviorCommitmentsProps {
   students: Student[];
   todayCheckIn: DailyCheckInType | null;
   onUpdateCheckIn: (checkIn: DailyCheckInType) => void;
+  onNext: () => void;
+  onBack: () => void;
 }
 
 interface BehaviorCategory {
@@ -26,10 +28,14 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   currentDate,
   students,
   todayCheckIn,
-  onUpdateCheckIn
+  onUpdateCheckIn,
+  onNext,
+  onBack
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('kindness');
-  const [studentCommitments, setStudentCommitments] = useState<StudentBehaviorChoice[]>([]);
+  // NEW: Individual student choice tracking
+  const [studentChoices, setStudentChoices] = useState<{[studentId: string]: string}>({});
+  const [completedStudents, setCompletedStudents] = useState<Set<string>>(new Set());
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState<string | null>(null);
 
   // Behavior categories with commitments
@@ -126,44 +132,66 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   ];
 
+  // Load existing commitments on mount
   useEffect(() => {
-    if (todayCheckIn) {
-      setStudentCommitments(todayCheckIn.behaviorCommitments || []);
+    if (todayCheckIn?.behaviorCommitments) {
+      const choices: {[studentId: string]: string} = {};
+      const completed = new Set<string>();
+      
+      todayCheckIn.behaviorCommitments.forEach(commitment => {
+        choices[commitment.studentId] = commitment.commitment;
+        if (commitment.achieved) {
+          completed.add(commitment.studentId);
+        }
+      });
+      
+      setStudentChoices(choices);
+      setCompletedStudents(completed);
     }
   }, [todayCheckIn]);
 
-  const getSelectedCategory = () => {
-    return behaviorCategories.find(cat => cat.id === selectedCategory) || behaviorCategories[0];
+  // Get category for a commitment text
+  const getCategoryForCommitment = (commitmentText: string): BehaviorCategory | null => {
+    for (const category of behaviorCategories) {
+      if (category.commitments.includes(commitmentText)) {
+        return category;
+      }
+    }
+    return null;
   };
 
-  const hasStudentCommitment = (studentId: string): boolean => {
-    return studentCommitments.some(commitment => commitment.studentId === studentId);
-  };
-
-  const getStudentCommitment = (studentId: string): StudentBehaviorChoice | undefined => {
-    return studentCommitments.find(commitment => commitment.studentId === studentId);
-  };
-
-  const addStudentCommitment = (student: Student, commitmentText: string) => {
+  // Handle student commitment selection
+  const handleStudentCommitmentSelect = (student: Student, commitment: string) => {
     if (!todayCheckIn) return;
 
-    const newCommitment: StudentBehaviorChoice = {
+    const category = getCategoryForCommitment(commitment);
+    if (!category) return;
+
+    // Update local state
+    const newChoices = { ...studentChoices };
+    newChoices[student.id] = commitment;
+    setStudentChoices(newChoices);
+
+    // Create behavior choice object
+    const behaviorChoice: StudentBehaviorChoice = {
       id: `commitment_${student.id}_${Date.now()}`,
       studentId: student.id,
-      commitmentId: `behavior_${selectedCategory}_${Date.now()}`,
+      commitmentId: `behavior_${category.id}_${Date.now()}`,
       date: currentDate.toISOString().split('T')[0],
       completed: false,
       timestamp: new Date().toISOString(),
       studentName: student.name,
       studentPhoto: student.photo,
-      commitment: commitmentText,
-      category: selectedCategory as any,
-      achieved: false,
+      commitment: commitment,
+      category: category.id as any,
+      achieved: completedStudents.has(student.id),
       selectedAt: new Date().toISOString()
     };
 
-    const updatedCommitments = studentCommitments.filter(c => c.studentId !== student.id);
-    updatedCommitments.push(newCommitment);
+    // Update check-in data
+    const existingCommitments = todayCheckIn.behaviorCommitments || [];
+    const updatedCommitments = existingCommitments.filter(c => c.studentId !== student.id);
+    updatedCommitments.push(behaviorChoice);
 
     const updatedCheckIn = {
       ...todayCheckIn,
@@ -171,58 +199,57 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       updatedAt: new Date().toISOString()
     };
 
-    setStudentCommitments(updatedCommitments);
     onUpdateCheckIn(updatedCheckIn);
+    setSelectedStudent(null); // Close selection modal
   };
 
-  const toggleCommitmentAchieved = (studentId: string) => {
-    if (!todayCheckIn) return;
+  // Toggle student achievement
+  const toggleStudentAchievement = (studentId: string) => {
+    const newCompleted = new Set(completedStudents);
+    const isCompleted = newCompleted.has(studentId);
+    
+    if (isCompleted) {
+      newCompleted.delete(studentId);
+    } else {
+      newCompleted.add(studentId);
+      // Show celebration
+      setShowCelebration(studentId);
+      setTimeout(() => setShowCelebration(null), 2000);
+    }
+    
+    setCompletedStudents(newCompleted);
 
-    const updatedCommitments = studentCommitments.map(commitment => {
-      if (commitment.studentId === studentId) {
-        const achieved = !commitment.achieved;
-        
-        // Show celebration if newly achieved
-        if (achieved && !commitment.achieved) {
-          setShowCelebration(studentId);
-          setTimeout(() => setShowCelebration(null), 3000);
-          
-          // Add achievement to highlights
-          const student = students.find(s => s.id === studentId);
-          if (student) {
-            const newHighlight: ActivityHighlight = {
-              id: `behavior_${Date.now()}`,
-              activityId: `behavior_${Date.now()}`,
-              activityName: 'Behavior Achievement',
-              emoji: '🌟',
-              description: `${student.name} achieved their behavior goal`,
-              studentReactions: [],
-              highlight: `${student.name} achieved their behavior goal: "${commitment.commitment}"`,
-              timestamp: new Date().toISOString(),
-              studentIds: [studentId]
-            };
-
-            const currentHighlights = todayCheckIn.yesterdayHighlights || [];
-            const updatedCheckIn = {
-              ...todayCheckIn,
-              behaviorCommitments: updatedCommitments,
-              yesterdayHighlights: [...currentHighlights, newHighlight],
-              updatedAt: new Date().toISOString()
-            };
-            
-            onUpdateCheckIn(updatedCheckIn);
-            return { ...commitment, achieved, completedAt: new Date().toISOString() };
-          }
+    // Update check-in data
+    if (todayCheckIn?.behaviorCommitments) {
+      const updatedCommitments = todayCheckIn.behaviorCommitments.map(commitment => {
+        if (commitment.studentId === studentId) {
+          return { ...commitment, achieved: !isCompleted };
         }
-        
-        return { ...commitment, achieved };
-      }
-      return commitment;
-    });
+        return commitment;
+      });
 
-    setStudentCommitments(updatedCommitments);
+      const updatedCheckIn = {
+        ...todayCheckIn,
+        behaviorCommitments: updatedCommitments,
+        updatedAt: new Date().toISOString()
+      };
 
-    if (!showCelebration) {
+      onUpdateCheckIn(updatedCheckIn);
+    }
+  };
+
+  // Remove student commitment
+  const removeStudentCommitment = (studentId: string) => {
+    const newChoices = { ...studentChoices };
+    delete newChoices[studentId];
+    setStudentChoices(newChoices);
+
+    const newCompleted = new Set(completedStudents);
+    newCompleted.delete(studentId);
+    setCompletedStudents(newCompleted);
+
+    if (todayCheckIn) {
+      const updatedCommitments = (todayCheckIn.behaviorCommitments || []).filter(c => c.studentId !== studentId);
       const updatedCheckIn = {
         ...todayCheckIn,
         behaviorCommitments: updatedCommitments,
@@ -232,528 +259,503 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   };
 
-  const removeStudentCommitment = (studentId: string) => {
-    if (!todayCheckIn) return;
-
-    const updatedCommitments = studentCommitments.filter(c => c.studentId !== studentId);
-
-    const updatedCheckIn = {
-      ...todayCheckIn,
-      behaviorCommitments: updatedCommitments,
-      updatedAt: new Date().toISOString()
-    };
-
-    setStudentCommitments(updatedCommitments);
-    onUpdateCheckIn(updatedCheckIn);
-  };
-
-  const getAchievementStats = () => {
-    const total = studentCommitments.length;
-    const achieved = studentCommitments.filter(c => c.achieved).length;
-    return { total, achieved, percentage: total > 0 ? Math.round((achieved / total) * 100) : 0 };
-  };
-
-  const selectedCat = getSelectedCategory();
-  const stats = getAchievementStats();
+  const completedCount = completedStudents.size;
+  const totalWithChoices = Object.keys(studentChoices).length;
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div style={{
+      padding: '2rem',
+      textAlign: 'center',
+      minHeight: '600px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '2rem'
+    }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h3 style={{ 
-          fontSize: '2rem', 
-          marginBottom: '0.5rem',
+      <div>
+        <h2 style={{
+          fontSize: '2.5rem',
+          fontWeight: '700',
           color: 'white',
+          marginBottom: '1rem',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          ⭐ Behavior Commitments
-        </h3>
-        <p style={{ 
-          fontSize: '1.2rem', 
-          opacity: 0.9,
-          color: 'white',
+          💪 "I Will..." Commitments
+        </h2>
+        <p style={{
+          fontSize: '1.3rem',
+          color: 'rgba(255,255,255,0.9)',
           marginBottom: '1rem'
         }}>
-          Choose your "I will..." statement for today!
+          Each student chooses ONE behavior goal for today!
         </p>
         
-        {/* Achievement Stats */}
-        {studentCommitments.length > 0 && (
+        {/* Simple Completion Counter */}
+        <div style={{
+          background: 'rgba(255,255,255,0.15)',
+          borderRadius: '16px',
+          padding: '1rem',
+          display: 'inline-block',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255,255,255,0.2)'
+        }}>
           <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '16px',
-            padding: '1rem',
-            display: 'inline-block',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-              🏆 {stats.achieved} of {stats.total} achieved ({stats.percentage}%)
-            </div>
-            <div style={{ 
-              background: 'rgba(255,255,255,0.3)',
-              borderRadius: '10px',
-              height: '8px',
-              width: '200px',
-              margin: '0 auto'
-            }}>
-              <div style={{
-                background: 'linear-gradient(90deg, #28a745, #20c997)',
-                borderRadius: '10px',
-                height: '100%',
-                width: `${stats.percentage}%`,
-                transition: 'width 0.3s ease'
-              }} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Category Selection */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '1rem',
-        marginBottom: '2rem'
-      }}>
-        {behaviorCategories.map(category => (
-          <button
-            key={category.id}
-            onClick={() => setSelectedCategory(category.id)}
-            style={{
-              background: selectedCategory === category.id 
-                ? `linear-gradient(145deg, ${category.color}, ${category.color}DD)`
-                : 'rgba(255,255,255,0.1)',
-              border: selectedCategory === category.id 
-                ? `3px solid ${category.color}`
-                : '2px solid rgba(255,255,255,0.2)',
-              borderRadius: '16px',
-              color: 'white',
-              padding: '1.5rem 1rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              backdropFilter: 'blur(10px)',
-              textAlign: 'center'
-            }}
-            onMouseEnter={(e) => {
-              if (selectedCategory !== category.id) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (selectedCategory !== category.id) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }
-            }}
-          >
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-              {category.icon}
-            </div>
-            <div style={{ 
-              fontSize: '1.2rem', 
-              fontWeight: '700',
-              marginBottom: '0.5rem'
-            }}>
-              {category.name}
-            </div>
-            <div style={{ 
-              fontSize: '0.9rem', 
-              opacity: 0.9,
-              lineHeight: '1.3'
-            }}>
-              {category.description}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Selected Category Commitments */}
-      <div style={{
-        background: `linear-gradient(145deg, ${selectedCat.color}20, ${selectedCat.color}10)`,
-        borderRadius: '20px',
-        padding: '2rem',
-        border: `3px solid ${selectedCat.color}`,
-        marginBottom: '2rem',
-        backdropFilter: 'blur(10px)'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}>
-          <span style={{ fontSize: '3rem' }}>{selectedCat.icon}</span>
-          <div>
-            <h4 style={{
-              margin: '0',
-              fontSize: '2rem',
-              fontWeight: '700',
-              color: 'white'
-            }}>
-              {selectedCat.name} Commitments
-            </h4>
-            <p style={{
-              margin: '0',
-              fontSize: '1.1rem',
-              color: 'rgba(255,255,255,0.9)'
-            }}>
-              {selectedCat.description}
-            </p>
-          </div>
-        </div>
-
-        {/* Commitment Options */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}>
-          {selectedCat.commitments.map((commitment, index) => (
-            <div
-              key={index}
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '12px',
-                padding: '1.5rem',
-                border: '2px solid rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <div style={{
-                fontSize: '1.1rem',
-                fontWeight: '600',
-                color: 'white',
-                lineHeight: '1.4',
-                textAlign: 'center'
-              }}>
-                "{commitment}"
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Student Selection Grid */}
-        <div>
-          <h5 style={{
             fontSize: '1.5rem',
             fontWeight: '700',
             color: 'white',
-            marginBottom: '1.5rem',
-            textAlign: 'center'
+            marginBottom: '0.5rem'
           }}>
-            👥 Choose Students for {selectedCat.name}
-          </h5>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '1.5rem'
-          }}>
-            {students.map(student => {
-              const hasCommitment = hasStudentCommitment(student.id);
-              const commitment = getStudentCommitment(student.id);
-              const isSelectedCategory = commitment?.category === selectedCategory;
+            📊 {Object.keys(studentChoices).length} of {students.length} students have made choices
+          </div>
+          {totalWithChoices > 0 && (
+            <div style={{
+              fontSize: '1.2rem',
+              color: 'rgba(255,255,255,0.9)'
+            }}>
+              🏆 {completedCount} commitments achieved!
+            </div>
+          )}
+        </div>
+      </div>
 
-              return (
-                <div
-                  key={student.id}
-                  style={{
-                    background: hasCommitment 
-                      ? (commitment?.achieved 
-                        ? 'linear-gradient(145deg, #28a745, #20c997)'
-                        : `linear-gradient(145deg, ${selectedCat.color}40, ${selectedCat.color}20)`)
-                      : 'rgba(255,255,255,0.1)',
-                    borderRadius: '16px',
-                    padding: '1.5rem',
-                    border: hasCommitment 
-                      ? (commitment?.achieved 
-                        ? '3px solid #28a745'
-                        : `3px solid ${selectedCat.color}`)
-                      : '2px solid rgba(255,255,255,0.2)',
-                    textAlign: 'center',
-                    position: 'relative',
-                    transition: 'all 0.3s ease',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => {
-                    if (hasCommitment && isSelectedCategory) {
-                      // Toggle achievement if same category
-                      toggleCommitmentAchieved(student.id);
-                    } else if (hasCommitment && !isSelectedCategory) {
-                      // Ask to replace commitment
-                      if (window.confirm(`${student.name} already has a commitment. Replace it with ${selectedCat.name}?`)) {
-                        const selectedCommitment = selectedCat.commitments[0]; // Default to first commitment
-                        addStudentCommitment(student, selectedCommitment);
-                      }
-                    } else {
-                      // Add new commitment
-                      const commitmentIndex = Math.floor(Math.random() * selectedCat.commitments.length);
-                      const selectedCommitment = selectedCat.commitments[commitmentIndex];
-                      addStudentCommitment(student, selectedCommitment);
-                    }
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!hasCommitment) {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!hasCommitment) {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }
-                  }}
-                >
-                  {/* Student Photo */}
+      {/* Student Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '1.5rem',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {students.map(student => {
+          const hasChoice = studentChoices[student.id];
+          const isCompleted = completedStudents.has(student.id);
+          const category = hasChoice ? getCategoryForCommitment(hasChoice) : null;
+
+          return (
+            <div
+              key={student.id}
+              style={{
+                background: hasChoice 
+                  ? (isCompleted 
+                    ? 'linear-gradient(145deg, #28a745, #20c997)'
+                    : `linear-gradient(145deg, ${category?.color || '#667eea'}40, ${category?.color || '#667eea'}20)`)
+                  : 'rgba(255,255,255,0.1)',
+                borderRadius: '20px',
+                padding: '1.5rem',
+                border: hasChoice 
+                  ? (isCompleted 
+                    ? '3px solid #28a745'
+                    : `3px solid ${category?.color || '#667eea'}`)
+                  : '2px solid rgba(255,255,255,0.2)',
+                textAlign: 'center',
+                position: 'relative',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)'
+              }}
+              onClick={() => {
+                if (hasChoice) {
+                  toggleStudentAchievement(student.id);
+                } else {
+                  setSelectedStudent(student.id);
+                }
+              }}
+              onMouseEnter={(e) => {
+                if (!hasChoice) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!hasChoice) {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
+              }}
+            >
+              {/* Student Photo */}
+              <div style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: student.photo 
+                  ? 'transparent' 
+                  : 'linear-gradient(145deg, #667eea, #764ba2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto',
+                border: hasChoice 
+                  ? (isCompleted ? '4px solid #FFD700' : `3px solid ${category?.color || '#667eea'}`)
+                  : '2px solid rgba(255,255,255,0.3)',
+                boxShadow: hasChoice 
+                  ? '0 6px 20px rgba(0,0,0,0.3)'
+                  : '0 4px 15px rgba(0,0,0,0.2)'
+              }}>
+                {student.photo ? (
+                  <img
+                    src={student.photo}
+                    alt={student.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <span style={{
+                    fontSize: '2rem',
+                    color: 'white',
+                    fontWeight: '700'
+                  }}>
+                    {student.name.split(' ').map(n => n[0]).join('')}
+                  </span>
+                )}
+              </div>
+
+              {/* Student Name */}
+              <div style={{
+                fontSize: '1.2rem',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '1rem'
+              }}>
+                {student.name}
+              </div>
+
+              {/* Commitment Status */}
+              {hasChoice ? (
+                <div>
+                  {/* Category Badge */}
                   <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    overflow: 'hidden',
-                    background: student.photo 
-                      ? 'transparent' 
-                      : 'linear-gradient(145deg, #667eea, #764ba2)',
+                    background: category?.color || '#667eea',
+                    color: 'white',
+                    padding: '0.3rem 0.8rem',
+                    borderRadius: '12px',
+                    fontSize: '0.8rem',
+                    fontWeight: '600',
+                    display: 'inline-block',
+                    marginBottom: '0.8rem'
+                  }}>
+                    {category?.icon} {category?.name}
+                  </div>
+                  
+                  {/* Commitment Text */}
+                  <div style={{
+                    fontSize: '0.95rem',
+                    color: 'white',
+                    marginBottom: '1rem',
+                    lineHeight: '1.3',
+                    fontStyle: 'italic'
+                  }}>
+                    "{hasChoice}"
+                  </div>
+                  
+                  {/* Achievement Status */}
+                  <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    margin: '0 auto 1rem auto',
-                    border: hasCommitment 
-                      ? (commitment?.achieved ? '3px solid #FFD700' : `3px solid ${selectedCat.color}`)
-                      : '2px solid rgba(255,255,255,0.3)',
-                    boxShadow: hasCommitment 
-                      ? '0 6px 20px rgba(0,0,0,0.3)'
-                      : '0 4px 15px rgba(0,0,0,0.2)'
+                    gap: '0.5rem'
                   }}>
-                    {student.photo ? (
-                      <img
-                        src={student.photo}
-                        alt={student.name}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover'
-                        }}
-                      />
-                    ) : (
-                      <span style={{
-                        fontSize: '2rem',
+                    <span style={{ fontSize: '1.5rem' }}>
+                      {isCompleted ? '✅' : '⏳'}
+                    </span>
+                    <span style={{
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      color: 'white'
+                    }}>
+                      {isCompleted ? 'Achieved!' : 'Working on it'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{
+                    fontSize: '3rem',
+                    marginBottom: '0.5rem',
+                    opacity: 0.7
+                  }}>
+                    🎯
+                  </div>
+                  <div style={{
+                    fontSize: '1rem',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontStyle: 'italic'
+                  }}>
+                    Click to choose commitment
+                  </div>
+                </div>
+              )}
+
+              {/* Remove Button */}
+              {hasChoice && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Remove ${student.name}'s commitment?`)) {
+                      removeStudentCommitment(student.id);
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    right: '12px',
+                    background: 'rgba(220, 53, 69, 0.8)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '28px',
+                    height: '28px',
+                    color: 'white',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  ×
+                </button>
+              )}
+
+              {/* Achievement Celebration */}
+              {showCelebration === student.id && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  background: 'rgba(255, 215, 0, 0.95)',
+                  borderRadius: '50%',
+                  width: '80px',
+                  height: '80px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '2.5rem',
+                  animation: 'celebrate 0.8s ease-in-out',
+                  zIndex: 10,
+                  boxShadow: '0 0 30px rgba(255, 215, 0, 0.8)'
+                }}>
+                  🎉
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Commitment Selection Modal */}
+      {selectedStudent && (
+        <div style={{
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          background: 'rgba(0,0,0,0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{
+            background: 'linear-gradient(145deg, #667eea, #764ba2)',
+            borderRadius: '24px',
+            padding: '2rem',
+            maxWidth: '800px',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            border: '3px solid rgba(255,255,255,0.3)'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '2rem'
+            }}>
+              <h3 style={{
+                fontSize: '2rem',
+                color: 'white',
+                marginBottom: '0.5rem'
+              }}>
+                Choose a commitment for {students.find(s => s.id === selectedStudent)?.name}
+              </h3>
+              <p style={{
+                fontSize: '1.1rem',
+                color: 'rgba(255,255,255,0.9)'
+              }}>
+                Select any statement from any category
+              </p>
+            </div>
+
+            {/* Categories and Commitments */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem'
+            }}>
+              {behaviorCategories.map(category => (
+                <div key={category.id} style={{
+                  background: `linear-gradient(145deg, ${category.color}30, ${category.color}10)`,
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  border: `2px solid ${category.color}`
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    marginBottom: '1rem'
+                  }}>
+                    <span style={{ fontSize: '2rem' }}>{category.icon}</span>
+                    <div>
+                      <h4 style={{
+                        margin: '0',
+                        fontSize: '1.3rem',
                         color: 'white',
                         fontWeight: '700'
                       }}>
-                        {student.name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Student Name */}
-                  <div style={{
-                    fontSize: '1.1rem',
-                    fontWeight: '700',
-                    color: 'white',
-                    marginBottom: '0.5rem'
-                  }}>
-                    {student.name}
-                  </div>
-
-                  {/* Commitment Status */}
-                  {hasCommitment && commitment ? (
-                    <div>
-                      <div style={{
+                        {category.name}
+                      </h4>
+                      <p style={{
+                        margin: '0',
                         fontSize: '0.9rem',
-                        color: 'white',
-                        marginBottom: '0.5rem',
-                        lineHeight: '1.3'
+                        color: 'rgba(255,255,255,0.8)'
                       }}>
-                        "{commitment.commitment}"
-                      </div>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem'
-                      }}>
-                        <span style={{
-                          fontSize: '1.2rem'
-                        }}>
-                          {commitment.achieved ? '✅' : '⏳'}
-                        </span>
-                        <span style={{
-                          fontSize: '0.8rem',
-                          fontWeight: '600'
-                        }}>
-                          {commitment.achieved ? 'Achieved!' : 'Working on it'}
-                        </span>
-                      </div>
+                        {category.description}
+                      </p>
                     </div>
-                  ) : (
-                    <div style={{
-                      fontSize: '0.9rem',
-                      color: 'rgba(255,255,255,0.8)',
-                      fontStyle: 'italic'
-                    }}>
-                      Click to add {selectedCat.name} commitment
-                    </div>
-                  )}
+                  </div>
 
-                  {/* Remove Button */}
-                  {hasCommitment && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm(`Remove ${student.name}'s commitment?`)) {
-                          removeStudentCommitment(student.id);
-                        }
-                      }}
-                      style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        background: 'rgba(220, 53, 69, 0.8)',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '24px',
-                        height: '24px',
-                        color: 'white',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}
-                    >
-                      ×
-                    </button>
-                  )}
-
-                  {/* Achievement Celebration */}
-                  {showCelebration === student.id && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '50%',
-                      left: '50%',
-                      transform: 'translate(-50%, -50%)',
-                      background: 'rgba(255, 215, 0, 0.95)',
-                      borderRadius: '50%',
-                      width: '60px',
-                      height: '60px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '2rem',
-                      animation: 'bounce 0.6s ease-in-out',
-                      zIndex: 10
-                    }}>
-                      🎉
-                    </div>
-                  )}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '0.8rem'
+                  }}>
+                    {category.commitments.map((commitment, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const student = students.find(s => s.id === selectedStudent);
+                          if (student) {
+                            handleStudentCommitmentSelect(student, commitment);
+                          }
+                        }}
+                        style={{
+                          background: 'rgba(255,255,255,0.15)',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          borderRadius: '12px',
+                          color: 'white',
+                          padding: '1rem',
+                          fontSize: '0.95rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          textAlign: 'left',
+                          lineHeight: '1.3'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        "{commitment}"
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+
+            {/* Close Button */}
+            <div style={{
+              textAlign: 'center',
+              marginTop: '2rem'
+            }}>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: '2px solid rgba(255,255,255,0.5)',
+                  borderRadius: '12px',
+                  color: 'white',
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Quick Actions */}
+      {/* Navigation */}
       <div style={{
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        padding: '2rem',
-        backdropFilter: 'blur(10px)',
-        textAlign: 'center'
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '1rem',
+        marginTop: 'auto'
       }}>
-        <h5 style={{
-          fontSize: '1.3rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '1rem'
-        }}>
-          🏆 Quick Actions
-        </h5>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back to Celebrations
+        </button>
         
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          justifyContent: 'center',
-          flexWrap: 'wrap'
-        }}>
-          <button
-            onClick={() => {
-              const unachieved = studentCommitments.filter(c => !c.achieved);
-              if (unachieved.length === 0) {
-                alert('All students have already achieved their commitments! 🎉');
-                return;
-              }
-              if (window.confirm(`Mark all ${unachieved.length} remaining commitments as achieved?`)) {
-                unachieved.forEach(commitment => {
-                  toggleCommitmentAchieved(commitment.studentId);
-                });
-              }
-            }}
-            disabled={studentCommitments.filter(c => !c.achieved).length === 0}
-            style={{
-              background: studentCommitments.filter(c => !c.achieved).length === 0
-                ? 'rgba(108, 117, 125, 0.5)'
-                : 'linear-gradient(145deg, #28a745, #20c997)',
-              border: 'none',
-              color: 'white',
-              padding: '1rem 2rem',
-              borderRadius: '12px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: studentCommitments.filter(c => !c.achieved).length === 0 ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)'
-            }}
-          >
-            🌟 Celebrate All
-          </button>
-
-          <button
-            onClick={() => {
-              if (window.confirm('Clear all behavior commitments for today?')) {
-                if (todayCheckIn) {
-                  const updatedCheckIn = {
-                    ...todayCheckIn,
-                    behaviorCommitments: [],
-                    updatedAt: new Date().toISOString()
-                  };
-                  setStudentCommitments([]);
-                  onUpdateCheckIn(updatedCheckIn);
-                }
-              }
-            }}
-            disabled={studentCommitments.length === 0}
-            style={{
-              background: studentCommitments.length === 0
-                ? 'rgba(108, 117, 125, 0.5)'
-                : 'linear-gradient(145deg, #dc3545, #c82333)',
-              border: 'none',
-              color: 'white',
-              padding: '1rem 2rem',
-              borderRadius: '12px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: studentCommitments.length === 0 ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)'
-            }}
-          >
-            🗑️ Clear All
-          </button>
-        </div>
+        <button
+          onClick={onNext}
+          style={{
+            background: 'rgba(34, 197, 94, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 3rem',
+            fontSize: '1.1rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          Continue to Choice Activities →
+        </button>
       </div>
 
       <style>{`
-        @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% {
-            transform: translate(-50%, -50%) translateY(0);
+        @keyframes celebrate {
+          0% {
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
           }
-          40% {
-            transform: translate(-50%, -50%) translateY(-10px);
+          50% {
+            transform: translate(-50%, -50%) scale(1.2);
+            opacity: 1;
           }
-          60% {
-            transform: translate(-50%, -50%) translateY(-5px);
+          100% {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
           }
         }
       `}</style>
