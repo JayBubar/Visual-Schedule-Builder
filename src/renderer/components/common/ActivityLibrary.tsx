@@ -354,17 +354,18 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       const customActivitiesFromUnified: CustomActivity[] = unifiedActivities.map((activity: UnifiedActivity): CustomActivity => ({
         id: activity.id,
         name: activity.name,
-        icon: activity.name, // UnifiedActivity doesn't have icon, use name as fallback
+        icon: (activity as any).icon || '📝', // Use icon if available, fallback to default
         category: activity.category as any,
         defaultDuration: activity.duration || 30,
         description: activity.description || '',
-        tags: [], // UnifiedActivity doesn't have tags
+        tags: (activity as any).tags || [], // Use tags if available
         materials: activity.materials || [],
         instructions: activity.instructions || '',
         isCustom: activity.isCustom,
         createdAt: activity.dateCreated,
         updatedAt: activity.dateCreated,
         usageCount: 0,
+        choiceEligible: (activity as any).choiceEligible || false, // Include choice eligible status
         // Add transition properties if they exist
         isTransition: (activity as any).isTransition || false,
         transitionType: (activity as any).transitionType,
@@ -431,6 +432,10 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         materials: activity.materials || [],
         instructions: activity.instructions || '',
         isCustom: activity.isCustom,
+        // Include icon, tags, and choice eligible status
+        ...(activity.icon && { icon: activity.icon }),
+        ...(activity.tags && { tags: activity.tags }),
+        ...(activity.choiceEligible !== undefined && { choiceEligible: activity.choiceEligible }),
         // Add transition properties if they exist
         ...(activity.isTransition && {
           isTransition: activity.isTransition,
