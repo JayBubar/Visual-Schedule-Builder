@@ -13,6 +13,7 @@ interface LibraryActivity extends Omit<Activity, 'duration'> {
   defaultDuration: number;
   tags: string[];
   choiceEligible?: boolean;
+  isSystemActivity?: boolean;
 }
 
 interface CustomActivity extends LibraryActivity {
@@ -299,6 +300,19 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
   // Base activities database
   const baseActivities: LibraryActivity[] = [
+    // System Activities
+    { 
+      id: 'system-choice-time', 
+      name: 'Choice Item Time', 
+      icon: '🎯', 
+      category: 'system', 
+      description: 'Student choice activities selected during Daily Check-In', 
+      defaultDuration: 20, 
+      tags: ['choice', 'student-selected', 'flexible'], 
+      isCustom: false,
+      isSystemActivity: true
+    },
+    
     // Academic Activities
     { id: '1', name: 'Morning Meeting', icon: '🌅', category: 'social', description: 'Circle time and daily greeting', defaultDuration: 15, tags: ['circle', 'greeting', 'social'], isCustom: false },
     { id: '2', name: 'Math', icon: '🔢', category: 'academic', description: 'Mathematics instruction and practice', defaultDuration: 30, tags: ['numbers', 'calculation', 'problem-solving'], isCustom: false },

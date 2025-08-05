@@ -684,28 +684,46 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     try {
       const allActivities = UnifiedDataService.getAllActivities();
       // Convert UnifiedActivity to ActivityLibraryItem format for compatibility
-      const convertedActivities: ActivityLibraryItem[] = allActivities.map(activity => ({
-        id: activity.id,
-        name: activity.name,
-        description: activity.description,
-        emoji: '📝', // Default emoji since UnifiedActivity doesn't have this
-        defaultDuration: 20, // Default duration since UnifiedActivity doesn't have this
-        category: activity.category as any, // Type conversion for compatibility
-        materials: activity.materials || [],
-        instructions: activity.instructions || '',
-        isChoiceEligible: false, // Default to false since UnifiedActivity doesn't have this
-        choiceProperties: undefined, // UnifiedActivity doesn't have this
-        usageStats: undefined, // UnifiedActivity doesn't have this
-        tags: [], // Default empty array since UnifiedActivity doesn't have this
-        difficulty: 'medium' as const, // Default difficulty since UnifiedActivity doesn't have this
-        ageRange: { min: 5, max: 12 }, // Default age range since UnifiedActivity doesn't have this
-        createdAt: new Date().toISOString(), // Default to current time since UnifiedActivity doesn't have this
-        updatedAt: new Date().toISOString(), // Default to current time since UnifiedActivity doesn't have this
-        isCustom: false // Required field for ActivityLibraryItem
-      }));
-      // Since UnifiedActivity doesn't have isChoiceEligible, we'll use an empty array for now
-      // This component will need to be updated when the unified system supports choice-eligible activities
-      setChoiceEligibleActivities([]);
+      const convertedActivities: ActivityLibraryItem[] = allActivities
+        .filter(activity => (activity as any).choiceEligible === true) // Only get choice-eligible activities
+        .map(activity => ({
+          id: activity.id,
+          name: activity.name,
+          description: activity.description || '',
+          emoji: (activity as any).icon || '📝', // Use icon from activity or default
+          defaultDuration: activity.duration || 20,
+          category: activity.category as any,
+          materials: activity.materials || [],
+          instructions: activity.instructions || '',
+          isChoiceEligible: true, // These are all choice-eligible
+          choiceProperties: {
+            maxStudents: 4, // Default max students
+            requiresSupervision: true,
+            isIndoor: true,
+            setupTime: 2,
+            cleanupTime: 3,
+            skillLevel: 'all',
+            staffSupervision: 'minimal',
+            socialInteraction: 'small-group',
+            quietActivity: (activity as any).tags?.includes('quiet') || false,
+            messyActivity: (activity as any).tags?.includes('messy') || false,
+            preparationTime: 5
+          },
+          usageStats: {
+            timesChosen: 0,
+            lastUsed: undefined,
+            averageRating: undefined
+          },
+          tags: (activity as any).tags || [],
+          difficulty: 'medium' as const,
+          ageGroup: 'all' as const,
+          createdAt: activity.dateCreated,
+          updatedAt: activity.dateCreated,
+          isCustom: activity.isCustom
+        }));
+      
+      setChoiceEligibleActivities(convertedActivities);
+      console.log(`🎯 Loaded ${convertedActivities.length} choice-eligible activities`);
     } catch (error) {
       console.error('Error loading activities:', error);
       setChoiceEligibleActivities([]);
