@@ -464,7 +464,7 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
                     color: 'white',
                     marginBottom: '8px'
                   }}>
-                    Correct
+                    Correct Responses
                   </label>
                   <input
                     type="number"
@@ -500,7 +500,7 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
                     color: 'white',
                     marginBottom: '8px'
                   }}>
-                    Total
+                    Total Opportunities
                   </label>
                   <input
                     type="number"
@@ -539,7 +539,9 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
                 <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
                   {currentEntry.accuracy || 0}%
                 </span>
-                <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0 }}>Accuracy</p>
+                <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                  Accuracy ({currentEntry.accuracy || 0} out of {currentEntry.totalOpportunities || 0})
+                </p>
               </div>
             </div>
           )}

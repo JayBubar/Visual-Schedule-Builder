@@ -20,6 +20,7 @@ interface ExtendedStudent extends UnifiedStudent {
   isActive?: boolean;
   behaviorNotes?: string;
   medicalNotes?: string;
+  iepExpirationDate?: string;
   resourceInfo?: {
     attendsResource: boolean;
     resourceType: string;
@@ -1765,6 +1766,25 @@ const StudentModal: React.FC<StudentModalProps> = ({
                     </span>
                   ))}
                 </div>
+              </div>
+
+              {/* IEP Expiration Date */}
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                  IEP Expiration Date
+                </label>
+                <input
+                  type="date"
+                  value={formData.iepExpirationDate || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, iepExpirationDate: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    borderRadius: '8px',
+                    border: '2px solid #e5e7eb',
+                    fontSize: '1rem'
+                  }}
+                />
               </div>
 
               {/* Goals */}
