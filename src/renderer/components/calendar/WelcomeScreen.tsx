@@ -159,4 +159,201 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           fontWeight: '700',
           color: 'white',
           marginBottom: '1rem',
-          textShadow: '0 4px 8px rgba(0,0
+          textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+          lineHeight: '1.2'
+        }}>
+          {getGreeting()}, {teacherName}!
+        </h1>
+
+        {/* School Name */}
+        <p style={{
+          fontSize: '1.3rem',
+          color: 'rgba(255,255,255,0.9)',
+          marginBottom: '2rem',
+          fontWeight: '500'
+        }}>
+          Welcome to {schoolName}
+        </p>
+
+        {/* Date and Time */}
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          <div style={{
+            fontSize: '1.8rem',
+            fontWeight: '600',
+            color: 'white',
+            marginBottom: '0.5rem'
+          }}>
+            📅 {formatDate(currentDate)}
+          </div>
+          <div style={{
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: 'white',
+            fontFamily: 'monospace',
+            letterSpacing: '2px'
+          }}>
+            🕐 {formatTime(currentTime)}
+          </div>
+        </div>
+
+        {/* Daily Motivation */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.3))',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          border: '2px solid rgba(34, 197, 94, 0.4)'
+        }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💪</div>
+          <p style={{
+            fontSize: '1.4rem',
+            fontWeight: '600',
+            color: 'white',
+            margin: 0,
+            lineHeight: '1.3'
+          }}>
+            {getDayMotivation()}
+          </p>
+        </div>
+
+        {/* Weather Preview (if available) */}
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.2)',
+          borderRadius: '16px',
+          padding: '1rem',
+          marginBottom: '2rem',
+          border: '2px solid rgba(59, 130, 246, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem'
+        }}>
+          <span style={{ fontSize: '1.5rem' }}>🌤️</span>
+          <span style={{
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: '500'
+          }}>
+            We'll check the weather together in just a moment!
+          </span>
+        </div>
+
+        {/* Ready to Begin Button */}
+        <button
+          onClick={onBegin}
+          style={{
+            background: 'linear-gradient(135deg, #ff6b6b, #feca57)',
+            border: 'none',
+            borderRadius: '20px',
+            color: 'white',
+            padding: '1.5rem 3rem',
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'all 0.4s ease',
+            boxShadow: '0 8px 25px rgba(255, 107, 107, 0.4)',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            transform: 'translateY(0)',
+            animation: 'glow 2s ease-in-out infinite alternate'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-5px) scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 15px 35px rgba(255, 107, 107, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 107, 107, 0.4)';
+          }}
+        >
+          🚀 Let's Begin Our Day! 🚀
+        </button>
+
+        {/* Encouragement Text */}
+        <p style={{
+          fontSize: '1rem',
+          color: 'rgba(255,255,255,0.7)',
+          marginTop: '1.5rem',
+          fontStyle: 'italic'
+        }}>
+          "Every day is a fresh start to learn, grow, and shine together!"
+        </p>
+      </div>
+
+      {/* Fun Facts or Tips */}
+      <div style={{
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        maxWidth: '500px',
+        transform: showAnimation ? 'translateY(0)' : 'translateY(20px)',
+        opacity: showAnimation ? 1 : 0,
+        transition: 'all 1s ease 0.5s'
+      }}>
+        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💡</div>
+        <p style={{
+          fontSize: '1rem',
+          color: 'rgba(255,255,255,0.8)',
+          margin: 0,
+          lineHeight: '1.4'
+        }}>
+          <strong>Today's Focus:</strong> We'll take attendance, check the weather, 
+          celebrate special moments, and get ready for an amazing day of learning!
+        </p>
+      </div>
+
+      {/* Animated CSS */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { 
+            transform: translateY(0px) rotate(0deg); 
+          }
+          33% { 
+            transform: translateY(-10px) rotate(5deg); 
+          }
+          66% { 
+            transform: translateY(-5px) rotate(-3deg); 
+          }
+        }
+
+        @keyframes bounce {
+          0%, 100% { 
+            transform: translateY(0); 
+          }
+          50% { 
+            transform: translateY(-10px); 
+          }
+        }
+
+        @keyframes glow {
+          from {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+          }
+          to {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.8), 0 0 30px rgba(255, 107, 107, 0.3);
+          }
+        }
+
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default WelcomeScreen;
