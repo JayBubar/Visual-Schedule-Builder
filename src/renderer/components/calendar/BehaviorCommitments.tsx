@@ -699,49 +699,6 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
         </div>
       )}
 
-      {/* Navigation */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '1rem',
-        marginTop: 'auto'
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          ← Back to Celebrations
-        </button>
-        
-        <button
-          onClick={onNext}
-          style={{
-            background: 'rgba(34, 197, 94, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 3rem',
-            fontSize: '1.1rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          Continue to Choice Activities →
-        </button>
-      </div>
 
       <style>{`
         @keyframes celebrate {

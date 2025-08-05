@@ -145,7 +145,7 @@ const App: React.FC = () => {
 
   const handleManageClassroom = () => {
     setShowStartScreen(false);
-    // Keep current view logic for navigation
+    setCurrentView('builder'); // Always go to Schedule Builder (main management interface)
   };
 
   const handleBackToStart = () => {

@@ -135,7 +135,9 @@ const AreWeReady: React.FC<AreWeReadyProps> = ({
             textAlign: 'center',
             border: '2px solid rgba(34, 197, 94, 0.4)'
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👥</div>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
+              {Array.from({ length: presentStudents.length }, (_, i) => '👤').join('')}
+            </div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700', color: 'white' }}>
               {presentStudents.length}
             </div>
@@ -169,7 +171,9 @@ const AreWeReady: React.FC<AreWeReadyProps> = ({
             textAlign: 'center',
             border: '2px solid rgba(59, 130, 246, 0.4)'
           }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👨‍🏫</div>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', lineHeight: '1.2' }}>
+              {Array.from({ length: staff.length }, (_, i) => i % 2 === 0 ? '👨‍🏫' : '👩‍🏫').join('')}
+            </div>
             <div style={{ fontSize: '1.8rem', fontWeight: '700', color: 'white' }}>
               {staff.length}
             </div>

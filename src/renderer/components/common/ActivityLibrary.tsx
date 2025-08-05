@@ -12,6 +12,7 @@ interface LibraryActivity extends Omit<Activity, 'duration'> {
   description: string;
   defaultDuration: number;
   tags: string[];
+  choiceEligible?: boolean;
 }
 
 interface CustomActivity extends LibraryActivity {
@@ -511,8 +512,8 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     return combinedActivities;
   }, [customActivities]);
 
-  // 🎯 UPDATED: Include transition in categories list
-  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition'];
+  // 🎯 UPDATED: Include transition and choice-items in categories list
+  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition', 'choice-items'];
 
   // Filter activities based on search and category
   const filteredActivities = useMemo(() => {
@@ -685,6 +686,30 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     setModalOpen(true);
   };
 
+  // Handle toggling choice eligible status
+  const handleToggleChoiceEligible = (activity: LibraryActivity, isChecked: boolean) => {
+    if (activity.isCustom) {
+      // Update custom activity
+      const updatedActivities = customActivities.map(a => 
+        a.id === activity.id ? { ...a, choiceEligible: isChecked } : a
+      );
+      saveCustomActivities(updatedActivities);
+    } else {
+      // For built-in activities, create a custom version with choice eligible status
+      const customVersion: CustomActivity = {
+        ...activity,
+        id: `custom_${activity.id}_${Date.now()}`,
+        isCustom: true,
+        choiceEligible: isChecked,
+        createdAt: new Date().toISOString(),
+        difficulty: 'easy',
+      };
+      
+      const updatedActivities = [...customActivities, customVersion];
+      saveCustomActivities(updatedActivities);
+    }
+  };
+
   if (!isActive) return null;
 
   return (
@@ -803,16 +828,13 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
               </div>
               <div className="activity-content">
                 <div className="activity-header">
-                  <h3 className="activity-title">
-                    {activity.name}
-                    {activity.isCustom && <span className="custom-badge">Custom</span>}
-                    {activity.isTransition && <span className="transition-badge">Transition</span>}
-                  </h3>
                   <div className="activity-meta">
                     <span style={getActivityCategoryStyle(activity.category)}>
                       {activity.category === 'transition' ? '✨ TRANSITION' : activity.category}
                     </span>
                     <span className="activity-duration">{activity.defaultDuration}min</span>
+                    {activity.isCustom && <span className="custom-badge">Custom</span>}
+                    {activity.isTransition && <span className="transition-badge">Transition</span>}
                   </div>
                 </div>
                 <p className="activity-description">{activity.description}</p>
@@ -839,41 +861,56 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
                 )}
               </div>
               <div className="activity-actions">
-                <button 
-                  className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
-                  title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
-                  onClick={() => handleAddActivity(activity)}
-                  disabled={addingActivities.has(activity.id)}
-                >
-                  {addingActivities.has(activity.id) ? (
-                    <>
-                      <span className="spinner">⏳</span> Adding...
-                    </>
-                  ) : (
-                    activity.category === 'transition' ? '✨ Add' : '+ Add'
-                  )}
-                </button>
-                <button 
-                  className="action-button secondary" 
-                  title="Edit activity"
-                  onClick={() => handleEditActivity(activity)}
-                >
-                  ✏️
-                </button>
-                <button 
-                  className="action-button secondary" 
-                  title="More options"
-                  onClick={() => {
-                    const action = window.confirm('Choose action:\nOK = Duplicate\nCancel = Delete');
-                    if (action) {
-                      handleDuplicateActivity(activity);
-                    } else {
-                      handleDeleteActivity(activity);
-                    }
-                  }}
-                >
-                  ⋯
-                </button>
+                {/* Choice Eligible Checkbox */}
+                <div className="choice-checkbox-container">
+                  <label className="choice-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={activity.choiceEligible || false}
+                      onChange={(e) => handleToggleChoiceEligible(activity, e.target.checked)}
+                      className="choice-checkbox"
+                    />
+                    <span className="choice-checkbox-text">Choice Activity</span>
+                  </label>
+                </div>
+                
+                <div className="action-buttons-row">
+                  <button 
+                    className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
+                    title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
+                    onClick={() => handleAddActivity(activity)}
+                    disabled={addingActivities.has(activity.id)}
+                  >
+                    {addingActivities.has(activity.id) ? (
+                      <>
+                        <span className="spinner">⏳</span> Adding...
+                      </>
+                    ) : (
+                      activity.category === 'transition' ? '✨ Add' : '+ Add'
+                    )}
+                  </button>
+                  <button 
+                    className="action-button secondary" 
+                    title="Edit activity"
+                    onClick={() => handleEditActivity(activity)}
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    className="action-button secondary" 
+                    title="More options"
+                    onClick={() => {
+                      const action = window.confirm('Choose action:\nOK = Duplicate\nCancel = Delete');
+                      if (action) {
+                        handleDuplicateActivity(activity);
+                      } else {
+                        handleDeleteActivity(activity);
+                      }
+                    }}
+                  >
+                    ⋯
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -1299,6 +1336,45 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         }
 
         .activity-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        /* Choice Eligible Checkbox Styling */
+        .choice-checkbox-container {
+          width: 100%;
+          margin-bottom: 0.5rem;
+        }
+
+        .choice-checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          font-size: 0.9rem;
+          color: #495057;
+          justify-content: center;
+        }
+
+        .choice-checkbox {
+          width: 1.2rem;
+          height: 1.2rem;
+          cursor: pointer;
+          accent-color: #667eea;
+        }
+
+        .choice-checkbox-text {
+          font-weight: 500;
+        }
+
+        .choice-checkbox-label:hover .choice-checkbox-text {
+          color: #667eea;
+        }
+
+        /* Action buttons row */
+        .activity-actions .action-buttons-row {
           display: flex;
           gap: 0.5rem;
           justify-content: center;
