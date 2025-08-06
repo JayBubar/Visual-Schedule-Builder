@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityLibraryItem, Student, Staff, ChoiceFilter } from '../../types';
 import UnifiedDataService from '../../services/unifiedDataService';
+import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
 // 🎨 GLASSMORPHISM STYLES FOR IndependentChoices
 const styles = `
@@ -127,6 +128,59 @@ const styles = `
   align-items: center !important;
   gap: 1rem !important;
   min-height: 80px !important;
+}
+
+/* Student avatar styling */
+.student-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.student-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.student-avatar-initials {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: bold !important;
+  color: white !important;
+  font-size: 1rem !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.student-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.student-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  margin-bottom: 0.25rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.student-status {
+  font-size: 0.875rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.3 !important;
 }
 
 .student-card:hover {
@@ -948,12 +1002,27 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     const updatedHistory = [...rotationHistory, completedRotation];
     saveRotationHistory(updatedHistory);
 
+    // 🎯 NEW: Sync with ChoiceDataManager for SmartboardDisplay integration
+    const choiceDataManager = ChoiceDataManager.getInstance();
+    const studentChoices: StudentChoice[] = completedRotation.assignments.map(assignment => ({
+      studentId: assignment.studentId,
+      studentName: assignment.studentName,
+      activityId: assignment.activityId,
+      activityName: assignment.activityName,
+      activityIcon: assignment.activityEmoji,
+      assignedAt: assignment.assignedAt,
+      rotationNumber: assignment.rotationNumber
+    }));
+    
+    choiceDataManager.saveTodayChoices(studentChoices);
+    console.log(`🎯 Synced ${studentChoices.length} choice assignments to ChoiceDataManager`);
+
     // Reset current rotation
     setCurrentRotation(null);
     setTimeRemaining(0);
 
     // Show completion celebration
-    alert(`🎉 Choice Time Complete! Rotation #${completedRotation.rotationNumber} finished.`);
+    alert(`🎉 Choice Time Complete! Rotation #${completedRotation.rotationNumber} finished.\n\n✅ Student assignments saved for "Choice Item Time" activities.`);
   };
 
   // 🎯 Auto-assign students to activities
@@ -1482,16 +1551,16 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
                             </div>
                           )}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div className="text-primary" style={{ fontWeight: '600', fontSize: '1rem' }}>
+                        <div className="student-info">
+                          <div className="student-name">
                             {formatStudentName(student.name)}
                           </div>
                           {selectedActivity ? (
-                            <div className="text-secondary" style={{ fontSize: '0.9rem' }}>
+                            <div className="student-status">
                               ☝️ Click to assign to {selectedActivity.emoji} {selectedActivity.name}
                             </div>
                           ) : (
-                            <div className="text-muted" style={{ fontSize: '0.9rem' }}>
+                            <div className="student-status">
                               Select an activity first
                             </div>
                           )}
