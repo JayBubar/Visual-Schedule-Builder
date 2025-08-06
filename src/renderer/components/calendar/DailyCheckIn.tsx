@@ -258,15 +258,40 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   };
 
   const handleFinalConfirmation = () => {
-    // Show celebration animation
-    setShowCelebrationAnimation(true);
+    console.log('🚀 Daily Check-In Complete - Checking for temporary schedule');
     
-    // After animation, switch to VSB Display mode
-    setTimeout(() => {
-      if (onSwitchToDisplay) {
-        onSwitchToDisplay();
+    // Check if there's a temporary schedule from "Use Built Schedule"
+    const todaySchedule = localStorage.getItem('todaySchedule');
+    
+    if (todaySchedule) {
+      try {
+        const schedule = JSON.parse(todaySchedule);
+        console.log('✅ Found temporary schedule, switching to Display mode:', schedule.name);
+        
+        // Show celebration animation
+        setShowCelebrationAnimation(true);
+        
+        // After animation, switch to Display mode with the temporary schedule
+        setTimeout(() => {
+          if (onSwitchToDisplay) {
+            onSwitchToDisplay();
+          }
+        }, 3000);
+      } catch (error) {
+        console.error('Error parsing temporary schedule:', error);
+        // Fallback to Schedule Builder if there's an error
+        if (onSwitchToScheduleBuilder) {
+          onSwitchToScheduleBuilder();
+        }
       }
-    }, 3000);
+    } else {
+      console.log('⚠️ No temporary schedule found, redirecting to Schedule Builder');
+      
+      // No temporary schedule, go to Schedule Builder
+      if (onSwitchToScheduleBuilder) {
+        onSwitchToScheduleBuilder();
+      }
+    }
   };
 
   const formatDate = (date: Date): string => {

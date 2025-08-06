@@ -1591,6 +1591,78 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
     // You could add a state for showing edit mode indicator
   };
 
+  // 🚀 NEW: Use Built Schedule - Revolutionary workflow
+  const useBuiltSchedule = () => {
+    if (schedule.length === 0) {
+      alert('No schedule built yet. Please add activities first.');
+      return;
+    }
+
+    // Create temporary schedule for today's use
+    const todaySchedule = {
+      id: `temp_schedule_${Date.now()}`,
+      name: `Today's Schedule - ${new Date().toLocaleDateString()}`,
+      type: 'daily' as const,
+      category: 'academic' as const,
+      activities: schedule.map((activity: any) => ({
+        // Base activity properties
+        ...activity,
+        
+        // 🎯 CRITICAL: Preserve ALL transition properties
+        ...(activity.isTransition && {
+          isTransition: activity.isTransition,
+          transitionType: activity.transitionType,
+          animationStyle: activity.animationStyle,
+          showNextActivity: activity.showNextActivity,
+          movementPrompts: activity.movementPrompts,
+          autoStart: activity.autoStart,
+          soundEnabled: activity.soundEnabled,
+          customMessage: activity.customMessage
+        })
+      })),
+      startTime,
+      endTime: getEndTime(),
+      totalDuration: getTotalDuration(),
+      color: '#10B981',
+      icon: '🚀',
+      createdAt: new Date().toISOString(),
+      lastUsed: new Date().toISOString(),
+      usageCount: 1,
+      description: 'Temporary schedule for today\'s use',
+      tags: ['temporary', 'today'],
+      applicableDays: [],
+      isDefault: false,
+      isTemporary: true,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Store as today's temporary schedule
+    localStorage.setItem('todaySchedule', JSON.stringify(todaySchedule));
+    
+    // Also store in scheduleVariations for compatibility
+    localStorage.setItem('scheduleVariations', JSON.stringify([todaySchedule]));
+    
+    console.log('🚀 Created temporary schedule for today:', {
+      name: todaySchedule.name,
+      activityCount: todaySchedule.activities.length,
+      duration: `${Math.floor(todaySchedule.totalDuration / 60)}h ${todaySchedule.totalDuration % 60}m`,
+      startTime: todaySchedule.startTime,
+      endTime: todaySchedule.endTime
+    });
+
+    // Dispatch event to notify App.tsx to switch to Display mode
+    const useScheduleEvent = new CustomEvent('useBuiltSchedule', {
+      detail: {
+        schedule: todaySchedule,
+        source: 'ScheduleBuilder',
+        timestamp: Date.now()
+      }
+    });
+    window.dispatchEvent(useScheduleEvent);
+    
+    console.log('📡 Dispatched useBuiltSchedule event to switch to Display mode');
+  };
+
   // Delete a saved schedule
   const deleteSchedule = (scheduleId: string) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
@@ -1962,25 +2034,50 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
                 📂 My Saved Schedules
               </h3>
               
-              <button
-                onClick={() => setShowSaveDialog(true)}
-                disabled={schedule.length === 0}
-                style={{
-                  background: schedule.length === 0 
-                    ? 'rgba(108, 117, 125, 0.5)' 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                  opacity: schedule.length === 0 ? 0.6 : 1
-                }}
-              >
-                💾 Save Current Schedule
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <button
+                  onClick={useBuiltSchedule}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1,
+                    boxShadow: schedule.length === 0 ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  🚀 Use Built Schedule
+                </button>
+                
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1,
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  💾 Save for Future Use
+                </button>
+              </div>
             </div>
 
             {savedSchedules.length === 0 ? (

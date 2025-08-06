@@ -216,6 +216,33 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
+  // 🚀 Handle "Use Built Schedule" event from Schedule Builder
+  useEffect(() => {
+    const handleUseBuiltSchedule = (event: CustomEvent) => {
+      const { schedule, source, timestamp } = event.detail;
+      console.log('🚀 App received useBuiltSchedule event:', {
+        scheduleName: schedule.name,
+        source,
+        timestamp: new Date(timestamp).toLocaleTimeString(),
+        activityCount: schedule.activities.length
+      });
+      
+      // Set the temporary schedule as selected
+      setSelectedSchedule(schedule);
+      
+      // Switch to Display mode immediately
+      setCurrentView('display');
+      
+      console.log('✅ Switched to Display mode with temporary schedule');
+    };
+
+    window.addEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
+    
+    return () => {
+      window.removeEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
+    };
+  }, []);
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Start Screen */}
