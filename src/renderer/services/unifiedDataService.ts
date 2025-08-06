@@ -322,24 +322,64 @@ class UnifiedDataService {
   
   // Get all students with full data
   static getAllStudents(): UnifiedStudent[] {
+    console.log('🔍 UnifiedDataService.getAllStudents() called');
+    
+    // Try unified data first
     const unifiedData = this.getUnifiedData();
-    if (unifiedData) {
-      // Ensure all students have properly initialized properties
-      return unifiedData.students.map(student => ({
-        ...student,
-        iepData: {
-          goals: student.iepData?.goals || [],
-          dataCollection: student.iepData?.dataCollection || [],
-          progressAnalytics: student.iepData?.progressAnalytics
-        },
-        // Ensure other properties are initialized
-        accommodations: student.accommodations || [],
-        goals: student.goals || [],
-        preferredPartners: student.preferredPartners || [],
-        avoidPartners: student.avoidPartners || []
-      }));
+    console.log('Unified data exists:', !!unifiedData);
+    
+    if (unifiedData && unifiedData.students) {
+      // The unified data has students as an array inside the object
+      if (Array.isArray(unifiedData.students) && unifiedData.students.length > 0) {
+        console.log('✅ Using unified data:', unifiedData.students.length, 'students');
+        return unifiedData.students;
+      }
+      console.log('⚠️ Unified data exists but students array is empty or invalid');
+    } else {
+      console.log('⚠️ No unified data found or no students property');
     }
     
+    // FALLBACK: Read directly from legacy students key
+    console.log('⚡ Falling back to legacy student data...');
+    try {
+      const legacyStudents = localStorage.getItem('students');
+      console.log('Legacy students raw:', legacyStudents ? 'EXISTS' : 'MISSING');
+      
+      if (legacyStudents) {
+        const students = JSON.parse(legacyStudents);
+        console.log('✅ Parsed legacy students:', students.length);
+        
+        // Convert legacy format to unified format
+        const convertedStudents = students.map((student: any) => ({
+          ...student,
+          dateCreated: student.dateCreated || new Date().toISOString(),
+          iepData: student.iepData || { 
+            hasIEP: false,
+            goals: [], 
+            dataPoints: [],
+            dataCollection: [] 
+          },
+          // Ensure all required fields exist
+          isActive: student.isActive !== undefined ? student.isActive : true,
+          workingStyle: student.workingStyle || 'independent',
+          accommodations: student.accommodations || [],
+          goals: student.goals || [],
+          resourceInfo: student.resourceInfo || {
+            attendsResource: false,
+            resourceType: '',
+            resourceTeacher: '',
+            timeframe: ''
+          }
+        }));
+        
+        console.log('🚀 Returning converted students:', convertedStudents.length);
+        return convertedStudents;
+      }
+    } catch (error) {
+      console.error('❌ Failed to load legacy students:', error);
+    }
+    
+    console.log('💥 No student data found anywhere!');
     return [];
   }
   
@@ -949,15 +989,18 @@ class UnifiedDataService {
     totalDataPoints: number;
   } {
     const unifiedData = this.getUnifiedData();
-    const legacyStudents = localStorage.getItem(this.LEGACY_STUDENT_KEY);
+    const legacyStudents = localStorage.getItem('students');
     
     if (unifiedData) {
+      // Handle students as array within the unified data object
+      const studentCount = Array.isArray(unifiedData.students) ? unifiedData.students.length : 0;
+      
       return {
         hasUnifiedData: true,
         hasLegacyData: legacyStudents !== null,
-        totalStudents: unifiedData.students.length,
-        totalGoals: unifiedData.metadata.totalGoals,
-        totalDataPoints: unifiedData.metadata.totalDataPoints
+        totalStudents: studentCount,
+        totalGoals: unifiedData.metadata?.totalGoals || 0,
+        totalDataPoints: unifiedData.metadata?.totalDataPoints || 0
       };
     }
     
