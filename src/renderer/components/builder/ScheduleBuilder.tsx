@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GroupCreator from './GroupCreator';
+import AttendanceManager from '../management/AttendanceManager';
+import { useStudentStatus } from '../StudentStatusManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 
@@ -876,6 +878,10 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
   });
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  
+  // Attendance management state
+  const [showAttendanceManager, setShowAttendanceManager] = useState(false);
+  const { filterActiveStudents } = useStudentStatus();
 
   // 🎯 CRITICAL: Notify parent of schedule changes
   useEffect(() => {
@@ -1765,6 +1771,22 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
         }}>
           Total: {Math.floor(getTotalDuration() / 60)}h {getTotalDuration() % 60}m
         </div>
+        
+        <button
+          onClick={() => setShowAttendanceManager(true)}
+          style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            border: 'none',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          📋 Attendance
+        </button>
         
         {schedule.length > 0 && (
           <button
@@ -2929,6 +2951,15 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
             />
           </div>
         </div>
+      )}
+
+      {/* Attendance Manager Modal */}
+      {showAttendanceManager && (
+        <AttendanceManager
+          allStudents={filterActiveStudents(students)}
+          isOpen={showAttendanceManager}
+          onClose={() => setShowAttendanceManager(false)}
+        />
       )}
     </div>
   );

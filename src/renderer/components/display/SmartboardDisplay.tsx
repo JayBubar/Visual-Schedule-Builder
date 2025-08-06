@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
+import AbsentStudentsDisplay from './AbsentStudentsDisplay';
+import { useStudentStatus } from '../StudentStatusManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
@@ -31,6 +33,9 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [fallbackSchedule, setFallbackSchedule] = useState<any>(null);
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
+  
+  // Get absent students from context
+  const { absentStudents } = useStudentStatus();
 
   // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
   useEffect(() => {
@@ -599,6 +604,8 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       color: 'white',
       position: 'relative'
     }}>
+      {/* Absent Students Display - Top Left Corner */}
+      <AbsentStudentsDisplay absentStudents={absentStudents} />
       {/* Header */}
       <div style={{
         padding: '1rem',

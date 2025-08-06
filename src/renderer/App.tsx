@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
+import { StudentStatusProvider } from './components/StudentStatusManager';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
@@ -244,29 +245,30 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Start Screen */}
-      {showStartScreen && (
-        <StartScreen 
-          onStartMyDay={handleStartMyDay}
-          onManageClassroom={handleManageClassroom}
-        />
-      )}
-
-      {/* App Content - Only show when not on start screen */}
-      {!showStartScreen && (
-        <>
-          {/* Navigation */}
-          <Navigation 
-            currentView={currentView} 
-            onViewChange={handleViewChange}
-            selectedSchedule={selectedSchedule}
-            onBackToStart={handleBackToStart}
-            isInDailyCheckIn={currentView === 'calendar'}
+    <StudentStatusProvider allStudents={students}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Start Screen */}
+        {showStartScreen && (
+          <StartScreen 
+            onStartMyDay={handleStartMyDay}
+            onManageClassroom={handleManageClassroom}
           />
+        )}
 
-          {/* Main Content */}
-          <div className="main-content">
+        {/* App Content - Only show when not on start screen */}
+        {!showStartScreen && (
+          <>
+            {/* Navigation */}
+            <Navigation 
+              currentView={currentView} 
+              onViewChange={handleViewChange}
+              selectedSchedule={selectedSchedule}
+              onBackToStart={handleBackToStart}
+              isInDailyCheckIn={currentView === 'calendar'}
+            />
+
+            {/* Main Content */}
+            <div className="main-content">
             {/* Schedule Builder */}
             {currentView === 'builder' && (
               <ScheduleBuilder 
@@ -344,10 +346,11 @@ const App: React.FC = () => {
                 isActive={true}
               />
             )}
-          </div>
-        </>
-      )}
-    </div>
+            </div>
+          </>
+        )}
+      </div>
+    </StudentStatusProvider>
   );
 };
 
