@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
+import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
 interface SmartboardDisplayProps {
   isActive: boolean;
@@ -28,6 +29,8 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [timeRemaining, setTimeRemaining] = useState(1800);
   const [isRunning, setIsRunning] = useState(false);
   const [fallbackSchedule, setFallbackSchedule] = useState<any>(null);
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
 
   // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
   useEffect(() => {
@@ -273,6 +276,20 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     (currentActivity?.name && 
      ['Movement Break', 'Brain Break', 'Transition Time', 'Get Ready', 'Clean Up Time']
      .includes(currentActivity.name));         // Fallback: known transition activity names
+
+  // 🎯 CHOICE ITEM TIME DETECTION
+  const isChoiceItemTime = currentActivity?.name === 'Choice Item Time' || 
+                          (currentActivity?.category === 'system' && currentActivity?.name?.includes('Choice'));
+
+  // Load today's choice assignments when Choice Item Time is active
+  useEffect(() => {
+    if (isChoiceItemTime) {
+      const choiceDataManager = ChoiceDataManager.getInstance();
+      const choices = choiceDataManager.getTodayChoices();
+      setTodayChoices(choices);
+      console.log(`🎯 Loaded ${choices.length} choice assignments for Choice Item Time`);
+    }
+  }, [isChoiceItemTime, currentActivityIndex]);
 
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
@@ -689,7 +706,80 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
 
       {/* Content */}
       <div style={{ padding: '1rem' }}>
-        {groupAssignments.length > 0 ? (
+        {/* 🎯 CHOICE ITEM TIME SPECIAL DISPLAY */}
+        {isChoiceItemTime ? (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '20px',
+            padding: '2rem',
+            border: '4px solid #f59e0b',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            textAlign: 'center',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
+            <h3 style={{
+              margin: '0 0 1rem 0',
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              color: 'white',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+            }}>
+              Choice Item Time
+            </h3>
+            
+            {todayChoices.length > 0 ? (
+              <>
+                <p style={{
+                  margin: '0 0 2rem 0',
+                  fontSize: '1.3rem',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: '500'
+                }}>
+                  {todayChoices.length} students assigned to choice activities
+                </p>
+                
+                <button
+                  onClick={() => setShowChoiceModal(true)}
+                  style={{
+                    padding: '1rem 2rem',
+                    fontSize: '1.2rem',
+                    background: '#f59e0b',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = '#d97706';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = '#f59e0b';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  📋 View Choice Assignments
+                </button>
+              </>
+            ) : (
+              <p style={{
+                margin: '0',
+                fontSize: '1.3rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontWeight: '500',
+                fontStyle: 'italic'
+              }}>
+                No choice assignments found for today.<br />
+                Complete Daily Check-In to assign students to activities.
+              </p>
+            )}
+          </div>
+        ) : groupAssignments.length > 0 ? (
           <>
             <h2 style={{
               textAlign: 'center',
@@ -733,32 +823,214 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
             }}>
               All {realStudents.length} students participate together
             </p>
-            
-            {/* Enhanced Debug Information */}
-            <div style={{
-              marginTop: '1.5rem',
-              padding: '1rem',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '10px',
-              fontSize: '0.8rem',
-              opacity: 0.7,
-              textAlign: 'left'
-            }}>
-              <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>🔍 Debug Info:</div>
-              <div>Activity: "{currentActivity.name}"</div>
-              <div>Has Assignment: {debugInfo.hasAssignment ? '✅' : '❌'}</div>
-              <div>Assignment Type: {debugInfo.assignmentType}</div>
-              <div>Direct Groups: {currentActivity.groupAssignments?.length || 0}</div>
-              <div>Assignment Groups: {currentActivity.assignment?.groupAssignments?.length || 0}</div>
-              {debugInfo.assignmentData && (
-                <div style={{ marginTop: '0.5rem' }}>
-                  Assignment Keys: {Object.keys(debugInfo.assignmentData).join(', ')}
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
+
+      {/* 🎯 CHOICE ASSIGNMENTS MODAL */}
+      {showChoiceModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '2rem'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '20px',
+            padding: '2rem',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 16px 50px rgba(0, 0, 0, 0.3)',
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            minWidth: '600px'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '2rem',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+              paddingBottom: '1rem'
+            }}>
+              <h2 style={{
+                margin: '0',
+                fontSize: '2rem',
+                fontWeight: '700',
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+              }}>
+                🎯 Today's Choice Assignments
+              </h2>
+              <button
+                onClick={() => setShowChoiceModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  color: 'white',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Choice Activities */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {(() => {
+                // Group choices by activity
+                const choicesByActivity: { [activityId: string]: StudentChoice[] } = {};
+                todayChoices.forEach(choice => {
+                  if (!choicesByActivity[choice.activityId]) {
+                    choicesByActivity[choice.activityId] = [];
+                  }
+                  choicesByActivity[choice.activityId].push(choice);
+                });
+
+                return Object.entries(choicesByActivity).map(([activityId, choices]) => {
+                  const activity = choices[0]; // Get activity info from first choice
+                  return (
+                    <div key={activityId} style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      border: '2px solid rgba(255, 255, 255, 0.2)'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        marginBottom: '1rem'
+                      }}>
+                        <span style={{ fontSize: '2rem' }}>{activity.activityIcon}</span>
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{
+                            margin: '0',
+                            fontSize: '1.5rem',
+                            fontWeight: '600',
+                            color: 'white',
+                            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                          }}>
+                            {activity.activityName}
+                          </h3>
+                          <p style={{
+                            margin: '0',
+                            fontSize: '1rem',
+                            color: 'rgba(255, 255, 255, 0.8)'
+                          }}>
+                            {choices.length} student{choices.length !== 1 ? 's' : ''} assigned
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Students assigned to this activity */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        {choices.map(choice => {
+                          const student = getStudentById(choice.studentId);
+                          return (
+                            <div key={choice.studentId} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              borderRadius: '12px',
+                              padding: '0.75rem',
+                              border: '1px solid rgba(255, 255, 255, 0.2)'
+                            }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: student?.photo ? 'transparent' : 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden',
+                                border: '2px solid rgba(255, 255, 255, 0.3)'
+                              }}>
+                                {student?.photo ? (
+                                  <img src={student.photo} alt={choice.studentName} style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }} />
+                                ) : (
+                                  <span style={{ color: 'white', fontSize: '0.8rem', fontWeight: '700' }}>
+                                    {choice.studentName.split(' ').map(n => n[0]).join('')}
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '0.9rem',
+                                  fontWeight: '600',
+                                  color: 'white',
+                                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis'
+                                }}>
+                                  {choice.studentName}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              marginTop: '2rem',
+              paddingTop: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.2)',
+              textAlign: 'center'
+            }}>
+              <button
+                onClick={() => setShowChoiceModal(false)}
+                style={{
+                  padding: '1rem 2rem',
+                  fontSize: '1.1rem',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                ← Back to Schedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

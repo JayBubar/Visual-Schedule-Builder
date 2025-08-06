@@ -890,6 +890,8 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
 
     // Check if student is already assigned
     const existingAssignment = currentRotation.assignments.find(a => a.studentId === student.id);
+    let updatedRotation;
+    
     if (existingAssignment) {
       // Update existing assignment
       const updatedAssignments = currentRotation.assignments.map(assignment =>
@@ -904,10 +906,10 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
           : assignment
       );
       
-      setCurrentRotation({
+      updatedRotation = {
         ...currentRotation,
         assignments: updatedAssignments
-      });
+      };
     } else {
       // Create new assignment
       const newAssignment: StudentAssignment = {
@@ -921,11 +923,28 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
         rotationNumber: currentRotation.rotationNumber
       };
 
-      setCurrentRotation({
+      updatedRotation = {
         ...currentRotation,
         assignments: [...currentRotation.assignments, newAssignment]
-      });
+      };
     }
+
+    setCurrentRotation(updatedRotation);
+
+    // 🎯 REAL-TIME SYNC: Update ChoiceDataManager immediately
+    const choiceDataManager = ChoiceDataManager.getInstance();
+    const studentChoices: StudentChoice[] = updatedRotation.assignments.map(assignment => ({
+      studentId: assignment.studentId,
+      studentName: assignment.studentName,
+      activityId: assignment.activityId,
+      activityName: assignment.activityName,
+      activityIcon: assignment.activityEmoji,
+      assignedAt: assignment.assignedAt,
+      rotationNumber: assignment.rotationNumber
+    }));
+    
+    choiceDataManager.saveTodayChoices(studentChoices);
+    console.log(`🎯 Real-time sync: Updated choice data with ${studentChoices.length} assignments`);
 
     // Update usage analytics
     updateActivityUsage(activity.id);
