@@ -253,7 +253,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     // Auto-create absent student group for today's schedule
     if (absent.length > 0) {
       // This would integrate with your schedule builder to create an "absent" group
-      console.log('Creating absent student group:', absent.map(s => s.name));
+      console.log('Creating absent student group:', absent.map(s => s.id));
     }
   };
 
