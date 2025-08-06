@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import GroupCreator from './GroupCreator';
 import AttendanceManager from '../management/AttendanceManager';
 import ScheduleConflictDetector from './ScheduleConflictDetector';
-import { useStudentStatus } from '../StudentStatusManager';
-import { useResourceSchedule } from '../ResourceScheduleManager';
+import { useStudentStatus } from '../../services/StudentStatusManager';
+import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 

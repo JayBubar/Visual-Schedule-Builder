@@ -6,8 +6,8 @@ import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, Sched
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
 import { DataMigrationManager } from './utils/dataMigration';
-import { StudentStatusProvider } from './components/StudentStatusManager';
-import { ResourceScheduleProvider } from './components/ResourceScheduleManager';
+import { StudentStatusProvider } from './services/StudentStatusManager';
+import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';

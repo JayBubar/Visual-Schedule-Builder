@@ -3,8 +3,8 @@ import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../type
 import TransitionDisplay from './TransitionDisplay';
 import AbsentStudentsDisplay from './AbsentStudentsDisplay';
 import OutOfClassDisplay from './OutOfClassDisplay';
-import { useStudentStatus } from '../StudentStatusManager';
-import { useResourceSchedule } from '../ResourceScheduleManager';
+import { useStudentStatus } from '../../services/StudentStatusManager';
+import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
