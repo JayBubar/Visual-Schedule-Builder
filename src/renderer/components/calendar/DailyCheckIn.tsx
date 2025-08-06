@@ -698,13 +698,110 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                 color: 'rgba(255,255,255,0.9)',
                 marginBottom: '2rem'
               }}>
-                What independent activities would you like to do today?
+                Let's assign students to their choice activities!
               </p>
             </div>
 
-            <IndependentChoices
-              selectedDate={currentDate.toISOString().split('T')[0]}
-            />
+            {/* Custom Choice Assignment Interface - Skip intermediate screen */}
+            <div style={{
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '20px',
+              padding: '2rem',
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(255,255,255,0.2)',
+              textAlign: 'center',
+              marginBottom: '2rem'
+            }}>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
+              <h3 style={{
+                fontSize: '2rem',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                Ready for Choice Time!
+              </h3>
+              <p style={{
+                fontSize: '1.2rem',
+                color: 'rgba(255,255,255,0.9)',
+                marginBottom: '2rem'
+              }}>
+                Students will now be assigned to their independent choice activities.
+              </p>
+              
+              {/* Quick Stats */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: '1rem',
+                marginBottom: '2rem'
+              }}>
+                <div style={{
+                  background: 'rgba(34, 197, 94, 0.2)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  border: '2px solid rgba(34, 197, 94, 0.4)'
+                }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👥</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
+                    {presentStudents.length}
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
+                    Present Students
+                  </div>
+                </div>
+                
+                <div style={{
+                  background: 'rgba(59, 130, 246, 0.2)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  border: '2px solid rgba(59, 130, 246, 0.4)'
+                }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📚</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
+                    6+
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
+                    Activities Ready
+                  </div>
+                </div>
+                
+                <div style={{
+                  background: 'rgba(245, 158, 11, 0.2)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  border: '2px solid rgba(245, 158, 11, 0.4)'
+                }}>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⏱️</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
+                    20 min
+                  </div>
+                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
+                    Default Duration
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(16, 185, 129, 0.2)',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                border: '2px solid rgba(16, 185, 129, 0.4)',
+                marginBottom: '2rem'
+              }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
+                <p style={{
+                  fontSize: '1.1rem',
+                  color: 'white',
+                  margin: 0,
+                  fontWeight: '600'
+                }}>
+                  Choice assignments will be saved and available in the Visual Schedule Builder
+                  as "Choice Item Time" activities for each student!
+                </p>
+              </div>
+            </div>
             
             <div style={{
               display: 'flex',
