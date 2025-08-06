@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
 import AbsentStudentsDisplay from './AbsentStudentsDisplay';
+import OutOfClassDisplay from './OutOfClassDisplay';
 import { useStudentStatus } from '../StudentStatusManager';
+import { useResourceSchedule } from '../ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
@@ -36,6 +38,10 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   
   // Get absent students from context
   const { absentStudents } = useStudentStatus();
+  
+  // Get current pull-outs from resource schedule
+  const { getCurrentPullOuts } = useResourceSchedule();
+  const currentPullOuts = getCurrentPullOuts();
 
   // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
   useEffect(() => {
@@ -606,6 +612,10 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     }}>
       {/* Absent Students Display - Top Left Corner */}
       <AbsentStudentsDisplay absentStudents={absentStudents} />
+      
+      {/* Out of Class Display - Top Right Corner */}
+      <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
+      
       {/* Header */}
       <div style={{
         padding: '1rem',

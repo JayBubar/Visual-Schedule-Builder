@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import GroupCreator from './GroupCreator';
 import AttendanceManager from '../management/AttendanceManager';
+import ScheduleConflictDetector from './ScheduleConflictDetector';
 import { useStudentStatus } from '../StudentStatusManager';
+import { useResourceSchedule } from '../ResourceScheduleManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 
@@ -2950,6 +2952,52 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
               onCancel={() => setBulkEditMode(false)}
             />
           </div>
+        </div>
+      )}
+
+      {/* Schedule Conflict Detector - Show for current activity being built */}
+      {schedule.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          {schedule.map((activity, index) => {
+            const activityStartTime = index === 0 
+              ? startTime 
+              : calculateTime(startTime, schedule.slice(0, index).reduce((sum, act) => sum + act.duration, 0));
+            
+            return (
+              <ScheduleConflictDetector
+                key={`conflict-${activity.id}-${index}`}
+                activityTime={activityStartTime}
+                activityName={activity.name}
+                day="today"
+                assignedStudents={students.map(student => ({
+                  id: student.id,
+                  name: student.name,
+                  grade: student.grade || 'Unknown',
+                  photo: student.photo,
+                  dateCreated: new Date().toISOString().split('T')[0],
+                  accommodations: student.accommodations || [],
+                  goals: student.goals || [],
+                  preferredPartners: student.preferredPartners || [],
+                  avoidPartners: student.avoidPartners || [],
+                  resourceInfo: student.resourceInfo || {
+                    attendsResource: false,
+                    resourceType: '',
+                    resourceTeacher: '',
+                    timeframe: ''
+                  },
+                  iepData: {
+                    goals: [],
+                    dataCollection: []
+                  }
+                }))}
+                onDismiss={() => {
+                  // Optional: Handle dismissing conflict warnings
+                  console.log(`Dismissed conflict warning for ${activity.name}`);
+                }}
+                className="mb-2"
+              />
+            );
+          })}
         </div>
       )}
 

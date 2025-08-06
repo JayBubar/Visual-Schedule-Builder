@@ -8,6 +8,7 @@ import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
 import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
 import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
+import EnhancedResourceInput from './EnhancedResourceInput';
 
 // Extended interface to include all original Student properties
 interface ExtendedStudent extends UnifiedStudent {
@@ -1854,98 +1855,16 @@ const StudentModal: React.FC<StudentModalProps> = ({
               </div>
 
               {/* Resource Services */}
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                  Resource Services
-                </label>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.resourceInfo?.attendsResource || false}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        resourceInfo: {
-                          ...prev.resourceInfo,
-                          attendsResource: e.target.checked,
-                          resourceType: '',
-                          resourceTeacher: '',
-                          timeframe: ''
-                        }
-                      }))}
-                    />
-                    <span>Receives Resource Services</span>
-                  </label>
-                </div>
-
-                {formData.resourceInfo?.attendsResource && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginLeft: '1.5rem' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-                        Service Type
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.resourceInfo?.resourceType || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          resourceInfo: { ...prev.resourceInfo!, resourceType: e.target.value }
-                        }))}
-                        placeholder="e.g., Speech Therapy"
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.9rem'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-                        Teacher/Therapist
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.resourceInfo?.resourceTeacher || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          resourceInfo: { ...prev.resourceInfo!, resourceTeacher: e.target.value }
-                        }))}
-                        placeholder="e.g., Ms. Smith"
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.9rem'
-                        }}
-                      />
-                    </div>
-                    <div style={{ gridColumn: 'span 2' }}>
-                      <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.9rem' }}>
-                        Schedule/Timeframe
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.resourceInfo?.timeframe || ''}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          resourceInfo: { ...prev.resourceInfo!, timeframe: e.target.value }
-                        }))}
-                        placeholder="e.g., 10:00-10:30 AM, Tuesdays & Thursdays"
-                        style={{
-                          width: '100%',
-                          padding: '0.5rem',
-                          borderRadius: '6px',
-                          border: '1px solid #d1d5db',
-                          fontSize: '0.9rem'
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <EnhancedResourceInput
+                resourceInfo={formData.resourceInfo || {
+                  attendsResource: false,
+                  resourceType: '',
+                  resourceTeacher: '',
+                  timeframe: ''
+                }}
+                onChange={(resourceInfo) => setFormData({...formData, resourceInfo})}
+                studentName={formData.name || ''}
+              />
             </div>
           )}
 
