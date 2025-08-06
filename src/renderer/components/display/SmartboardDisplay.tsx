@@ -639,33 +639,17 @@ useEffect(() => {
       color: 'white',
       position: 'relative'
     }}>
-      {/* Add this BEFORE the AbsentStudentsDisplay component (around line 400-500): */}
-      {(() => {
-        console.log('🧪 TESTING AbsentStudentsDisplay:');
-        console.log('- About to render AbsentStudentsDisplay');
-        console.log('- absentStudents data:', absentStudents);
-        console.log('- Should show component?', absentStudents && absentStudents.length > 0);
-        return null;
-      })()}
-
-      {/* FORCE show AbsentStudentsDisplay for testing: */}
-      {(() => {
-        const forceShowAbsent = true; // ADD THIS LINE
-        const testAbsentStudents = [
-          { id: '2', name: 'Maya Patel', photo: '', grade: '2nd' },
-          { id: '4', name: 'Test Student', photo: '', grade: '3rd' }
-        ];
-        return null;
-      })()}
-
       {/* Absent Students Display - Top Left Corner */}
       {(() => {
-        const forceShowAbsent = true;
-        const testAbsentStudentIds = ['2', '4']; // IDs only, not full objects
-        
-        return (forceShowAbsent || (absentStudentIds && absentStudentIds.length > 0)) && (
+        console.log('🎯 REAL ABSENT DATA:');
+        console.log('- absentStudentIds from context:', absentStudentIds);
+        console.log('- filtered absentStudents:', absentStudents.length);
+        console.log('- realStudents available:', realStudents.length);
+
+        // Keep the AbsentStudentsDisplay render as:
+        return absentStudentIds && absentStudentIds.length > 0 && (
           <AbsentStudentsDisplay 
-            absentStudents={forceShowAbsent ? testAbsentStudentIds : absentStudentIds}
+            absentStudents={absentStudentIds}
           />
         );
       })()}
