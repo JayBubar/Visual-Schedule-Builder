@@ -1102,6 +1102,44 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     return currentRotation.assignments.filter(a => a.activityId === activityId).length;
   };
 
+  // 🎯 Helper functions for student assignment interface
+  const getCurrentAssignment = (studentId: string) => {
+    return currentRotation?.assignments.find(a => a.studentId === studentId);
+  };
+
+  const handleStudentAssignment = (studentId: string, activityId: string) => {
+    if (!currentRotation || !activityId) return;
+    
+    setCurrentRotation(prev => {
+      if (!prev) return prev;
+      
+      const newAssignments = prev.assignments.filter(a => a.studentId !== studentId);
+      if (activityId) {
+        const activity = choiceEligibleActivities.find(a => a.id === activityId);
+        if (activity) {
+          const student = students.find(s => s.id === studentId);
+          if (student) {
+            newAssignments.push({
+              studentId,
+              studentName: formatStudentName(student.name),
+              studentPhoto: student.photo,
+              activityId,
+              activityName: activity.name,
+              activityEmoji: activity.emoji,
+              assignedAt: new Date().toISOString(),
+              rotationNumber: prev.rotationNumber
+            });
+          }
+        }
+      }
+      
+      return {
+        ...prev,
+        assignments: newAssignments
+      };
+    });
+  };
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />

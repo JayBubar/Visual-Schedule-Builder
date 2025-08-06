@@ -36,8 +36,11 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
   
-  // Get absent students from context
-  const { absentStudents } = useStudentStatus();
+  // Get absent students from context and convert IDs to full student objects
+  const { absentStudents: absentStudentIds } = useStudentStatus();
+  const absentStudents = realStudents.filter(student => 
+    absentStudentIds.includes(student.id)
+  );
   
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
@@ -481,7 +484,12 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number }> = ({ group, groupIndex }) => {
     console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
     
-    const groupStudents = (group.studentIds || []).map(id => getStudentById(id)).filter(Boolean) as Student[];
+    // Filter out absent students from group display
+    const activeStudentIds = (group.studentIds || []).filter((id: string) => 
+      !absentStudentIds.includes(id)
+    );
+    
+    const groupStudents = activeStudentIds.map(id => getStudentById(id)).filter(Boolean) as Student[];
     
     // Try multiple ways to get staff
     let staffMember = null;
@@ -611,7 +619,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       position: 'relative'
     }}>
       {/* Absent Students Display - Top Left Corner */}
-      <AbsentStudentsDisplay absentStudents={absentStudents} />
+      <AbsentStudentsDisplay absentStudents={absentStudentIds} />
       
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />

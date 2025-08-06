@@ -1777,17 +1777,17 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
         <button
           onClick={() => setShowAttendanceManager(true)}
           style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            border: 'none',
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
             color: 'white',
-            padding: '8px 16px',
+            border: 'none',
             borderRadius: '8px',
-            fontSize: '14px',
+            fontSize: '0.9rem',
             fontWeight: '600',
             cursor: 'pointer'
           }}
         >
-          📋 Attendance
+          📋 Manage Attendance
         </button>
         
         {schedule.length > 0 && (

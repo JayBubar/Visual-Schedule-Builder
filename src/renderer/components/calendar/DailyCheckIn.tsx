@@ -257,8 +257,23 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     }
   };
 
+  // Single completion logic - replace existing multi-screen logic
+  const allRequiredTabsComplete = () => {
+    return (
+      todayCheckIn?.behaviorCommitments && 
+      todayCheckIn?.behaviorCommitments.length > 0 &&
+      todayCheckIn?.independentChoices &&
+      todayCheckIn?.weather
+    );
+  };
+
   const handleFinalConfirmation = () => {
     console.log('🚀 Daily Check-In Complete - Checking for temporary schedule');
+    
+    // Save any final data
+    if (todayCheckIn) {
+      saveTodayCheckIn(todayCheckIn);
+    }
     
     // Check if there's a temporary schedule from "Use Built Schedule"
     const todaySchedule = localStorage.getItem('todaySchedule');
