@@ -267,6 +267,12 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     );
   };
 
+  // 🐛 DEBUG INFO to see the completion flow
+  console.log('🐛 DailyCheckIn Debug:');
+  console.log('- currentStep:', currentStep);
+  console.log('- todayCheckIn:', todayCheckIn);
+  console.log('- All tabs completed?', allRequiredTabsComplete());
+
   const handleFinalConfirmation = () => {
     console.log('🚀 Daily Check-In Complete - Checking for temporary schedule');
     

@@ -678,6 +678,13 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
   const [showActivityLibrary, setShowActivityLibrary] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
 
+  // 🐛 DEBUG CODE AT THE TOP OF IndependentChoices component:
+  console.log('🐛 IndependentChoices Debug:');
+  console.log('- students:', students?.length || 0, 'students');
+  console.log('- choiceEligibleActivities:', choiceEligibleActivities?.length || 0, 'activities');
+  console.log('- currentRotation:', currentRotation);
+  console.log('- Component is rendering');
+
   // Load data on component mount
   useEffect(() => {
     loadStudents();
@@ -1150,6 +1157,20 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
         <h3 className="header-title">
           🎯 Independent Choices
         </h3>
+      </div>
+
+      {/* TEMPORARY DEBUG SECTION - Add this in your JSX */}
+      <div style={{ 
+        background: 'red', 
+        color: 'white', 
+        padding: '1rem', 
+        margin: '1rem 0' 
+      }}>
+        <h4>🐛 DEBUG INFO:</h4>
+        <p>Students: {students?.length || 0}</p>
+        <p>Choice Activities: {choiceEligibleActivities?.length || 0}</p>
+        <p>Current Rotation: {currentRotation ? 'Yes' : 'No'}</p>
+        <p>Students List: {students?.map(s => s.name).join(', ')}</p>
       </div>
 
       {/* No Current Rotation */}

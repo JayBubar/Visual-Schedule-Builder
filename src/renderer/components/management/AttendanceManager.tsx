@@ -25,6 +25,12 @@ const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'present' | 'absent'>('all');
   const [notes, setNotes] = useState<{ [studentId: string]: string }>({});
 
+  // 🐛 DEBUG CODE for AttendanceManager:
+  console.log('🐛 AttendanceManager Debug:');
+  console.log('- students:', students?.length || 0, 'students');
+  console.log('- absentStudents:', absentStudents?.length || 0, 'absent');
+  console.log('- useStudentStatus hook working?', typeof updateStudentStatus === 'function');
+
   // Load students from UnifiedDataService or fallback
   useEffect(() => {
     try {

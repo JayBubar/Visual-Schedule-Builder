@@ -305,6 +305,19 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     }
   }, [isChoiceItemTime, currentActivityIndex]);
 
+  // 🐛 DEBUG CODE - Add this right after hooks
+  console.log('🐛 SmartboardDisplay Debug:');
+  console.log('- absentStudents:', absentStudents);
+  console.log('- absentStudents type:', typeof absentStudents);
+  console.log('- absentStudents length:', absentStudents?.length);
+  console.log('- realStudents:', realStudents.length, 'students loaded');
+  console.log('- currentPullOuts:', currentPullOuts);
+
+  // Force show the component for testing
+  const testAbsentStudents = [
+    { id: '1', name: 'Test Student', photo: '', grade: '1st' }
+  ];
+
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
     return null;
