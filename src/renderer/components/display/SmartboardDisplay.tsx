@@ -27,7 +27,22 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
 }) => {
   // 🎯 CRITICAL: ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   // State management - MUST be at the top, always called
-  const [realStudents, setRealStudents] = useState<Student[]>([]);
+  const [realStudents, setRealStudents] = useState<Student[]>(() => {
+    // Initialize with data immediately
+    try {
+      const legacyStudents = localStorage.getItem('students');
+      if (legacyStudents) {
+        const students = JSON.parse(legacyStudents);
+        if (Array.isArray(students)) {
+          console.log('🎯 INITIALIZED with students:', students.length);
+          return students;
+        }
+      }
+    } catch (error) {
+      console.error('🎯 Initialization failed:', error);
+    }
+    return [];
+  });
   const [realStaff, setRealStaff] = useState<StaffMember[]>([]);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(1800);
