@@ -362,7 +362,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           opacity: 0.9,
           marginBottom: '2rem'
         }}>
-          Transitioning to Visual Schedule Builder...
+          Transitioning to Visual Schedule Display...
         </p>
         
         <style>{`
@@ -1004,7 +1004,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                 transition: 'all 0.3s ease'
               }}
             >
-              🎯 Begin Visual Schedule Builder
+              🚀 Start Our Visual Schedule
             </button>
 
             <style>{`
