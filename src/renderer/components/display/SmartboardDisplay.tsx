@@ -112,10 +112,11 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     }
   }, [currentSchedule]);
 
-  // Load real data from UnifiedDataService with enhanced persistence
-  useEffect(() => {
-    console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
-    
+  // Replace the existing useEffect around line 117-208 with this:
+useEffect(() => {
+  console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
+  
+  const loadStudentData = async () => {
     let studentsToUse: any[] = [];
     let staffToUse: any[] = [];
 
@@ -128,41 +129,10 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
       
       if (unifiedStudents.length > 0) {
-        // Convert UnifiedStudent[] to Student[] format for compatibility
-        studentsToUse = unifiedStudents.map((student: UnifiedStudent): Student => ({
-          id: student.id,
-          name: student.name,
-          grade: student.grade,
-          photo: student.photo,
-          workingStyle: student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support" | undefined,
-          accommodations: student.accommodations || [],
-          goals: student.goals || [],
-          preferredPartners: student.preferredPartners || [],
-          avoidPartners: student.avoidPartners || [],
-          parentName: student.parentName,
-          parentEmail: student.parentEmail,
-          parentPhone: student.parentPhone,
-          isActive: student.isActive !== false,
-          behaviorNotes: student.behaviorNotes,
-          medicalNotes: student.medicalNotes
-        }));
+        studentsToUse = unifiedStudents;
       }
       if (unifiedStaff.length > 0) {
-        // Convert UnifiedStaff[] to StaffMember[] format for compatibility
-        staffToUse = unifiedStaff.map((staff: UnifiedStaff): StaffMember => ({
-          id: staff.id,
-          name: staff.name,
-          role: staff.role,
-          email: staff.email,
-          phone: staff.phone,
-          photo: staff.photo,
-          isActive: staff.isActive,
-          startDate: staff.dateCreated,
-          specialties: staff.specialties || [],
-          notes: staff.notes,
-          isResourceTeacher: staff.isResourceTeacher,
-          isRelatedArtsTeacher: staff.isRelatedArtsTeacher
-        }));
+        staffToUse = unifiedStaff;
       }
     } catch (error) {
       console.error('❌ Error loading from UnifiedDataService:', error);
@@ -196,16 +166,18 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       }
     }
 
-    // Update state with loaded data
+    // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
     console.log('🔄 Setting student state:', studentsToUse.length, 'students');
-    setRealStudents(studentsToUse);
-    setRealStaff(staffToUse);
-
-    // Force update absent students from StudentStatusManager
-    console.log('🔄 Refreshing absent students from context...');
-    // The absentStudents should come from useStudentStatus hook
     
-  }, []); // Empty dependency array - only run once on mount
+    setTimeout(() => {
+      setRealStudents(studentsToUse);
+      setRealStaff(staffToUse);
+      console.log('✅ State set via setTimeout');
+    }, 0);
+  };
+
+  loadStudentData();
+}, [isActive]); // Depend on isActive instead of empty array
 
   // Separate useEffect to monitor absent students from context
   useEffect(() => {
