@@ -2057,51 +2057,6 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
               }}>
                 📂 My Saved Schedules
               </h3>
-              
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <button
-                  onClick={useBuiltSchedule}
-                  disabled={schedule.length === 0}
-                  style={{
-                    background: schedule.length === 0 
-                      ? 'rgba(108, 117, 125, 0.5)' 
-                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '1rem 2rem',
-                    fontSize: '1.1rem',
-                    fontWeight: '700',
-                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                    opacity: schedule.length === 0 ? 0.6 : 1,
-                    boxShadow: schedule.length === 0 ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  🚀 Use Built Schedule
-                </button>
-                
-                <button
-                  onClick={() => setShowSaveDialog(true)}
-                  disabled={schedule.length === 0}
-                  style={{
-                    background: schedule.length === 0 
-                      ? 'rgba(108, 117, 125, 0.5)' 
-                      : 'rgba(255, 255, 255, 0.2)',
-                    color: 'white',
-                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1.5rem',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                    opacity: schedule.length === 0 ? 0.6 : 1,
-                    backdropFilter: 'blur(10px)'
-                  }}
-                >
-                  💾 Save for Future Use
-                </button>
-              </div>
             </div>
 
             {savedSchedules.length === 0 ? (
@@ -2244,25 +2199,68 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
                 🛠️ Schedule Builder
               </h3>
               
-              <button
-                onClick={() => setShowSaveDialog(true)}
-                disabled={schedule.length === 0}
-                style={{
-                  background: schedule.length === 0 
-                    ? 'rgba(108, 117, 125, 0.5)' 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                  opacity: schedule.length === 0 ? 0.6 : 1
-                }}
-              >
-                💾 Save Current Schedule
-              </button>
+              {/* NEW: Three-button layout in Schedule Builder */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <button
+                  onClick={useBuiltSchedule}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1,
+                    boxShadow: schedule.length === 0 ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  🚀 Use Built Schedule
+                </button>
+                
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1
+                  }}
+                >
+                  💾 Save Current Schedule
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('saved')}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  📂 Load Different Schedule
+                </button>
+              </div>
             </div>
 
             {schedule.length === 0 ? (
