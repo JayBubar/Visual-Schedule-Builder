@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useStudentStatus } from '../StudentStatusManager';
+import { useStudentStatus } from '../../services/StudentStatusManager';
 import UnifiedDataService from '../../services/unifiedDataService';
 
 interface AttendanceManagerProps {

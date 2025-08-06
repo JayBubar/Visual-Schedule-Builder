@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Clock, User, X } from 'lucide-react';
-import { useResourceSchedule } from '../ResourceScheduleManager';
+import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 
 // Using your existing unified data structure
 interface UnifiedStudent {
