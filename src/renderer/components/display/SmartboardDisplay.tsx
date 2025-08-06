@@ -639,8 +639,36 @@ useEffect(() => {
       color: 'white',
       position: 'relative'
     }}>
+      {/* Add this BEFORE the AbsentStudentsDisplay component (around line 400-500): */}
+      {(() => {
+        console.log('🧪 TESTING AbsentStudentsDisplay:');
+        console.log('- About to render AbsentStudentsDisplay');
+        console.log('- absentStudents data:', absentStudents);
+        console.log('- Should show component?', absentStudents && absentStudents.length > 0);
+        return null;
+      })()}
+
+      {/* FORCE show AbsentStudentsDisplay for testing: */}
+      {(() => {
+        const forceShowAbsent = true; // ADD THIS LINE
+        const testAbsentStudents = [
+          { id: '2', name: 'Maya Patel', photo: '', grade: '2nd' },
+          { id: '4', name: 'Test Student', photo: '', grade: '3rd' }
+        ];
+        return null;
+      })()}
+
       {/* Absent Students Display - Top Left Corner */}
-      <AbsentStudentsDisplay absentStudents={absentStudentIds} />
+      {(() => {
+        const forceShowAbsent = true;
+        const testAbsentStudentIds = ['2', '4']; // IDs only, not full objects
+        
+        return (forceShowAbsent || (absentStudentIds && absentStudentIds.length > 0)) && (
+          <AbsentStudentsDisplay 
+            absentStudents={forceShowAbsent ? testAbsentStudentIds : absentStudentIds}
+          />
+        );
+      })()}
       
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
