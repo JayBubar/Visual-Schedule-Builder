@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
+import { DataMigrationManager } from './utils/dataMigration';
 import { StudentStatusProvider } from './components/StudentStatusManager';
 import { ResourceScheduleProvider } from './components/ResourceScheduleManager';
 import StartScreen from './components/common/StartScreen';
@@ -30,10 +31,65 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
+      // Force migration check and execution
+      console.log('🔄 Checking for migration need...');
+      
+      if (DataMigrationManager.isMigrationNeeded()) {
+        console.log('⚡ Migration needed - starting migration...');
+        const migrationResult = DataMigrationManager.migrateToUnifiedArchitecture();
+        
+        migrationResult.then(result => {
+          if (result.success) {
+            console.log('✅ Migration successful!');
+            console.log('- Migrated students:', result.migratedStudents);
+            console.log('- Preserved data points:', result.preservedDataPoints);
+          } else {
+            console.error('❌ Migration failed:', result.errors);
+            // You might want to show a user-friendly error here
+          }
+        });
+      } else {
+        console.log('ℹ️ No migration needed');
+      }
+      
+      // 🔍 DETAILED DEBUGGING: Check what's actually in localStorage
+      console.log('🔍 DEBUGGING localStorage contents:');
+      console.log('- All localStorage keys:', Object.keys(localStorage));
+      
+      // Check specific keys
+      const unifiedKey = 'visual-schedule-builder-unified-data';
+      const legacyStudentKey = 'students';
+      const vsbStudentKey = 'vsb_students';
+      
+      console.log(`- ${unifiedKey}:`, localStorage.getItem(unifiedKey) ? 'EXISTS' : 'MISSING');
+      console.log(`- ${legacyStudentKey}:`, localStorage.getItem(legacyStudentKey) ? 'EXISTS' : 'MISSING');
+      console.log(`- ${vsbStudentKey}:`, localStorage.getItem(vsbStudentKey) ? 'EXISTS' : 'MISSING');
+      
+      // Check unified data structure
+      const unifiedDataRaw = localStorage.getItem(unifiedKey);
+      if (unifiedDataRaw) {
+        try {
+          const unifiedData = JSON.parse(unifiedDataRaw);
+          console.log('- Unified data structure:', {
+            hasStudents: !!unifiedData.students,
+            studentsType: Array.isArray(unifiedData.students) ? 'array' : typeof unifiedData.students,
+            studentsLength: Array.isArray(unifiedData.students) ? unifiedData.students.length : 'N/A',
+            studentsKeys: unifiedData.students ? Object.keys(unifiedData.students).slice(0, 5) : 'N/A'
+          });
+        } catch (e) {
+          console.log('- Unified data parse error:', e);
+        }
+      }
+      
       // Load from unified data service first
       const unifiedStudents = UnifiedDataService.getAllStudents();
       const unifiedStaff = UnifiedDataService.getAllStaff();
       const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      console.log('🔍 UnifiedDataService results:');
+      console.log('- Students returned:', unifiedStudents.length);
+      console.log('- Staff returned:', unifiedStaff.length);
+      console.log('- Activities returned:', unifiedActivities.length);
       
       // Convert unified data to legacy format for components that still expect it
       const legacyStudents: Student[] = unifiedStudents.map(student => ({
@@ -93,6 +149,11 @@ const App: React.FC = () => {
         staff: legacyStaff.length,
         activities: legacyActivities.length
       });
+
+      // 🐛 App Debug to verify the providers are working:
+      console.log('🐛 App Debug:');
+      console.log('- Students being passed to providers:', legacyStudents?.length || 0);
+      console.log('- Students data:', legacyStudents?.slice(0, 2)); // First 2 students
       
     } catch (error) {
       console.error('Error loading unified data, falling back to legacy storage:', error);
