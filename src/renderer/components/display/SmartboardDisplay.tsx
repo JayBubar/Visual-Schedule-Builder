@@ -53,6 +53,15 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   
   // Get absent students from context and convert IDs to full student objects
   const { absentStudents: absentStudentIds } = useStudentStatus();
+  
+  // Add this right after the useStudentStatus hook call:
+  const studentStatusData = useStudentStatus();
+  console.log('🔍 FULL StudentStatus Debug:');
+  console.log('- useStudentStatus returned:', studentStatusData);
+  console.log('- Available methods/properties:', Object.keys(studentStatusData));
+  console.log('- absentStudentIds specifically:', studentStatusData?.absentStudentIds);
+  console.log('- absentStudents specifically:', studentStatusData?.absentStudents);
+
   const absentStudents = realStudents.filter(student => 
     absentStudentIds.includes(student.id)
   );
@@ -316,6 +325,26 @@ useEffect(() => {
       console.log(`🎯 Loaded ${choices.length} choice assignments for Choice Item Time`);
     }
   }, [isChoiceItemTime, currentActivityIndex]);
+
+  // Also add this in the render section:
+  console.log('🔍 RENDER TIME Debug:');
+  console.log('- realStudents count:', realStudents.length);
+  console.log('- realStudents IDs:', realStudents.map(s => s.id));
+
+  // Check localStorage directly:
+  const attendanceKey = `attendance-${new Date().toISOString().split('T')[0]}`;
+  const storedAttendance = localStorage.getItem(attendanceKey);
+  console.log('🔍 LOCALSTORAGE Debug:');
+  console.log('- Attendance key:', attendanceKey);
+  console.log('- Stored attendance:', storedAttendance);
+  if (storedAttendance) {
+    try {
+      const parsed = JSON.parse(storedAttendance);
+      console.log('- Parsed attendance:', parsed);
+    } catch (e) {
+      console.log('- Failed to parse:', e);
+    }
+  }
 
   // 🐛 DEBUG CODE - Add this right after hooks
   console.log('🐛 SmartboardDisplay Debug:');
