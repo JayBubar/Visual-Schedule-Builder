@@ -1553,6 +1553,44 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
     }));
   };
 
+  // Edit a saved schedule
+  const editSchedule = (scheduleVariation: ScheduleVariation) => {
+    // Load the schedule into the builder for editing
+    const enhancedActivities = (scheduleVariation.activities || []).map((activity: any) => ({
+      ...activity,
+      assignment: activity.assignment || {
+        staffIds: [],
+        groupIds: [],
+        isWholeClass: true,
+        notes: ''
+      },
+      // CRITICAL: Preserve groupAssignments when loading for editing
+      groupAssignments: activity.groupAssignments || [],
+      
+      // 🎯 EXPLICITLY preserve transition properties
+      ...(activity.isTransition && {
+        isTransition: activity.isTransition,
+        transitionType: activity.transitionType,
+        animationStyle: activity.animationStyle,
+        showNextActivity: activity.showNextActivity,
+        movementPrompts: activity.movementPrompts,
+        autoStart: activity.autoStart,
+        soundEnabled: activity.soundEnabled,
+        customMessage: activity.customMessage
+      })
+    }));
+
+    setSchedule(enhancedActivities);
+    setStartTime(scheduleVariation.startTime);
+    setActiveTab('builder');
+
+    // Show confirmation message
+    console.log(`📝 Loaded schedule for editing: ${scheduleVariation.name}`);
+    
+    // Optional: Show a toast or notification that the schedule is loaded for editing
+    // You could add a state for showing edit mode indicator
+  };
+
   // Delete a saved schedule
   const deleteSchedule = (scheduleId: string) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
@@ -2029,6 +2067,21 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
                         }}
                       >
                         📥 Load
+                      </button>
+                      <button
+                        onClick={() => editSchedule(schedule)}
+                        style={{
+                          background: 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 16px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✏️ Edit
                       </button>
                       <button
                         onClick={() => deleteSchedule(schedule.id)}

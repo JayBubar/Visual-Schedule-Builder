@@ -28,6 +28,7 @@ interface DailyCheckInProps {
   staff?: StaffMember[];
   students?: Student[];
   onSwitchToScheduleBuilder?: () => void;
+  onSwitchToDisplay?: () => void;
 }
 
 const DailyCheckIn: React.FC<DailyCheckInProps> = ({
@@ -35,7 +36,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   selectedSchedule,
   staff = [],
   students = [],
-  onSwitchToScheduleBuilder
+  onSwitchToScheduleBuilder,
+  onSwitchToDisplay
 }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -259,10 +261,10 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     // Show celebration animation
     setShowCelebrationAnimation(true);
     
-    // After animation, switch to Schedule Builder
+    // After animation, switch to VSB Display mode
     setTimeout(() => {
-      if (onSwitchToScheduleBuilder) {
-        onSwitchToScheduleBuilder();
+      if (onSwitchToDisplay) {
+        onSwitchToDisplay();
       }
     }, 3000);
   };
@@ -604,6 +606,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               students={presentStudents}
               todayCheckIn={todayCheckIn}
               onUpdateCheckIn={saveTodayCheckIn}
+              onNext={handleNext}
+              onBack={handleBack}
             />
             
             <div style={{

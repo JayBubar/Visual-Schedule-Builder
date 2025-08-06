@@ -283,6 +283,7 @@ const App: React.FC = () => {
                 staff={staffMembers}
                 selectedSchedule={selectedSchedule}
                 onSwitchToScheduleBuilder={() => handleViewChange('builder')}
+                onSwitchToDisplay={() => handleViewChange('display')}
               />
             )}
 
