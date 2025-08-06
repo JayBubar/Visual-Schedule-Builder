@@ -194,19 +194,6 @@ useEffect(() => {
   loadStudentData();
 }, [isActive]); // Depend on isActive instead of empty array
 
-  // Separate useEffect to monitor absent students from context
-  useEffect(() => {
-    console.log('👁️ Monitoring absent students from StudentStatusManager:', absentStudents?.length || 0);
-    // This will automatically re-render when absentStudents changes from the context
-  }, [absentStudents]);
-
-  // Debug useEffect to monitor state changes
-  useEffect(() => {
-    console.log('🐛 SmartboardDisplay State Update:');
-    console.log('- realStudents count:', realStudents.length);
-    console.log('- absentStudents count:', absentStudents?.length || 0);
-    console.log('- realStudents sample:', realStudents.slice(0, 2).map(s => s.name));
-  }, [realStudents, absentStudents]);
 
   // Timer countdown effect (moved after hooks)
   useEffect(() => {
@@ -338,10 +325,6 @@ useEffect(() => {
   console.log('- realStudents:', realStudents.length, 'students loaded');
   console.log('- currentPullOuts:', currentPullOuts);
 
-  // Force show the component for testing
-  const testAbsentStudents = [
-    { id: '1', name: 'Test Student', photo: '', grade: '1st' }
-  ];
 
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
