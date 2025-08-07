@@ -9,6 +9,46 @@ interface WeatherWidgetProps {
   size?: 'small' | 'medium' | 'large';
 }
 
+// Enhanced fallback weather options for offline mode
+const FALLBACK_WEATHER_OPTIONS = [
+  {
+    id: 'sunny',
+    icon: '☀️',
+    condition: 'Sunny',
+    description: 'Clear skies and sunshine',
+    temperature: 75,
+    colors: ['#FFD700', '#FFA500', '#FF8C00'],
+    discussion: 'What activities do we enjoy when it\'s sunny outside?'
+  },
+  {
+    id: 'cloudy',
+    icon: '☁️',
+    condition: 'Cloudy',
+    description: 'Overcast with gray clouds',
+    temperature: 68,
+    colors: ['#87CEEB', '#B0C4DE', '#708090'],
+    discussion: 'How do clouds form in the sky?'
+  },
+  {
+    id: 'rainy',
+    icon: '🌧️',
+    condition: 'Rainy',
+    description: 'Light rain showers',
+    temperature: 62,
+    colors: ['#4682B4', '#5F9EA0', '#6495ED'],
+    discussion: 'Why is rain important for plants and animals?'
+  },
+  {
+    id: 'snowy',
+    icon: '❄️',
+    condition: 'Snowy',
+    description: 'Light snow falling',
+    temperature: 32,
+    colors: ['#E6E6FA', '#F0F8FF', '#B0E0E6'],
+    discussion: 'What makes snowflakes so special and unique?'
+  }
+];
+
 const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   settings,
   onWeatherUpdate,
@@ -18,6 +58,8 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFallbackPanels, setShowFallbackPanels] = useState(false);
+  const [selectedFallback, setSelectedFallback] = useState<typeof FALLBACK_WEATHER_OPTIONS[0] | null>(null);
   const [discussionPrompts, setDiscussionPrompts] = useState<string[]>([]);
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -39,10 +81,11 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     try {
       setIsLoading(true);
       setError(null);
+      setShowFallbackPanels(false);
 
       // Try to get cached data first
       const cached = WeatherCache.get(settings.weatherLocation);
-      if (cached) {
+      if (cached && cached.apiSource !== 'fallback') {
         setWeather(cached);
         setIsLoading(false);
         updateDiscussionPrompts(cached);
@@ -56,6 +99,14 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         settings.temperatureUnit
       );
 
+      // Check if this is fallback data (API failed)
+      if (weatherData.apiSource === 'fallback') {
+        console.log('🌤️ Weather API unavailable, showing four-panel fallback display');
+        setShowFallbackPanels(true);
+        setIsLoading(false);
+        return;
+      }
+
       setWeather(weatherData);
       setLastUpdate(new Date());
       updateDiscussionPrompts(weatherData);
@@ -66,15 +117,10 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
 
     } catch (err) {
       console.error('Weather loading error:', err);
-      setError('Unable to load weather data');
+      setError('Weather API unavailable');
       
-      // Try to use cached data even if expired
-      const cached = WeatherCache.get(settings.weatherLocation);
-      if (cached) {
-        setWeather(cached);
-        updateDiscussionPrompts(cached);
-      }
-    } finally {
+      // Show four-panel fallback display
+      setShowFallbackPanels(true);
       setIsLoading(false);
     }
   };
@@ -85,11 +131,35 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     setCurrentPromptIndex(0);
   };
 
+  const selectFallbackWeather = (weatherOption: typeof FALLBACK_WEATHER_OPTIONS[0]) => {
+    setSelectedFallback(weatherOption);
+    
+    // Create mock weather data for the selected option
+    const mockWeather: WeatherData = {
+      location: settings.weatherLocation,
+      condition: weatherOption.condition,
+      temperature: weatherOption.temperature,
+      temperatureUnit: settings.temperatureUnit,
+      icon: weatherOption.icon,
+      description: weatherOption.description,
+      timestamp: new Date().toISOString(),
+      apiSource: 'manual-selection'
+    };
+    
+    setWeather(mockWeather);
+    setDiscussionPrompts([weatherOption.discussion]);
+    setCurrentPromptIndex(0);
+    onWeatherUpdate?.(mockWeather);
+    setLastUpdate(new Date());
+  };
+
   const nextPrompt = () => {
     setCurrentPromptIndex((prev) => (prev + 1) % discussionPrompts.length);
   };
 
   const refreshWeather = () => {
+    setSelectedFallback(null);
+    setShowFallbackPanels(false);
     loadWeatherData();
   };
 
@@ -147,44 +217,154 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     );
   }
 
-  if (error && !weather) {
+  // 🆕 FOUR-PANEL FALLBACK DISPLAY
+  if (showFallbackPanels && !selectedFallback) {
     return (
       <div style={{
         ...config.container,
         background: 'rgba(255,255,255,0.15)',
         borderRadius: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         backdropFilter: 'blur(10px)',
-        border: '2px solid rgba(255,255,255,0.3)'
+        border: '2px solid rgba(255,255,255,0.3)',
+        position: 'relative'
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌤️</div>
-        <div style={{ fontSize: '1.2rem', color: 'white', textAlign: 'center', marginBottom: '1rem' }}>
-          Weather temporarily unavailable
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🌤️</div>
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            color: 'white',
+            margin: '0 0 0.5rem 0'
+          }}>
+            Let's Look Outside!
+          </h3>
+          <p style={{
+            fontSize: '1rem',
+            color: 'rgba(255,255,255,0.9)',
+            margin: 0
+          }}>
+            What kind of weather do you see today?
+          </p>
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: '1rem' }}>
-          Let's look outside and describe what we see!
+
+        {/* Four Weather Panels */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '1rem',
+          marginBottom: '1.5rem'
+        }}>
+          {FALLBACK_WEATHER_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => selectFallbackWeather(option)}
+              style={{
+                background: `linear-gradient(135deg, ${option.colors[0]}20, ${option.colors[1]}30, ${option.colors[2]}20)`,
+                border: `2px solid ${option.colors[1]}40`,
+                borderRadius: '16px',
+                padding: '1.5rem 1rem',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                textAlign: 'center',
+                backdropFilter: 'blur(5px)',
+                minHeight: '120px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = `0 8px 25px ${option.colors[1]}30`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+                {option.icon}
+              </div>
+              <div style={{
+                fontSize: '1.1rem',
+                fontWeight: '700',
+                marginBottom: '0.25rem'
+              }}>
+                {option.condition}
+              </div>
+              <div style={{
+                fontSize: '0.8rem',
+                color: 'rgba(255,255,255,0.8)',
+                lineHeight: '1.2'
+              }}>
+                {option.description}
+              </div>
+            </button>
+          ))}
         </div>
+
+        {/* Instructions */}
+        <div style={{
+          background: 'rgba(59, 130, 246, 0.2)',
+          borderRadius: '12px',
+          padding: '1rem',
+          border: '1px solid rgba(59, 130, 246, 0.3)',
+          textAlign: 'center'
+        }}>
+          <div style={{
+            fontSize: '0.9rem',
+            color: 'white',
+            fontWeight: '600',
+            marginBottom: '0.5rem'
+          }}>
+            👀 Look outside the window and choose the weather that matches!
+          </div>
+          <div style={{
+            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.8)'
+          }}>
+            We can observe and discuss weather without internet connection
+          </div>
+        </div>
+
+        {/* Refresh Button */}
         <button
           onClick={refreshWeather}
           style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
             background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '8px',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
             color: 'white',
-            padding: '0.5rem 1rem',
-            fontSize: '0.9rem',
-            cursor: 'pointer'
+            fontSize: '1rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
           }}
+          title="Try Weather API Again"
         >
-          🔄 Try Again
+          🔄
         </button>
+
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+          }
+        `}</style>
       </div>
     );
   }
 
+  // Regular weather display (existing functionality enhanced)
   if (!weather) return null;
 
   return (
@@ -268,25 +448,27 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
             fontSize: '0.9rem',
             color: 'rgba(255,255,255,0.9)',
             lineHeight: '1.4',
-            marginBottom: '1rem'
+            marginBottom: discussionPrompts.length > 1 ? '1rem' : '0'
           }}>
             {discussionPrompts[currentPromptIndex]}
           </div>
-          <button
-            onClick={nextPrompt}
-            style={{
-              background: 'rgba(255,255,255,0.2)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '6px',
-              color: 'white',
-              padding: '0.5rem 1rem',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            Next Question →
-          </button>
+          {discussionPrompts.length > 1 && (
+            <button
+              onClick={nextPrompt}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '6px',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Next Question →
+            </button>
+          )}
         </div>
       )}
 
@@ -339,7 +521,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         🔄
       </button>
 
-      {/* Weather Source Indicator */}
+      {/* Weather Source Indicators */}
       {weather.apiSource === 'fallback' && (
         <div style={{
           position: 'absolute',
@@ -353,6 +535,47 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         }}>
           📱 Offline Mode
         </div>
+      )}
+      
+      {weather.apiSource === 'manual-selection' && (
+        <div style={{
+          position: 'absolute',
+          bottom: '0.5rem',
+          left: '0.5rem',
+          fontSize: '0.7rem',
+          color: 'rgba(255,255,255,0.6)',
+          background: 'rgba(255,255,255,0.1)',
+          padding: '0.25rem 0.5rem',
+          borderRadius: '4px'
+        }}>
+          👀 Observed Weather
+        </div>
+      )}
+
+      {/* Back to Selection Button (when weather is manually selected) */}
+      {selectedFallback && (
+        <button
+          onClick={() => {
+            setSelectedFallback(null);
+            setShowFallbackPanels(true);
+            setWeather(null);
+          }}
+          style={{
+            position: 'absolute',
+            top: '0.5rem',
+            left: '0.5rem',
+            background: 'rgba(255,255,255,0.2)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: '6px',
+            color: 'white',
+            padding: '0.25rem 0.5rem',
+            fontSize: '0.7rem',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          ← Back to Selection
+        </button>
       )}
 
       <style>{`
