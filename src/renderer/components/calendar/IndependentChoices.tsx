@@ -2041,6 +2041,7 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({
             </div>
           </div>
         </div>
+      )}
         </>
       )}
       </div>
