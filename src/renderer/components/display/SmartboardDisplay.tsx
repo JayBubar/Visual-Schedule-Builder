@@ -51,20 +51,8 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
   
-  // Get absent students from context and convert IDs to full student objects
-  const { absentStudents: absentStudentIds } = useStudentStatus();
-  
-  // Add this right after the useStudentStatus hook call:
-  const studentStatusData = useStudentStatus();
-  console.log('🔍 FULL StudentStatus Debug:');
-  console.log('- useStudentStatus returned:', studentStatusData);
-  console.log('- Available methods/properties:', Object.keys(studentStatusData));
-  console.log('- absentStudentIds specifically:', studentStatusData?.absentStudentIds);
-  console.log('- absentStudents specifically:', studentStatusData?.absentStudents);
-
-  const absentStudents = realStudents.filter(student => 
-    absentStudentIds.includes(student.id)
-  );
+  // Get absent students from context
+  const { absentStudents } = useStudentStatus();
   
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
@@ -326,33 +314,6 @@ useEffect(() => {
     }
   }, [isChoiceItemTime, currentActivityIndex]);
 
-  // Also add this in the render section:
-  console.log('🔍 RENDER TIME Debug:');
-  console.log('- realStudents count:', realStudents.length);
-  console.log('- realStudents IDs:', realStudents.map(s => s.id));
-
-  // Check localStorage directly:
-  const attendanceKey = `attendance-${new Date().toISOString().split('T')[0]}`;
-  const storedAttendance = localStorage.getItem(attendanceKey);
-  console.log('🔍 LOCALSTORAGE Debug:');
-  console.log('- Attendance key:', attendanceKey);
-  console.log('- Stored attendance:', storedAttendance);
-  if (storedAttendance) {
-    try {
-      const parsed = JSON.parse(storedAttendance);
-      console.log('- Parsed attendance:', parsed);
-    } catch (e) {
-      console.log('- Failed to parse:', e);
-    }
-  }
-
-  // 🐛 DEBUG CODE - Add this right after hooks
-  console.log('🐛 SmartboardDisplay Debug:');
-  console.log('- absentStudents:', absentStudents);
-  console.log('- absentStudents type:', typeof absentStudents);
-  console.log('- absentStudents length:', absentStudents?.length);
-  console.log('- realStudents:', realStudents.length, 'students loaded');
-  console.log('- currentPullOuts:', currentPullOuts);
 
 
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
@@ -536,7 +497,7 @@ useEffect(() => {
     
     // Filter out absent students from group display
     const activeStudentIds = (group.studentIds || []).filter((id: string) => 
-      !absentStudentIds.includes(id)
+      !absentStudents.includes(id)
     );
     
     const groupStudents = activeStudentIds.map(id => getStudentById(id)).filter(Boolean) as Student[];
@@ -669,19 +630,11 @@ useEffect(() => {
       position: 'relative'
     }}>
       {/* Absent Students Display - Top Left Corner */}
-      {(() => {
-        console.log('🎯 REAL ABSENT DATA:');
-        console.log('- absentStudentIds from context:', absentStudentIds);
-        console.log('- filtered absentStudents:', absentStudents.length);
-        console.log('- realStudents available:', realStudents.length);
-
-        // Keep the AbsentStudentsDisplay render as:
-        return absentStudentIds && absentStudentIds.length > 0 && (
-          <AbsentStudentsDisplay 
-            absentStudents={absentStudentIds}
-          />
-        );
-      })()}
+      {absentStudents && absentStudents.length > 0 && (
+        <AbsentStudentsDisplay 
+          absentStudents={absentStudents}
+        />
+      )}
       
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
