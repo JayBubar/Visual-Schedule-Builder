@@ -74,6 +74,27 @@ export interface Student {
   };
 }
 
+// Unified Student interface (extends Student with celebration features)
+export interface UnifiedStudent extends Student {
+  birthday?: string; // 'YYYY-MM-DD' format
+  celebrationPreferences?: {
+    allowBirthdayDisplay: boolean;
+    customCelebrationMessage?: string;
+  };
+}
+
+// Custom Celebration interface
+export interface CustomCelebration {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  isRecurring: boolean;
+  emoji: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
 // Group interface
 export interface Group {
   id: string;
@@ -477,6 +498,9 @@ export interface CalendarSettings {
   temperatureUnit?: 'F' | 'C';
   behaviorCategories?: string[];
   independentChoiceCategories?: string[];
+  customCelebrations?: CustomCelebration[];
+  birthdayDisplayMode?: 'photo' | 'name' | 'both';
+  weekendBirthdayHandling?: 'friday' | 'monday' | 'exact';
   [key: string]: any;
 }
 

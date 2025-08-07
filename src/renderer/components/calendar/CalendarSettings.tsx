@@ -15,7 +15,15 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
   onSave,
   currentSettings
 }) => {
-  const [formData, setFormData] = useState<CalendarSettings>(currentSettings);
+  const [formData, setFormData] = useState<CalendarSettings>({
+    ...currentSettings,
+    celebrationsEnabled: currentSettings.celebrationsEnabled !== false,
+    customCelebrations: currentSettings.customCelebrations || [],
+    birthdayDisplayMode: currentSettings.birthdayDisplayMode || 'both',
+    weekendBirthdayHandling: currentSettings.weekendBirthdayHandling || 'friday',
+    enableBirthdayNotifications: currentSettings.enableBirthdayNotifications !== false,
+    celebrationAnimationLevel: currentSettings.celebrationAnimationLevel || 'full'
+  });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isTestingApi, setIsTestingApi] = useState(false);
   const [apiTestResult, setApiTestResult] = useState<string | null>(null);
@@ -365,6 +373,248 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
                     {errors.weatherUpdateInterval}
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Celebration Settings */}
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          <h3 style={{
+            margin: '0 0 1rem 0',
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            🎉 Celebration Settings
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer'
+            }}>
+              <input
+                type="checkbox"
+                checked={formData.celebrationsEnabled !== false}
+                onChange={(e) => setFormData(prev => ({ ...prev, celebrationsEnabled: e.target.checked }))}
+              />
+              <span>Enable celebration system</span>
+            </label>
+
+            {formData.celebrationsEnabled !== false && (
+              <>
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    fontSize: '1rem'
+                  }}>
+                    Birthday Display Mode
+                  </label>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="birthdayDisplayMode"
+                        value="both"
+                        checked={formData.birthdayDisplayMode === 'both' || !formData.birthdayDisplayMode}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both' }))}
+                      />
+                      Photo & Name
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="birthdayDisplayMode"
+                        value="photo"
+                        checked={formData.birthdayDisplayMode === 'photo'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both' }))}
+                      />
+                      Photo Only
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="birthdayDisplayMode"
+                        value="name"
+                        checked={formData.birthdayDisplayMode === 'name'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both' }))}
+                      />
+                      Name Only
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    fontSize: '1rem'
+                  }}>
+                    Weekend Birthday Handling
+                  </label>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="weekendBirthdayHandling"
+                        value="friday"
+                        checked={formData.weekendBirthdayHandling === 'friday' || !formData.weekendBirthdayHandling}
+                        onChange={(e) => setFormData(prev => ({ ...prev, weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact' }))}
+                      />
+                      Celebrate Friday
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="weekendBirthdayHandling"
+                        value="monday"
+                        checked={formData.weekendBirthdayHandling === 'monday'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact' }))}
+                      />
+                      Celebrate Monday
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="weekendBirthdayHandling"
+                        value="exact"
+                        checked={formData.weekendBirthdayHandling === 'exact'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact' }))}
+                      />
+                      Exact Date
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{
+                    display: 'block',
+                    marginBottom: '0.5rem',
+                    fontWeight: '600',
+                    fontSize: '1rem'
+                  }}>
+                    Animation Level
+                  </label>
+                  <select
+                    value={formData.celebrationAnimationLevel || 'full'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, celebrationAnimationLevel: e.target.value as 'full' | 'minimal' | 'none' }))}
+                    style={{
+                      width: '200px',
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="full" style={{ background: '#667eea', color: 'white' }}>Full Animations</option>
+                    <option value="minimal" style={{ background: '#667eea', color: 'white' }}>Minimal Effects</option>
+                    <option value="none" style={{ background: '#667eea', color: 'white' }}>No Animations</option>
+                  </select>
+                </div>
+
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.enableBirthdayNotifications !== false}
+                    onChange={(e) => setFormData(prev => ({ ...prev, enableBirthdayNotifications: e.target.checked }))}
+                  />
+                  <span>Enable birthday notifications</span>
+                </label>
+              </>
+            )}
+          </div>
+
+          {/* Custom Celebrations Management */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <h4 style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              marginBottom: '1rem',
+              color: 'white'
+            }}>
+              Custom Celebrations ({(formData.customCelebrations || []).length})
+            </h4>
+            
+            {formData.customCelebrations && formData.customCelebrations.length > 0 ? (
+              <div style={{
+                display: 'grid',
+                gap: '0.75rem',
+                marginBottom: '1rem'
+              }}>
+                {formData.customCelebrations.map((celebration, index) => (
+                  <div
+                    key={celebration.id || index}
+                    style={{
+                      background: 'rgba(255,255,255,0.15)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span style={{ fontSize: '1.5rem' }}>{celebration.emoji}</span>
+                      <div>
+                        <div style={{ fontWeight: '600', color: 'white', fontSize: '1rem' }}>
+                          {celebration.title}
+                        </div>
+                        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
+                          {celebration.isRecurring ? `Annual - ${celebration.date}` : `One-time - ${celebration.date}`}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const updatedCelebrations = formData.customCelebrations?.filter((_, i) => i !== index) || [];
+                        setFormData(prev => ({ ...prev, customCelebrations: updatedCelebrations }));
+                      }}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.3)',
+                        border: '1px solid rgba(239, 68, 68, 0.5)',
+                        borderRadius: '6px',
+                        color: 'white',
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                padding: '1rem',
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.8)',
+                fontSize: '0.9rem',
+                marginBottom: '1rem'
+              }}>
+                No custom celebrations yet. Add them in the Daily Check-In celebration step.
               </div>
             )}
           </div>

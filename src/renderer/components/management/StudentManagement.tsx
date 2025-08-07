@@ -24,6 +24,9 @@ interface ExtendedStudent extends UnifiedStudent {
   behaviorNotes?: string;
   medicalNotes?: string;
   iepExpirationDate?: string;
+  birthday?: string; // Birthday field
+  allowBirthdayDisplay?: boolean; // Birthday display preference
+  allowPhotoInCelebrations?: boolean; // Photo in celebrations preference
   resourceInfo?: {
     attendsResource: boolean;
     resourceType: string;
@@ -1432,6 +1435,9 @@ const StudentModal: React.FC<StudentModalProps> = ({
     isActive: true,
     behaviorNotes: '',
     medicalNotes: '',
+    birthday: '',
+    allowBirthdayDisplay: true,
+    allowPhotoInCelebrations: true,
     resourceInfo: {
       attendsResource: false,
       resourceType: '',
@@ -1750,6 +1756,138 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   />
                   <span style={{ fontWeight: 'bold' }}>Active Student</span>
                 </label>
+              </div>
+
+              {/* Birthday Field - Add this section to your student form */}
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                marginTop: '1.5rem',
+                border: '1px solid rgba(245, 158, 11, 0.2)'
+              }}>
+                <h4 style={{
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  color: '#d97706',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  🎂 Birthday & Celebrations
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  {/* Birthday Date Input */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Birthday (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.birthday || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, birthday: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '8px',
+                        border: '2px solid #d1d5db',
+                        fontSize: '1rem',
+                        transition: 'border-color 0.2s'
+                      }}
+                    />
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#6b7280',
+                      marginTop: '0.25rem'
+                    }}>
+                      Used for birthday celebrations in Daily Check-in
+                    </div>
+                  </div>
+
+                  {/* Birthday Display Preference */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600',
+                      color: '#374151'
+                    }}>
+                      Birthday Celebrations
+                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={formData.allowBirthdayDisplay !== false}
+                          onChange={(e) => setFormData(prev => ({ 
+                            ...prev, 
+                            allowBirthdayDisplay: e.target.checked 
+                          }))}
+                        />
+                        <span style={{ fontSize: '0.9rem', color: '#374151' }}>
+                          Show birthday celebrations
+                        </span>
+                      </label>
+                      
+                      <label style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        cursor: 'pointer'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={formData.allowPhotoInCelebrations !== false}
+                          onChange={(e) => setFormData(prev => ({ 
+                            ...prev, 
+                            allowPhotoInCelebrations: e.target.checked 
+                          }))}
+                        />
+                        <span style={{ fontSize: '0.9rem', color: '#374151' }}>
+                          Include photo in celebrations
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Birthday Preview */}
+                {formData.birthday && (
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(16, 185, 129, 0.2)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ fontSize: '2rem' }}>🎂</div>
+                      <div>
+                        <div style={{ fontWeight: '600', color: '#065f46' }}>
+                          Birthday Preview
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#047857' }}>
+                          {new Date(formData.birthday).toLocaleDateString('en-US', { 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })} - {formData.name || 'Student'}'s birthday will appear in Daily Check-in celebrations
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

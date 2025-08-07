@@ -67,8 +67,33 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     // Check for celebrations on this date
     const celebrations = [];
     
-    // Note: Birthday functionality removed as Student type doesn't include birthday property
-    // This can be added back when the Student interface is updated to include birthday: string
+    // Get calendar settings for birthday handling
+    const settings = JSON.parse(localStorage.getItem('calendarSettings') || '{}');
+    
+    // Check for birthdays with weekend handling
+    const birthdayStudents = handleWeekendBirthdays(currentDate, students, settings);
+    if (birthdayStudents.length > 0) {
+      celebrations.push({
+        type: 'birthday',
+        icon: '🎂',
+        title: birthdayStudents.length === 1 
+          ? `Happy Birthday, ${birthdayStudents[0].name}!`
+          : `Birthday Celebration!`,
+        description: birthdayStudents.length === 1
+          ? formatBirthdayMessage(birthdayStudents[0], settings)
+          : `Celebrating ${birthdayStudents.length} special birthdays today!`,
+        students: birthdayStudents
+      });
+    }
+
+    // Check for custom celebrations
+    const customCelebrations = getCustomCelebrations(currentDate);
+    celebrations.push(...customCelebrations.map(celebration => ({
+      type: 'custom',
+      icon: celebration.emoji,
+      title: celebration.title,
+      description: celebration.message
+    })));
 
     // Check for holidays (simplified - you'd want more sophisticated date matching)
     const todayHolidays = getTodaysHolidays();
@@ -143,17 +168,375 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
       });
     }
 
-    return events;
+  return events;
+};
+
+const formatDate = (date: Date) => {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// Helper functions for birthday and celebration management
+const getBirthdayStudents = (date: Date, students: Student[]): Student[] => {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  
+  return students.filter(student => {
+    // Check if student has birthday property and it matches today
+    const birthday = (student as any).birthday;
+    if (!birthday) return false;
+    
+    const birthdayDate = new Date(birthday);
+    return birthdayDate.getMonth() + 1 === month && birthdayDate.getDate() === day;
+  });
+};
+
+const getCustomCelebrations = (date: Date): any[] => {
+  // Get custom celebrations from settings/storage
+  try {
+    const settings = JSON.parse(localStorage.getItem('calendarSettings') || '{}');
+    const customCelebrations = settings.customCelebrations || [];
+    
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const dateString = date.toISOString().split('T')[0];
+    
+    return customCelebrations.filter((celebration: any) => {
+      if (!celebration.enabled) return false;
+      
+      if (celebration.isRecurring) {
+        // For recurring celebrations, check month and day
+        const celebrationDate = new Date(celebration.date);
+        return celebrationDate.getMonth() + 1 === month && celebrationDate.getDate() === day;
+      } else {
+        // For one-time celebrations, check exact date
+        return celebration.date === dateString;
+      }
+    });
+  } catch (error) {
+    console.error('Error loading custom celebrations:', error);
+    return [];
+  }
+};
+
+const handleWeekendBirthdays = (date: Date, students: Student[], settings: any): Student[] => {
+  const birthdayStudents = getBirthdayStudents(date, students);
+  const dayOfWeek = date.getDay();
+  const weekendHandling = settings?.weekendBirthdayHandling || 'exact';
+  
+  // Handle weekend birthdays based on settings
+  if (weekendHandling === 'exact') {
+    return birthdayStudents;
+  }
+  
+  // For 'friday' or 'monday' handling, check adjacent days
+  const allWeekendBirthdays: Student[] = [...birthdayStudents];
+  
+  if (weekendHandling === 'friday' && dayOfWeek === 5) {
+    // Friday - show Saturday and Sunday birthdays
+    const saturday = new Date(date);
+    saturday.setDate(date.getDate() + 1);
+    const sunday = new Date(date);
+    sunday.setDate(date.getDate() + 2);
+    
+    allWeekendBirthdays.push(...getBirthdayStudents(saturday, students));
+    allWeekendBirthdays.push(...getBirthdayStudents(sunday, students));
+  } else if (weekendHandling === 'monday' && dayOfWeek === 1) {
+    // Monday - show Saturday and Sunday birthdays
+    const saturday = new Date(date);
+    saturday.setDate(date.getDate() - 2);
+    const sunday = new Date(date);
+    sunday.setDate(date.getDate() - 1);
+    
+    allWeekendBirthdays.push(...getBirthdayStudents(saturday, students));
+    allWeekendBirthdays.push(...getBirthdayStudents(sunday, students));
+  }
+  
+  return allWeekendBirthdays;
+};
+
+const formatBirthdayMessage = (student: Student, settings: any): string => {
+  const customMessage = (student as any).celebrationPreferences?.customCelebrationMessage;
+  if (customMessage) {
+    return customMessage.replace('{name}', student.name);
+  }
+  
+  const defaultMessages = [
+    `Happy Birthday, ${student.name}! 🎂`,
+    `It's ${student.name}'s special day! 🎉`,
+    `Celebrating ${student.name} today! 🎈`,
+    `${student.name} is another year awesome! ⭐`
+  ];
+  
+  return defaultMessages[Math.floor(Math.random() * defaultMessages.length)];
+};
+
+// Custom Celebration Manager Component
+interface CustomCelebrationManagerProps {
+  currentDate: Date;
+}
+
+const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ currentDate }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCelebration, setNewCelebration] = useState({
+    title: '',
+    message: '',
+    emoji: '🎉',
+    isRecurring: false,
+    date: currentDate.toISOString().split('T')[0]
+  });
+
+  const addCustomCelebration = () => {
+    if (!newCelebration.title.trim() || !newCelebration.message.trim()) {
+      alert('Please fill in both title and message fields.');
+      return;
+    }
+
+    try {
+      const settings = JSON.parse(localStorage.getItem('calendarSettings') || '{}');
+      const customCelebrations = settings.customCelebrations || [];
+      
+      const celebration = {
+        id: Date.now().toString(),
+        title: newCelebration.title.trim(),
+        message: newCelebration.message.trim(),
+        emoji: newCelebration.emoji,
+        date: newCelebration.date,
+        isRecurring: newCelebration.isRecurring,
+        enabled: true,
+        createdAt: new Date().toISOString()
+      };
+
+      customCelebrations.push(celebration);
+      
+      const updatedSettings = {
+        ...settings,
+        customCelebrations
+      };
+      
+      localStorage.setItem('calendarSettings', JSON.stringify(updatedSettings));
+      
+      // Reset form
+      setNewCelebration({
+        title: '',
+        message: '',
+        emoji: '🎉',
+        isRecurring: false,
+        date: currentDate.toISOString().split('T')[0]
+      });
+      setShowAddForm(false);
+      
+      alert('Custom celebration added successfully!');
+    } catch (error) {
+      console.error('Error adding custom celebration:', error);
+      alert('Error adding celebration. Please try again.');
+    }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const emojiOptions = ['🎉', '🎊', '🎈', '🎂', '🌟', '⭐', '🎁', '🎀', '🎯', '🏆', '🎪', '🎭'];
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.1)',
+      borderRadius: '20px',
+      padding: '2rem',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255,255,255,0.2)',
+      maxWidth: '600px',
+      margin: '0 auto'
+    }}>
+      <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎊</div>
+      <h3 style={{
+        fontSize: '1.5rem',
+        color: 'white',
+        marginBottom: '1rem',
+        fontWeight: '600'
+      }}>
+        Custom Celebrations
+      </h3>
+      
+      {!showAddForm ? (
+        <>
+          <p style={{
+            fontSize: '1rem',
+            color: 'rgba(255,255,255,0.8)',
+            marginBottom: '1.5rem'
+          }}>
+            Add special classroom celebrations for any date!
+          </p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{
+              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '0.8rem 1.5rem',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            + Add Custom Celebration
+          </button>
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+              Celebration Title
+            </label>
+            <input
+              type="text"
+              value={newCelebration.title}
+              onChange={(e) => setNewCelebration(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="e.g., Class Pizza Party"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '2px solid rgba(255,255,255,0.3)',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+              Celebration Message
+            </label>
+            <textarea
+              value={newCelebration.message}
+              onChange={(e) => setNewCelebration(prev => ({ ...prev, message: e.target.value }))}
+              placeholder="e.g., We earned our pizza party by reading 100 books!"
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '2px solid rgba(255,255,255,0.3)',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                fontSize: '1rem',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                Emoji
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                {emojiOptions.map(emoji => (
+                  <button
+                    key={emoji}
+                    onClick={() => setNewCelebration(prev => ({ ...prev, emoji }))}
+                    style={{
+                      padding: '0.5rem',
+                      borderRadius: '8px',
+                      border: newCelebration.emoji === emoji ? '2px solid #22c55e' : '2px solid rgba(255,255,255,0.3)',
+                      background: newCelebration.emoji === emoji ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.1)',
+                      fontSize: '1.5rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'white', fontWeight: '600' }}>
+                Date
+              </label>
+              <input
+                type="date"
+                value={newCelebration.date}
+                onChange={(e) => setNewCelebration(prev => ({ ...prev, date: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
+              />
+              
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginTop: '0.5rem',
+                cursor: 'pointer',
+                color: 'white'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={newCelebration.isRecurring}
+                  onChange={(e) => setNewCelebration(prev => ({ ...prev, isRecurring: e.target.checked }))}
+                />
+                <span style={{ fontSize: '0.9rem' }}>Repeat annually</span>
+              </label>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+            <button
+              onClick={() => {
+                setShowAddForm(false);
+                setNewCelebration({
+                  title: '',
+                  message: '',
+                  emoji: '🎉',
+                  isRecurring: false,
+                  date: currentDate.toISOString().split('T')[0]
+                });
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: '2px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={addCustomCelebration}
+              style={{
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Add Celebration
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
   return (
     <div style={{
@@ -303,49 +686,8 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
         </div>
       )}
 
-      {/* Teacher Celebration Management Interface - Placeholder for future development */}
-      <div style={{
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '20px',
-        padding: '2rem',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        maxWidth: '600px',
-        margin: '0 auto'
-      }}>
-        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎊</div>
-        <h3 style={{
-          fontSize: '1.5rem',
-          color: 'white',
-          marginBottom: '1rem',
-          fontWeight: '600'
-        }}>
-          Custom Celebrations
-        </h3>
-        <p style={{
-          fontSize: '1rem',
-          color: 'rgba(255,255,255,0.8)',
-          marginBottom: '1.5rem'
-        }}>
-          Teacher interface for adding classroom-specific celebrations coming soon!
-        </p>
-        <button
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '0.8rem 1.5rem',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            cursor: 'not-allowed',
-            opacity: 0.6
-          }}
-          disabled
-        >
-          + Add Custom Celebration (Coming Soon)
-        </button>
-      </div>
+      {/* Interactive Custom Celebration Management */}
+      <CustomCelebrationManager currentDate={currentDate} />
 
       {/* Navigation */}
       <div style={{
