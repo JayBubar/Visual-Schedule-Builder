@@ -70,57 +70,42 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     // Check for celebrations on this date
     const celebrations = [];
     
-    // Use passed birthdaySettings or fallback to UnifiedDataService
-    let effectiveBirthdaySettings = birthdaySettings;
-    if (!effectiveBirthdaySettings) {
-      const unifiedSettings = UnifiedDataService.getSettings();
-      effectiveBirthdaySettings = unifiedSettings.dailyCheckIn?.birthdaySettings || {};
-    }
-    
-    // Check for birthdays with weekend handling using settings
-    const birthdayStudents = handleWeekendBirthdays(currentDate, students, effectiveBirthdaySettings);
-    if (birthdayStudents.length > 0) {
+    // 🎂 NEW: Check for birthdays using enhanced birthday system
+    const todayBirthdays = getTodaysBirthdays();
+    if (todayBirthdays.length > 0) {
       celebrations.push({
         type: 'birthday',
+        students: todayBirthdays,
         icon: '🎂',
-        title: birthdayStudents.length === 1 
-          ? `Happy Birthday, ${birthdayStudents[0].name}!`
-          : `Birthday Celebration!`,
-        description: birthdayStudents.length === 1
-          ? formatBirthdayMessage(birthdayStudents[0], birthdaySettings)
-          : `Celebrating ${birthdayStudents.length} special birthdays today!`,
-        students: birthdayStudents
+        title: todayBirthdays.length === 1 
+          ? `Happy Birthday ${formatStudentName(todayBirthdays[0].name)}!`
+          : `Happy Birthday to Our Students!`,
+        description: todayBirthdays.length === 1
+          ? `Let's celebrate ${formatStudentName(todayBirthdays[0].name)}'s special day!`
+          : `We're celebrating ${todayBirthdays.length} birthdays today!`
       });
     }
 
-    // Only show other celebrations if birthday celebrations are enabled
-    if (effectiveBirthdaySettings?.enableBirthdayDisplay !== false) {
-      // Check for custom celebrations
-      const customCelebrations = getCustomCelebrations(currentDate);
-      celebrations.push(...customCelebrations.map(celebration => ({
-        type: 'custom',
-        icon: celebration.emoji,
-        title: celebration.title,
-        description: celebration.message
-      })));
+    // Check for holidays (your existing code)
+    const todayHolidays = getTodaysHolidays();
+    celebrations.push(...todayHolidays.map(holiday => ({
+      type: 'holiday',
+      holiday,
+      icon: holiday.icon,
+      title: holiday.name,
+      description: holiday.description
+    })));
 
-      // Check for holidays (simplified - you'd want more sophisticated date matching)
-      const todayHolidays = getTodaysHolidays();
-      celebrations.push(...todayHolidays.map(holiday => ({
-        type: 'holiday',
-        holiday,
-        icon: holiday.icon,
-        title: holiday.name,
-        description: holiday.description
-      })));
+    // Check for special school events (your existing code)
+    const specialEvents = getSpecialEvents();
+    celebrations.push(...specialEvents);
 
-      // Check for special school events
-      const specialEvents = getSpecialEvents();
-      celebrations.push(...specialEvents);
-    }
+    // 🎉 NEW: Check for custom celebrations
+    const customCelebrations = getCustomCelebrations();
+    celebrations.push(...customCelebrations);
 
     setCelebrationItems(celebrations);
-  }, [currentDate, students, birthdaySettings]);
+  }, [currentDate, students]);
 
   const getTodaysHolidays = (): Holiday[] => {
     // This is a simplified version - you'd want a more sophisticated matching system
@@ -190,7 +175,95 @@ const formatDate = (date: Date) => {
   });
 };
 
-// Helper functions for birthday and celebration management
+// 🎂 NEW: Enhanced helper functions for birthday and celebration management
+const formatStudentName = (name: string): string => {
+  if (name.includes(', ')) {
+    const [last, first] = name.split(', ');
+    return `${first.trim()} ${last.trim()}`;
+  }
+  return name;
+};
+
+const formatDateForComparison = (date: Date): string => {
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${month}-${day}`;
+};
+
+const calculateCelebrationDate = (birthday: string, currentDate: Date): string => {
+  let celebrationDate: Date;
+  
+  if (birthday.includes('-') && birthday.length > 5) {
+    // Full date format YYYY-MM-DD
+    celebrationDate = new Date(birthday + 'T00:00:00');
+    celebrationDate.setFullYear(currentDate.getFullYear()); // Use current year
+  } else {
+    // Month-day format MM-DD
+    const [month, day] = birthday.split('-').map(Number);
+    celebrationDate = new Date(currentDate.getFullYear(), month - 1, day);
+  }
+  
+  // Handle weekend birthdays - celebrate on Friday by default
+  const dayOfWeek = celebrationDate.getDay();
+  if (dayOfWeek === 0) { // Sunday - celebrate Friday before
+    celebrationDate.setDate(celebrationDate.getDate() - 2);
+  } else if (dayOfWeek === 6) { // Saturday - celebrate Friday before
+    celebrationDate.setDate(celebrationDate.getDate() - 1);
+  }
+  
+  return formatDateForComparison(celebrationDate);
+};
+
+const getTodaysBirthdays = () => {
+  const today = formatDateForComparison(currentDate);
+  const birthdayStudents: Student[] = [];
+
+  students.forEach(student => {
+    // Check if student has birthday field (from UnifiedDataService)
+    const birthday = (student as any).birthday;
+    if (birthday && (student as any).allowBirthdayDisplay !== false) {
+      const celebrationDate = calculateCelebrationDate(birthday, currentDate);
+      if (celebrationDate === today) {
+        birthdayStudents.push(student);
+      }
+    }
+  });
+
+  return birthdayStudents;
+};
+
+const getCustomCelebrations = () => {
+  // Load custom celebrations from UnifiedDataService settings
+  try {
+    const settings = UnifiedDataService.getSettings();
+    const customCelebrations = settings.customCelebrations || [];
+    const today = formatDateForComparison(currentDate);
+    const todayFullDate = currentDate.toISOString().split('T')[0];
+
+    return customCelebrations
+      .filter((celebration: any) => {
+        if (!celebration.enabled) return false;
+        
+        if (celebration.isRecurring) {
+          return celebration.date === today;
+        } else {
+          return celebration.date === todayFullDate;
+        }
+      })
+      .map((celebration: any) => ({
+        type: 'custom',
+        celebration,
+        icon: celebration.emoji,
+        title: celebration.title,
+        description: celebration.message
+      }));
+  } catch (error) {
+    console.error('Error loading custom celebrations:', error);
+    return [];
+  }
+};
+
+// Legacy helper functions (keeping for compatibility)
 const getBirthdayStudents = (date: Date, students: Student[]): Student[] => {
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -203,34 +276,6 @@ const getBirthdayStudents = (date: Date, students: Student[]): Student[] => {
     const birthdayDate = new Date(birthday);
     return birthdayDate.getMonth() + 1 === month && birthdayDate.getDate() === day;
   });
-};
-
-const getCustomCelebrations = (date: Date): any[] => {
-  // Get custom celebrations from settings/storage
-  try {
-    const settings = JSON.parse(localStorage.getItem('calendarSettings') || '{}');
-    const customCelebrations = settings.customCelebrations || [];
-    
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const dateString = date.toISOString().split('T')[0];
-    
-    return customCelebrations.filter((celebration: any) => {
-      if (!celebration.enabled) return false;
-      
-      if (celebration.isRecurring) {
-        // For recurring celebrations, check month and day
-        const celebrationDate = new Date(celebration.date);
-        return celebrationDate.getMonth() + 1 === month && celebrationDate.getDate() === day;
-      } else {
-        // For one-time celebrations, check exact date
-        return celebration.date === dateString;
-      }
-    });
-  } catch (error) {
-    console.error('Error loading custom celebrations:', error);
-    return [];
-  }
 };
 
 const handleWeekendBirthdays = (date: Date, students: Student[], settings: any): Student[] => {
@@ -624,26 +669,31 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
                 {celebration.description}
               </p>
               
-              {celebration.type === 'birthday' && (
+              {/* Enhanced Birthday Student Display */}
+              {celebration.type === 'birthday' && celebration.students && (
                 <div style={{
                   display: 'flex',
                   justifyContent: 'center',
-                  gap: '1rem',
-                  flexWrap: 'wrap'
+                  gap: '1.5rem',
+                  flexWrap: 'wrap',
+                  marginTop: '1.5rem'
                 }}>
                   {celebration.students.map((student: Student) => (
                     <div key={student.id} style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(255,255,255,0.2)',
-                      borderRadius: '12px',
-                      padding: '1rem'
+                      gap: '0.75rem',
+                      background: 'rgba(255,255,255,0.25)',
+                      borderRadius: '16px',
+                      padding: '1.5rem',
+                      backdropFilter: 'blur(10px)',
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      minWidth: '120px'
                     }}>
                       <div style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '80px',
+                        height: '80px',
                         borderRadius: '50%',
                         background: student.photo 
                           ? `url(${student.photo}) center/cover`
@@ -651,16 +701,30 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '1.5rem',
+                        fontSize: '2rem',
                         fontWeight: '700',
                         color: 'white',
-                        border: '3px solid rgba(255,255,255,0.5)'
+                        border: '4px solid rgba(255,255,255,0.5)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
                       }}>
-                        {!student.photo && student.name.charAt(0)}
+                        {!student.photo && formatStudentName(student.name).split(' ').map(n => n[0]).join('')}
                       </div>
-                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>
-                        {student.name}
-                      </span>
+                      <div style={{ textAlign: 'center' }}>
+                        <span style={{ 
+                          fontWeight: '700', 
+                          fontSize: '1.1rem',
+                          display: 'block',
+                          marginBottom: '0.25rem'
+                        }}>
+                          {formatStudentName(student.name)}
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.9rem', 
+                          opacity: 0.8 
+                        }}>
+                          🎂 Happy Birthday! 🎂
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
