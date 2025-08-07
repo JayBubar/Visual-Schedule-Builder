@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Student } from '../../types';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface AttendanceSystemProps {
   students: Student[];
@@ -26,6 +27,10 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
   }, [students, currentDate]);
 
   const markPresent = (student: Student) => {
+    // Save attendance to UnifiedDataService
+    const dateString = currentDate.toISOString().split('T')[0];
+    UnifiedDataService.updateStudentAttendance(student.id, dateString, true);
+    
     // Add to present list
     setPresentStudents(prev => [...prev, student]);
     
@@ -47,6 +52,13 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
 
   const markAllAbsent = () => {
     const absentStudents = [...remainingStudents];
+    const dateString = currentDate.toISOString().split('T')[0];
+    
+    // Save absent students to UnifiedDataService
+    absentStudents.forEach(student => {
+      UnifiedDataService.updateStudentAttendance(student.id, dateString, false);
+    });
+    
     setRemainingStudents([]);
     setIsComplete(true);
     onAttendanceComplete(presentStudents, absentStudents);

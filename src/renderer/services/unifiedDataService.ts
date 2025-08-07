@@ -144,10 +144,21 @@ export interface IndependentChoice {
   notes?: string;
 }
 
+// Attendance interfaces
+export interface AttendanceRecord {
+  id: string;
+  studentId: string;
+  date: string; // YYYY-MM-DD format
+  isPresent: boolean;
+  notes?: string;
+  timestamp: string;
+}
+
 export interface UnifiedData {
   students: UnifiedStudent[];
   staff: UnifiedStaff[];
   activities: UnifiedActivity[];
+  attendance: AttendanceRecord[];
   calendar: {
     behaviorCommitments: BehaviorCommitment[];
     dailyHighlights: DailyHighlight[];
@@ -164,6 +175,7 @@ export interface UnifiedData {
     totalDataPoints: number;
     totalStaff: number;
     totalActivities: number;
+    totalAttendanceRecords: number;
   };
 }
 
@@ -513,6 +525,7 @@ class UnifiedDataService {
       students: students,
       staff: currentData?.staff || [],
       activities: currentData?.activities || [],
+      attendance: currentData?.attendance || [],
       calendar: currentData?.calendar || {
         behaviorCommitments: [],
         dailyHighlights: [],
@@ -525,7 +538,8 @@ class UnifiedDataService {
         totalGoals: students.reduce((total, s) => total + s.iepData.goals.length, 0),
         totalDataPoints: students.reduce((total, s) => total + s.iepData.dataCollection.length, 0),
         totalStaff: currentData?.staff?.length || 0,
-        totalActivities: currentData?.activities?.length || 0
+        totalActivities: currentData?.activities?.length || 0,
+        totalAttendanceRecords: currentData?.attendance?.length || 0
       }
     };
     
@@ -848,6 +862,190 @@ class UnifiedDataService {
     return [];
   }
 
+  // ===== ATTENDANCE METHODS =====
+  
+  // Get today's date in YYYY-MM-DD format
+  private static getTodayDateString(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+  
+  // Get all attendance records
+  static getAllAttendance(): AttendanceRecord[] {
+    const unifiedData = this.getUnifiedData();
+    return unifiedData?.attendance || [];
+  }
+  
+  // Get attendance records for a specific date
+  static getAttendanceForDate(date: string): AttendanceRecord[] {
+    const allAttendance = this.getAllAttendance();
+    return allAttendance.filter(record => record.date === date);
+  }
+  
+  // Get today's attendance records
+  static getTodayAttendance(): AttendanceRecord[] {
+    const today = this.getTodayDateString();
+    return this.getAttendanceForDate(today);
+  }
+  
+  // Get absent students for a specific date
+  static getAbsentStudentsForDate(date: string): string[] {
+    const attendance = this.getAttendanceForDate(date);
+    return attendance
+      .filter(record => !record.isPresent)
+      .map(record => record.studentId);
+  }
+  
+  // Get absent students for today
+  static getAbsentStudentsToday(): string[] {
+    const today = this.getTodayDateString();
+    return this.getAbsentStudentsForDate(today);
+  }
+  
+  // Update student attendance
+  static updateStudentAttendance(studentId: string, date: string, isPresent: boolean, notes?: string): void {
+    const allAttendance = this.getAllAttendance();
+    
+    // Find existing record for this student and date
+    const existingIndex = allAttendance.findIndex(
+      record => record.studentId === studentId && record.date === date
+    );
+    
+    const attendanceRecord: AttendanceRecord = {
+      id: existingIndex >= 0 ? allAttendance[existingIndex].id : Date.now().toString(),
+      studentId,
+      date,
+      isPresent,
+      notes: notes || '',
+      timestamp: new Date().toISOString()
+    };
+    
+    if (existingIndex >= 0) {
+      // Update existing record
+      allAttendance[existingIndex] = attendanceRecord;
+    } else {
+      // Add new record
+      allAttendance.push(attendanceRecord);
+    }
+    
+    this.saveAttendance(allAttendance);
+    console.log(`📋 Updated attendance for student ${studentId} on ${date}: ${isPresent ? 'Present' : 'Absent'}`);
+  }
+  
+  // Update today's attendance for a student
+  static updateStudentAttendanceToday(studentId: string, isPresent: boolean, notes?: string): void {
+    const today = this.getTodayDateString();
+    this.updateStudentAttendance(studentId, today, isPresent, notes);
+  }
+  
+  // Initialize attendance for all students on a given date (all present by default)
+  static initializeAttendanceForDate(date: string): void {
+    const students = this.getAllStudents();
+    const existingAttendance = this.getAttendanceForDate(date);
+    
+    students.forEach(student => {
+      // Only initialize if no record exists for this student on this date
+      const hasRecord = existingAttendance.some(record => record.studentId === student.id);
+      if (!hasRecord) {
+        this.updateStudentAttendance(student.id, date, true); // Default to present
+      }
+    });
+    
+    console.log(`📋 Initialized attendance for ${date}: ${students.length} students`);
+  }
+  
+  // Initialize today's attendance
+  static initializeTodayAttendance(): void {
+    const today = this.getTodayDateString();
+    this.initializeAttendanceForDate(today);
+  }
+  
+  // Reset attendance for a date (set all students to present)
+  static resetAttendanceForDate(date: string): void {
+    const students = this.getAllStudents();
+    
+    students.forEach(student => {
+      this.updateStudentAttendance(student.id, date, true, '');
+    });
+    
+    console.log(`📋 Reset attendance for ${date}: All students marked present`);
+  }
+  
+  // Reset today's attendance
+  static resetTodayAttendance(): void {
+    const today = this.getTodayDateString();
+    this.resetAttendanceForDate(today);
+  }
+  
+  // Filter active (present) students from a student array
+  static filterActiveStudents(students: any[]): any[] {
+    const absentStudentIds = this.getAbsentStudentsToday();
+    return students.filter(student => !absentStudentIds.includes(student.id));
+  }
+  
+  // Save attendance records to unified data
+  private static saveAttendance(attendance: AttendanceRecord[]): void {
+    const currentData = this.getUnifiedData();
+    if (currentData) {
+      currentData.attendance = attendance;
+      currentData.metadata.totalAttendanceRecords = attendance.length;
+      this.saveUnifiedData(currentData);
+    }
+  }
+  
+  // Migrate legacy attendance data
+  static migrateLegacyAttendance(): boolean {
+    try {
+      console.log('🔄 Migrating legacy attendance data...');
+      
+      const migratedRecords: AttendanceRecord[] = [];
+      let migratedCount = 0;
+      
+      // Look for legacy attendance keys (attendance-YYYY-MM-DD)
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('attendance-')) {
+          try {
+            const dateStr = key.replace('attendance-', '');
+            const legacyData = localStorage.getItem(key);
+            
+            if (legacyData) {
+              const attendanceRecords = JSON.parse(legacyData);
+              
+              attendanceRecords.forEach((record: any) => {
+                const migratedRecord: AttendanceRecord = {
+                  id: record.id || `${record.studentId}-${dateStr}`,
+                  studentId: record.studentId,
+                  date: dateStr,
+                  isPresent: record.isPresent,
+                  notes: record.notes || '',
+                  timestamp: record.timestamp || new Date().toISOString()
+                };
+                
+                migratedRecords.push(migratedRecord);
+                migratedCount++;
+              });
+            }
+          } catch (error) {
+            console.error(`Error migrating attendance data for ${key}:`, error);
+          }
+        }
+      }
+      
+      if (migratedRecords.length > 0) {
+        this.saveAttendance(migratedRecords);
+        console.log(`✅ Migrated ${migratedCount} attendance records from legacy storage`);
+        return true;
+      } else {
+        console.log('ℹ️ No legacy attendance data found to migrate');
+        return false;
+      }
+      
+    } catch (error) {
+      console.error('❌ Error migrating legacy attendance data:', error);
+      return false;
+    }
+  }
+
   // ===== SETTINGS METHODS =====
   
   // Get settings
@@ -890,6 +1088,7 @@ class UnifiedDataService {
           students: [],
           staff: [],
           activities: [],
+          attendance: [],
           calendar: {
             behaviorCommitments: [],
             dailyHighlights: [],
@@ -902,7 +1101,8 @@ class UnifiedDataService {
             totalGoals: 0,
             totalDataPoints: 0,
             totalStaff: 0,
-            totalActivities: 0
+            totalActivities: 0,
+            totalAttendanceRecords: 0
           }
         };
       }
@@ -936,7 +1136,8 @@ class UnifiedDataService {
         totalGoals: unifiedData.students.reduce((total, s) => total + s.iepData.goals.length, 0),
         totalDataPoints: unifiedData.students.reduce((total, s) => total + s.iepData.dataCollection.length, 0),
         totalStaff: unifiedData.staff.length,
-        totalActivities: unifiedData.activities.length
+        totalActivities: unifiedData.activities.length,
+        totalAttendanceRecords: unifiedData.attendance.length
       };
       
       // Save unified data

@@ -125,71 +125,71 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   }, [currentSchedule]);
 
   // Replace the existing useEffect around line 117-208 with this:
-useEffect(() => {
-  console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
-  
-  const loadStudentData = async () => {
-    let studentsToUse: any[] = [];
-    let staffToUse: any[] = [];
-
-    try {
-      // Primary: Load from UnifiedDataService
-      const unifiedStudents = UnifiedDataService.getAllStudents();
-      const unifiedStaff = UnifiedDataService.getAllStaff();
-      
-      console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
-      console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
-      
-      if (unifiedStudents.length > 0) {
-        studentsToUse = unifiedStudents;
-      }
-      if (unifiedStaff.length > 0) {
-        staffToUse = unifiedStaff;
-      }
-    } catch (error) {
-      console.error('❌ Error loading from UnifiedDataService:', error);
-    }
-
-    // Fallback: Use props if UnifiedDataService fails
-    if (studentsToUse.length === 0 && students && students.length > 0) {
-      console.log('📚 Fallback: Using students from props:', students.length);
-      studentsToUse = students;
-    }
+  useEffect(() => {
+    console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
     
-    if (staffToUse.length === 0 && staff && staff.length > 0) {
-      console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
-      staffToUse = staff;
-    }
+    const loadStudentData = async () => {
+      let studentsToUse: any[] = [];
+      let staffToUse: any[] = [];
 
-    // Emergency fallback: Direct localStorage access
-    if (studentsToUse.length === 0) {
-      console.log('🆘 Emergency fallback: Reading directly from localStorage...');
       try {
-        const legacyStudents = localStorage.getItem('students');
-        if (legacyStudents) {
-          const parsedStudents = JSON.parse(legacyStudents);
-          if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
-            console.log('🆘 Using emergency student data:', parsedStudents.length);
-            studentsToUse = parsedStudents;
-          }
+        // Primary: Load from UnifiedDataService
+        const unifiedStudents = UnifiedDataService.getAllStudents();
+        const unifiedStaff = UnifiedDataService.getAllStaff();
+        
+        console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
+        console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
+        
+        if (unifiedStudents.length > 0) {
+          studentsToUse = unifiedStudents;
+        }
+        if (unifiedStaff.length > 0) {
+          staffToUse = unifiedStaff;
         }
       } catch (error) {
-        console.error('🆘 Emergency fallback failed:', error);
+        console.error('❌ Error loading from UnifiedDataService:', error);
       }
-    }
 
-    // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
-    console.log('🔄 Setting student state:', studentsToUse.length, 'students');
-    
-    setTimeout(() => {
-      setRealStudents(studentsToUse);
-      setRealStaff(staffToUse);
-      console.log('✅ State set via setTimeout');
-    }, 0);
-  };
+      // Fallback: Use props if UnifiedDataService fails
+      if (studentsToUse.length === 0 && students && students.length > 0) {
+        console.log('📚 Fallback: Using students from props:', students.length);
+        studentsToUse = students;
+      }
+      
+      if (staffToUse.length === 0 && staff && staff.length > 0) {
+        console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
+        staffToUse = staff;
+      }
 
-  loadStudentData();
-}, [isActive]); // Depend on isActive instead of empty array
+      // Emergency fallback: Direct localStorage access
+      if (studentsToUse.length === 0) {
+        console.log('🆘 Emergency fallback: Reading directly from localStorage...');
+        try {
+          const legacyStudents = localStorage.getItem('students');
+          if (legacyStudents) {
+            const parsedStudents = JSON.parse(legacyStudents);
+            if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
+              console.log('🆘 Using emergency student data:', parsedStudents.length);
+              studentsToUse = parsedStudents;
+            }
+          }
+        } catch (error) {
+          console.error('🆘 Emergency fallback failed:', error);
+        }
+      }
+
+      // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
+      console.log('🔄 Setting student state:', studentsToUse.length, 'students');
+      
+      setTimeout(() => {
+        setRealStudents(studentsToUse);
+        setRealStaff(staffToUse);
+        console.log('✅ State set via setTimeout');
+      }, 0);
+    };
+
+    loadStudentData();
+  }, [isActive]); // Depend on isActive instead of empty array
 
 
   // Timer countdown effect (moved after hooks)
@@ -495,9 +495,10 @@ useEffect(() => {
   const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number }> = ({ group, groupIndex }) => {
     console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
     
-    // Filter out absent students from group display
+    // Filter out absent students from group display using UnifiedDataService
+    const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
     const activeStudentIds = (group.studentIds || []).filter((id: string) => 
-      !absentStudents.includes(id)
+      !absentStudentIds.includes(id)
     );
     
     const groupStudents = activeStudentIds.map(id => getStudentById(id)).filter(Boolean) as Student[];
@@ -630,11 +631,14 @@ useEffect(() => {
       position: 'relative'
     }}>
       {/* Absent Students Display - Top Left Corner */}
-      {absentStudents && absentStudents.length > 0 && (
-        <AbsentStudentsDisplay 
-          absentStudents={absentStudents}
-        />
-      )}
+      {(() => {
+        const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
+        return absentStudentIds.length > 0 && (
+          <AbsentStudentsDisplay 
+            absentStudents={absentStudentIds}
+          />
+        );
+      })()}
       
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
