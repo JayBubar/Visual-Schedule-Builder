@@ -192,31 +192,15 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const handleSaveStudent = (studentData: Partial<ExtendedStudent>) => {
     try {
-      // Convert students to ExtendedStudent format
-      const extendedStudents: ExtendedStudent[] = students.map(student => ({
-        ...student,
-        grade: student.grade || 'Unassigned', // Ensure grade is always a string
-        dateCreated: (student as any).dateCreated || new Date().toISOString().split('T')[0],
-        iepData: (student as any).iepData || { goals: [], dataCollection: [] },
-        accommodations: student.accommodations || [],
-        goals: student.goals || [],
-        preferredPartners: student.preferredPartners || [],
-        avoidPartners: student.avoidPartners || [],
-        workingStyle: (student.workingStyle === 'guided' || student.workingStyle === 'needs-support') 
-          ? 'collaborative' 
-          : (student.workingStyle as 'collaborative' | 'independent') || 'collaborative'
-      }));
+      console.log('🔧 Saving student data:', studentData);
 
       if (editingStudent) {
-        // Update existing student
-        const updatedStudents = extendedStudents.map(s => 
-          s.id === editingStudent.id 
-            ? { ...s, ...studentData }
-            : s
-        );
-        saveStudentData(updatedStudents);
+        // Update existing student directly in UnifiedDataService
+        console.log('📝 Updating existing student:', editingStudent.id);
+        UnifiedDataService.updateStudent(editingStudent.id, studentData);
       } else {
-        // Add new student
+        // Add new student directly to UnifiedDataService
+        console.log('➕ Adding new student');
         const newStudent: ExtendedStudent = {
           id: Date.now().toString(),
           name: '',
@@ -234,12 +218,20 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           ...studentData
         };
         
-        const updatedStudents = [...extendedStudents, newStudent];
-        saveStudentData(updatedStudents);
+        UnifiedDataService.addStudent(newStudent);
       }
+      
+      // Dispatch update event
+      window.dispatchEvent(new CustomEvent('studentDataUpdated'));
+      onDataChange?.();
       
       setShowModal(false);
       setEditingStudent(null);
+      
+      // Refresh data after save
+      setTimeout(() => {
+        refreshData();
+      }, 100);
     } catch (error) {
       console.error('Error saving student:', error);
       alert('Error saving student. Please try again.');

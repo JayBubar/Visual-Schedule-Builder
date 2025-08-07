@@ -48,6 +48,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [todayCheckIn, setTodayCheckIn] = useState<DailyCheckInType | null>(null);
   const [calendarSettings, setCalendarSettings] = useState<CalendarSettings | null>(null);
+  const [dailyCheckInSettings, setDailyCheckInSettings] = useState<any>(null);
   const [realStudents, setRealStudents] = useState<Student[]>([]);
   const [realStaff, setRealStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,8 +99,18 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       }));
       setRealStaff(convertedStaff);
 
-      // Load calendar settings from unified data service
+      // Load settings from unified data service - both calendar and dailyCheckIn settings
       const unifiedSettings = UnifiedDataService.getSettings();
+      
+      // Load Daily Check-In settings from the new Settings structure
+      if (unifiedSettings.dailyCheckIn) {
+        setDailyCheckInSettings(unifiedSettings.dailyCheckIn);
+        console.log('✅ Loaded Daily Check-In settings:', unifiedSettings.dailyCheckIn);
+      } else {
+        console.log('⚠️ No Daily Check-In settings found, using defaults');
+      }
+      
+      // Load legacy calendar settings for backward compatibility
       if (unifiedSettings.calendarSettings) {
         setCalendarSettings(unifiedSettings.calendarSettings);
       } else {
