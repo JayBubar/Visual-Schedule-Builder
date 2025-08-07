@@ -1083,21 +1083,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           </div>
         )}
 
-        {/* Step 8: Are We Ready - Schedule Summary */}
-        {currentStep === 8 && (
-          <AreWeReady
-            currentDate={currentDate}
-            presentStudents={presentStudents}
-            absentStudents={absentStudents}
-            selectedSchedule={selectedSchedule}
-            staff={realStaff}
-            onConfirm={handleNext}
-            onBack={handleBack}
-          />
-        )}
-
-        {/* Step 9: Final Celebration Animation */}
-        {currentStep === 9 && (
+        {/* Steps 8-10: COMBINED - Single Smooth Transition */}
+        {(currentStep === 8 || currentStep === 9 || currentStep === 10) && (
           <div style={{
             padding: '2rem',
             textAlign: 'center',
@@ -1125,7 +1112,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               textShadow: '0 4px 8px rgba(0,0,0,0.3)',
               animation: 'pulse 1s ease-in-out infinite'
             }}>
-              We're All Set!
+              Ready for Learning!
             </h1>
             <p style={{
               fontSize: '1.8rem',
@@ -1133,11 +1120,12 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               marginBottom: '2rem',
               opacity: 0.9
             }}>
-              Ready for an amazing day of learning!
+              Launching your Visual Schedule...
             </p>
             
+            {/* Auto-transition after 3 seconds OR single button */}
             <button
-              onClick={handleNext}
+              onClick={handleFinalConfirmation}
               style={{
                 background: 'rgba(255,255,255,0.2)',
                 border: '3px solid white',
@@ -1174,78 +1162,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               @keyframes glow {
                 from { box-shadow: 0 0 20px rgba(255,255,255,0.5); }
                 to { box-shadow: 0 0 30px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.3); }
-              }
-            `}</style>
-          </div>
-        )}
-
-        {/* Step 10: Transition to Visual Schedule */}
-        {currentStep === 10 && (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            minHeight: '600px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <div style={{ fontSize: '6rem', marginBottom: '2rem' }}>📋✨</div>
-            <h1 style={{
-              fontSize: '3rem',
-              fontWeight: '700',
-              color: 'white',
-              marginBottom: '1rem',
-              textShadow: '0 4px 8px rgba(0,0,0,0.3)'
-            }}>
-              Transitioning to Visual Schedule
-            </h1>
-            <p style={{
-              fontSize: '1.3rem',
-              color: 'rgba(255,255,255,0.9)',
-              marginBottom: '2rem'
-            }}>
-              Loading your personalized schedule...
-            </p>
-            
-            <div style={{
-              width: '300px',
-              height: '8px',
-              background: 'rgba(255,255,255,0.2)',
-              borderRadius: '4px',
-              overflow: 'hidden',
-              marginBottom: '2rem'
-            }}>
-              <div style={{
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(90deg, #10B981, #34D399)',
-                borderRadius: '4px',
-                animation: 'loading 2s ease-in-out infinite'
-              }} />
-            </div>
-
-            <button
-              onClick={handleFinalConfirmation}
-              style={{
-                background: 'linear-gradient(135deg, #10B981, #34D399)',
-                border: 'none',
-                borderRadius: '16px',
-                color: 'white',
-                padding: '1.5rem 3rem',
-                fontSize: '1.3rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-            >
-              🚀 Start Our Visual Schedule
-            </button>
-
-            <style>{`
-              @keyframes loading {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
               }
             `}</style>
           </div>
