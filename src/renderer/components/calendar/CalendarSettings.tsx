@@ -22,7 +22,8 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
     birthdayDisplayMode: currentSettings.birthdayDisplayMode || 'both',
     weekendBirthdayHandling: currentSettings.weekendBirthdayHandling || 'friday',
     enableBirthdayNotifications: currentSettings.enableBirthdayNotifications !== false,
-    celebrationAnimationLevel: currentSettings.celebrationAnimationLevel || 'full'
+    celebrationAnimationLevel: currentSettings.celebrationAnimationLevel || 'full',
+    customBehaviorCommitments: currentSettings.customBehaviorCommitments || {}
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isTestingApi, setIsTestingApi] = useState(false);
@@ -618,6 +619,154 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
               </div>
             )}
           </div>
+        </div>
+
+        {/* Custom Behavior Commitments */}
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          marginBottom: '2rem'
+        }}>
+          <h3 style={{
+            margin: '0 0 1rem 0',
+            fontSize: '1.5rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            💪 Custom "I Will..." Statements
+          </h3>
+          
+          <div style={{
+            background: 'rgba(255,255,255,0.05)',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1rem',
+            fontSize: '0.9rem',
+            color: 'rgba(255,255,255,0.8)'
+          }}>
+            Add custom behavior commitment statements that will appear alongside the default ones in Daily Check-In.
+          </div>
+
+          {/* Custom Behavior Statements by Category */}
+          {['kindness', 'respect', 'effort', 'responsibility', 'safety', 'learning'].map(categoryId => (
+            <div key={categoryId} style={{
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <h4 style={{
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                marginBottom: '0.75rem',
+                textTransform: 'capitalize',
+                color: 'white'
+              }}>
+                {categoryId} Statements
+              </h4>
+              
+              {/* Display existing custom statements */}
+              {formData.customBehaviorCommitments?.[categoryId]?.map((statement: string, index: number) => (
+                <div key={index} style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '6px',
+                  padding: '0.75rem',
+                  marginBottom: '0.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ fontSize: '0.9rem', fontStyle: 'italic' }}>
+                    "{statement}"
+                  </span>
+                  <button
+                    onClick={() => {
+                      const updated = { ...formData.customBehaviorCommitments };
+                      if (updated[categoryId]) {
+                        updated[categoryId] = updated[categoryId].filter((_: string, i: number) => i !== index);
+                        if (updated[categoryId].length === 0) {
+                          delete updated[categoryId];
+                        }
+                      }
+                      setFormData(prev => ({ ...prev, customBehaviorCommitments: updated }));
+                    }}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.3)',
+                      border: '1px solid rgba(239, 68, 68, 0.5)',
+                      borderRadius: '4px',
+                      color: 'white',
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )) || null}
+              
+              {/* Add new statement */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder={`Add custom ${categoryId} statement...`}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    fontSize: '0.9rem'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.target as HTMLInputElement;
+                      const statement = input.value.trim();
+                      if (statement) {
+                        const updated = { ...formData.customBehaviorCommitments };
+                        if (!updated[categoryId]) {
+                          updated[categoryId] = [];
+                        }
+                        updated[categoryId].push(statement);
+                        setFormData(prev => ({ ...prev, customBehaviorCommitments: updated }));
+                        input.value = '';
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={(e) => {
+                    const input = (e.target as HTMLButtonElement).previousElementSibling as HTMLInputElement;
+                    const statement = input.value.trim();
+                    if (statement) {
+                      const updated = { ...formData.customBehaviorCommitments };
+                      if (!updated[categoryId]) {
+                        updated[categoryId] = [];
+                      }
+                      updated[categoryId].push(statement);
+                      setFormData(prev => ({ ...prev, customBehaviorCommitments: updated }));
+                      input.value = '';
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(34, 197, 94, 0.3)',
+                    border: '1px solid rgba(34, 197, 94, 0.5)',
+                    borderRadius: '6px',
+                    color: 'white',
+                    padding: '0.5rem 0.75rem',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Behavior Categories */}
