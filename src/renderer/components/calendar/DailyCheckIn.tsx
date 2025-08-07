@@ -1306,30 +1306,34 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
             position: 'relative'
           }}>
             <button
-              onClick={() => setShowChoiceInterface(false)}
+              onClick={() => {
+                // Save assignments and close
+                setShowChoiceInterface(false);
+              }}
               style={{
                 position: 'absolute',
                 top: '1rem',
                 right: '1rem',
-                background: 'rgba(255,255,255,0.2)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '40px',
-                height: '40px',
+                background: 'rgba(34, 197, 94, 0.8)',
+                border: '2px solid rgba(34, 197, 94, 1)',
+                borderRadius: '12px',
+                padding: '0.75rem 1.5rem',
                 color: 'white',
-                fontSize: '1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
-              ×
+              ✅ Save & Complete
             </button>
             
             <IndependentChoices
               selectedDate={currentDate.toISOString().split('T')[0]}
               onClose={() => setShowChoiceInterface(false)}
+              mode="assignment-only"
             />
           </div>
         </div>

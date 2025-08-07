@@ -663,9 +663,14 @@ interface ChoiceRotation {
 interface IndependentChoicesProps {
   onClose?: () => void;
   selectedDate?: string;
+  mode?: 'full' | 'assignment-only'; // NEW: Control which interface to show
 }
 
-const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, selectedDate }) => {
+const IndependentChoices: React.FC<IndependentChoicesProps> = ({ 
+  onClose, 
+  selectedDate,
+  mode = 'full' // DEFAULT to full for existing usage
+}) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [choiceEligibleActivities, setChoiceEligibleActivities] = useState<ActivityLibraryItem[]>([]);
   const [currentRotation, setCurrentRotation] = useState<ChoiceRotation | null>(null);
@@ -692,6 +697,22 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     loadRotationHistory();
     loadAnalytics();
   }, []);
+
+  // Auto-start rotation for assignment-only mode
+  useEffect(() => {
+    if (mode === 'assignment-only' && !currentRotation && choiceEligibleActivities.length > 0) {
+      const autoRotation: ChoiceRotation = {
+        id: `rotation-${Date.now()}`,
+        rotationNumber: 1,
+        duration: 20, // Default duration
+        assignments: [],
+        isActive: true,
+        isCompleted: false
+      };
+      setCurrentRotation(autoRotation);
+      setTimeRemaining(20 * 60); // 20 minutes in seconds
+    }
+  }, [mode, choiceEligibleActivities, currentRotation]);
 
   // Timer effect
   useEffect(() => {
@@ -1159,22 +1180,244 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
         </h3>
       </div>
 
-      {/* TEMPORARY DEBUG SECTION - Add this in your JSX */}
-      <div style={{ 
-        background: 'red', 
-        color: 'white', 
-        padding: '1rem', 
-        margin: '1rem 0' 
-      }}>
-        <h4>🐛 DEBUG INFO:</h4>
-        <p>Students: {students?.length || 0}</p>
-        <p>Choice Activities: {choiceEligibleActivities?.length || 0}</p>
-        <p>Current Rotation: {currentRotation ? 'Yes' : 'No'}</p>
-        <p>Students List: {students?.map(s => s.name).join(', ')}</p>
-      </div>
+      {/* ASSIGNMENT-ONLY MODE: Skip to assignment interface */}
+      {mode === 'assignment-only' && currentRotation && (
+        <div>
+          {/* Assignment Progress */}
+          <div className="progress-container">
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1rem'
+            }}>
+              <span className="text-primary" style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                Student Assignment Progress
+              </span>
+              <span className="text-secondary">
+                {currentRotation.assignments.length} / {students.length} students assigned
+              </span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ 
+                  width: `${students.length > 0 ? (currentRotation.assignments.length / students.length) * 100 : 0}%` 
+                }}
+              />
+            </div>
+          </div>
 
-      {/* No Current Rotation */}
-      {!currentRotation && (
+          {/* Quick Auto-Assign Action */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '1rem',
+            marginBottom: '2rem'
+          }}>
+            <button
+              onClick={autoAssignStudents}
+              className="control-button secondary"
+              disabled={getUnassignedStudents().length === 0}
+            >
+              🎲 Auto-Assign All Students
+            </button>
+          </div>
+
+          {/* Main Assignment Interface */}
+          <div className="main-content-grid">
+            {/* Available Activities - SAME AS EXISTING */}
+            <div className="glass-panel">
+              <h4 className="section-header">
+                📚 Available Activities ({filteredActivities.length})
+              </h4>
+              
+              <div className="activities-grid">
+                {filteredActivities.map(activity => (
+                  <div
+                    key={activity.id}
+                    className={`activity-card ${
+                      selectedActivity?.id === activity.id ? 'selected' : ''
+                    }`}
+                    onClick={() => setSelectedActivity(
+                      selectedActivity?.id === activity.id ? null : activity
+                    )}
+                  >
+                    <div className="activity-emoji">{activity.emoji}</div>
+                    <div className="activity-name">{activity.name}</div>
+                    <div className="activity-capacity">
+                      {getActivityAssignmentCount(activity.id)} / {activity.choiceProperties?.maxStudents || 6} students
+                    </div>
+
+                    {/* Activity Properties - SAME AS EXISTING */}
+                    {activity.choiceProperties && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        justifyContent: 'center',
+                        marginBottom: '1rem'
+                      }}>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          background: 'rgba(34, 197, 94, 0.2)',
+                          color: 'rgba(34, 197, 94, 0.9)',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(34, 197, 94, 0.3)'
+                        }}>
+                          {activity.choiceProperties.skillLevel}
+                        </span>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          background: 'rgba(59, 130, 246, 0.2)',
+                          color: 'rgba(59, 130, 246, 0.9)',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(59, 130, 246, 0.3)'
+                        }}>
+                          {activity.choiceProperties.socialInteraction}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Assigned Students Preview - SAME AS EXISTING */}
+                    {getActivityAssignmentCount(activity.id) > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        flexWrap: 'wrap',
+                        marginTop: 'auto'
+                      }}>
+                        {currentRotation.assignments
+                          .filter(a => a.activityId === activity.id)
+                          .slice(0, 3)
+                          .map(assignment => (
+                            <div
+                              key={assignment.studentId}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                border: '2px solid rgba(255, 255, 255, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                color: 'white',
+                                overflow: 'hidden'
+                              }}
+                              title={assignment.studentName}
+                            >
+                              {assignment.studentPhoto ? (
+                                <img
+                                  src={assignment.studentPhoto}
+                                  alt={assignment.studentName}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
+                                  background: 'linear-gradient(145deg, #28a745, #20c997)',
+                                  width: '100%',
+                                  height: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  {assignment.studentName.split(' ').map(n => n[0]).join('')}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        }
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Students Panel - SAME AS EXISTING LOGIC */}
+            <div className="glass-panel">
+              <h4 className="section-header">
+                👥 Students ({students.length})
+              </h4>
+
+              {/* Unassigned Students */}
+              {getUnassignedStudents().length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <h5 style={{
+                    fontSize: '1.2rem',
+                    color: 'rgba(239, 68, 68, 0.9)',
+                    marginBottom: '1rem',
+                    fontWeight: '600'
+                  }}>
+                    ⚠️ Unassigned ({getUnassignedStudents().length})
+                  </h5>
+                  <div className="students-responsive-grid">
+                    {getUnassignedStudents().map(student => (
+                      <div
+                        key={student.id}
+                        className={`student-card unassigned ${
+                          selectedActivity ? 'selectable' : ''
+                        }`}
+                        onClick={() => {
+                          if (selectedActivity) {
+                            assignStudentToActivity(student, selectedActivity);
+                          }
+                        }}
+                      >
+                        <div className="student-avatar">
+                          {student.photo ? (
+                            <img
+                              src={student.photo}
+                              alt={formatStudentName(student.name)}
+                            />
+                          ) : (
+                            <div className="student-avatar-initials" style={{
+                              background: 'linear-gradient(145deg, #ef4444, #dc2626)'
+                            }}>
+                              {formatStudentName(student.name).split(' ').map(n => n[0]).join('')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="student-info">
+                          <div className="student-name">
+                            {formatStudentName(student.name)}
+                          </div>
+                          {selectedActivity ? (
+                            <div className="student-status">
+                              ☝️ Click to assign to {selectedActivity.emoji} {selectedActivity.name}
+                            </div>
+                          ) : (
+                            <div className="student-status">
+                              Select an activity first
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* REST OF STUDENTS PANEL LOGIC - KEEP SAME AS EXISTING */}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL MODE: Original functionality for when NOT in assignment-only mode */}
+      {mode === 'full' && (
+        <>
+          {/* No Current Rotation */}
+          {!currentRotation && (
         <div className="p-8 text-center">
           <div className="text-6xl mb-4">🎯</div>
           <h2 className="text-2xl font-bold text-gray-700 mb-4">Ready to Start Choice Time!</h2>
@@ -1798,7 +2041,8 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
             </div>
           </div>
         </div>
-       )}
+        </>
+      )}
       </div>
     </>
   );
