@@ -470,22 +470,111 @@ class UnifiedDataService {
   
   // Add new student
   static addStudent(studentData: Partial<UnifiedStudent>): UnifiedStudent {
-    const students = this.getAllStudents();
+    console.log('🔧 UnifiedDataService.addStudent() called with:', studentData);
+    
+    // Get current unified data structure
+    let unifiedData = this.getUnifiedData();
+    if (!unifiedData) {
+      console.log('⚠️ No unified data found, creating new structure');
+      unifiedData = {
+        students: [],
+        staff: [],
+        activities: [],
+        attendance: [],
+        calendar: {
+          behaviorCommitments: [],
+          dailyHighlights: [],
+          independentChoices: []
+        },
+        settings: {},
+        metadata: {
+          version: '2.0',
+          migratedAt: new Date().toISOString(),
+          totalGoals: 0,
+          totalDataPoints: 0,
+          totalStaff: 0,
+          totalActivities: 0,
+          totalAttendanceRecords: 0
+        }
+      };
+    }
+    
+    // Create new student with all required fields
     const newStudent: UnifiedStudent = {
       id: studentData.id || Date.now().toString(),
       name: studentData.name || '',
       grade: studentData.grade || '',
       photo: studentData.photo,
       dateCreated: new Date().toISOString().split('T')[0],
-      iepData: {
+      workingStyle: studentData.workingStyle || 'independent',
+      accommodations: studentData.accommodations || [],
+      goals: studentData.goals || [],
+      preferredPartners: studentData.preferredPartners || [],
+      avoidPartners: studentData.avoidPartners || [],
+      parentName: studentData.parentName,
+      parentEmail: studentData.parentEmail,
+      parentPhone: studentData.parentPhone,
+      isActive: studentData.isActive !== undefined ? studentData.isActive : true,
+      behaviorNotes: studentData.behaviorNotes,
+      medicalNotes: studentData.medicalNotes,
+      // Birthday fields
+      birthday: studentData.birthday,
+      allowBirthdayDisplay: studentData.allowBirthdayDisplay,
+      allowPhotoInCelebrations: studentData.allowPhotoInCelebrations,
+      // IEP data
+      iepData: studentData.iepData || {
         goals: [],
         dataCollection: []
       },
-      ...studentData
+      // Resource information
+      resourceInformation: studentData.resourceInformation,
+      // Calendar preferences
+      calendarPreferences: studentData.calendarPreferences,
+      // Schedule preferences
+      schedulePreferences: studentData.schedulePreferences
     };
     
-    students.push(newStudent);
-    this.saveStudents(students);
+    console.log('🎂 New student created with birthday data:', {
+      id: newStudent.id,
+      name: newStudent.name,
+      birthday: newStudent.birthday,
+      allowBirthdayDisplay: newStudent.allowBirthdayDisplay,
+      allowPhotoInCelebrations: newStudent.allowPhotoInCelebrations
+    });
+    
+    // Add student to unified data
+    unifiedData.students.push(newStudent);
+    
+    // Update metadata
+    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => total + s.iepData.goals.length, 0);
+    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => total + s.iepData.dataCollection.length, 0);
+    
+    console.log('💾 Saving unified data with', unifiedData.students.length, 'students');
+    
+    // Save the entire unified data structure
+    this.saveUnifiedData(unifiedData);
+    
+    console.log('✅ Student saved successfully. Verifying...');
+    
+    // Verify the save worked
+    const verification = this.getUnifiedData();
+    if (verification && verification.students) {
+      console.log('🔍 Verification: Found', verification.students.length, 'students in storage');
+      const savedStudent = verification.students.find(s => s.id === newStudent.id);
+      if (savedStudent) {
+        console.log('✅ New student verified in storage:', savedStudent.name);
+        console.log('🎂 Birthday data verified:', {
+          birthday: savedStudent.birthday,
+          allowBirthdayDisplay: savedStudent.allowBirthdayDisplay,
+          allowPhotoInCelebrations: savedStudent.allowPhotoInCelebrations
+        });
+      } else {
+        console.error('❌ New student NOT found in storage after save!');
+      }
+    } else {
+      console.error('❌ Could not verify save - no unified data found');
+    }
+    
     return newStudent;
   }
   
