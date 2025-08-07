@@ -76,7 +76,11 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         isActive: student.isActive !== false,
         behaviorNotes: student.behaviorNotes,
         medicalNotes: student.medicalNotes,
-        workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent"
+        workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent",
+        // Include birthday fields for celebrations
+        birthday: (student as any).birthday,
+        allowBirthdayDisplay: (student as any).allowBirthdayDisplay,
+        allowPhotoInCelebrations: (student as any).allowPhotoInCelebrations
       }));
       setRealStudents(convertedStudents);
 
