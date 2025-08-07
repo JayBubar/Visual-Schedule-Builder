@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { Download, FileText, Printer, Mail, Calendar, User, Target, TrendingUp } from 'lucide-react';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 // Interface definitions
 interface ReportsExportSystemProps {
@@ -53,7 +54,17 @@ interface ReportConfig {
 }
 
 const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) => {
-  const [students, setStudents] = useState<Student[]>([]);
+  // Use robust data loading hook
+  const {
+    students,
+    isLoading,
+    error
+  } = useRobustDataLoading({
+    loadStudents: true,
+    loadStaff: false,
+    dependencies: [isActive]
+  });
+
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string>('');
@@ -72,18 +83,15 @@ const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) =
   const [reportPreview, setReportPreview] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Load data from localStorage
+  // Load IEP data from localStorage (not yet in robust loading)
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (isActive) {
+      loadIEPData();
+    }
+  }, [isActive]);
 
-  const loadAllData = () => {
+  const loadIEPData = () => {
     try {
-      const studentsData = localStorage.getItem('students');
-      if (studentsData) {
-        setStudents(JSON.parse(studentsData));
-      }
-
       const goalsData = localStorage.getItem('iep_goals');
       if (goalsData) {
         setGoals(JSON.parse(goalsData));
@@ -94,8 +102,15 @@ const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) =
         setDataPoints(JSON.parse(dataPointsData));
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading IEP data:', error);
     }
+  };
+
+  // Refresh data function
+  const refreshData = () => {
+    loadIEPData();
+    // Force re-render by updating dependencies
+    window.location.reload();
   };
 
   // Get student goals
@@ -386,9 +401,27 @@ const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) =
           <FileText size={40} />
           Reports & Export System
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem', marginBottom: '1rem' }}>
           Generate professional IEP progress reports and export data for meetings
         </p>
+        
+        {/* Data Source Indicator */}
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(34, 197, 94, 0.2)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: '1px solid #22c55e',
+          color: '#22c55e',
+          fontSize: '0.9rem'
+        }}>
+          ✅ Robust Data Loading Active
+          <span style={{ marginLeft: '10px' }}>
+            {students.length} students loaded
+          </span>
+          {isLoading && <span style={{ marginLeft: '10px' }}>🔄 Loading...</span>}
+          {error && <span style={{ marginLeft: '10px' }}>⚠️ {error}</span>}
+        </div>
       </div>
 
       {/* Report Configuration */}
@@ -750,7 +783,7 @@ const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) =
           </button>
 
           <button
-            onClick={loadAllData}
+            onClick={refreshData}
             style={{
               display: 'flex',
               alignItems: 'center',

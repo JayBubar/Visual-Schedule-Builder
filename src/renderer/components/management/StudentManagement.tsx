@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
 import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
@@ -12,6 +13,7 @@ import EnhancedResourceInput from './EnhancedResourceInput';
 
 // Extended interface to include all original Student properties
 interface ExtendedStudent extends UnifiedStudent {
+  grade: string; // Make grade required
   workingStyle?: 'collaborative' | 'independent';
   accommodations?: string[];
   goals?: string[]; // Legacy IEP goals as strings
@@ -44,14 +46,23 @@ interface StudentManagementProps {
 }
 
 const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataChange }) => {
+  // Use robust data loading hook
+  const {
+    students,
+    isLoading,
+    error
+  } = useRobustDataLoading({
+    loadStudents: true,
+    loadStaff: false,
+    dependencies: [isActive]
+  });
+
   // State management
-  const [students, setStudents] = useState<ExtendedStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<ExtendedStudent[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [gradeFilter, setGradeFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<ExtendedStudent | null>(null);
-  const [isUsingUnifiedData, setIsUsingUnifiedData] = useState(false);
   
   // Integration modal states
   const [showDataEntryModal, setShowDataEntryModal] = useState(false);
@@ -59,27 +70,15 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const [selectedStudentForIntegration, setSelectedStudentForIntegration] = useState<ExtendedStudent | null>(null);
   const [selectedGoalForDataEntry, setSelectedGoalForDataEntry] = useState<IEPGoal | null>(null);
 
-  // Load student data
-  useEffect(() => {
-    if (isActive) {
-      loadStudentData();
-    }
-  }, [isActive]);
-
   // Filter students when search/filter changes
   useEffect(() => {
     filterStudents();
   }, [students, searchTerm, gradeFilter]);
 
-  const loadStudentData = () => {
-    try {
-      const unifiedStudents = UnifiedDataService.getAllStudents() as ExtendedStudent[];
-      setStudents(unifiedStudents);
-      setIsUsingUnifiedData(true);
-    } catch (error) {
-      console.error('Error loading student data:', error);
-      setStudents([]);
-    }
+  // Refresh data function
+  const refreshData = () => {
+    // Force re-render by updating dependencies
+    window.location.reload();
   };
 
   const saveStudentData = (studentData: ExtendedStudent[]) => {
@@ -94,13 +93,33 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
         detail: studentData 
       }));
       onDataChange?.();
+      
+      // Refresh data after save
+      setTimeout(() => {
+        refreshData();
+      }, 100);
     } catch (error) {
       console.error('Error saving student data:', error);
     }
   };
 
   const filterStudents = () => {
-    let filtered = [...students];
+    // Convert students to ExtendedStudent format
+    const extendedStudents: ExtendedStudent[] = students.map(student => ({
+      ...student,
+      grade: student.grade || 'Unassigned', // Ensure grade is always a string
+      dateCreated: (student as any).dateCreated || new Date().toISOString().split('T')[0],
+      iepData: (student as any).iepData || { goals: [], dataCollection: [] },
+      accommodations: student.accommodations || [],
+      goals: student.goals || [],
+      preferredPartners: student.preferredPartners || [],
+      avoidPartners: student.avoidPartners || [],
+      workingStyle: (student.workingStyle === 'guided' || student.workingStyle === 'needs-support') 
+        ? 'collaborative' 
+        : (student.workingStyle as 'collaborative' | 'independent') || 'collaborative'
+    }));
+
+    let filtered = [...extendedStudents];
 
     if (searchTerm) {
       filtered = filtered.filter(s => 
@@ -144,8 +163,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const handleDeleteStudent = async (studentId: string) => {
     if (window.confirm('Are you sure you want to delete this student? This action cannot be undone.')) {
       try {
-        const updatedStudents = students.filter(s => s.id !== studentId);
-        setStudents(updatedStudents);
+        // Convert to ExtendedStudent format before filtering
+        const extendedStudents: ExtendedStudent[] = students.map(student => ({
+          ...student,
+          grade: student.grade || 'Unassigned', // Ensure grade is always a string
+          dateCreated: (student as any).dateCreated || new Date().toISOString().split('T')[0],
+          iepData: (student as any).iepData || { goals: [], dataCollection: [] },
+          accommodations: student.accommodations || [],
+          goals: student.goals || [],
+          preferredPartners: student.preferredPartners || [],
+          avoidPartners: student.avoidPartners || [],
+          workingStyle: (student.workingStyle === 'guided' || student.workingStyle === 'needs-support') 
+            ? 'collaborative' 
+            : (student.workingStyle as 'collaborative' | 'independent') || 'collaborative'
+        }));
+        
+        const updatedStudents = extendedStudents.filter(s => s.id !== studentId);
         saveStudentData(updatedStudents);
       } catch (error) {
         console.error('Error deleting student:', error);
@@ -156,14 +189,28 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const handleSaveStudent = (studentData: Partial<ExtendedStudent>) => {
     try {
+      // Convert students to ExtendedStudent format
+      const extendedStudents: ExtendedStudent[] = students.map(student => ({
+        ...student,
+        grade: student.grade || 'Unassigned', // Ensure grade is always a string
+        dateCreated: (student as any).dateCreated || new Date().toISOString().split('T')[0],
+        iepData: (student as any).iepData || { goals: [], dataCollection: [] },
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        workingStyle: (student.workingStyle === 'guided' || student.workingStyle === 'needs-support') 
+          ? 'collaborative' 
+          : (student.workingStyle as 'collaborative' | 'independent') || 'collaborative'
+      }));
+
       if (editingStudent) {
         // Update existing student
-        const updatedStudents = students.map(s => 
+        const updatedStudents = extendedStudents.map(s => 
           s.id === editingStudent.id 
             ? { ...s, ...studentData }
             : s
         );
-        setStudents(updatedStudents);
         saveStudentData(updatedStudents);
       } else {
         // Add new student
@@ -184,8 +231,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           ...studentData
         };
         
-        const updatedStudents = [...students, newStudent];
-        setStudents(updatedStudents);
+        const updatedStudents = [...extendedStudents, newStudent];
         saveStudentData(updatedStudents);
       }
       
@@ -242,9 +288,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const handleDataEntry = (student: ExtendedStudent) => {
     // Check if student has IEP goals
-    const studentGoals = isUsingUnifiedData 
-      ? student.iepData?.goals || []
-      : [];
+    const studentGoals = student.iepData?.goals || [];
 
     if (studentGoals.length === 0) {
       alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
@@ -258,9 +302,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const handlePrintSheets = (student: ExtendedStudent) => {
     // Check if student has IEP goals
-    const studentGoals = isUsingUnifiedData 
-      ? student.iepData?.goals || []
-      : [];
+    const studentGoals = student.iepData?.goals || [];
 
     if (studentGoals.length === 0) {
       alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
@@ -308,19 +350,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
         {/* Data Source Indicator */}
         <div style={{
           display: 'inline-block',
-          background: isUsingUnifiedData 
-            ? 'rgba(34, 197, 94, 0.2)' 
-            : 'rgba(239, 68, 68, 0.2)',
+          background: 'rgba(34, 197, 94, 0.2)',
           padding: '8px 16px',
           borderRadius: '20px',
-          border: `1px solid ${isUsingUnifiedData ? '#22c55e' : '#ef4444'}`,
-          color: isUsingUnifiedData ? '#22c55e' : '#ef4444',
+          border: '1px solid #22c55e',
+          color: '#22c55e',
           fontSize: '0.9rem'
         }}>
-          {isUsingUnifiedData ? '✅ Unified Data Active' : '⚠️ Legacy Data Mode'}
+          ✅ Robust Data Loading Active
           <span style={{ marginLeft: '10px' }}>
             {students.length} students loaded
           </span>
+          {isLoading && <span style={{ marginLeft: '10px' }}>🔄 Loading...</span>}
+          {error && <span style={{ marginLeft: '10px' }}>⚠️ {error}</span>}
         </div>
       </div>
 
@@ -487,8 +529,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                     onEdit={() => handleEditStudent(student)}
                     onDelete={() => handleDeleteStudent(student.id)}
                     uploadPhoto={uploadPhoto}
-                    onPhotoUpdate={loadStudentData}
-                    isUsingUnifiedData={isUsingUnifiedData}
+            onPhotoUpdate={refreshData}
+            isUsingUnifiedData={true}
                     onDataEntry={handleDataEntry}
                     onPrintSheets={handlePrintSheets}
                   />
@@ -503,7 +545,19 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       {showModal && (
         <StudentModal
           student={editingStudent}
-          students={students}
+          students={students.map(student => ({
+            ...student,
+            grade: student.grade || 'Unassigned', // Ensure grade is always a string
+            dateCreated: (student as any).dateCreated || new Date().toISOString().split('T')[0],
+            iepData: (student as any).iepData || { goals: [], dataCollection: [] },
+            accommodations: student.accommodations || [],
+            goals: student.goals || [],
+            preferredPartners: student.preferredPartners || [],
+            avoidPartners: student.avoidPartners || [],
+            workingStyle: (student.workingStyle === 'guided' || student.workingStyle === 'needs-support') 
+              ? 'collaborative' 
+              : (student.workingStyle as 'collaborative' | 'independent') || 'collaborative'
+          }))}
           onSave={handleSaveStudent}
           onCancel={() => {
             setShowModal(false);
@@ -570,9 +624,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                 onBack={() => setSelectedGoalForDataEntry(null)}
                 onDataSaved={() => {
                   setShowDataEntryModal(false);
-                  setSelectedStudentForIntegration(null);
-                  setSelectedGoalForDataEntry(null);
-                  loadStudentData(); // Refresh data
+                setSelectedStudentForIntegration(null);
+                setSelectedGoalForDataEntry(null);
+                refreshData(); // Refresh data
                 }}
               />
             ) : (

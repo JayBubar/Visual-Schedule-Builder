@@ -6,7 +6,6 @@ import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, Sched
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
 import { DataMigrationManager } from './utils/dataMigration';
-import { StudentStatusProvider } from './services/StudentStatusManager';
 import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
@@ -313,8 +312,7 @@ const App: React.FC = () => {
       grade: student.grade || '',
       resourceInfo: student.resourceInfo || undefined
     }))}>
-      <StudentStatusProvider allStudents={students}>
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Start Screen */}
         {showStartScreen && (
           <StartScreen 
@@ -418,7 +416,6 @@ const App: React.FC = () => {
           </>
         )}
         </div>
-      </StudentStatusProvider>
     </ResourceScheduleProvider>
   );
 };

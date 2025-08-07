@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import GroupCreator from './GroupCreator';
 import AttendanceManager from '../management/AttendanceManager';
 import ScheduleConflictDetector from './ScheduleConflictDetector';
-import { useStudentStatus } from '../../services/StudentStatusManager';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 // Type aliases to avoid conflicts with enhanced components
 type BuilderStudent = ProjectStudent;
@@ -845,12 +845,34 @@ const SaveScheduleModal: React.FC<{
 };
 
 const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleUpdate }) => {
+  // Use robust data loading hook
+  const { students: loadedStudents, staff: loadedStaff, isLoading, error } = useRobustDataLoading(
+    { loadStudents: true, loadStaff: true, dependencies: [isActive] }
+  );
+
   // State management
   const [schedule, setSchedule] = useState<EnhancedActivity[]>([]);
   const [startTime, setStartTime] = useState('08:00');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [students, setStudents] = useState<BuilderStudent[]>([]);
   const [groups, setGroups] = useState<StudentGroup[]>([]);
+
+  // Update local state when robust data loading completes
+  useEffect(() => {
+    if (loadedStudents.length > 0) {
+      const activeStudents = loadedStudents.filter(s => s.isActive !== false);
+      console.log(`🛠️ ScheduleBuilder - Updated students from robust loading:`, activeStudents.length);
+      setStudents(activeStudents);
+    }
+  }, [loadedStudents]);
+
+  useEffect(() => {
+    if (loadedStaff.length > 0) {
+      const activeStaff = loadedStaff.filter(s => s.isActive !== false);
+      console.log(`🛠️ ScheduleBuilder - Updated staff from robust loading:`, activeStaff.length);
+      setStaff(activeStaff);
+    }
+  }, [loadedStaff]);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
   const [showGroupCreator, setShowGroupCreator] = useState(false);
@@ -883,7 +905,6 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
   
   // Attendance management state
   const [showAttendanceManager, setShowAttendanceManager] = useState(false);
-  const { filterActiveStudents } = useStudentStatus();
 
   // 🎯 CRITICAL: Notify parent of schedule changes
   useEffect(() => {
@@ -3002,7 +3023,7 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
       {/* Attendance Manager Modal */}
       {showAttendanceManager && (
         <AttendanceManager
-          allStudents={filterActiveStudents(students)}
+          allStudents={students.filter(s => s.isActive !== false)}
           isOpen={showAttendanceManager}
           onClose={() => setShowAttendanceManager(false)}
         />

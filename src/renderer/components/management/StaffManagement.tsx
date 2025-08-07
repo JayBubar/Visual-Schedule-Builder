@@ -1,32 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StaffMember } from '../../types';
 import UnifiedDataService, { UnifiedStaff } from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface StaffManagementProps {
   isActive: boolean;
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
-  const [staff, setStaff] = useState<UnifiedStaff[]>([]);
+  // Use robust data loading hook
+  const {
+    staff,
+    isLoading,
+    error
+  } = useRobustDataLoading({
+    loadStudents: false,
+    loadStaff: true,
+    dependencies: [isActive]
+  });
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<UnifiedStaff | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Load staff data on mount
-  useEffect(() => {
-    if (isActive) {
-      loadStaffData();
-    }
-  }, [isActive]);
-
-  const loadStaffData = () => {
-    try {
-      const unifiedStaff = UnifiedDataService.getAllStaff();
-      setStaff(unifiedStaff);
-    } catch (error) {
-      console.error('Error loading staff data:', error);
-      setStaff([]);
-    }
+  // Refresh data function
+  const refreshData = () => {
+    // Force re-render by updating dependencies
+    window.location.reload();
   };
 
   const saveStaffData = () => {
@@ -35,6 +35,11 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
     window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
       detail: staff 
     }));
+    
+    // Refresh data after save
+    setTimeout(() => {
+      refreshData();
+    }, 100);
   };
 
   const handlePhotoUpload = async (staffId: string, file: File) => {
@@ -50,14 +55,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
         // Update via UnifiedDataService
         UnifiedDataService.updateStaff(staffId, { photo: base64Photo });
         
-        // Update local state
-        setStaff(currentStaff => 
-          currentStaff.map(member => 
-            member.id === staffId 
-              ? { ...member, photo: base64Photo }
-              : member
-          )
-        );
+        // Refresh data to get updated state
+        refreshData();
         
         saveStaffData();
       };
@@ -73,14 +72,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
     // Update via UnifiedDataService
     UnifiedDataService.updateStaff(staffId, { photo: null });
     
-    // Update local state
-    setStaff(currentStaff => 
-      currentStaff.map(member => 
-        member.id === staffId 
-          ? { ...member, photo: null }
-          : member
-      )
-    );
+    // Refresh data to get updated state
+    refreshData();
     
     saveStaffData();
   };
@@ -89,8 +82,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
     // Add via UnifiedDataService
     const addedStaff = UnifiedDataService.addStaff(newStaff);
     
-    // Update local state
-    setStaff(currentStaff => [...currentStaff, addedStaff]);
+    // Refresh data to get updated state
+    refreshData();
     
     saveStaffData();
     setShowAddModal(false);
@@ -100,12 +93,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
     // Update via UnifiedDataService
     UnifiedDataService.updateStaff(updatedStaff.id, updatedStaff);
     
-    // Update local state
-    setStaff(currentStaff => 
-      currentStaff.map(member => 
-        member.id === updatedStaff.id ? updatedStaff : member
-      )
-    );
+    // Refresh data to get updated state
+    refreshData();
     
     saveStaffData();
     setEditingStaff(null);
@@ -116,14 +105,28 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
       // Delete via UnifiedDataService
       UnifiedDataService.deleteStaff(staffId);
       
-      // Update local state
-      setStaff(currentStaff => currentStaff.filter(member => member.id !== staffId));
+      // Refresh data to get updated state
+      refreshData();
       
       saveStaffData();
     }
   };
 
-  const filteredStaff = staff.filter(member =>
+  // Convert StaffMember[] to UnifiedStaff[] for compatibility
+  const unifiedStaff: UnifiedStaff[] = staff.map(member => ({
+    ...member,
+    dateCreated: (member as any).dateCreated || (member as any).startDate || new Date().toISOString().split('T')[0],
+    specialties: member.specialties || [],
+    isResourceTeacher: (member as any).isResourceTeacher || false,
+    isRelatedArtsTeacher: (member as any).isRelatedArtsTeacher || false,
+    permissions: (member as any).permissions || {
+      canEditStudents: false,
+      canViewReports: true,
+      canManageGoals: false
+    }
+  }));
+
+  const filteredStaff = unifiedStaff.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (member.specialties && member.specialties.some(specialty => 
@@ -157,10 +160,28 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
         <p style={{ 
           color: 'rgba(255,255,255,0.9)', 
           fontSize: '1.1rem',
-          margin: 0
+          margin: '0 0 1rem 0'
         }}>
           Manage your classroom team, resource teachers, and related arts staff
         </p>
+        
+        {/* Data Source Indicator */}
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(34, 197, 94, 0.2)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: '1px solid #22c55e',
+          color: '#22c55e',
+          fontSize: '0.9rem'
+        }}>
+          ✅ Robust Data Loading Active
+          <span style={{ marginLeft: '10px' }}>
+            {staff.length} staff members loaded
+          </span>
+          {isLoading && <span style={{ marginLeft: '10px' }}>🔄 Loading...</span>}
+          {error && <span style={{ marginLeft: '10px' }}>⚠️ {error}</span>}
+        </div>
       </div>
 
       {/* Controls */}

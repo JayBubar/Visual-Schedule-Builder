@@ -3,7 +3,6 @@ import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../type
 import TransitionDisplay from './TransitionDisplay';
 import AbsentStudentsDisplay from './AbsentStudentsDisplay';
 import OutOfClassDisplay from './OutOfClassDisplay';
-import { useStudentStatus } from '../../services/StudentStatusManager';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
@@ -50,9 +49,6 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [fallbackSchedule, setFallbackSchedule] = useState<any>(null);
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
-  
-  // Get absent students from context
-  const { absentStudents } = useStudentStatus();
   
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
@@ -125,71 +121,71 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   }, [currentSchedule]);
 
   // Replace the existing useEffect around line 117-208 with this:
-  useEffect(() => {
-    console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
-    
-    const loadStudentData = async () => {
-      let studentsToUse: any[] = [];
-      let staffToUse: any[] = [];
+useEffect(() => {
+  console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
+  
+  const loadStudentData = async () => {
+    let studentsToUse: any[] = [];
+    let staffToUse: any[] = [];
 
+    try {
+      // Primary: Load from UnifiedDataService
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      
+      console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
+      console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
+      
+      if (unifiedStudents.length > 0) {
+        studentsToUse = unifiedStudents;
+      }
+      if (unifiedStaff.length > 0) {
+        staffToUse = unifiedStaff;
+      }
+    } catch (error) {
+      console.error('❌ Error loading from UnifiedDataService:', error);
+    }
+
+    // Fallback: Use props if UnifiedDataService fails
+    if (studentsToUse.length === 0 && students && students.length > 0) {
+      console.log('📚 Fallback: Using students from props:', students.length);
+      studentsToUse = students;
+    }
+    
+    if (staffToUse.length === 0 && staff && staff.length > 0) {
+      console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
+      staffToUse = staff;
+    }
+
+    // Emergency fallback: Direct localStorage access
+    if (studentsToUse.length === 0) {
+      console.log('🆘 Emergency fallback: Reading directly from localStorage...');
       try {
-        // Primary: Load from UnifiedDataService
-        const unifiedStudents = UnifiedDataService.getAllStudents();
-        const unifiedStaff = UnifiedDataService.getAllStaff();
-        
-        console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
-        console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
-        
-        if (unifiedStudents.length > 0) {
-          studentsToUse = unifiedStudents;
-        }
-        if (unifiedStaff.length > 0) {
-          staffToUse = unifiedStaff;
+        const legacyStudents = localStorage.getItem('students');
+        if (legacyStudents) {
+          const parsedStudents = JSON.parse(legacyStudents);
+          if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
+            console.log('🆘 Using emergency student data:', parsedStudents.length);
+            studentsToUse = parsedStudents;
+          }
         }
       } catch (error) {
-        console.error('❌ Error loading from UnifiedDataService:', error);
+        console.error('🆘 Emergency fallback failed:', error);
       }
+    }
 
-      // Fallback: Use props if UnifiedDataService fails
-      if (studentsToUse.length === 0 && students && students.length > 0) {
-        console.log('📚 Fallback: Using students from props:', students.length);
-        studentsToUse = students;
-      }
-      
-      if (staffToUse.length === 0 && staff && staff.length > 0) {
-        console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
-        staffToUse = staff;
-      }
+    // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
+    console.log('🔄 Setting student state:', studentsToUse.length, 'students');
+    
+    setTimeout(() => {
+      setRealStudents(studentsToUse);
+      setRealStaff(staffToUse);
+      console.log('✅ State set via setTimeout');
+    }, 0);
+  };
 
-      // Emergency fallback: Direct localStorage access
-      if (studentsToUse.length === 0) {
-        console.log('🆘 Emergency fallback: Reading directly from localStorage...');
-        try {
-          const legacyStudents = localStorage.getItem('students');
-          if (legacyStudents) {
-            const parsedStudents = JSON.parse(legacyStudents);
-            if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
-              console.log('🆘 Using emergency student data:', parsedStudents.length);
-              studentsToUse = parsedStudents;
-            }
-          }
-        } catch (error) {
-          console.error('🆘 Emergency fallback failed:', error);
-        }
-      }
-
-      // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
-      console.log('🔄 Setting student state:', studentsToUse.length, 'students');
-      
-      setTimeout(() => {
-        setRealStudents(studentsToUse);
-        setRealStaff(staffToUse);
-        console.log('✅ State set via setTimeout');
-      }, 0);
-    };
-
-    loadStudentData();
-  }, [isActive]); // Depend on isActive instead of empty array
+  loadStudentData();
+}, [isActive]); // Depend on isActive instead of empty array
 
 
   // Timer countdown effect (moved after hooks)

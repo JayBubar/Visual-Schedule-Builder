@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useStudentStatus } from '../../services/StudentStatusManager';
 import UnifiedDataService from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface AttendanceManagerProps {
   allStudents: any[];
@@ -13,61 +13,50 @@ const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   isOpen, 
   onClose 
 }) => {
-  const { 
-    updateStudentStatus, 
-    getTodayAttendance, 
-    resetDailyAttendance,
-    absentStudents 
-  } = useStudentStatus();
+  // Use robust data loading hook
+  const { students: loadedStudents, isLoading, error } = useRobustDataLoading(
+    { loadStudents: true, loadStaff: false, dependencies: [isOpen] },
+    allStudents
+  );
 
-  const [students, setStudents] = useState<any[]>([]);
+  // Filter to only active students
+  const students = loadedStudents.filter(student => student.isActive !== false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'present' | 'absent'>('all');
   const [notes, setNotes] = useState<{ [studentId: string]: string }>({});
+  const [absentStudents, setAbsentStudents] = useState<string[]>([]);
 
-  // 🐛 DEBUG CODE for AttendanceManager:
-  console.log('🐛 AttendanceManager Debug:');
+  console.log('📋 AttendanceManager - Using robust data loading');
   console.log('- students:', students?.length || 0, 'students');
   console.log('- absentStudents:', absentStudents?.length || 0, 'absent');
-  console.log('- useStudentStatus hook working?', typeof updateStudentStatus === 'function');
+  console.log('- isLoading:', isLoading);
+  console.log('- error:', error);
 
-  // Load students from UnifiedDataService or fallback
+  // Load existing notes and absent students for today
   useEffect(() => {
     try {
-      const unifiedStudents = UnifiedDataService.getAllStudents();
-      const activeStudents = unifiedStudents.filter(student => student.isActive !== false);
-      setStudents(activeStudents);
-    } catch (error) {
-      console.error('Error loading students from UnifiedDataService:', error);
-      // Fallback to prop or localStorage
-      if (allStudents && allStudents.length > 0) {
-        setStudents(allStudents.filter(student => student.isActive !== false));
-      } else {
-        try {
-          const savedStudents = localStorage.getItem('students');
-          if (savedStudents) {
-            const parsedStudents = JSON.parse(savedStudents);
-            setStudents(parsedStudents.filter((student: any) => student.isActive !== false));
-          }
-        } catch (fallbackError) {
-          console.error('Error loading students from localStorage:', fallbackError);
-          setStudents([]);
+      const todayAttendance = UnifiedDataService.getTodayAttendance();
+      const notesMap: { [studentId: string]: string } = {};
+      const absentIds: string[] = [];
+      
+      todayAttendance.forEach(record => {
+        if (record.notes) {
+          notesMap[record.studentId] = record.notes;
         }
-      }
+        if (!record.isPresent) {
+          absentIds.push(record.studentId);
+        }
+      });
+      
+      setNotes(notesMap);
+      setAbsentStudents(absentIds);
+    } catch (error) {
+      console.error('Error loading today\'s attendance:', error);
+      setAbsentStudents([]);
+      setNotes({});
     }
-  }, [allStudents]);
-
-  // Load existing notes for today
-  useEffect(() => {
-    const todayAttendance = getTodayAttendance();
-    const notesMap: { [studentId: string]: string } = {};
-    todayAttendance.forEach(record => {
-      if (record.notes) {
-        notesMap[record.studentId] = record.notes;
-      }
-    });
-    setNotes(notesMap);
-  }, [getTodayAttendance]);
+  }, []);
 
   // Filter students based on search and status
   const filteredStudents = students.filter(student => {
@@ -82,19 +71,52 @@ const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   const handleStatusToggle = (studentId: string, currentlyPresent: boolean) => {
     const newStatus = !currentlyPresent;
     const studentNotes = notes[studentId] || '';
-    updateStudentStatus(studentId, newStatus, studentNotes);
+    
+    try {
+      // Update attendance via UnifiedDataService (date, isPresent, notes)
+      const today = new Date().toISOString().split('T')[0];
+      UnifiedDataService.updateStudentAttendance(studentId, today, newStatus, studentNotes);
+      
+      // Update local state
+      if (newStatus) {
+        // Student is now present - remove from absent list
+        setAbsentStudents(prev => prev.filter(id => id !== studentId));
+      } else {
+        // Student is now absent - add to absent list
+        setAbsentStudents(prev => [...prev.filter(id => id !== studentId), studentId]);
+      }
+    } catch (error) {
+      console.error('Error updating student attendance:', error);
+      alert('Error updating attendance. Please try again.');
+    }
   };
 
   const handleNotesChange = (studentId: string, newNotes: string) => {
     setNotes(prev => ({ ...prev, [studentId]: newNotes }));
     const isPresent = !absentStudents.includes(studentId);
-    updateStudentStatus(studentId, isPresent, newNotes);
+    
+    try {
+      // Update attendance with new notes via UnifiedDataService (studentId, date, isPresent, notes)
+      const today = new Date().toISOString().split('T')[0];
+      UnifiedDataService.updateStudentAttendance(studentId, today, isPresent, newNotes);
+    } catch (error) {
+      console.error('Error updating attendance notes:', error);
+    }
   };
 
   const handleResetAll = () => {
     if (window.confirm('Reset all students to present? This cannot be undone.')) {
-      resetDailyAttendance();
-      setNotes({});
+      try {
+        // Reset all students to present via UnifiedDataService
+        UnifiedDataService.resetTodayAttendance();
+        
+        // Update local state
+        setAbsentStudents([]);
+        setNotes({});
+      } catch (error) {
+        console.error('Error resetting attendance:', error);
+        alert('Error resetting attendance. Please try again.');
+      }
     }
   };
 

@@ -1,30 +1,25 @@
 import React from 'react';
-import UnifiedDataService from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface AbsentStudentsDisplayProps {
   absentStudents: string[];
 }
 
 const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStudents }) => {
-  // Get student details from UnifiedDataService
+  // Use robust data loading hook
+  const {
+    students,
+    isLoading,
+    error
+  } = useRobustDataLoading({
+    loadStudents: true,
+    loadStaff: false,
+    dependencies: [absentStudents]
+  });
+
+  // Get student details using robust data loading
   const getStudentDetails = (studentId: string) => {
-    try {
-      const allStudents = UnifiedDataService.getAllStudents();
-      return allStudents.find(student => student.id === studentId);
-    } catch (error) {
-      console.error('Error loading student details:', error);
-      // Fallback to localStorage
-      try {
-        const savedStudents = localStorage.getItem('students');
-        if (savedStudents) {
-          const students = JSON.parse(savedStudents);
-          return students.find((student: any) => student.id === studentId);
-        }
-      } catch (fallbackError) {
-        console.error('Error loading students from localStorage:', fallbackError);
-      }
-      return null;
-    }
+    return students.find(student => student.id === studentId);
   };
 
   // Don't render if no absent students
@@ -78,6 +73,31 @@ const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStu
         }}>
           {absentStudents.length}
         </div>
+        {/* Data Loading Indicator */}
+        {isLoading && (
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.3)',
+            borderRadius: '8px',
+            padding: '0.2rem 0.4rem',
+            fontSize: '0.6rem',
+            color: '#22c55e',
+            fontWeight: '600'
+          }}>
+            🔄
+          </div>
+        )}
+        {error && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '0.2rem 0.4rem',
+            fontSize: '0.6rem',
+            color: '#ef4444',
+            fontWeight: '600'
+          }}>
+            ⚠️
+          </div>
+        )}
       </div>
 
       {/* Absent Students List */}
@@ -165,7 +185,7 @@ const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStu
         })}
       </div>
 
-      {/* Footer with timestamp */}
+      {/* Footer with timestamp and data source */}
       <div style={{
         marginTop: '0.75rem',
         paddingTop: '0.5rem',
@@ -175,12 +195,20 @@ const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStu
         <div style={{
           color: 'rgba(255, 255, 255, 0.8)',
           fontSize: '0.7rem',
-          fontWeight: '500'
+          fontWeight: '500',
+          marginBottom: '0.25rem'
         }}>
           Updated: {new Date().toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
           })}
+        </div>
+        <div style={{
+          color: 'rgba(34, 197, 94, 0.9)',
+          fontSize: '0.6rem',
+          fontWeight: '600'
+        }}>
+          ✅ Robust Loading ({students.length} students)
         </div>
       </div>
     </div>
