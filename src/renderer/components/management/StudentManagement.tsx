@@ -78,10 +78,16 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     filterStudents();
   }, [students, searchTerm, gradeFilter]);
 
-  // Refresh data function
+  // Refresh data function - Fixed to avoid page reload
   const refreshData = () => {
-    // Force re-render by updating dependencies
-    window.location.reload();
+    // Force re-render by updating the students state
+    // This will trigger the useRobustDataLoading hook to refresh
+    window.dispatchEvent(new CustomEvent('studentDataUpdated'));
+    
+    // Small delay to ensure data is updated before re-filtering
+    setTimeout(() => {
+      filterStudents();
+    }, 100);
   };
 
   const saveStudentData = (studentData: ExtendedStudent[]) => {
@@ -1486,6 +1492,16 @@ const StudentModal: React.FC<StudentModalProps> = ({
       alert('Please fill in required fields (Name and Grade)');
       return;
     }
+    
+    // Debug: Log the form data being saved
+    console.log('🎂 StudentModal - Saving form data:', {
+      name: formData.name,
+      birthday: formData.birthday,
+      allowBirthdayDisplay: formData.allowBirthdayDisplay,
+      allowPhotoInCelebrations: formData.allowPhotoInCelebrations,
+      fullFormData: formData
+    });
+    
     onSave(formData);
   };
 

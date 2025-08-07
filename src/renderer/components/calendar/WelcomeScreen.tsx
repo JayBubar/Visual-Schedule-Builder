@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface WelcomeScreenProps {
   currentDate: Date;
@@ -15,8 +16,15 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAnimation, setShowAnimation] = useState(false);
+  const [welcomeSettings, setWelcomeSettings] = useState<any>(null);
 
   useEffect(() => {
+    // Load welcome settings from UnifiedDataService
+    const settings = UnifiedDataService.getSettings();
+    if (settings.dailyCheckIn?.welcomeSettings) {
+      setWelcomeSettings(settings.dailyCheckIn.welcomeSettings);
+    }
+
     // Update time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -25,7 +33,20 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     // Show animation after component mounts
     setTimeout(() => setShowAnimation(true), 500);
 
-    return () => clearInterval(timer);
+    // Listen for settings changes
+    const handleSettingsChange = (event: CustomEvent) => {
+      const newSettings = event.detail;
+      if (newSettings.dailyCheckIn?.welcomeSettings) {
+        setWelcomeSettings(newSettings.dailyCheckIn.welcomeSettings);
+      }
+    };
+
+    window.addEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+    };
   }, []);
 
   const formatDate = (date: Date) => {
@@ -153,6 +174,27 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           {getSeasonalIcon()}
         </div>
 
+        {/* Custom Welcome Message */}
+        {welcomeSettings?.customWelcomeMessage && (
+          <div style={{
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+            border: '1px solid rgba(255,255,255,0.2)'
+          }}>
+            <h2 style={{
+              fontSize: '2rem',
+              fontWeight: '600',
+              color: 'white',
+              margin: 0,
+              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}>
+              {welcomeSettings.customWelcomeMessage}
+            </h2>
+          </div>
+        )}
+
         {/* Greeting */}
         <h1 style={{
           fontSize: '3rem',
@@ -162,18 +204,54 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           textShadow: '0 4px 8px rgba(0,0,0,0.3)',
           lineHeight: '1.2'
         }}>
-          {getGreeting()}, {teacherName}!
+          {getGreeting()}{welcomeSettings?.showTeacherName ? `, ${teacherName}` : ''}!
         </h1>
 
-        {/* School Name */}
-        <p style={{
+        {/* School and Class Name */}
+        <div style={{
           fontSize: '1.3rem',
           color: 'rgba(255,255,255,0.9)',
           marginBottom: '2rem',
           fontWeight: '500'
         }}>
-          Welcome to {schoolName}
-        </p>
+          {welcomeSettings?.schoolName && (
+            <p style={{ margin: '0 0 0.5rem 0' }}>
+              Welcome to {welcomeSettings.schoolName}
+            </p>
+          )}
+          {welcomeSettings?.className && (
+            <p style={{ margin: 0, fontSize: '1.1rem', opacity: 0.8 }}>
+              {welcomeSettings.className}
+            </p>
+          )}
+          {!welcomeSettings?.schoolName && !welcomeSettings?.className && (
+            <p style={{ margin: 0 }}>
+              Welcome to {schoolName}
+            </p>
+          )}
+        </div>
+
+        {/* Substitute Mode Message */}
+        {welcomeSettings?.substituteMode && welcomeSettings?.substituteMessage && (
+          <div style={{
+            background: 'rgba(255, 193, 7, 0.2)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '2rem',
+            border: '2px solid rgba(255, 193, 7, 0.4)'
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👋</div>
+            <p style={{
+              fontSize: '1.2rem',
+              fontWeight: '600',
+              color: 'white',
+              margin: 0,
+              lineHeight: '1.3'
+            }}>
+              {welcomeSettings.substituteMessage}
+            </p>
+          </div>
+        )}
 
         {/* Date and Time */}
         <div style={{

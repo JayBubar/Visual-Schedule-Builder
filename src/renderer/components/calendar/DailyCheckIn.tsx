@@ -105,9 +105,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       // Load Daily Check-In settings from the new Settings structure
       if (unifiedSettings.dailyCheckIn) {
         setDailyCheckInSettings(unifiedSettings.dailyCheckIn);
-        console.log('✅ Loaded Daily Check-In settings:', unifiedSettings.dailyCheckIn);
-      } else {
-        console.log('⚠️ No Daily Check-In settings found, using defaults');
       }
       
       // Load legacy calendar settings for backward compatibility
@@ -156,6 +153,23 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       loadTodayCheckIn();
     }
   }, [currentDate, isLoading]);
+
+  // Listen for settings changes from the Settings component
+  useEffect(() => {
+    const handleSettingsChange = (event: CustomEvent) => {
+      const newSettings = event.detail;
+      if (newSettings.dailyCheckIn) {
+        setDailyCheckInSettings(newSettings.dailyCheckIn);
+        console.log('🔄 DailyCheckIn settings updated from Settings component:', newSettings.dailyCheckIn);
+      }
+    };
+
+    window.addEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+    };
+  }, []);
 
   const loadTodayCheckIn = () => {
     const dateKey = currentDate.toISOString().split('T')[0];

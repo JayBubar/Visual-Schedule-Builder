@@ -184,6 +184,27 @@ class UnifiedDataService {
   private static readonly UNIFIED_KEY = 'visual-schedule-builder-unified-data';
   private static readonly LEGACY_STUDENT_KEY = 'students';
   
+  // Debug method to inspect localStorage
+  static debugLocalStorage(): void {
+    console.log('🔍 DEBUGGING localStorage contents:');
+    console.log('- All localStorage keys:', Object.keys(localStorage));
+    console.log('- visual-schedule-builder-unified-data:', localStorage.getItem(this.UNIFIED_KEY) ? 'EXISTS' : 'MISSING');
+    console.log('- students:', localStorage.getItem('students') ? 'EXISTS' : 'MISSING');
+    console.log('- vsb_students:', localStorage.getItem('vsb_students') ? 'EXISTS' : 'MISSING');
+    
+    const unifiedDataRaw = localStorage.getItem(this.UNIFIED_KEY);
+    if (unifiedDataRaw) {
+      try {
+        const parsed = JSON.parse(unifiedDataRaw);
+        console.log('- Unified data structure:', parsed);
+        console.log('- Students in unified data:', parsed.students);
+        console.log('- Students count:', Array.isArray(parsed.students) ? parsed.students.length : 'Not an array');
+      } catch (e) {
+        console.error('- Error parsing unified data:', e);
+      }
+    }
+  }
+
   // Get all unified data
   static getUnifiedData(): UnifiedData | null {
     try {
@@ -194,20 +215,32 @@ class UnifiedDataService {
       
       // 🔧 FIXED: Convert object structure to array structure if needed
       if (parsedData.students && !Array.isArray(parsedData.students)) {
-        console.log('Converting students object to array format...');
-        parsedData.students = Object.values(parsedData.students);
+        console.log('🔄 Converting students object to array format...');
+        console.log('🔍 Original students object keys:', Object.keys(parsedData.students));
+        console.log('🔍 Original students object values:', Object.values(parsedData.students));
+        
+        const studentsArray = Object.values(parsedData.students);
+        console.log('🔍 Converted array length:', studentsArray.length);
+        console.log('🔍 First student in array:', studentsArray[0]);
+        
+        parsedData.students = studentsArray;
         
         // Save the converted structure
         this.saveUnifiedData(parsedData);
+        console.log('✅ Successfully converted and saved students as array');
+      } else if (parsedData.students && Array.isArray(parsedData.students)) {
+        console.log('✅ Students already in array format:', parsedData.students.length, 'students');
       }
       
       // 🔧 FIXED: Convert staff object structure to array structure if needed
       if (parsedData.staff && !Array.isArray(parsedData.staff)) {
-        console.log('Converting staff object to array format...');
+        console.log('🔄 Converting staff object to array format...');
         parsedData.staff = Object.values(parsedData.staff);
         
         // Save the converted structure
         this.saveUnifiedData(parsedData);
+      } else if (parsedData.staff && Array.isArray(parsedData.staff)) {
+        console.log('✅ Staff already in array format:', parsedData.staff.length, 'staff');
       }
       
       return parsedData;

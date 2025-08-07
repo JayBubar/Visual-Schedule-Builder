@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Student } from '../../types';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface CelebrationSystemProps {
   currentDate: Date;
@@ -67,11 +68,12 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     // Check for celebrations on this date
     const celebrations = [];
     
-    // Get calendar settings for birthday handling
-    const settings = JSON.parse(localStorage.getItem('calendarSettings') || '{}');
+    // Get settings from UnifiedDataService for birthday handling
+    const unifiedSettings = UnifiedDataService.getSettings();
+    const birthdaySettings = unifiedSettings.dailyCheckIn?.birthdaySettings || {};
     
-    // Check for birthdays with weekend handling
-    const birthdayStudents = handleWeekendBirthdays(currentDate, students, settings);
+    // Check for birthdays with weekend handling using unified settings
+    const birthdayStudents = handleWeekendBirthdays(currentDate, students, birthdaySettings);
     if (birthdayStudents.length > 0) {
       celebrations.push({
         type: 'birthday',
@@ -80,7 +82,7 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
           ? `Happy Birthday, ${birthdayStudents[0].name}!`
           : `Birthday Celebration!`,
         description: birthdayStudents.length === 1
-          ? formatBirthdayMessage(birthdayStudents[0], settings)
+          ? formatBirthdayMessage(birthdayStudents[0], birthdaySettings)
           : `Celebrating ${birthdayStudents.length} special birthdays today!`,
         students: birthdayStudents
       });

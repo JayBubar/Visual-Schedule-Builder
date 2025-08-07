@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface SettingsProps {
   isActive: boolean;
@@ -159,15 +160,40 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   // Settings state
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
 
-  // Load settings from localStorage on component mount
+  // Load settings from UnifiedDataService
   const loadSettings = useCallback(() => {
     try {
       setIsLoading(true);
-      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
       
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
+      // First try to get settings from UnifiedDataService
+      const unifiedSettings = UnifiedDataService.getSettings();
+      console.log('🔍 UnifiedDataService settings:', unifiedSettings);
+      
+      let parsedSettings = null;
+      
+      // Check if we have settings in the unified system
+      if (unifiedSettings && Object.keys(unifiedSettings).length > 0) {
+        // Check for the main settings object or legacy format
+        parsedSettings = unifiedSettings.visualScheduleBuilderSettings || unifiedSettings;
+        console.log('✅ Found settings in UnifiedDataService:', parsedSettings);
+      } else {
+        // Fallback: Try to migrate from localStorage
+        console.log('⚠️ No settings in UnifiedDataService, checking localStorage for migration...');
+        const legacySettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
         
+        if (legacySettings) {
+          parsedSettings = JSON.parse(legacySettings);
+          console.log('🔄 Migrating settings from localStorage to UnifiedDataService');
+          
+          // Save to unified system immediately
+          UnifiedDataService.updateSettings({ 
+            visualScheduleBuilderSettings: parsedSettings,
+            ...parsedSettings // Also save at root level for easier access
+          });
+        }
+      }
+      
+      if (parsedSettings) {
         // Merge with defaults to ensure all keys exist
         const mergedSettings = {
           ...DEFAULT_SETTINGS,
@@ -189,17 +215,25 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
         };
         
         setSettings(mergedSettings);
-        console.log('✅ Settings loaded from localStorage:', mergedSettings);
+        console.log('✅ Settings loaded and merged:', mergedSettings);
         
         // Apply settings immediately
         applySettings(mergedSettings);
       } else {
-        console.log('📝 No saved settings found, using defaults');
+        console.log('📝 No saved settings found anywhere, using defaults');
+        setSettings(DEFAULT_SETTINGS);
         applySettings(DEFAULT_SETTINGS);
+        
+        // Save defaults to unified system
+        UnifiedDataService.updateSettings({ 
+          visualScheduleBuilderSettings: DEFAULT_SETTINGS,
+          ...DEFAULT_SETTINGS
+        });
       }
     } catch (error) {
       console.error('❌ Error loading settings:', error);
       setShowErrorMessage('Failed to load settings. Using defaults.');
+      setSettings(DEFAULT_SETTINGS);
       applySettings(DEFAULT_SETTINGS);
     } finally {
       setIsLoading(false);
@@ -254,7 +288,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
     }
   }, []);
 
-  // Save settings to localStorage
+  // Save settings to UnifiedDataService
   const saveSettings = useCallback(() => {
     try {
       // Validate settings before saving
@@ -264,7 +298,15 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
         return;
       }
 
+      // Save to UnifiedDataService
+      UnifiedDataService.updateSettings({ 
+        visualScheduleBuilderSettings: settings,
+        ...settings // Also save at root level for easier access by other components
+      });
+      
+      // Also save to localStorage for backward compatibility (temporary)
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      
       setHasUnsavedChanges(false);
       
       // Apply settings immediately
@@ -274,7 +316,13 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
       
-      console.log('💾 Settings saved successfully:', settings);
+      console.log('💾 Settings saved successfully to UnifiedDataService:', settings);
+      
+      // Dispatch event for other components to listen to settings changes
+      window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', {
+        detail: settings
+      }));
+      
     } catch (error) {
       console.error('❌ Error saving settings:', error);
       setShowErrorMessage('Failed to save settings. Please try again.');
