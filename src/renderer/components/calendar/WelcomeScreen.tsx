@@ -195,41 +195,47 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </div>
         )}
 
-        {/* Greeting */}
-        <h1 style={{
-          fontSize: '3rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '1rem',
-          textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-          lineHeight: '1.2'
-        }}>
-          {getGreeting()}{welcomeSettings?.showTeacherName && teacherName ? `, ${teacherName}` : ''}!
-        </h1>
+        {/* Teacher Name */}
+        {welcomeSettings?.teacherName && (
+          <h1 style={{
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: 'white',
+            marginBottom: '1rem',
+            textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+            lineHeight: '1.2'
+          }}>
+            {welcomeSettings.teacherName}
+          </h1>
+        )}
 
-        {/* School and Class Name */}
-        <div style={{
-          fontSize: '1.3rem',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '2rem',
-          fontWeight: '500'
-        }}>
-          {welcomeSettings?.schoolName && (
-            <p style={{ margin: '0 0 0.5rem 0' }}>
+        {/* School Name */}
+        {welcomeSettings?.schoolName && (
+          <div style={{
+            fontSize: '1.5rem',
+            color: 'rgba(255,255,255,0.9)',
+            marginBottom: '1rem',
+            fontWeight: '500'
+          }}>
+            <p style={{ margin: 0 }}>
               {welcomeSettings.schoolName}
             </p>
-          )}
-          {welcomeSettings?.className && (
-            <p style={{ margin: 0, fontSize: '1.1rem', opacity: 0.8 }}>
+          </div>
+        )}
+
+        {/* Class Name */}
+        {welcomeSettings?.className && (
+          <div style={{
+            fontSize: '1.3rem',
+            color: 'rgba(255,255,255,0.8)',
+            marginBottom: '2rem',
+            fontWeight: '500'
+          }}>
+            <p style={{ margin: 0 }}>
               {welcomeSettings.className}
             </p>
-          )}
-          {!welcomeSettings?.schoolName && !welcomeSettings?.className && (
-            <p style={{ margin: 0 }}>
-              {schoolName}
-            </p>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Substitute Mode Message */}
         {welcomeSettings?.substituteMode && welcomeSettings?.substituteMessage && (
