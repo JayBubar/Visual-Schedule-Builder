@@ -49,6 +49,13 @@ interface SettingsData {
       enableBehaviorCommitments: boolean;
       enableChoiceActivities: boolean;
     };
+    behaviorCommitments?: {
+      customStatements?: any[];
+    };
+    celebrations?: {
+      enabled?: boolean;
+      showBirthdayPhotos?: boolean;
+    };
   };
   schedule: {
     defaultDuration: number;
@@ -801,7 +808,103 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           {activeSection === 'dailyCheckIn' && (
             <div className="settings-section">
               <h3>👋 Daily Check-In Settings</h3>
-              <p className="section-description">Customize birthday celebrations, welcome messages, and check-in flow</p>
+              <p className="section-description">Customize behavior statements, birthday celebrations, welcome messages, and check-in flow</p>
+
+              {/* Behavior Statements Management */}
+              <div className="settings-subsection">
+                <h4>💪 Behavior Statements</h4>
+                <p className="setting-description">
+                  Current behavior statements: {settings.dailyCheckIn?.behaviorCommitments?.customStatements?.length || 0} configured
+                </p>
+                
+                <button
+                  onClick={() => {
+                    // TODO: Open behavior statement management modal
+                    alert('Behavior statement customization interface coming soon!\n\nThis will allow you to:\n• Add custom "I will..." statements\n• Organize by categories (kindness, effort, etc.)\n• Enable/disable statements\n• Set student-specific goals');
+                  }}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  ⚙️ Customize Behavior Statements
+                </button>
+              </div>
+
+              {/* Celebration Management */}
+              <div className="settings-subsection">
+                <h4>🎉 Celebrations</h4>
+                <p className="setting-description">
+                  Manage custom celebrations and birthday settings
+                </p>
+                
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn?.celebrations?.enabled ?? true}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
+                          ...settings.dailyCheckIn.celebrations,
+                          enabled: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable celebrations in Daily Check-In</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn?.celebrations?.showBirthdayPhotos ?? true}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
+                          ...settings.dailyCheckIn.celebrations,
+                          showBirthdayPhotos: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Show photos in birthday celebrations</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    // TODO: Open celebration management modal
+                    alert('Celebration management interface coming soon!\n\nThis will allow you to:\n• Create custom celebrations\n• Set recurring vs one-time events\n• Choose celebration emojis and messages\n• Configure birthday display options');
+                  }}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  🎊 Manage Celebrations
+                </button>
+              </div>
 
               {/* Birthday Settings */}
               <div className="settings-subsection">
