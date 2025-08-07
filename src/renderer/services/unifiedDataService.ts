@@ -580,12 +580,77 @@ class UnifiedDataService {
   
   // Update student
   static updateStudent(studentId: string, updates: Partial<UnifiedStudent>): void {
-    const students = this.getAllStudents();
-    const index = students.findIndex(s => s.id === studentId);
+    console.log('🔧 UnifiedDataService.updateStudent() called with:', { studentId, updates });
+    console.log('🎂 Birthday data in updates:', {
+      birthday: updates.birthday,
+      allowBirthdayDisplay: updates.allowBirthdayDisplay,
+      allowPhotoInCelebrations: updates.allowPhotoInCelebrations
+    });
     
-    if (index !== -1) {
-      students[index] = { ...students[index], ...updates };
-      this.saveStudents(students);
+    // Get current unified data structure
+    let unifiedData = this.getUnifiedData();
+    if (!unifiedData) {
+      console.error('❌ No unified data found for update');
+      return;
+    }
+    
+    // Find the student to update
+    const studentIndex = unifiedData.students.findIndex(s => s.id === studentId);
+    if (studentIndex === -1) {
+      console.error('❌ Student not found for update:', studentId);
+      return;
+    }
+    
+    // Update the student with all fields, ensuring birthday fields are preserved
+    const currentStudent = unifiedData.students[studentIndex];
+    const updatedStudent = {
+      ...currentStudent,
+      ...updates,
+      // Explicitly ensure birthday fields are included
+      birthday: updates.birthday !== undefined ? updates.birthday : currentStudent.birthday,
+      allowBirthdayDisplay: updates.allowBirthdayDisplay !== undefined ? updates.allowBirthdayDisplay : currentStudent.allowBirthdayDisplay,
+      allowPhotoInCelebrations: updates.allowPhotoInCelebrations !== undefined ? updates.allowPhotoInCelebrations : currentStudent.allowPhotoInCelebrations
+    };
+    
+    console.log('🎂 Updated student with birthday data:', {
+      id: updatedStudent.id,
+      name: updatedStudent.name,
+      birthday: updatedStudent.birthday,
+      allowBirthdayDisplay: updatedStudent.allowBirthdayDisplay,
+      allowPhotoInCelebrations: updatedStudent.allowPhotoInCelebrations
+    });
+    
+    // Replace the student in the array
+    unifiedData.students[studentIndex] = updatedStudent;
+    
+    // Update metadata
+    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => total + s.iepData.goals.length, 0);
+    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => total + s.iepData.dataCollection.length, 0);
+    
+    console.log('💾 Saving updated unified data with', unifiedData.students.length, 'students');
+    
+    // Save the entire unified data structure
+    this.saveUnifiedData(unifiedData);
+    
+    console.log('✅ Student updated successfully. Verifying...');
+    
+    // Verify the update worked
+    const verification = this.getUnifiedData();
+    if (verification && verification.students) {
+      console.log('🔍 Verification: Found', verification.students.length, 'students in storage');
+      const updatedStudentVerification = verification.students.find(s => s.id === studentId);
+      if (updatedStudentVerification) {
+        console.log('✅ Updated student verified in storage:', updatedStudentVerification.name);
+        console.log('🎂 Birthday data verified:', {
+          birthday: updatedStudentVerification.birthday,
+          allowBirthdayDisplay: updatedStudentVerification.allowBirthdayDisplay,
+          allowPhotoInCelebrations: updatedStudentVerification.allowPhotoInCelebrations
+        });
+      } else {
+        console.error('❌ Updated student NOT found in storage after save!');
+      }
+    } else {
+      console.error('❌ Could not verify update - no unified data found');
     }
   }
   
