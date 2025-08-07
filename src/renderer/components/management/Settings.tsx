@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
+import BehaviorStatementManager from './BehaviorStatementManager';
 
 interface SettingsProps {
   isActive: boolean;
@@ -163,6 +164,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBehaviorManager, setShowBehaviorManager] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
@@ -818,10 +820,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                 </p>
                 
                 <button
-                  onClick={() => {
-                    // TODO: Open behavior statement management modal
-                    alert('Behavior statement customization interface coming soon!\n\nThis will allow you to:\n• Add custom "I will..." statements\n• Organize by categories (kindness, effort, etc.)\n• Enable/disable statements\n• Set student-specific goals');
-                  }}
+                  onClick={() => setShowBehaviorManager(true)}
                   className="action-button"
                   style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1551,6 +1550,25 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
         </div>
       )}
 
+      {/* Behavior Statement Manager Modal */}
+      <BehaviorStatementManager
+        isOpen={showBehaviorManager}
+        onClose={() => setShowBehaviorManager(false)}
+        onSave={(statements) => {
+          // Update settings state
+          setSettings(prev => ({
+            ...prev,
+            dailyCheckIn: {
+              ...prev.dailyCheckIn,
+              behaviorCommitments: {
+                ...prev.dailyCheckIn.behaviorCommitments,
+                customStatements: statements
+              }
+            }
+          }));
+          setShowBehaviorManager(false);
+        }}
+      />
 
       <style>{`
         .settings-page {
