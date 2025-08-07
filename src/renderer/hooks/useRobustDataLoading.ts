@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../services/unifiedDataService';
-import { Student, StaffMember } from '../types';
+import { Student, StaffMember, UnifiedStudent as TypesUnifiedStudent } from '../types';
 
 interface UseRobustDataLoadingOptions {
   loadStudents?: boolean;
@@ -9,7 +9,7 @@ interface UseRobustDataLoadingOptions {
 }
 
 interface UseRobustDataLoadingResult {
-  students: Student[];
+  students: TypesUnifiedStudent[];
   staff: StaffMember[];
   isLoading: boolean;
   error: string | null;
@@ -83,7 +83,11 @@ export const useRobustDataLoading = (
               behaviorNotes: student.behaviorNotes,
               medicalNotes: student.medicalNotes,
               preferredPartners: student.preferredPartners || [],
-              avoidPartners: student.avoidPartners || []
+              avoidPartners: student.avoidPartners || [],
+              // 🎂 FIXED: Include birthday fields in the conversion
+              birthday: student.birthday,
+              allowBirthdayDisplay: student.allowBirthdayDisplay,
+              allowPhotoInCelebrations: student.allowPhotoInCelebrations
             }));
           }
         }
