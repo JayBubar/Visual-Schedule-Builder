@@ -787,3 +787,61 @@ export interface ScheduleAnalytics {
   mostSkippedActivities: string[];
   peakUsageTimes: string[];
 }
+
+// ===== DAILY CHECK-IN SETTINGS INTERFACES =====
+
+export interface BehaviorStatement {
+  id: string;
+  text: string;
+  category: 'kindness' | 'respect' | 'effort' | 'responsibility' | 'safety' | 'learning';
+  isCustom: boolean;
+  createdAt: string;
+}
+
+export interface CheckInStep {
+  id: string;
+  name: string;
+  component: string;
+  enabled: boolean;
+  order: number;
+  settings?: any;
+}
+
+export interface BirthdaySettings {
+  enableBirthdayDisplay: boolean;
+  birthdayCountdownDays: number;
+  weekendBirthdayHandling: 'friday' | 'monday' | 'exact';
+  birthdayDisplayMode: 'photo' | 'name' | 'both';
+  showBirthdayBadges: boolean;
+}
+
+export interface BehaviorCommitmentSettings {
+  customStatements: BehaviorStatement[];
+  enableStudentCustom: boolean;
+  showPhotos: boolean;
+}
+
+export interface WelcomeSettings {
+  customWelcomeMessage: string;
+  showTeacherName: boolean;
+  substituteMode: boolean;
+  substituteMessage: string;
+  schoolName: string;
+  className: string;
+}
+
+export interface CheckInFlowSettings {
+  enableWeather: boolean;
+  enableCelebrations: boolean;
+  enableBehaviorCommitments: boolean;
+  enableChoiceActivities: boolean;
+  customSteps: CheckInStep[];
+}
+
+// Enhanced CalendarSettings interface
+export interface EnhancedCalendarSettings extends CalendarSettings {
+  birthdaySettings: BirthdaySettings;
+  behaviorCommitments: BehaviorCommitmentSettings;
+  welcomeSettings: WelcomeSettings;
+  checkInFlow: CheckInFlowSettings;
+}
