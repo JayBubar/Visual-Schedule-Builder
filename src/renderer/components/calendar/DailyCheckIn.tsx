@@ -53,6 +53,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showCelebrationAnimation, setShowCelebrationAnimation] = useState(false);
+  const [showChoiceInterface, setShowChoiceInterface] = useState(false);
 
   useEffect(() => {
     try {
@@ -972,20 +973,49 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   </div>
                 </div>
                 
-                <div style={{
-                  background: 'rgba(245, 158, 11, 0.2)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  border: '2px solid rgba(245, 158, 11, 0.4)'
-                }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>⏱️</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-                    20 min
+                <button
+                  onClick={() => {
+                    // Show the IndependentChoices interface
+                    setShowChoiceInterface(true);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.4))',
+                    borderRadius: '12px',
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    border: '2px solid rgba(34, 197, 94, 0.6)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    color: 'white',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)',
+                    minHeight: '120px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.5)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.4), rgba(16, 185, 129, 0.5))';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(34, 197, 94, 0.3)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.4))';
+                  }}
+                >
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'white', marginBottom: '0.25rem' }}>
+                    Start
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                    Default Duration
+                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)' }}>
+                    Choice Selection
                   </div>
-                </div>
+                </button>
               </div>
 
               <div style={{
@@ -1250,6 +1280,60 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           ⚙️
         </button>
       </div>
+
+      {/* Choice Interface Modal */}
+      {showChoiceInterface && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '20px',
+            padding: '2rem',
+            maxWidth: '95vw',
+            maxHeight: '95vh',
+            overflow: 'auto',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowChoiceInterface(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                color: 'white',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            
+            <IndependentChoices
+              selectedDate={currentDate.toISOString().split('T')[0]}
+              onClose={() => setShowChoiceInterface(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {calendarSettings && (
