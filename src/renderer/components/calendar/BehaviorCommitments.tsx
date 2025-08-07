@@ -3,8 +3,10 @@ import {
   Student, 
   DailyCheckIn as DailyCheckInType,
   StudentBehaviorChoice,
-  ActivityHighlight
+  ActivityHighlight,
+  BehaviorStatement
 } from '../../types';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface BehaviorCommitmentsProps {
   currentDate: Date;
@@ -32,11 +34,60 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   onNext,
   onBack
 }) => {
+  // Default behavior statements
+  const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
+    { id: 'kindness_1', text: 'I will be kind to my friends', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_2', text: 'I will help others when they need it', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_3', text: 'I will share with my classmates', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_4', text: 'I will use nice words', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_5', text: 'I will include everyone in activities', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_6', text: 'I will say please and thank you', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    
+    { id: 'respect_1', text: 'I will listen when others are talking', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_2', text: 'I will raise my hand to speak', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_3', text: 'I will take care of our classroom', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_4', text: 'I will follow directions the first time', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_5', text: 'I will use my inside voice', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_6', text: 'I will keep my hands to myself', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    
+    { id: 'effort_1', text: 'I will try my best in all activities', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_2', text: 'I will ask for help when I need it', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_3', text: 'I will finish my work', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_4', text: 'I will not give up when things are hard', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_5', text: 'I will pay attention during lessons', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_6', text: 'I will practice what I learn', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    
+    { id: 'responsibility_1', text: 'I will clean up after myself', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_2', text: 'I will take care of my belongings', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_3', text: 'I will remember my homework', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_4', text: 'I will be ready for activities', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_5', text: 'I will make good choices', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_6', text: 'I will tell the truth', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    
+    { id: 'safety_1', text: 'I will walk in the hallways', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_2', text: 'I will use materials safely', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_3', text: 'I will ask before leaving my seat', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_4', text: 'I will keep food out of my mouth during non-eating times', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_5', text: 'I will follow playground rules', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_6', text: 'I will tell an adult if someone is hurt', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    
+    { id: 'learning_1', text: 'I will ask questions when I don\'t understand', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'learning_2', text: 'I will listen to learn new things', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'learning_3', text: 'I will try new activities', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'learning_4', text: 'I will help my friends learn too', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'learning_5', text: 'I will celebrate my mistakes as learning', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'learning_6', text: 'I will be proud of my progress', category: 'learning', isCustom: false, createdAt: new Date().toISOString() }
+  ];
+
   // NEW: Individual student choice tracking
   const [studentChoices, setStudentChoices] = useState<{[studentId: string]: string}>({});
   const [completedStudents, setCompletedStudents] = useState<Set<string>>(new Set());
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState<string | null>(null);
+
+  // Replace the hardcoded behaviorOptions array with:
+  const [behaviorStatements, setBehaviorStatements] = useState<BehaviorStatement[]>(DEFAULT_BEHAVIOR_STATEMENTS);
+  const [isLoadingStatements, setIsLoadingStatements] = useState(true);
 
   // Behavior categories with commitments
   const behaviorCategories: BehaviorCategory[] = [
@@ -131,6 +182,33 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       ]
     }
   ];
+
+  // Load custom behavior statements from settings
+  useEffect(() => {
+    const loadBehaviorStatements = async () => {
+      try {
+        setIsLoadingStatements(true);
+        const data = await UnifiedDataService.getUnifiedData();
+        const customStatements = data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+        
+        if (customStatements && customStatements.length > 0) {
+          // Use custom statements from settings, only show active ones
+          const activeStatements = customStatements.filter(s => s.isActive);
+          setBehaviorStatements(activeStatements.length > 0 ? activeStatements : DEFAULT_BEHAVIOR_STATEMENTS);
+        } else {
+          // Fallback to defaults if no custom settings
+          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+        }
+      } catch (error) {
+        console.error('Failed to load behavior statements:', error);
+        setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+      } finally {
+        setIsLoadingStatements(false);
+      }
+    };
+
+    loadBehaviorStatements();
+  }, []);
 
   // Load existing commitments on mount
   useEffect(() => {
