@@ -1482,12 +1482,23 @@ const StudentModal: React.FC<StudentModalProps> = ({
 
   useEffect(() => {
     if (student) {
+      console.log('🎂 StudentModal - Loading existing student data:', {
+        name: student.name,
+        birthday: student.birthday,
+        allowBirthdayDisplay: student.allowBirthdayDisplay,
+        allowPhotoInCelebrations: student.allowPhotoInCelebrations
+      });
+      
       setFormData({
         ...student,
         accommodations: student.accommodations || [],
         goals: student.goals || [],
         preferredPartners: student.preferredPartners || [],
-        avoidPartners: student.avoidPartners || []
+        avoidPartners: student.avoidPartners || [],
+        // Explicitly ensure birthday fields are loaded
+        birthday: student.birthday || '',
+        allowBirthdayDisplay: student.allowBirthdayDisplay !== undefined ? student.allowBirthdayDisplay : true,
+        allowPhotoInCelebrations: student.allowPhotoInCelebrations !== undefined ? student.allowPhotoInCelebrations : true
       });
     } else {
       // Reset form for new student
@@ -1504,6 +1515,9 @@ const StudentModal: React.FC<StudentModalProps> = ({
         isActive: true,
         behaviorNotes: '',
         medicalNotes: '',
+        birthday: '',
+        allowBirthdayDisplay: true,
+        allowPhotoInCelebrations: true,
         resourceInfo: {
           attendsResource: false,
           resourceType: '',
