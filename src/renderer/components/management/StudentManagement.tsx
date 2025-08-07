@@ -199,11 +199,27 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const handleSaveStudent = (studentData: Partial<ExtendedStudent>) => {
     try {
       console.log('🔧 Saving student data:', studentData);
+      console.log('🎂 Birthday data being saved:', {
+        birthday: studentData.birthday,
+        allowBirthdayDisplay: studentData.allowBirthdayDisplay,
+        allowPhotoInCelebrations: studentData.allowPhotoInCelebrations
+      });
 
       if (editingStudent) {
         // Update existing student directly in UnifiedDataService
         console.log('📝 Updating existing student:', editingStudent.id);
-        UnifiedDataService.updateStudent(editingStudent.id, studentData);
+        
+        // Ensure birthday fields are properly included in the update
+        const updateData = {
+          ...studentData,
+          // Explicitly include birthday fields to ensure they're saved
+          birthday: studentData.birthday || '',
+          allowBirthdayDisplay: studentData.allowBirthdayDisplay !== undefined ? studentData.allowBirthdayDisplay : true,
+          allowPhotoInCelebrations: studentData.allowPhotoInCelebrations !== undefined ? studentData.allowPhotoInCelebrations : true
+        };
+        
+        console.log('🎂 Final update data with birthday fields:', updateData);
+        UnifiedDataService.updateStudent(editingStudent.id, updateData);
       } else {
         // Add new student directly to UnifiedDataService
         console.log('➕ Adding new student');
@@ -221,9 +237,14 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           goals: [],
           preferredPartners: [],
           avoidPartners: [],
+          // Ensure birthday fields are included for new students
+          birthday: '',
+          allowBirthdayDisplay: true,
+          allowPhotoInCelebrations: true,
           ...studentData
         };
         
+        console.log('🎂 New student with birthday fields:', newStudent);
         UnifiedDataService.addStudent(newStudent);
       }
       
@@ -1626,7 +1647,11 @@ const StudentModal: React.FC<StudentModalProps> = ({
         </div>
 
         {/* Tab Content */}
-        <div style={{ padding: '1.5rem' }}>
+        <div style={{ 
+          padding: '1.5rem',
+          maxHeight: '60vh',
+          overflow: 'auto'
+        }}>
           {currentTab === 'basic' && (
             <div>
               {/* Photo Upload */}

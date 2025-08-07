@@ -77,6 +77,8 @@ export interface Student {
 // Unified Student interface (extends Student with celebration features)
 export interface UnifiedStudent extends Student {
   birthday?: string; // 'YYYY-MM-DD' format
+  allowBirthdayDisplay?: boolean; // Direct property for easier access
+  allowPhotoInCelebrations?: boolean; // Direct property for easier access
   celebrationPreferences?: {
     allowBirthdayDisplay: boolean;
     customCelebrationMessage?: string;

@@ -204,7 +204,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           textShadow: '0 4px 8px rgba(0,0,0,0.3)',
           lineHeight: '1.2'
         }}>
-          {getGreeting()}{welcomeSettings?.showTeacherName ? `, ${teacherName}` : ''}!
+          {getGreeting()}{welcomeSettings?.showTeacherName && teacherName ? `, ${teacherName}` : ''}!
         </h1>
 
         {/* School and Class Name */}
@@ -216,7 +216,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         }}>
           {welcomeSettings?.schoolName && (
             <p style={{ margin: '0 0 0.5rem 0' }}>
-              Welcome to {welcomeSettings.schoolName}
+              {welcomeSettings.schoolName}
             </p>
           )}
           {welcomeSettings?.className && (
@@ -226,7 +226,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           )}
           {!welcomeSettings?.schoolName && !welcomeSettings?.className && (
             <p style={{ margin: 0 }}>
-              Welcome to {schoolName}
+              {schoolName}
             </p>
           )}
         </div>
