@@ -21,6 +21,7 @@
     "package:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
+    "electron-reload": "^2.0.0-alpha.1",
     "electron-store": "^8.1.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.535.0",

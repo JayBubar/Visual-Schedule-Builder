@@ -204,8 +204,45 @@ class UnifiedDataService {
         console.log('- Unified data structure:', parsed);
         console.log('- Students in unified data:', parsed.students);
         console.log('- Students count:', Array.isArray(parsed.students) ? parsed.students.length : 'Not an array');
+        
+        // Check for birthday data specifically
+        if (Array.isArray(parsed.students)) {
+          parsed.students.forEach((student: any, index: number) => {
+            console.log(`- Student ${index + 1} (${student.name}):`, {
+              id: student.id,
+              birthday: student.birthday,
+              allowBirthdayDisplay: student.allowBirthdayDisplay,
+              allowPhotoInCelebrations: student.allowPhotoInCelebrations
+            });
+          });
+        }
       } catch (e) {
         console.error('- Error parsing unified data:', e);
+      }
+    }
+  }
+
+  // New method to force check birthday data persistence
+  static checkBirthdayDataPersistence(): void {
+    console.log('🎂 CHECKING BIRTHDAY DATA PERSISTENCE:');
+    this.debugLocalStorage();
+    
+    // Also check if there are any competing storage operations
+    console.log('🔍 Checking for competing storage keys:');
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('student') || key.includes('birthday') || key.includes('unified'))) {
+        console.log(`- Found storage key: ${key}`);
+        try {
+          const value = localStorage.getItem(key);
+          if (value && value.length < 1000) { // Only log short values
+            console.log(`  Value: ${value.substring(0, 200)}...`);
+          } else {
+            console.log(`  Value: [${value?.length || 0} characters]`);
+          }
+        } catch (e) {
+          console.log(`  Error reading value: ${e}`);
+        }
       }
     }
   }

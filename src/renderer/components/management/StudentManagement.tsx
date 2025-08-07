@@ -78,6 +78,14 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     filterStudents();
   }, [students, searchTerm, gradeFilter]);
 
+  // Debug birthday data persistence on component mount
+  useEffect(() => {
+    if (isActive) {
+      console.log('🎂 StudentManagement component mounted - checking birthday data persistence...');
+      UnifiedDataService.checkBirthdayDataPersistence();
+    }
+  }, [isActive]);
+
   // Refresh data function - Fixed to avoid page reload
   const refreshData = () => {
     // Force re-render by updating the students state
