@@ -1575,8 +1575,10 @@ const StudentModal: React.FC<StudentModalProps> = ({
         borderRadius: '16px',
         width: '100%',
         maxWidth: '800px',
-        maxHeight: '90vh',
-        overflow: 'auto'
+        maxHeight: '95vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* Modal Header */}
         <div style={{

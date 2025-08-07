@@ -481,8 +481,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         {currentStep === 1 && (
           <WelcomeScreen
             currentDate={currentDate}
-            teacherName="Teacher"
-            schoolName="Our School"
+            teacherName={dailyCheckInSettings?.welcomeSettings?.showTeacherName ? "Teacher" : undefined}
+            schoolName={dailyCheckInSettings?.welcomeSettings?.schoolName || "Our School"}
             onBegin={handleNext}
           />
         )}
@@ -754,7 +754,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         )}
 
         {/* Step 4: Weather Discussion */}
-        {currentStep === 4 && calendarSettings && (
+        {currentStep === 4 && calendarSettings && dailyCheckInSettings?.checkInFlow?.enableWeather !== false && (
           <div style={{ padding: '2rem', textAlign: 'center', minHeight: '600px' }}>
             <h2 style={{
               fontSize: '2.5rem',
@@ -826,17 +826,18 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         )}
 
         {/* Step 5: Celebration System */}
-        {currentStep === 5 && (
+        {currentStep === 5 && dailyCheckInSettings?.checkInFlow?.enableCelebrations !== false && (
           <CelebrationSystem
             currentDate={currentDate}
             students={presentStudents}
             onNext={handleNext}
             onBack={handleBack}
+            birthdaySettings={dailyCheckInSettings?.birthdaySettings}
           />
         )}
 
         {/* Step 6: "I Will" Choices - Behavior Commitments */}
-        {currentStep === 6 && (
+        {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableBehaviorCommitments !== false && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{
@@ -912,7 +913,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         )}
 
         {/* Step 7: Choice Activities - Independent Choices */}
-        {currentStep === 7 && (
+        {currentStep === 7 && dailyCheckInSettings?.checkInFlow?.enableChoiceActivities !== false && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{

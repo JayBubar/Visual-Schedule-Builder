@@ -40,6 +40,11 @@ export interface UnifiedStudent {
   behaviorNotes?: string;
   medicalNotes?: string;
   
+  // Birthday and celebration preferences
+  birthday?: string;
+  allowBirthdayDisplay?: boolean;
+  allowPhotoInCelebrations?: boolean;
+  
   // Resource & accommodation info
   resourceInformation?: {
     attendsResourceServices: boolean;

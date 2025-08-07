@@ -7,6 +7,7 @@ interface CelebrationSystemProps {
   students: Student[];
   onNext: () => void;
   onBack: () => void;
+  birthdaySettings?: any;
 }
 
 interface Holiday {
@@ -21,7 +22,8 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
   currentDate,
   students,
   onNext,
-  onBack
+  onBack,
+  birthdaySettings
 }) => {
   const [celebrationItems, setCelebrationItems] = useState<any[]>([]);
 
@@ -68,12 +70,15 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     // Check for celebrations on this date
     const celebrations = [];
     
-    // Get settings from UnifiedDataService for birthday handling
-    const unifiedSettings = UnifiedDataService.getSettings();
-    const birthdaySettings = unifiedSettings.dailyCheckIn?.birthdaySettings || {};
+    // Use passed birthdaySettings or fallback to UnifiedDataService
+    let effectiveBirthdaySettings = birthdaySettings;
+    if (!effectiveBirthdaySettings) {
+      const unifiedSettings = UnifiedDataService.getSettings();
+      effectiveBirthdaySettings = unifiedSettings.dailyCheckIn?.birthdaySettings || {};
+    }
     
-    // Check for birthdays with weekend handling using unified settings
-    const birthdayStudents = handleWeekendBirthdays(currentDate, students, birthdaySettings);
+    // Check for birthdays with weekend handling using settings
+    const birthdayStudents = handleWeekendBirthdays(currentDate, students, effectiveBirthdaySettings);
     if (birthdayStudents.length > 0) {
       celebrations.push({
         type: 'birthday',
@@ -88,31 +93,34 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
       });
     }
 
-    // Check for custom celebrations
-    const customCelebrations = getCustomCelebrations(currentDate);
-    celebrations.push(...customCelebrations.map(celebration => ({
-      type: 'custom',
-      icon: celebration.emoji,
-      title: celebration.title,
-      description: celebration.message
-    })));
+    // Only show other celebrations if birthday celebrations are enabled
+    if (effectiveBirthdaySettings?.enableBirthdayDisplay !== false) {
+      // Check for custom celebrations
+      const customCelebrations = getCustomCelebrations(currentDate);
+      celebrations.push(...customCelebrations.map(celebration => ({
+        type: 'custom',
+        icon: celebration.emoji,
+        title: celebration.title,
+        description: celebration.message
+      })));
 
-    // Check for holidays (simplified - you'd want more sophisticated date matching)
-    const todayHolidays = getTodaysHolidays();
-    celebrations.push(...todayHolidays.map(holiday => ({
-      type: 'holiday',
-      holiday,
-      icon: holiday.icon,
-      title: holiday.name,
-      description: holiday.description
-    })));
+      // Check for holidays (simplified - you'd want more sophisticated date matching)
+      const todayHolidays = getTodaysHolidays();
+      celebrations.push(...todayHolidays.map(holiday => ({
+        type: 'holiday',
+        holiday,
+        icon: holiday.icon,
+        title: holiday.name,
+        description: holiday.description
+      })));
 
-    // Check for special school events
-    const specialEvents = getSpecialEvents();
-    celebrations.push(...specialEvents);
+      // Check for special school events
+      const specialEvents = getSpecialEvents();
+      celebrations.push(...specialEvents);
+    }
 
     setCelebrationItems(celebrations);
-  }, [currentDate, students]);
+  }, [currentDate, students, birthdaySettings]);
 
   const getTodaysHolidays = (): Holiday[] => {
     // This is a simplified version - you'd want a more sophisticated matching system
