@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit3, Trash2, Save, X, Target, BookOpen, Heart, Users, Activity, Calendar, AlertCircle, CheckCircle, Star, Clock, TrendingUp } from 'lucide-react';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 
 const GoalManager = () => {
-  const [goals, setGoals] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [goals, setGoals] = useState<IEPGoal[]>([]);
+  const [students, setStudents] = useState<UnifiedStudent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState(null);
+  const [editingGoal, setEditingGoal] = useState<IEPGoal | null>(null);
   const [selectedStudent, setSelectedStudent] = useState('all');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,14 +14,14 @@ const GoalManager = () => {
   // Goal form state
   const [goalForm, setGoalForm] = useState({
     studentId: '',
-    domain: 'academic',
+    domain: 'academic' as 'academic' | 'behavioral' | 'social-emotional' | 'physical',
     title: '',
     description: '',
     shortTermObjective: '',
-    measurementType: 'percentage',
+    measurementType: 'percentage' as 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence',
     criteria: '',
     target: 80,
-    priority: 'medium',
+    priority: 'medium' as 'high' | 'medium' | 'low',
     isActive: true
   });
 
@@ -31,28 +32,33 @@ const GoalManager = () => {
   }, []);
 
   const loadGoalsData = () => {
-    const savedGoals = localStorage.getItem('iepGoals');
-    if (savedGoals) {
-      setGoals(JSON.parse(savedGoals));
+    try {
+      // Get all students and extract their goals
+      const allStudents = UnifiedDataService.getAllStudents();
+      const allGoals: IEPGoal[] = [];
+      
+      allStudents.forEach(student => {
+        if (student.iepData && student.iepData.goals) {
+          allGoals.push(...student.iepData.goals);
+        }
+      });
+      
+      console.log('📚 Loaded goals from UnifiedDataService:', allGoals.length);
+      setGoals(allGoals);
+    } catch (error) {
+      console.error('Error loading goals from UnifiedDataService:', error);
+      setGoals([]);
     }
   };
 
   const loadStudentsData = () => {
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
-    } else {
-      // Default sample students if none exist
-      const sampleStudents = [
-        { id: '1', name: 'Alex Johnson', grade: '3rd Grade' },
-        { id: '2', name: 'Maria Garcia', grade: '4th Grade' },
-        { id: '3', name: 'Jordan Smith', grade: '2nd Grade' },
-        { id: '4', name: 'Emma Wilson', grade: '3rd Grade' },
-        { id: '5', name: 'Liam Brown', grade: '4th Grade' },
-        { id: '6', name: 'Sophia Davis', grade: '2nd Grade' }
-      ];
-      setStudents(sampleStudents);
-      localStorage.setItem('students', JSON.stringify(sampleStudents));
+    try {
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      console.log('👥 Loaded students from UnifiedDataService:', unifiedStudents.length);
+      setStudents(unifiedStudents);
+    } catch (error) {
+      console.error('Error loading students from UnifiedDataService:', error);
+      setStudents([]);
     }
   };
 
@@ -84,29 +90,45 @@ const GoalManager = () => {
       return;
     }
 
-    const newGoal = {
-      id: editingGoal ? editingGoal.id : `goal-${Date.now()}`,
-      ...goalForm,
-      dateCreated: editingGoal ? editingGoal.dateCreated : new Date().toISOString().split('T')[0],
-      lastDataPoint: editingGoal ? editingGoal.lastDataPoint : undefined,
-      dataPoints: editingGoal ? editingGoal.dataPoints : 0,
-      currentProgress: editingGoal ? editingGoal.currentProgress : 0
-    };
+    try {
+      if (editingGoal) {
+        // Update existing goal via UnifiedDataService
+        console.log('📝 Updating existing goal:', editingGoal.id);
+        UnifiedDataService.updateGoal(editingGoal.id, {
+          ...goalForm,
+          lastDataPoint: editingGoal.lastDataPoint,
+          dataPoints: editingGoal.dataPoints,
+          currentProgress: editingGoal.currentProgress
+        });
+      } else {
+        // Add new goal via UnifiedDataService
+        console.log('➕ Adding new goal for student:', goalForm.studentId);
+        UnifiedDataService.addGoalToStudent(goalForm.studentId, {
+          ...goalForm,
+          measurableObjective: goalForm.shortTermObjective,
+          targetCriteria: goalForm.criteria,
+          dataCollectionSchedule: 'daily',
+          dateCreated: new Date().toISOString().split('T')[0],
+          createdDate: new Date().toISOString().split('T')[0],
+          lastUpdated: new Date().toISOString(),
+          dataPoints: 0,
+          currentProgress: 0
+        });
+      }
 
-    let updatedGoals;
-    if (editingGoal) {
-      updatedGoals = goals.map(goal => goal.id === editingGoal.id ? newGoal : goal);
-    } else {
-      updatedGoals = [...goals, newGoal];
+      // Reload goals data to reflect changes
+      loadGoalsData();
+      
+      // Reset form and close modal
+      resetForm();
+      setIsModalOpen(false);
+      setEditingGoal(null);
+      
+      console.log('✅ Goal saved successfully via UnifiedDataService');
+    } catch (error) {
+      console.error('❌ Error saving goal:', error);
+      alert('Error saving goal. Please try again.');
     }
-
-    setGoals(updatedGoals);
-    localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
-    
-    // Reset form and close modal
-    resetForm();
-    setIsModalOpen(false);
-    setEditingGoal(null);
   };
 
   const handleEditGoal = (goal) => {
@@ -128,18 +150,57 @@ const GoalManager = () => {
 
   const handleDeleteGoal = (goalId) => {
     if (window.confirm('Are you sure you want to delete this goal? This action cannot be undone.')) {
-      const updatedGoals = goals.filter(goal => goal.id !== goalId);
-      setGoals(updatedGoals);
-      localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
+      try {
+        // Find the goal to get its student ID
+        const goalToDelete = goals.find(g => g.id === goalId);
+        if (goalToDelete) {
+          // Get the student and remove the goal from their iepData
+          const student = UnifiedDataService.getStudent(goalToDelete.studentId);
+          if (student && student.iepData && student.iepData.goals) {
+            const updatedGoals = student.iepData.goals.filter(g => g.id !== goalId);
+            const updatedStudent = {
+              ...student,
+              iepData: {
+                ...student.iepData,
+                goals: updatedGoals
+              }
+            };
+            
+            // Update the student via UnifiedDataService
+            UnifiedDataService.updateStudent(student.id, updatedStudent);
+            
+            // Reload goals data to reflect changes
+            loadGoalsData();
+            
+            console.log('✅ Goal deleted successfully via UnifiedDataService');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error deleting goal:', error);
+        alert('Error deleting goal. Please try again.');
+      }
     }
   };
 
   const handleToggleActive = (goalId) => {
-    const updatedGoals = goals.map(goal => 
-      goal.id === goalId ? { ...goal, isActive: !goal.isActive } : goal
-    );
-    setGoals(updatedGoals);
-    localStorage.setItem('iepGoals', JSON.stringify(updatedGoals));
+    try {
+      // Find the goal to get its current status and student ID
+      const goalToToggle = goals.find(g => g.id === goalId);
+      if (goalToToggle) {
+        // Update the goal via UnifiedDataService
+        UnifiedDataService.updateGoal(goalId, {
+          isActive: !goalToToggle.isActive
+        });
+        
+        // Reload goals data to reflect changes
+        loadGoalsData();
+        
+        console.log('✅ Goal status toggled successfully via UnifiedDataService');
+      }
+    } catch (error) {
+      console.error('❌ Error toggling goal status:', error);
+      alert('Error updating goal status. Please try again.');
+    }
   };
 
   const resetForm = () => {
@@ -791,17 +852,17 @@ const GoalManager = () => {
                 }}>
                   Domain *
                 </label>
-                <select
-                  value={goalForm.domain}
-                  onChange={(e) => setGoalForm({ ...goalForm, domain: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '1rem'
-                  }}
-                >
+              <select
+                value={goalForm.domain}
+                onChange={(e) => setGoalForm({ ...goalForm, domain: e.target.value as 'academic' | 'behavioral' | 'social-emotional' | 'physical' })}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid #D1D5DB',
+                  fontSize: '1rem'
+                }}
+              >
                   {domains.map(domain => (
                     <option key={domain.id} value={domain.id}>
                       {domain.name}
@@ -905,7 +966,7 @@ const GoalManager = () => {
                   </label>
                   <select
                     value={goalForm.measurementType}
-                    onChange={(e) => setGoalForm({ ...goalForm, measurementType: e.target.value })}
+                    onChange={(e) => setGoalForm({ ...goalForm, measurementType: e.target.value as 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence' })}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
@@ -991,7 +1052,7 @@ const GoalManager = () => {
                   </label>
                   <select
                     value={goalForm.priority}
-                    onChange={(e) => setGoalForm({ ...goalForm, priority: e.target.value })}
+                    onChange={(e) => setGoalForm({ ...goalForm, priority: e.target.value as 'high' | 'medium' | 'low' })}
                     style={{
                       width: '100%',
                       padding: '0.75rem',
