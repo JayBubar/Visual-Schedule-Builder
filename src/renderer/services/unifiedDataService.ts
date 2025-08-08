@@ -645,11 +645,17 @@ class UnifiedDataService {
       return;
     }
     
+    // Handle both resourceInfo and resourceInformation during transition
+    const processedUpdates = { ...updates };
+    if ((updates as any).resourceInfo && !(updates as any).resourceInformation) {
+      processedUpdates.resourceInformation = (updates as any).resourceInfo;
+    }
+    
     // Update the student with all fields, ensuring birthday fields are preserved
     const currentStudent = unifiedData.students[studentIndex];
     const updatedStudent = {
       ...currentStudent,
-      ...updates,
+      ...processedUpdates,
       // Explicitly ensure birthday fields are included
       birthday: updates.birthday !== undefined ? updates.birthday : currentStudent.birthday,
       allowBirthdayDisplay: updates.allowBirthdayDisplay !== undefined ? updates.allowBirthdayDisplay : currentStudent.allowBirthdayDisplay,
@@ -661,7 +667,10 @@ class UnifiedDataService {
       name: updatedStudent.name,
       birthday: updatedStudent.birthday,
       allowBirthdayDisplay: updatedStudent.allowBirthdayDisplay,
-      allowPhotoInCelebrations: updatedStudent.allowPhotoInCelebrations
+      allowPhotoInCelebrations: updatedStudent.allowPhotoInCelebrations,
+      accommodations: updatedStudent.accommodations?.length || 0,
+      parentName: updatedStudent.parentName,
+      behaviorNotes: updatedStudent.behaviorNotes?.length || 0
     });
     
     // Replace the student in the array
@@ -692,10 +701,13 @@ class UnifiedDataService {
       const updatedStudentVerification = verification.students.find(s => s.id === studentId);
       if (updatedStudentVerification) {
         console.log('✅ Updated student verified in storage:', updatedStudentVerification.name);
-        console.log('🎂 Birthday data verified:', {
+        console.log('🎂 All data verified:', {
           birthday: updatedStudentVerification.birthday,
           allowBirthdayDisplay: updatedStudentVerification.allowBirthdayDisplay,
-          allowPhotoInCelebrations: updatedStudentVerification.allowPhotoInCelebrations
+          allowPhotoInCelebrations: updatedStudentVerification.allowPhotoInCelebrations,
+          accommodations: updatedStudentVerification.accommodations?.length || 0,
+          parentName: updatedStudentVerification.parentName,
+          behaviorNotes: updatedStudentVerification.behaviorNotes?.length || 0
         });
       } else {
         console.error('❌ Updated student NOT found in storage after save!');

@@ -1539,7 +1539,8 @@ const StudentModal: React.FC<StudentModalProps> = ({
     // Map property names for UnifiedDataService compatibility
     const mappedFormData = {
       ...formData,
-      // Map resourceInfo to resourceInformation with proper structure
+      // Keep both property names for compatibility during transition
+      resourceInfo: formData.resourceInfo, // Keep original for backward compatibility
       resourceInformation: formData.resourceInfo ? {
         attendsResourceServices: formData.resourceInfo.attendsResource || false,
         accommodations: formData.accommodations || [],
@@ -1552,11 +1553,24 @@ const StudentModal: React.FC<StudentModalProps> = ({
     
     console.log('🔍 DEBUGGING StudentModal - Complete form data being saved:', {
       basic: { name: mappedFormData.name, grade: mappedFormData.grade },
-      academic: { accommodations: mappedFormData.accommodations, goals: mappedFormData.goals },
-      contact: { parentName: mappedFormData.parentName, parentEmail: mappedFormData.parentEmail },
-      notes: { behaviorNotes: mappedFormData.behaviorNotes, medicalNotes: mappedFormData.medicalNotes },
+      academic: { 
+        accommodations: mappedFormData.accommodations?.length || 0,
+        accommodationsList: mappedFormData.accommodations 
+      },
+      contact: { 
+        parentName: mappedFormData.parentName, 
+        parentEmail: mappedFormData.parentEmail,
+        parentPhone: mappedFormData.parentPhone 
+      },
+      notes: { 
+        behaviorNotes: mappedFormData.behaviorNotes?.length || 0, 
+        medicalNotes: mappedFormData.medicalNotes?.length || 0,
+        behaviorNotesContent: mappedFormData.behaviorNotes,
+        medicalNotesContent: mappedFormData.medicalNotes
+      },
       resource: mappedFormData.resourceInformation,
-      birthday: mappedFormData.birthday
+      birthday: mappedFormData.birthday,
+      fullFormData: mappedFormData
     });
     
     onSave(mappedFormData);
@@ -2051,69 +2065,122 @@ const StudentModal: React.FC<StudentModalProps> = ({
                 />
               </div>
 
-              {/* Goals */}
-              <div style={{ marginBottom: '2rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-                  IEP Goals (Legacy)
-                </label>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <input
-                    type="text"
-                    value={newGoal}
-                    onChange={(e) => setNewGoal(e.target.value)}
-                    placeholder="Add IEP goal..."
-                    style={{
-                      flex: 1,
-                      padding: '0.5rem',
-                      borderRadius: '6px',
-                      border: '1px solid #d1d5db'
-                    }}
-                    onKeyPress={(e) => e.key === 'Enter' && addGoal()}
-                  />
+              {/* Modern IEP Integration */}
+              <div style={{ 
+                padding: '1.5rem', 
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
+                border: '2px solid #0ea5e9', 
+                borderRadius: '12px',
+                marginBottom: '2rem' 
+              }}>
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: '600',
+                  color: '#0c4a6e',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  🎯 IEP Goal Management
+                </h3>
+                
+                <p style={{
+                  color: '#0369a1',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                  lineHeight: '1.5'
+                }}>
+                  This student has <strong>{student?.iepData?.goals?.length || 0}</strong> active IEP goals managed through the modern unified system.
+                </p>
+                
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: '1rem' 
+                }}>
                   <button
-                    onClick={addGoal}
+                    type="button"
+                    onClick={() => {
+                      alert('Goal Manager integration will be available in the next update. For now, use the IEP Data Collection interface.');
+                    }}
                     style={{
-                      padding: '0.5rem 1rem',
-                      borderRadius: '6px',
+                      padding: '0.875rem 1rem',
+                      borderRadius: '8px',
                       border: 'none',
-                      background: '#22c55e',
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                       color: 'white',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
                     }}
                   >
-                    Add
+                    📝 Manage Goals
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert('Data Collection integration is available through the student card buttons after saving.');
+                    }}
+                    style={{
+                      padding: '0.875rem 1rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    📊 Data Collection
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      alert('Print Sheets integration is available through the student card buttons after saving.');
+                    }}
+                    style={{
+                      padding: '0.875rem 1rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      transition: 'all 0.3s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    🖨️ Print Sheets
                   </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {formData.goals?.map((goal, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '0.75rem',
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <span style={{ flex: 1 }}>{goal}</span>
-                      <button
-                        onClick={() => removeGoal(index)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#ef4444',
-                          cursor: 'pointer',
-                          padding: '0.25rem',
-                          fontSize: '1.2rem'
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
+                
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '0.75rem',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  color: '#1e40af'
+                }}>
+                  💡 <strong>Note:</strong> IEP goals are now managed through the modern unified system with structured data collection, progress tracking, and comprehensive reporting.
                 </div>
               </div>
 
