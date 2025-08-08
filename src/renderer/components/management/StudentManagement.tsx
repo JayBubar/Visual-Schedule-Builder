@@ -9,6 +9,7 @@ import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
 import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
 import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
+import GoalManager from '../data-collection/GoalManager';
 import EnhancedResourceInput from './EnhancedResourceInput';
 
 // Extended interface to include all original Student properties
@@ -70,6 +71,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   // Integration modal states
   const [showDataEntryModal, setShowDataEntryModal] = useState(false);
   const [showPrintSheetsModal, setShowPrintSheetsModal] = useState(false);
+  const [showGoalManagerModal, setShowGoalManagerModal] = useState(false);
   const [selectedStudentForIntegration, setSelectedStudentForIntegration] = useState<ExtendedStudent | null>(null);
   const [selectedGoalForDataEntry, setSelectedGoalForDataEntry] = useState<IEPGoal | null>(null);
 
@@ -768,6 +770,58 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                 setSelectedStudentForIntegration(null);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Goal Manager Modal */}
+      {showGoalManagerModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowGoalManagerModal(false);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <GoalManager />
           </div>
         </div>
       )}
@@ -1797,7 +1851,8 @@ const StudentModal: React.FC<StudentModalProps> = ({
                       padding: '0.75rem',
                       borderRadius: '8px',
                       border: '2px solid #e5e7eb',
-                      fontSize: '1rem'
+                      fontSize: '1rem',
+                      backgroundColor: 'white'
                     }}
                   >
                     <option value="">Select Grade</option>
@@ -2102,7 +2157,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      alert('Goal Manager integration will be available in the next update. For now, use the IEP Data Collection interface.');
+                      alert('Goal Manager is available from the main student card after saving this student.');
                     }}
                     style={{
                       padding: '0.875rem 1rem',
