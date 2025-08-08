@@ -91,6 +91,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   // Refresh data function - Fixed to avoid page reload
   const refreshData = () => {
+    console.log('🔄 StudentManagement refreshData called');
+    
+    // Debug current student data
+    const currentStudents = UnifiedDataService.getAllStudents();
+    console.log('🔍 DEBUGGING StudentManagement - Current students from UnifiedDataService:', currentStudents);
+    currentStudents.forEach((student, index) => {
+      console.log(`🔍 Student ${index + 1}:`, {
+        id: student.id,
+        name: student.name,
+        iepData: student.iepData,
+        goalCount: student.iepData?.goals?.length || 0,
+        goals: student.iepData?.goals
+      });
+    });
+    
     // Force re-render by updating the students state
     // This will trigger the useRobustDataLoading hook to refresh
     window.dispatchEvent(new CustomEvent('studentDataUpdated'));
