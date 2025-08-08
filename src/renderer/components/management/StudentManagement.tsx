@@ -339,12 +339,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     const studentGoals = student.iepData?.goals || [];
 
     if (studentGoals.length === 0) {
-      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
+      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in Goal Management.`);
       return;
     }
 
-    // Set up for data entry modal
+    // Go directly to EnhancedDataEntry for this specific student
     setSelectedStudentForIntegration(student);
+    setSelectedGoalForDataEntry(studentGoals[0]); // Pre-select first active goal
     setShowDataEntryModal(true);
   };
 
@@ -672,24 +673,21 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
             >
               ×
             </button>
-            {selectedGoalForDataEntry ? (
-              <EnhancedDataEntry
-                selectedStudent={selectedStudentForIntegration}
-                selectedGoal={selectedGoalForDataEntry}
-                onBack={() => setSelectedGoalForDataEntry(null)}
-                onDataSaved={() => {
-                  setShowDataEntryModal(false);
+            <EnhancedDataEntry
+              selectedStudent={selectedStudentForIntegration}
+              selectedGoal={selectedGoalForDataEntry}
+              onBack={() => {
+                setShowDataEntryModal(false);
+                setSelectedStudentForIntegration(null);
+                setSelectedGoalForDataEntry(null);
+              }}
+              onDataSaved={() => {
+                setShowDataEntryModal(false);
                 setSelectedStudentForIntegration(null);
                 setSelectedGoalForDataEntry(null);
                 refreshData(); // Refresh data
-                }}
-              />
-            ) : (
-            <IEPDataCollectionInterface 
-              isActive={true} 
-              preSelectedStudentId={selectedStudentForIntegration.id} 
+              }}
             />
-            )}
           </div>
         </div>
       )}

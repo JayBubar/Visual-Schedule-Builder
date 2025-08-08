@@ -8,6 +8,7 @@ import EnhancedDataEntry from './EnhancedDataEntry';
 import ProgressDashboard from './ProgressDashboard';
 import PrintDataSheetSystem from './PrintDataSheetSystem';
 import GoalManager from './GoalManager';
+import QuickDataEntry from './QuickDataEntry';
 
 type ViewType = 'dashboard' | 'print-sheets' | 'data-entry' | 'progress' | 'goal-selection'
 
@@ -22,6 +23,10 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
   const [view, setView] = useState<ViewType>('dashboard');
   const [systemStatus, setSystemStatus] = useState<any>(null);
+  
+  // Modal states for Quick Entry and Print Sheets
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
+  const [showPrintSheets, setShowPrintSheets] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -300,7 +305,69 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
             <h2 style={{ marginBottom: '1rem' }}>📊 Dashboard</h2>
             {selectedStudent ? (
               <div>
-                <h3>Student: {selectedStudent.name}</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <h3>Student: {selectedStudent.name}</h3>
+                  
+                  {/* Quick Action Buttons */}
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => setShowQuickEntry(true)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      📊 Quick Data Entry
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowPrintSheets(true)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      🖨️ Print Sheets
+                    </button>
+                  </div>
+                </div>
+                
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -434,6 +501,73 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           </div>
         )}
       </div>
+
+      {/* Quick Data Entry Modal */}
+      {showQuickEntry && selectedStudent && (
+        <QuickDataEntry
+          studentId={selectedStudent.id}
+          isOpen={showQuickEntry}
+          onClose={() => setShowQuickEntry(false)}
+          onDataSaved={() => {
+            handleDataSaved();
+            setShowQuickEntry(false);
+          }}
+        />
+      )}
+
+      {/* Print Data Sheets Modal */}
+      {showPrintSheets && selectedStudent && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowPrintSheets(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <PrintDataSheetSystem
+              students={[selectedStudent]}
+              goals={selectedStudent.iepData?.goals || []}
+              onBack={() => setShowPrintSheets(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
