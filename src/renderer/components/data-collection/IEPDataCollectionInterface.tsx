@@ -389,11 +389,8 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           </div>
         )}
 
-        {view === 'goal-selection' && selectedStudent && (
-          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
-            <h3>🎯 Goal Manager</h3>
-            <p>Goal management component will be integrated with unified data system.</p>
-          </div>
+        {view === 'goal-selection' && (
+          <GoalManager />
         )}
 
         {view === 'print-sheets' && selectedStudent && (

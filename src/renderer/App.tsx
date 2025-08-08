@@ -15,7 +15,6 @@ import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
 import DailyCheckIn from './components/calendar/DailyCheckIn';
 import ActivityLibrary from './components/common/ActivityLibrary';
-import IEPDataCollectionInterface from './components/data-collection/IEPDataCollectionInterface';
 import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
@@ -260,13 +259,9 @@ const App: React.FC = () => {
             break;
           case '7':
             event.preventDefault();
-            handleViewChange('data-collection');
-            break;
-          case '8':
-            event.preventDefault();
             handleViewChange('reports');
             break;
-          case '9':
+          case '8':
             event.preventDefault();
             handleViewChange('settings');
             break;
@@ -389,12 +384,6 @@ const App: React.FC = () => {
               />
             )}
 
-            {/* Data Collection - IEP System */}
-            {currentView === 'data-collection' && (
-              <IEPDataCollectionInterface 
-                isActive={true}
-              />
-            )}
 
             {/* Reports */}
             {currentView === 'reports' && (

@@ -16,7 +16,7 @@ const Navigation: React.FC<NavigationProps> = ({
   onBackToStart,
   isInDailyCheckIn
 }) => {
-  // ✅ FIXED: Consistent navigation with Reports tab included
+  // ✅ STREAMLINED: Removed redundant IEP Goals navigation - now integrated in Student Management
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
     { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
