@@ -346,6 +346,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     setShowPrintSheetsModal(true);
   };
 
+  const handleGoalManagement = (student: ExtendedStudent) => {
+    // Set up for goal manager modal with pre-selected student
+    setSelectedStudentForIntegration(student);
+    setShowGoalManagerModal(true);
+  };
+
   if (!isActive) return null;
 
   const gradeGroups = getGradeGroups();
@@ -561,10 +567,11 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                     onEdit={() => handleEditStudent(student)}
                     onDelete={() => handleDeleteStudent(student.id)}
                     uploadPhoto={uploadPhoto}
-            onPhotoUpdate={refreshData}
-            isUsingUnifiedData={true}
+                    onPhotoUpdate={refreshData}
+                    isUsingUnifiedData={true}
                     onDataEntry={handleDataEntry}
                     onPrintSheets={handlePrintSheets}
+                    onGoalManagement={handleGoalManagement}
                   />
                 ))}
               </div>
@@ -1089,6 +1096,7 @@ interface StudentCardProps {
   isUsingUnifiedData: boolean;
   onDataEntry: (student: ExtendedStudent) => void;
   onPrintSheets: (student: ExtendedStudent) => void;
+  onGoalManagement: (student: ExtendedStudent) => void;
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ 
@@ -1099,7 +1107,8 @@ const StudentCard: React.FC<StudentCardProps> = ({
   onPhotoUpdate,
   isUsingUnifiedData,
   onDataEntry,
-  onPrintSheets
+  onPrintSheets,
+  onGoalManagement
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1189,29 +1198,62 @@ const StudentCard: React.FC<StudentCardProps> = ({
       e.currentTarget.style.boxShadow = 'none';
     }}>
       
-      {/* Top Left - Data Entry & Print Sheets Buttons */}
+      {/* Top Left - IEP Action Buttons */}
       <div style={{ gridArea: 'actions-left' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleDataEntry();
+              onGoalManagement(student);
             }}
             style={{
-              padding: '0.875rem 1rem',
+              padding: '0.75rem 0.875rem',
               borderRadius: '12px',
               border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.5rem',
-              minHeight: '44px',
+              minHeight: '40px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            🎯 Manage Goals
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDataEntry();
+            }}
+            style={{
+              padding: '0.75rem 0.875rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              minHeight: '40px',
               whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
@@ -1223,7 +1265,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            📊 Data Entry
+            📊 Data Collection
           </button>
           <button
             onClick={(e) => {
@@ -1231,25 +1273,25 @@ const StudentCard: React.FC<StudentCardProps> = ({
               handlePrintSheets();
             }}
             style={{
-              padding: '0.875rem 1rem',
+              padding: '0.75rem 0.875rem',
               borderRadius: '12px',
               border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '0.85rem',
+              fontSize: '0.8rem',
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '0.5rem',
-              minHeight: '44px',
+              minHeight: '40px',
               whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
