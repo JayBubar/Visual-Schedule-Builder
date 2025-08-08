@@ -1536,14 +1536,37 @@ const StudentModal: React.FC<StudentModalProps> = ({
       return;
     }
     
-    // Debug: Log the form data being saved
-    console.log('🎂 StudentModal - Saving form data:', {
+    // 🔍 ENHANCED DEBUG: Log ALL form data sections
+    console.log('🔍 DEBUGGING StudentModal - Full form data being saved:');
+    console.log('📋 BASIC INFO:', {
       name: formData.name,
+      grade: formData.grade,
+      photo: formData.photo,
+      workingStyle: formData.workingStyle,
+      isActive: formData.isActive
+    });
+    console.log('🎓 ACADEMIC INFO:', {
+      accommodations: formData.accommodations,
+      accommodationsLength: formData.accommodations?.length || 0,
+      goals: formData.goals,
+      goalsLength: formData.goals?.length || 0,
+      resourceInfo: formData.resourceInfo
+    });
+    console.log('📞 CONTACT INFO:', {
+      parentName: formData.parentName,
+      parentEmail: formData.parentEmail,
+      parentPhone: formData.parentPhone
+    });
+    console.log('📝 NOTES INFO:', {
+      behaviorNotes: formData.behaviorNotes,
+      medicalNotes: formData.medicalNotes
+    });
+    console.log('🎂 BIRTHDAY INFO:', {
       birthday: formData.birthday,
       allowBirthdayDisplay: formData.allowBirthdayDisplay,
-      allowPhotoInCelebrations: formData.allowPhotoInCelebrations,
-      fullFormData: formData
+      allowPhotoInCelebrations: formData.allowPhotoInCelebrations
     });
+    console.log('🗂️ COMPLETE FORM DATA:', formData);
     
     onSave(formData);
   };
