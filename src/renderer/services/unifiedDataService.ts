@@ -583,8 +583,15 @@ class UnifiedDataService {
     unifiedData.students.push(newStudent);
     
     // Update metadata
-    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => total + s.iepData.goals.length, 0);
-    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => total + s.iepData.dataCollection.length, 0);
+    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => {
+      const goalsCount = s.iepData?.goals?.length || 0;
+      return total + goalsCount;
+    }, 0);
+
+    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => {
+      const dataPointsCount = s.iepData?.dataCollection?.length || 0;
+      return total + dataPointsCount;
+    }, 0);
     
     console.log('💾 Saving unified data with', unifiedData.students.length, 'students');
     
@@ -661,8 +668,15 @@ class UnifiedDataService {
     unifiedData.students[studentIndex] = updatedStudent;
     
     // Update metadata
-    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => total + s.iepData.goals.length, 0);
-    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => total + s.iepData.dataCollection.length, 0);
+    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => {
+      const goalsCount = s.iepData?.goals?.length || 0;
+      return total + goalsCount;
+    }, 0);
+
+    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => {
+      const dataPointsCount = s.iepData?.dataCollection?.length || 0;
+      return total + dataPointsCount;
+    }, 0);
     
     console.log('💾 Saving updated unified data with', unifiedData.students.length, 'students');
     
