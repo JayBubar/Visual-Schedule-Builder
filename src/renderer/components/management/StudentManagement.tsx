@@ -786,7 +786,13 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
             >
               ×
             </button>
-            <GoalManager preSelectedStudentId={selectedStudentForIntegration?.id} />
+            <GoalManager 
+              preSelectedStudentId={selectedStudentForIntegration?.id}
+              onGoalSaved={() => {
+                // Refresh data when goals are saved
+                refreshData();
+              }}
+            />
           </div>
         </div>
       )}

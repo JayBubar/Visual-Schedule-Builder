@@ -4,9 +4,10 @@ import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unif
 
 interface GoalManagerProps {
   preSelectedStudentId?: string;
+  onGoalSaved?: () => void;
 }
 
-const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId }) => {
+const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalSaved }) => {
   const [goals, setGoals] = useState<IEPGoal[]>([]);
   const [students, setStudents] = useState<UnifiedStudent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,6 +123,11 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId }) => {
 
       // Reload goals data to reflect changes
       loadGoalsData();
+      
+      // Call the callback to refresh parent component data
+      if (onGoalSaved) {
+        onGoalSaved();
+      }
       
       // Reset form and close modal
       resetForm();
