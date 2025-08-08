@@ -10,6 +10,7 @@ import ProgressPanel from '../data-collection/ProgressPanel';
 import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
 import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
 import GoalManager from '../data-collection/GoalManager';
+import IEPDataCollectionInterface from '../data-collection/IEPDataCollectionInterface';
 import EnhancedResourceInput from './EnhancedResourceInput';
 
 // Extended interface to include all original Student properties
@@ -669,53 +670,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                 }}
               />
             ) : (
-              <div style={{
-                padding: '2rem',
-                height: '100%',
-                overflow: 'auto',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-              }}>
-                <h2 style={{ color: 'white', marginBottom: '2rem', textAlign: 'center' }}>
-                  Select Goal for Data Entry - {selectedStudentForIntegration.name}
-                </h2>
-                <div style={{ display: 'grid', gap: '1rem', maxWidth: '800px', margin: '0 auto' }}>
-                  {selectedStudentForIntegration.iepData.goals.map((goal) => (
-                    <button
-                      key={goal.id}
-                      onClick={() => setSelectedGoalForDataEntry(goal)}
-                      style={{
-                        padding: '1.5rem',
-                        background: 'rgba(255,255,255,0.15)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-                        e.currentTarget.style.transform = 'translateY(0)';
-                      }}
-                    >
-                      <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                        {goal.title}
-                      </div>
-                      <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-                        {goal.description}
-                      </div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.5rem' }}>
-                        Type: {goal.measurementType} | Progress: {goal.currentProgress}%
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <IEPDataCollectionInterface 
+              isActive={true} 
+              preSelectedStudentId={selectedStudentForIntegration.id} 
+            />
             )}
           </div>
         </div>
@@ -828,7 +786,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
             >
               ×
             </button>
-            <GoalManager />
+            <GoalManager preSelectedStudentId={selectedStudentForIntegration?.id} />
           </div>
         </div>
       )}
@@ -2162,136 +2120,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
                 />
               </div>
 
-              {/* Modern IEP Integration */}
-              <div style={{ 
-                padding: '1.5rem', 
-                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
-                border: '2px solid #0ea5e9', 
-                borderRadius: '12px',
-                marginBottom: '2rem' 
-              }}>
-                <h3 style={{
-                  fontSize: '1.3rem',
-                  fontWeight: '600',
-                  color: '#0c4a6e',
-                  marginBottom: '1rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem'
-                }}>
-                  🎯 IEP Goal Management
-                </h3>
-                
-                <p style={{
-                  color: '#0369a1',
-                  marginBottom: '1rem',
-                  fontSize: '0.95rem',
-                  lineHeight: '1.5'
-                }}>
-                  This student has <strong>{student?.iepData?.goals?.length || 0}</strong> active IEP goals managed through the modern unified system.
-                </p>
-                
-                <div style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-                  gap: '1rem' 
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (student) {
-                        alert('Goal management is available through the student card buttons after saving, or through the main IEP Goals navigation.');
-                      } else {
-                        alert('Please save this student first, then you can manage their IEP goals from the student card or the main IEP Goals navigation.');
-                      }
-                    }}
-                    style={{
-                      padding: '0.875rem 1rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    📝 Manage Goals
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (student) {
-                        alert('Data Collection is available through the student card buttons after saving, or through the main IEP Goals navigation.');
-                      } else {
-                        alert('Please save this student first, then you can access data collection from the student card or the main IEP Goals navigation.');
-                      }
-                    }}
-                    style={{
-                      padding: '0.875rem 1rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #10b981, #059669)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    📊 Data Collection
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (student) {
-                        alert('Print Sheets are available through the student card buttons after saving, or through the main IEP Goals navigation.');
-                      } else {
-                        alert('Please save this student first, then you can access print sheets from the student card or the main IEP Goals navigation.');
-                      }
-                    }}
-                    style={{
-                      padding: '0.875rem 1rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                      color: 'white',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                  >
-                    🖨️ Print Sheets
-                  </button>
-                </div>
-                
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem',
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem',
-                  color: '#1e40af'
-                }}>
-                  💡 <strong>Quick Access:</strong> You can also access IEP Goals directly from the main navigation (🎯 IEP Goals) or from individual student cards after saving.
-                </div>
-              </div>
 
               {/* Resource Services */}
               <EnhancedResourceInput

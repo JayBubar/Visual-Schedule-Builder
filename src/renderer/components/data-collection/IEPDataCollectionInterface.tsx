@@ -13,9 +13,10 @@ type ViewType = 'dashboard' | 'print-sheets' | 'data-entry' | 'progress' | 'goal
 
 interface IEPDataCollectionInterfaceProps {
   isActive: boolean;
+  preSelectedStudentId?: string;
 }
 
-const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({ isActive }) => {
+const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({ isActive, preSelectedStudentId }) => {
   const [students, setStudents] = useState<UnifiedStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<UnifiedStudent | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
@@ -43,6 +44,15 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
       }));
       
       setStudents(safeStudents);
+      
+      // If we have a preSelectedStudentId, select that student
+      if (preSelectedStudentId && safeStudents.length > 0) {
+        const preSelectedStudent = safeStudents.find(s => s.id === preSelectedStudentId);
+        if (preSelectedStudent) {
+          setSelectedStudent(preSelectedStudent);
+          return;
+        }
+      }
       
       // If we have students but no selected student, select the first one
       if (safeStudents.length > 0 && !selectedStudent) {

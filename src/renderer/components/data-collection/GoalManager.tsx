@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit3, Trash2, Save, X, Target, BookOpen, Heart, Users, Activity, Calendar, AlertCircle, CheckCircle, Star, Clock, TrendingUp } from 'lucide-react';
 import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 
-const GoalManager = () => {
+interface GoalManagerProps {
+  preSelectedStudentId?: string;
+}
+
+const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId }) => {
   const [goals, setGoals] = useState<IEPGoal[]>([]);
   const [students, setStudents] = useState<UnifiedStudent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<IEPGoal | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState('all');
+  const [selectedStudent, setSelectedStudent] = useState(preSelectedStudentId || 'all');
   const [selectedDomain, setSelectedDomain] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
