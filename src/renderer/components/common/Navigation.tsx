@@ -16,16 +16,16 @@ const Navigation: React.FC<NavigationProps> = ({
   onBackToStart,
   isInDailyCheckIn
 }) => {
-  // ✅ STREAMLINED: Removed redundant IEP Goals navigation - now integrated in Student Management
   const navItems = [
     { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
     { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
     { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
     { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
-    { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+5' },
-    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+6' },
-    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+7' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+8' }
+    { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+5' },
+    { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+6' },
+    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+7' },
+    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+8' },
+    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+9' }
   ] as const;
 
   return (

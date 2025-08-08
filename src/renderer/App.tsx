@@ -18,6 +18,7 @@ import ActivityLibrary from './components/common/ActivityLibrary';
 import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
+import GoalManager from './components/data-collection/GoalManager';
 
 const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -251,17 +252,21 @@ const App: React.FC = () => {
             break;
           case '5':
             event.preventDefault();
-            handleViewChange('calendar');
+            handleViewChange('iep-goals');
             break;
           case '6':
             event.preventDefault();
-            handleViewChange('library');
+            handleViewChange('calendar');
             break;
           case '7':
             event.preventDefault();
-            handleViewChange('reports');
+            handleViewChange('library');
             break;
           case '8':
+            event.preventDefault();
+            handleViewChange('reports');
+            break;
+          case '9':
             event.preventDefault();
             handleViewChange('settings');
             break;
@@ -363,6 +368,11 @@ const App: React.FC = () => {
               <StaffManagement 
                 isActive={true}
               />
+            )}
+
+            {/* IEP Goals Management */}
+            {currentView === 'iep-goals' && (
+              <GoalManager />
             )}
 
             {/* Daily Check-In Calendar */}

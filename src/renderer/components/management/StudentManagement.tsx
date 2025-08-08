@@ -2157,7 +2157,11 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      alert('Goal Manager is available from the main student card after saving this student.');
+                      if (student) {
+                        alert('Goal management is available through the student card buttons after saving, or through the main IEP Goals navigation.');
+                      } else {
+                        alert('Please save this student first, then you can manage their IEP goals from the student card or the main IEP Goals navigation.');
+                      }
                     }}
                     style={{
                       padding: '0.875rem 1rem',
@@ -2181,7 +2185,11 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      alert('Data Collection integration is available through the student card buttons after saving.');
+                      if (student) {
+                        alert('Data Collection is available through the student card buttons after saving, or through the main IEP Goals navigation.');
+                      } else {
+                        alert('Please save this student first, then you can access data collection from the student card or the main IEP Goals navigation.');
+                      }
                     }}
                     style={{
                       padding: '0.875rem 1rem',
@@ -2205,7 +2213,11 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      alert('Print Sheets integration is available through the student card buttons after saving.');
+                      if (student) {
+                        alert('Print Sheets are available through the student card buttons after saving, or through the main IEP Goals navigation.');
+                      } else {
+                        alert('Please save this student first, then you can access print sheets from the student card or the main IEP Goals navigation.');
+                      }
                     }}
                     style={{
                       padding: '0.875rem 1rem',
@@ -2235,7 +2247,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
                   fontSize: '0.85rem',
                   color: '#1e40af'
                 }}>
-                  💡 <strong>Note:</strong> IEP goals are now managed through the modern unified system with structured data collection, progress tracking, and comprehensive reporting.
+                  💡 <strong>Quick Access:</strong> You can also access IEP Goals directly from the main navigation (🎯 IEP Goals) or from individual student cards after saving.
                 </div>
               </div>
 

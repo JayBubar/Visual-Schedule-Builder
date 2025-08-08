@@ -1,10 +1,11 @@
 // ===== VIEW TYPES =====
-// ✅ FIXED: Added 'reports' to ViewType enum
+// ✅ FIXED: Added 'reports' and 'iep-goals' to ViewType enum
 export type ViewType = 
   | 'builder' 
   | 'display' 
   | 'students' 
   | 'staff' 
+  | 'iep-goals'      // ✅ ADDED - IEP Goals management
   | 'calendar' 
   | 'library' 
   | 'data-collection' 
