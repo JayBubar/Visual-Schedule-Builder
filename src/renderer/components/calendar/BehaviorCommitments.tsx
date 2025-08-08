@@ -36,47 +36,47 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
 }) => {
   // Default behavior statements
   const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
-    { id: 'kindness_1', text: 'I will be kind to my friends', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'kindness_2', text: 'I will help others when they need it', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'kindness_3', text: 'I will share with my classmates', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'kindness_4', text: 'I will use nice words', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'kindness_5', text: 'I will include everyone in activities', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'kindness_6', text: 'I will say please and thank you', category: 'kindness', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'kindness_1', text: 'I will be kind to my friends', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'kindness_2', text: 'I will help others when they need it', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'kindness_3', text: 'I will share with my classmates', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'kindness_4', text: 'I will use nice words', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'kindness_5', text: 'I will include everyone in activities', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'kindness_6', text: 'I will say please and thank you', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
     
-    { id: 'respect_1', text: 'I will listen when others are talking', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'respect_2', text: 'I will raise my hand to speak', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'respect_3', text: 'I will take care of our classroom', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'respect_4', text: 'I will follow directions the first time', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'respect_5', text: 'I will use my inside voice', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'respect_6', text: 'I will keep my hands to myself', category: 'respect', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'respect_1', text: 'I will listen when others are talking', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'respect_2', text: 'I will raise my hand to speak', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'respect_3', text: 'I will take care of our classroom', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'respect_4', text: 'I will follow directions the first time', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'respect_5', text: 'I will use my inside voice', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'respect_6', text: 'I will keep my hands to myself', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
     
-    { id: 'effort_1', text: 'I will try my best in all activities', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'effort_2', text: 'I will ask for help when I need it', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'effort_3', text: 'I will finish my work', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'effort_4', text: 'I will not give up when things are hard', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'effort_5', text: 'I will pay attention during lessons', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'effort_6', text: 'I will practice what I learn', category: 'effort', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'effort_1', text: 'I will try my best in all activities', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'effort_2', text: 'I will ask for help when I need it', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'effort_3', text: 'I will finish my work', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'effort_4', text: 'I will not give up when things are hard', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'effort_5', text: 'I will pay attention during lessons', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'effort_6', text: 'I will practice what I learn', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
     
-    { id: 'responsibility_1', text: 'I will clean up after myself', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'responsibility_2', text: 'I will take care of my belongings', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'responsibility_3', text: 'I will remember my homework', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'responsibility_4', text: 'I will be ready for activities', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'responsibility_5', text: 'I will make good choices', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'responsibility_6', text: 'I will tell the truth', category: 'responsibility', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'responsibility_1', text: 'I will clean up after myself', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'responsibility_2', text: 'I will take care of my belongings', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'responsibility_3', text: 'I will remember my homework', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'responsibility_4', text: 'I will be ready for activities', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'responsibility_5', text: 'I will make good choices', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'responsibility_6', text: 'I will tell the truth', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
     
-    { id: 'safety_1', text: 'I will walk in the hallways', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'safety_2', text: 'I will use materials safely', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'safety_3', text: 'I will ask before leaving my seat', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'safety_4', text: 'I will keep food out of my mouth during non-eating times', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'safety_5', text: 'I will follow playground rules', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'safety_6', text: 'I will tell an adult if someone is hurt', category: 'safety', isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'safety_1', text: 'I will walk in the hallways', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'safety_2', text: 'I will use materials safely', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'safety_3', text: 'I will ask before leaving my seat', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'safety_4', text: 'I will keep food out of my mouth during non-eating times', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'safety_5', text: 'I will follow playground rules', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'safety_6', text: 'I will tell an adult if someone is hurt', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
     
-    { id: 'learning_1', text: 'I will ask questions when I don\'t understand', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'learning_2', text: 'I will listen to learn new things', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'learning_3', text: 'I will try new activities', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'learning_4', text: 'I will help my friends learn too', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'learning_5', text: 'I will celebrate my mistakes as learning', category: 'learning', isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'learning_6', text: 'I will be proud of my progress', category: 'learning', isCustom: false, createdAt: new Date().toISOString() }
+    { id: 'learning_1', text: 'I will ask questions when I don\'t understand', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'learning_2', text: 'I will listen to learn new things', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'learning_3', text: 'I will try new activities', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'learning_4', text: 'I will help my friends learn too', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'learning_5', text: 'I will celebrate my mistakes as learning', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
+    { id: 'learning_6', text: 'I will be proud of my progress', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() }
   ];
 
   // NEW: Individual student choice tracking
@@ -189,13 +189,23 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       try {
         setIsLoadingStatements(true);
         const data = await UnifiedDataService.getUnifiedData();
+        
+        // Debug logging to see what we're getting
+        console.log('🔍 Full data structure:', data);
+        console.log('🔍 Settings:', data?.settings);
+        console.log('🔍 Daily check-in:', data?.settings?.dailyCheckIn);
+        console.log('🔍 Behavior commitments:', data?.settings?.dailyCheckIn?.behaviorCommitments);
+        console.log('🔍 Custom statements:', data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements);
+        
         const customStatements = data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
         
         if (customStatements && customStatements.length > 0) {
           // Use custom statements from settings, only show active ones
           const activeStatements = customStatements.filter(s => s.isActive);
+          console.log('✅ Found custom statements:', activeStatements);
           setBehaviorStatements(activeStatements.length > 0 ? activeStatements : DEFAULT_BEHAVIOR_STATEMENTS);
         } else {
+          console.log('ℹ️ No custom statements found, using defaults');
           // Fallback to defaults if no custom settings
           setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
         }
@@ -349,6 +359,27 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       flexDirection: 'column',
       gap: '2rem'
     }}>
+      {/* Temporary debug button - add this near the top of the component */}
+      <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+        <button
+          onClick={() => {
+            console.log('🔄 Refreshing behavior statements...');
+            window.location.reload(); // Quick refresh for testing
+          }}
+          style={{
+            background: 'rgba(33, 150, 243, 0.8)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            cursor: 'pointer',
+            fontSize: '0.9rem'
+          }}
+        >
+          🔄 Refresh Statements
+        </button>
+      </div>
+
       {/* Header */}
       <div>
         <h2 style={{

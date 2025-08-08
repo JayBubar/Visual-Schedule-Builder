@@ -796,9 +796,68 @@ export interface BehaviorStatement {
   id: string;
   text: string;
   category: 'kindness' | 'respect' | 'effort' | 'responsibility' | 'safety' | 'learning';
-  isCustom: boolean;
+  emoji: string;           // ← Add this
+  isActive: boolean;       // ← Add this  
+  isDefault: boolean;      // ← Add this (instead of isCustom)
   createdAt: string;
 }
+
+export const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
+  {
+    id: 'default-1',
+    text: 'I will be kind to my friends',
+    category: 'kindness',
+    emoji: '🤝',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-2', 
+    text: 'I will listen carefully',
+    category: 'responsibility',
+    emoji: '👂',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-3',
+    text: 'I will try my best',
+    category: 'effort',
+    emoji: '💪',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-4',
+    text: 'I will use my words when I need help',
+    category: 'learning',
+    emoji: '💬',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-5',
+    text: 'I will keep my hands to myself',
+    category: 'safety',
+    emoji: '🙌',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-6',
+    text: 'I will clean up after myself',
+    category: 'responsibility',
+    emoji: '🧹',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  }
+];
 
 export interface CheckInStep {
   id: string;

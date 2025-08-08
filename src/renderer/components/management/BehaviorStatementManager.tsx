@@ -3,7 +3,7 @@ import {
   BehaviorStatement, 
   DEFAULT_BEHAVIOR_STATEMENTS 
 } from '../../types';
-import { unifiedDataService } from '../../services/unifiedDataService';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface BehaviorStatementManagerProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
   const loadStatements = async () => {
     try {
       setLoading(true);
-      const data = await unifiedDataService.getData();
+      const data = await UnifiedDataService.getUnifiedData();
       const customStatements = data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
       
       if (customStatements && customStatements.length > 0) {
@@ -49,7 +49,7 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
 
   const saveStatements = async () => {
     try {
-      const data = await unifiedDataService.getData();
+      const data = await UnifiedDataService.getUnifiedData();
       const updatedData = {
         ...data,
         settings: {
@@ -64,7 +64,7 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
         }
       };
       
-      await unifiedDataService.saveData(updatedData);
+      await UnifiedDataService.saveUnifiedData(updatedData);
       onSave(statements);
       onClose();
     } catch (error) {
@@ -133,8 +133,7 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
     { value: 'effort', label: 'Effort', emoji: '💪' },
     { value: 'responsibility', label: 'Responsibility', emoji: '📋' },
     { value: 'safety', label: 'Safety', emoji: '🛡️' },
-    { value: 'communication', label: 'Communication', emoji: '💬' },
-    { value: 'learning', label: 'Learning', emoji: '📚' }
+    { value: 'learning', label: 'Learning', emoji: '📚' }  // ← Changed from 'communication'
   ];
 
   const emojiOptions = ['😊', '🤝', '💪', '👂', '🙌', '🧹', '💬', '📚', '🎯', '⭐', '🌟', '✨', '🏆', '👍', '💯', '🔥'];
