@@ -1466,8 +1466,8 @@ const StudentCard: React.FC<StudentCardProps> = ({
             lineHeight: '1.3'
           }}>
             <div>📋 {student.accommodations?.length || 0} accommodations</div>
-            <div>🎯 {isUsingUnifiedData ? student.iepData.goals.filter(g => g.isActive).length : (student.goals?.length || 0)} active goals</div>
-            <div>📊 {isUsingUnifiedData ? student.iepData.dataCollection.length : 0} data points</div>
+            <div>🎯 {isUsingUnifiedData ? (student.iepData?.goals || []).filter(g => g.isActive).length : (student.goals?.length || 0)} active goals</div>
+            <div>📊 {isUsingUnifiedData ? (student.iepData?.dataCollection || []).length : 0} data points</div>
             {student.dateCreated && (
               <div>📅 IEP expires: {calculateIEPExpiration(student.dateCreated)}</div>
             )}

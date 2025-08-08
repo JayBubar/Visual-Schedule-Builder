@@ -794,21 +794,146 @@ class UnifiedDataService {
   
   // Add data point to goal
   static addDataPoint(dataPoint: Omit<DataPoint, 'id'>): DataPoint {
-    const students = this.getAllStudents();
-    const student = students.find(s => s.id === dataPoint.studentId);
+    console.log('📊 UnifiedDataService.addDataPoint() called with:', dataPoint);
     
-    if (student) {
-      const newDataPoint: DataPoint = {
-        ...dataPoint,
-        id: Date.now().toString()
-      };
-      
-      student.iepData.dataCollection.push(newDataPoint);
-      this.saveStudents(students);
-      return newDataPoint;
+    // Validate required fields
+    if (!dataPoint.studentId) {
+      throw new Error('Student ID is required');
+    }
+    if (!dataPoint.goalId) {
+      throw new Error('Goal ID is required');
+    }
+    if (!dataPoint.date) {
+      throw new Error('Date is required');
+    }
+    if (!dataPoint.time) {
+      throw new Error('Time is required');
+    }
+    if (dataPoint.value === undefined || dataPoint.value === null) {
+      throw new Error('Value is required');
+    }
+    if (!dataPoint.collector) {
+      throw new Error('Collector is required');
     }
     
-    throw new Error('Student not found');
+    // Get current unified data structure
+    let unifiedData = this.getUnifiedData();
+    if (!unifiedData) {
+      console.error('❌ No unified data found');
+      throw new Error('No unified data found');
+    }
+    
+    // Find the student
+    const studentIndex = unifiedData.students.findIndex(s => s.id === dataPoint.studentId);
+    if (studentIndex === -1) {
+      console.error('❌ Student not found:', dataPoint.studentId);
+      throw new Error('Student not found');
+    }
+    
+    const student = unifiedData.students[studentIndex];
+    
+    // Verify the goal exists for this student
+    const goalExists = student.iepData.goals.some(g => g.id === dataPoint.goalId);
+    if (!goalExists) {
+      console.error('❌ Goal not found for student:', dataPoint.goalId);
+      throw new Error('Goal not found for this student');
+    }
+    
+    // Create new data point with proper validation
+    const newDataPoint: DataPoint = {
+      id: Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9),
+      studentId: dataPoint.studentId,
+      goalId: dataPoint.goalId,
+      date: dataPoint.date,
+      time: dataPoint.time,
+      value: Number(dataPoint.value),
+      totalOpportunities: dataPoint.totalOpportunities ? Number(dataPoint.totalOpportunities) : undefined,
+      notes: dataPoint.notes || '',
+      context: dataPoint.context || '',
+      activityId: dataPoint.activityId,
+      collector: dataPoint.collector,
+      photos: dataPoint.photos || [],
+      voiceNotes: dataPoint.voiceNotes || []
+    };
+    
+    console.log('📊 Created new data point:', newDataPoint);
+    
+    // Ensure student has iepData structure
+    if (!student.iepData) {
+      student.iepData = { goals: [], dataCollection: [] };
+    }
+    if (!student.iepData.dataCollection) {
+      student.iepData.dataCollection = [];
+    }
+    
+    // Add data point to student
+    student.iepData.dataCollection.push(newDataPoint);
+    
+    // Update the student in the unified data
+    unifiedData.students[studentIndex] = student;
+    
+    // Update goal progress analytics
+    const goal = student.iepData.goals.find(g => g.id === dataPoint.goalId);
+    if (goal) {
+      // Calculate current progress based on recent data points
+      const goalDataPoints = student.iepData.dataCollection
+        .filter(dp => dp.goalId === dataPoint.goalId)
+        .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
+      
+      if (goalDataPoints.length > 0) {
+        // Calculate average of last 5 data points for current progress
+        const recentDataPoints = goalDataPoints.slice(0, 5);
+        const averageValue = recentDataPoints.reduce((sum, dp) => sum + dp.value, 0) / recentDataPoints.length;
+        
+        goal.currentProgress = Math.round(averageValue);
+        goal.dataPoints = goalDataPoints.length;
+        goal.lastDataPoint = newDataPoint.date;
+        
+        console.log('📊 Updated goal progress:', {
+          goalId: goal.id,
+          currentProgress: goal.currentProgress,
+          dataPoints: goal.dataPoints,
+          lastDataPoint: goal.lastDataPoint
+        });
+      }
+    }
+    
+    // Update metadata
+    unifiedData.metadata.totalDataPoints = unifiedData.students.reduce((total, s) => {
+      const dataPointsCount = s.iepData?.dataCollection?.length || 0;
+      return total + dataPointsCount;
+    }, 0);
+    
+    // Update progress analytics for the student
+    if (!student.iepData.progressAnalytics) {
+      student.iepData.progressAnalytics = {
+        overallProgress: 0,
+        goalsMet: 0,
+        totalGoals: 0,
+        lastDataCollection: ''
+      };
+    }
+    
+    const activeGoals = student.iepData.goals.filter(g => g.isActive);
+    const totalProgress = activeGoals.reduce((sum, g) => sum + (g.currentProgress || 0), 0);
+    const averageProgress = activeGoals.length > 0 ? totalProgress / activeGoals.length : 0;
+    const goalsMet = activeGoals.filter(g => (g.currentProgress || 0) >= (g.target || 80)).length;
+    
+    student.iepData.progressAnalytics = {
+      overallProgress: Math.round(averageProgress),
+      goalsMet: goalsMet,
+      totalGoals: activeGoals.length,
+      lastDataCollection: newDataPoint.date
+    };
+    
+    console.log('📊 Updated student progress analytics:', student.iepData.progressAnalytics);
+    
+    // Save the entire unified data structure
+    this.saveUnifiedData(unifiedData);
+    
+    console.log('✅ Data point added successfully. Student now has', student.iepData.dataCollection.length, 'data points');
+    
+    return newDataPoint;
   }
   
   // Save all students to unified data

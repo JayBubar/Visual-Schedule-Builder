@@ -87,8 +87,16 @@ export const useRobustDataLoading = (
               // 🎂 FIXED: Include birthday fields in the conversion
               birthday: student.birthday,
               allowBirthdayDisplay: student.allowBirthdayDisplay,
-              allowPhotoInCelebrations: student.allowPhotoInCelebrations
+              allowPhotoInCelebrations: student.allowPhotoInCelebrations,
+              // 🎯 CRITICAL FIX: Include iepData so Student Management can access goals!
+              iepData: student.iepData || { goals: [], dataCollection: [] }
             }));
+            
+            console.log('🎯 DEBUGGING: Converted students with iepData:', studentsToUse.map(s => ({
+              name: s.name,
+              goalCount: s.iepData?.goals?.length || 0,
+              hasIepData: !!s.iepData
+            })));
           }
         }
 
