@@ -790,8 +790,8 @@ class UnifiedDataService {
       metadata: {
         version: '2.0',
         migratedAt: new Date().toISOString(),
-        totalGoals: students.reduce((total, s) => total + s.iepData.goals.length, 0),
-        totalDataPoints: students.reduce((total, s) => total + s.iepData.dataCollection.length, 0),
+        totalGoals: students.reduce((total, s) => total + (s.iepData?.goals?.length || 0), 0),
+        totalDataPoints: students.reduce((total, s) => total + (s.iepData?.dataCollection?.length || 0), 0),
         totalStaff: currentData?.staff?.length || 0,
         totalActivities: currentData?.activities?.length || 0,
         totalAttendanceRecords: currentData?.attendance?.length || 0
