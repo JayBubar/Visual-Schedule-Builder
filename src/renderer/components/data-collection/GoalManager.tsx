@@ -36,6 +36,18 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
     loadStudentsData();
   }, []);
 
+  // Set pre-selected student when prop changes
+  useEffect(() => {
+    if (preSelectedStudentId) {
+      setSelectedStudent(preSelectedStudentId);
+      // Also pre-fill the form with the selected student
+      setGoalForm(prev => ({
+        ...prev,
+        studentId: preSelectedStudentId
+      }));
+    }
+  }, [preSelectedStudentId]);
+
   const loadGoalsData = () => {
     try {
       // Get all students and extract their goals

@@ -719,22 +719,60 @@ class UnifiedDataService {
   
   // Add IEP goal to student
   static addGoalToStudent(studentId: string, goal: Omit<IEPGoal, 'id' | 'studentId'>): IEPGoal {
-    const students = this.getAllStudents();
-    const student = students.find(s => s.id === studentId);
+    console.log('🎯 UnifiedDataService.addGoalToStudent() called for student:', studentId);
+    console.log('🎯 Goal data:', goal);
     
-    if (student) {
-      const newGoal: IEPGoal = {
-        ...goal,
-        id: Date.now().toString(),
-        studentId: studentId
-      };
-      
-      student.iepData.goals.push(newGoal);
-      this.saveStudents(students);
-      return newGoal;
+    // Get current unified data structure
+    let unifiedData = this.getUnifiedData();
+    if (!unifiedData) {
+      console.error('❌ No unified data found');
+      throw new Error('No unified data found');
     }
     
-    throw new Error('Student not found');
+    // Find the student
+    const studentIndex = unifiedData.students.findIndex(s => s.id === studentId);
+    if (studentIndex === -1) {
+      console.error('❌ Student not found:', studentId);
+      throw new Error('Student not found');
+    }
+    
+    const student = unifiedData.students[studentIndex];
+    
+    // Create new goal
+    const newGoal: IEPGoal = {
+      ...goal,
+      id: Date.now().toString(),
+      studentId: studentId
+    };
+    
+    console.log('🎯 Created new goal:', newGoal);
+    
+    // Ensure student has iepData structure
+    if (!student.iepData) {
+      student.iepData = { goals: [], dataCollection: [] };
+    }
+    if (!student.iepData.goals) {
+      student.iepData.goals = [];
+    }
+    
+    // Add goal to student
+    student.iepData.goals.push(newGoal);
+    
+    // Update the student in the unified data
+    unifiedData.students[studentIndex] = student;
+    
+    // Update metadata
+    unifiedData.metadata.totalGoals = unifiedData.students.reduce((total, s) => {
+      const goalsCount = s.iepData?.goals?.length || 0;
+      return total + goalsCount;
+    }, 0);
+    
+    // Save the entire unified data structure
+    this.saveUnifiedData(unifiedData);
+    
+    console.log('✅ Goal added successfully. Student now has', student.iepData.goals.length, 'goals');
+    
+    return newGoal;
   }
   
   // Update IEP goal
