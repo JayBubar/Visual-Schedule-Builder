@@ -14,6 +14,7 @@ import {
 } from './SmartGroupsEnhancedUI';
 import { QuickVerificationPanel, SmartGroupsVerificationDashboard } from './SmartGroupsVerification';
 import { SmartGroupsDebugPanel } from './SmartGroupsDebugPanel';
+import { generateRealSmartGroupRecommendations } from './real-claude-ai-integration';
 
 // Import our Smart Groups types and services
 interface SmartGroupRecommendation {
@@ -190,65 +191,35 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
     }
   };
 
-  // ===== AI ANALYSIS WITH SMART GROUPS SERVICE =====
+  // ===== REAL AI ANALYSIS WITH CLAUDE INTEGRATION =====
   const runAIAnalysis = async () => {
-    setIsAnalyzing(true);
+    if (students.length === 0) {
+      alert('Please add students to your classroom before generating recommendations.');
+      return;
+    }
     
+    setIsAnalyzing(true);
     try {
-      // Try to use the actual Smart Groups service
-      try {
-        const SmartGroupsAIService = (await import('../../services/smartGroupsService')).default;
-        
-        const config = {
-          state: selectedState,
-          grade: selectedGrade,
-          analysisDepth: 'standard' as const,
-          includeCustomActivities: true,
-          themeWeight: 0.3,
-          standardsWeight: 0.4,
-          iepWeight: 0.3,
-          groupSizePreference: { min: 2, max: 6 },
-          frequencyLimit: 5
-        };
-
-        const theme = (customTheme || selectedTheme) ? {
-          id: `theme_${selectedMonth}_${Date.now()}`,
-          month: selectedMonth,
-          year: new Date().getFullYear(),
-          title: customTheme || selectedTheme,
-          description: `${customTheme || selectedTheme} themed learning activities`,
-          keywords: (customTheme || selectedTheme).toLowerCase().split(' '),
-          subThemes: [],
-          stateStandardsPriority: [],
-          learningObjectives: [],
-          assessmentOpportunities: [],
-          materialSuggestions: []
-        } : undefined;
-
-        console.log('🧠 Starting AI analysis with config:', config);
-        console.log('🎨 Using theme:', theme);
-
-        const aiRecommendations = await SmartGroupsAIService.generateSmartGroupRecommendations(config, theme);
-        
-        if (aiRecommendations && aiRecommendations.length > 0) {
-          setRecommendations(aiRecommendations);
-          setCurrentView('recommendations');
-          console.log('✅ AI Service generated', aiRecommendations.length, 'recommendations');
-          return;
-        }
-      } catch (serviceError) {
-        console.warn('⚠️ Smart Groups service unavailable, using mock data:', serviceError);
-      }
+      const activeTheme = customTheme || selectedTheme || 'Learning';
+      const stateStandards: StateStandard[] = []; // Add your state standards here when uploaded
       
-      // Fallback to mock data if service fails or returns no results
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
-      const mockRecommendations = generateMockRecommendations();
-      setRecommendations(mockRecommendations);
+      console.log('🧠 Starting REAL Claude AI analysis...');
+      
+      const recommendations = await generateRealSmartGroupRecommendations(
+        selectedState,
+        selectedGrade,
+        selectedMonth,
+        activeTheme,
+        stateStandards
+      );
+      
+      setRecommendations(recommendations);
       setCurrentView('recommendations');
       
-      console.log('🧠 AI Analysis complete (mock):', mockRecommendations.length, 'recommendations generated');
+      console.log('✅ Real AI generated', recommendations.length, 'recommendations');
     } catch (error) {
-      console.error('❌ AI Analysis error:', error);
+      console.error('❌ Error generating recommendations:', error);
+      alert('Error generating recommendations. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
