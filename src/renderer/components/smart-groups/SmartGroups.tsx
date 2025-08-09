@@ -60,7 +60,7 @@ interface StateStandard {
   code: string;
   state: string;
   grade: string;
-  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies';
+  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies' | 'Art' | 'PE';
   domain: string;
   title: string;
   description: string;
@@ -158,19 +158,63 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
     }
   };
 
-  // ===== AI ANALYSIS SIMULATION =====
+  // ===== AI ANALYSIS WITH SMART GROUPS SERVICE =====
   const runAIAnalysis = async () => {
     setIsAnalyzing(true);
     
     try {
-      // Simulate AI analysis with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Try to use the actual Smart Groups service
+      try {
+        const SmartGroupsAIService = (await import('../../services/smartGroupsService')).default;
+        
+        const config = {
+          state: selectedState,
+          grade: selectedGrade,
+          analysisDepth: 'standard' as const,
+          includeCustomActivities: true,
+          themeWeight: 0.3,
+          standardsWeight: 0.4,
+          iepWeight: 0.3,
+          groupSizePreference: { min: 2, max: 6 },
+          frequencyLimit: 5
+        };
+
+        const theme = (customTheme || selectedTheme) ? {
+          id: `theme_${selectedMonth}_${Date.now()}`,
+          month: selectedMonth,
+          year: new Date().getFullYear(),
+          title: customTheme || selectedTheme,
+          description: `${customTheme || selectedTheme} themed learning activities`,
+          keywords: (customTheme || selectedTheme).toLowerCase().split(' '),
+          subThemes: [],
+          stateStandardsPriority: [],
+          learningObjectives: [],
+          assessmentOpportunities: [],
+          materialSuggestions: []
+        } : undefined;
+
+        console.log('🧠 Starting AI analysis with config:', config);
+        console.log('🎨 Using theme:', theme);
+
+        const aiRecommendations = await SmartGroupsAIService.generateSmartGroupRecommendations(config, theme);
+        
+        if (aiRecommendations && aiRecommendations.length > 0) {
+          setRecommendations(aiRecommendations);
+          setCurrentView('recommendations');
+          console.log('✅ AI Service generated', aiRecommendations.length, 'recommendations');
+          return;
+        }
+      } catch (serviceError) {
+        console.warn('⚠️ Smart Groups service unavailable, using mock data:', serviceError);
+      }
       
+      // Fallback to mock data if service fails or returns no results
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing time
       const mockRecommendations = generateMockRecommendations();
       setRecommendations(mockRecommendations);
       setCurrentView('recommendations');
       
-      console.log('🧠 AI Analysis complete:', mockRecommendations.length, 'recommendations generated');
+      console.log('🧠 AI Analysis complete (mock):', mockRecommendations.length, 'recommendations generated');
     } catch (error) {
       console.error('❌ AI Analysis error:', error);
     } finally {
@@ -692,6 +736,107 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
               e.target.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
             }}
           />
+        </div>
+      </div>
+
+      {/* Curriculum Upload */}
+      <div style={{
+        background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Top accent bar */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #ff9800 0%, #f57c00 100%)',
+          borderRadius: '20px 20px 0 0'
+        }} />
+        
+        <h3 style={{
+          margin: '0 0 1.5rem 0',
+          color: '#2c3e50',
+          fontSize: '1.3rem',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <Upload style={{ width: '1.25rem', height: '1.25rem', color: '#ff9800' }} />
+          Curriculum Integration (Optional)
+        </h3>
+        
+        <div style={{
+          border: '2px dashed #e1e8ed',
+          borderRadius: '12px',
+          padding: '2rem',
+          textAlign: 'center',
+          transition: 'all 0.3s ease'
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.currentTarget.style.borderColor = '#ff9800';
+          e.currentTarget.style.background = '#fff3e0';
+        }}
+        onDragLeave={(e) => {
+          e.currentTarget.style.borderColor = '#e1e8ed';
+          e.currentTarget.style.background = 'transparent';
+        }}>
+          <input
+            type="file"
+            id="curriculum-upload"
+            accept=".pdf,.csv,.txt,.docx"
+            onChange={handleCurriculumUpload}
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="curriculum-upload" style={{ cursor: 'pointer' }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem'
+            }}>
+              <Upload style={{ width: '2rem', height: '2rem', color: '#9ca3af' }} />
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#6c757d',
+                margin: '0'
+              }}>
+                Upload your curriculum guide, pacing calendar, or standards document
+              </p>
+              <p style={{
+                fontSize: '0.75rem',
+                color: '#9ca3af',
+                margin: '0'
+              }}>
+                Supports PDF, CSV, TXT, or Word documents
+              </p>
+            </div>
+          </label>
+          
+          {curriculumUploaded && (
+            <div style={{
+              marginTop: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              color: '#28a745'
+            }}>
+              <Check style={{ width: '1rem', height: '1rem' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                Curriculum uploaded successfully!
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
