@@ -74,6 +74,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const [showPrintSheetsModal, setShowPrintSheetsModal] = useState(false);
   const [showGoalManagerModal, setShowGoalManagerModal] = useState(false);
   const [showQuickDataEntryModal, setShowQuickDataEntryModal] = useState(false);
+  const [showIEPDataCollectionModal, setShowIEPDataCollectionModal] = useState(false);
   const [selectedStudentForIntegration, setSelectedStudentForIntegration] = useState<ExtendedStudent | null>(null);
   const [selectedGoalForDataEntry, setSelectedGoalForDataEntry] = useState<IEPGoal | null>(null);
 
@@ -344,10 +345,10 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       return;
     }
 
-    // Go directly to EnhancedDataEntry for this specific student
+    // Open the IEP Data Collection Interface with this student pre-selected
+    // This will give access to the full Enhanced Data Entry system
     setSelectedStudentForIntegration(student);
-    setSelectedGoalForDataEntry(studentGoals[0]); // Pre-select first active goal
-    setShowDataEntryModal(true);
+    setShowIEPDataCollectionModal(true);
   };
 
   const handlePrintSheets = (student: ExtendedStudent) => {
@@ -841,6 +842,62 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
             refreshData(); // Refresh data
           }}
         />
+      )}
+
+      {/* IEP Data Collection Modal */}
+      {showIEPDataCollectionModal && selectedStudentForIntegration && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => {
+                setShowIEPDataCollectionModal(false);
+                setSelectedStudentForIntegration(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <IEPDataCollectionInterface
+              isActive={true}
+              preSelectedStudentId={selectedStudentForIntegration.id}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
