@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import UnifiedDataService from '../../services/unifiedDataService';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 import { EnhancedDataPoint } from '../../types';
 
 // Enhanced interfaces for educator workflow
@@ -17,24 +17,8 @@ interface TeacherOptimizedDataEntry {
   masteryIndicator?: boolean;
 }
 
-interface IEPGoal {
-  id: string;
-  studentId: string;
-  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
-  title: string;
-  description: string;
-  measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
-  target: number;
-  criteria: string;
-  isActive: boolean;
-  priority: 'high' | 'medium' | 'low';
-  lastDataPoint?: string;
-  dataPoints: number;
-  currentProgress: number;
-}
-
 interface EnhancedDataEntryProps {
-  selectedStudent: any;
+  selectedStudent: UnifiedStudent;
   selectedGoal: IEPGoal;
   onBack: () => void;
   onDataSaved: () => void;
@@ -74,11 +58,26 @@ const EnhancedDataEntry: React.FC<EnhancedDataEntryProps> = ({
 
   const loadTeacherContext = () => {
     try {
-      // Get progress analysis
-      const analysis = UnifiedDataService.getProgressAnalysis(selectedStudent.id);
-      setDaysSinceLastData(analysis.daysSinceLastData);
+      // Get progress analysis - use fallback if method doesn't exist
+      let daysSince = 0;
+      try {
+        const analysis = UnifiedDataService.getProgressAnalysis(selectedStudent.id);
+        daysSince = analysis?.daysSinceLastData || 0;
+      } catch (analysisError) {
+        // Fallback: calculate days since last data manually
+        const studentData = UnifiedDataService.getStudent(selectedStudent.id);
+        if (studentData?.iepData?.dataCollection && studentData.iepData.dataCollection.length > 0) {
+          const lastDataPoint = studentData.iepData.dataCollection
+            .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime())[0];
+          const lastDate = new Date(lastDataPoint.date);
+          const today = new Date();
+          daysSince = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        }
+      }
+      setDaysSinceLastData(daysSince);
     } catch (error) {
       console.error('Error loading teacher context:', error);
+      setDaysSinceLastData(0);
     }
   };
 

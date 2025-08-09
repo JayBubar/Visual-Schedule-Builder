@@ -1,21 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
-
-interface Student {
-  id: string;
-  name: string;
-  photo?: string;
-}
+import { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
 
 interface PrintDataSheetSystemProps {
-  students: Student[];
-  goals: any[]; // Use any[] to avoid type conflicts
+  students: UnifiedStudent[];
+  goals: IEPGoal[];
   onBack: () => void;
 }
 
 const PrintDataSheet = ({ student, goal, dateRange = 'week' }: { 
-  student: Student; 
-  goal: any; // Change from Goal to any
+  student: UnifiedStudent; 
+  goal: IEPGoal;
   dateRange: string; 
 }) => {
   const getDatesForRange = () => {
@@ -233,8 +228,8 @@ const PrintDataSheet = ({ student, goal, dateRange = 'week' }: {
 };
 
 const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, goals, onBack }) => {
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [selectedGoal, setSelectedGoal] = useState<any | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<UnifiedStudent | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
   const [dateRange, setDateRange] = useState<'week' | 'month'>('week');
   const [showPreview, setShowPreview] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);

@@ -73,6 +73,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   const [showDataEntryModal, setShowDataEntryModal] = useState(false);
   const [showPrintSheetsModal, setShowPrintSheetsModal] = useState(false);
   const [showGoalManagerModal, setShowGoalManagerModal] = useState(false);
+  const [showQuickDataEntryModal, setShowQuickDataEntryModal] = useState(false);
   const [selectedStudentForIntegration, setSelectedStudentForIntegration] = useState<ExtendedStudent | null>(null);
   const [selectedGoalForDataEntry, setSelectedGoalForDataEntry] = useState<IEPGoal | null>(null);
 
@@ -369,6 +370,20 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     setShowGoalManagerModal(true);
   };
 
+  const handleQuickDataEntry = (student: ExtendedStudent) => {
+    // Check if student has IEP goals
+    const studentGoals = student.iepData?.goals || [];
+
+    if (studentGoals.length === 0) {
+      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in Goal Management.`);
+      return;
+    }
+
+    // Open QuickDataEntry modal for this specific student
+    setSelectedStudentForIntegration(student);
+    setShowQuickDataEntryModal(true);
+  };
+
   if (!isActive) return null;
 
   const gradeGroups = getGradeGroups();
@@ -589,6 +604,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
                     onDataEntry={handleDataEntry}
                     onPrintSheets={handlePrintSheets}
                     onGoalManagement={handleGoalManagement}
+                    onQuickDataEntry={handleQuickDataEntry}
                   />
                 ))}
               </div>
@@ -808,6 +824,23 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
             />
           </div>
         </div>
+      )}
+
+      {/* Quick Data Entry Modal */}
+      {showQuickDataEntryModal && selectedStudentForIntegration && (
+        <QuickDataEntry
+          studentId={selectedStudentForIntegration.id}
+          isOpen={showQuickDataEntryModal}
+          onClose={() => {
+            setShowQuickDataEntryModal(false);
+            setSelectedStudentForIntegration(null);
+          }}
+          onDataSaved={() => {
+            setShowQuickDataEntryModal(false);
+            setSelectedStudentForIntegration(null);
+            refreshData(); // Refresh data
+          }}
+        />
       )}
     </div>
   );
@@ -1074,6 +1107,7 @@ interface StudentCardProps {
   onDataEntry: (student: ExtendedStudent) => void;
   onPrintSheets: (student: ExtendedStudent) => void;
   onGoalManagement: (student: ExtendedStudent) => void;
+  onQuickDataEntry: (student: ExtendedStudent) => void;
 }
 
 const StudentCard: React.FC<StudentCardProps> = ({ 
@@ -1085,7 +1119,8 @@ const StudentCard: React.FC<StudentCardProps> = ({
   isUsingUnifiedData,
   onDataEntry,
   onPrintSheets,
-  onGoalManagement
+  onGoalManagement,
+  onQuickDataEntry
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -1214,23 +1249,56 @@ const StudentCard: React.FC<StudentCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleDataEntry();
+              onQuickDataEntry(student);
             }}
             style={{
-              padding: '0.75rem 0.875rem',
+              padding: '0.6rem 0.75rem',
               borderRadius: '12px',
               border: 'none',
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              background: 'linear-gradient(135deg, #10b981, #059669)',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '0.8rem',
+              fontSize: '0.75rem',
               fontWeight: 'bold',
               transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem',
-              minHeight: '40px',
+              gap: '0.4rem',
+              minHeight: '36px',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            ⚡ Quick Entry
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDataEntry();
+            }}
+            style={{
+              padding: '0.6rem 0.75rem',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              minHeight: '36px',
               whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {
@@ -1242,7 +1310,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
               e.currentTarget.style.boxShadow = 'none';
             }}
           >
-            📊 Data Collection
+            📊 Full Entry
           </button>
           <button
             onClick={(e) => {
