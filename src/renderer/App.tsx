@@ -216,6 +216,13 @@ const App: React.FC = () => {
     setShowStartScreen(true);
   };
 
+  const handleSmartGroupImplementation = (recommendation: any) => {
+    console.log('Smart group recommendation implemented:', recommendation);
+    // Handle the implementation of smart group recommendations
+    // This could involve updating student assignments, schedules, etc.
+    // The recommendation contains groupName, studentIds, recommendedActivity, etc.
+  };
+
   // Convert Staff[] to StaffMember[] for components that expect StaffMember
   const staffMembers = useMemo(() => {
     return staff.map(member => ({
@@ -266,9 +273,13 @@ const App: React.FC = () => {
             break;
           case '8':
             event.preventDefault();
-            handleViewChange('reports');
+            handleViewChange('smart-groups');
             break;
           case '9':
+            event.preventDefault();
+            handleViewChange('reports');
+            break;
+          case '0':
             event.preventDefault();
             handleViewChange('settings');
             break;
@@ -411,6 +422,14 @@ const App: React.FC = () => {
             {currentView === 'settings' && (
               <Settings 
                 isActive={true}
+              />
+            )}
+
+            {/* Smart Groups */}
+            {currentView === 'smart-groups' && (
+              <SmartGroups 
+                isActive={true} 
+                onRecommendationImplemented={handleSmartGroupImplementation}
               />
             )}
             </div>

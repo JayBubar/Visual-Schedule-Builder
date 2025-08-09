@@ -1,4 +1,5 @@
 import React from 'react';
+import { Brain } from 'lucide-react';
 import { ViewType, ScheduleVariation } from '../../types';
 
 interface NavigationProps {
@@ -24,8 +25,9 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+5' },
     { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+6' },
     { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+7' },
-    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+8' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+9' }
+    { id: 'smart-groups', icon: Brain, label: 'Smart Groups AI', shortcut: 'Ctrl+8', description: 'AI-powered curriculum alignment and small group recommendations', color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', isNew: true },
+    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+9' },
+    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+0' }
   ] as const;
 
   return (
@@ -67,7 +69,9 @@ const Navigation: React.FC<NavigationProps> = ({
               title={isHidden ? 'Available after Daily Check-In' : `${item.label} (${item.shortcut})`}
               disabled={isHidden}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon">
+                {typeof item.icon === 'string' ? item.icon : <item.icon size={16} />}
+              </span>
               <span className="nav-label">{item.label}</span>
             </button>
           );
