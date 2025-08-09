@@ -1,11 +1,18 @@
 // Unified Data Service - UPDATED to fix migration issues
 // src/renderer/services/unifiedDataService.ts
 
-import { IEPGoal as BaseIEPGoal, DataPoint, Student } from '../types';
+import { 
+  IEPGoal as BaseIEPGoal, 
+  DataPoint, 
+  Student, 
+  EnhancedDataPoint, 
+  SchoolYearPeriod, 
+  GoalInheritance 
+} from '../types';
 
 // Extended IEP Goal interface for backward compatibility
 export interface IEPGoal extends Omit<BaseIEPGoal, 'domain' | 'measurementType'> {
-  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical';
+  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
   measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
   title: string;
   shortTermObjective: string;
@@ -17,6 +24,23 @@ export interface IEPGoal extends Omit<BaseIEPGoal, 'domain' | 'measurementType'>
   dataPoints: number;
   currentProgress: number;
   linkedActivityIds?: string[];
+  
+  // Enhanced SMART goal properties
+  nineWeekMilestones?: {
+    quarter1: { target: number; actual?: number; notes?: string };
+    quarter2: { target: number; actual?: number; notes?: string };
+    quarter3: { target: number; actual?: number; notes?: string };
+    quarter4: { target: number; actual?: number; notes?: string };
+  };
+  inheritedFrom?: {
+    previousGoalId: string;
+    previousYear: string;
+    carryOverReason: string;
+    modifications: string[];
+  };
+  iepMeetingDate?: string;
+  reviewDates?: string[];
+  complianceNotes?: string;
 }
 
 export interface UnifiedStudent {
@@ -419,7 +443,13 @@ class UnifiedDataService {
       // The unified data has students as an array inside the object
       if (Array.isArray(unifiedData.students) && unifiedData.students.length > 0) {
         console.log('✅ Using unified data:', unifiedData.students.length, 'students');
-        return unifiedData.students;
+        
+        // Before returning, ensure all students have proper iepData structure
+        const studentsWithProperStructure = unifiedData.students.map(student => 
+          this.ensureStudentIEPDataStructure(student)
+        );
+        
+        return studentsWithProperStructure;
       }
       console.log('⚠️ Unified data exists but students array is empty or invalid');
     } else {
@@ -459,8 +489,13 @@ class UnifiedDataService {
           }
         }));
         
-        console.log('🚀 Returning converted students:', convertedStudents.length);
-        return convertedStudents;
+        // Ensure proper iepData structure for legacy students too
+        const studentsWithProperStructure = convertedStudents.map(student => 
+          this.ensureStudentIEPDataStructure(student)
+        );
+        
+        console.log('🚀 Returning converted students:', studentsWithProperStructure.length);
+        return studentsWithProperStructure;
       }
     } catch (error) {
       console.error('❌ Failed to load legacy students:', error);
@@ -482,24 +517,68 @@ class UnifiedDataService {
     return student?.iepData.goals || [];
   }
   
+  // Ensure all students have proper iepData structure
+  static ensureStudentIEPDataStructure(student: UnifiedStudent): UnifiedStudent {
+    if (!student.iepData) {
+      student.iepData = {
+        goals: [],
+        dataCollection: []
+      };
+    }
+    
+    if (!student.iepData.goals) {
+      student.iepData.goals = [];
+    }
+    
+    if (!student.iepData.dataCollection) {
+      student.iepData.dataCollection = [];
+    }
+    
+    return student;
+  }
+
   // Get student's data points
   static getStudentDataPoints(studentId: string): DataPoint[] {
     const student = this.getStudent(studentId);
-    return student?.iepData.dataCollection || [];
+    
+    // ✅ Add null checks here too
+    if (student && student.iepData && student.iepData.dataCollection && Array.isArray(student.iepData.dataCollection)) {
+      return student.iepData.dataCollection;
+    }
+    
+    console.log('⚠️ No data collection found for student:', studentId);
+    return [];
   }
   
   // Get data points for a specific goal
   static getGoalDataPoints(goalId: string): DataPoint[] {
+    console.log('🔍 getGoalDataPoints called for goalId:', goalId);
+    
     const students = this.getAllStudents();
     const allDataPoints: DataPoint[] = [];
     
     students.forEach(student => {
-      const goalDataPoints = student.iepData.dataCollection.filter(
-        dp => dp.goalId === goalId
-      );
-      allDataPoints.push(...goalDataPoints);
+      console.log('🔍 Checking student:', student.name, 'iepData:', student.iepData);
+      
+      // ✅ FIX: Add proper null/undefined checks
+      if (student.iepData && student.iepData.dataCollection && Array.isArray(student.iepData.dataCollection)) {
+        const goalDataPoints = student.iepData.dataCollection.filter(
+          dp => dp.goalId === goalId
+        );
+        allDataPoints.push(...goalDataPoints);
+        console.log('✅ Found', goalDataPoints.length, 'data points for student', student.name);
+      } else {
+        console.log('⚠️ Student', student.name, 'has no dataCollection array');
+        // Initialize empty dataCollection if missing
+        if (!student.iepData) {
+          student.iepData = { goals: [], dataCollection: [] };
+        } else if (!student.iepData.dataCollection) {
+          student.iepData.dataCollection = [];
+        }
+      }
     });
     
+    console.log('📊 Total data points found:', allDataPoints.length);
     return allDataPoints.sort((a, b) => 
       new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime()
     );
@@ -1594,6 +1673,565 @@ class UnifiedDataService {
     return [];
   }
   
+  // ===== ENHANCED SMART GOAL MANAGEMENT METHODS =====
+  // Educator-focused methods for SMART goals and nine-week progress monitoring
+  
+  // Calculate current school year period
+  static getCurrentSchoolYear(): SchoolYearPeriod {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-based
+    
+    // School year typically starts in August/September
+    let startYear, endYear;
+    if (currentMonth >= 7) { // August or later
+      startYear = currentYear;
+      endYear = currentYear + 1;
+    } else {
+      startYear = currentYear - 1;
+      endYear = currentYear;
+    }
+    
+    const startDate = `${startYear}-08-15`; // Typical school start
+    const endDate = `${endYear}-06-15`; // Typical school end
+    
+    // Calculate 9-week quarters (approximate)
+    const start = new Date(startDate);
+    const q1End = new Date(start.getTime() + (9 * 7 * 24 * 60 * 60 * 1000));
+    const q2End = new Date(q1End.getTime() + (9 * 7 * 24 * 60 * 60 * 1000));
+    const q3End = new Date(q2End.getTime() + (9 * 7 * 24 * 60 * 60 * 1000));
+    const q4End = new Date(endDate);
+    
+    return {
+      year: `${startYear}-${endYear}`,
+      startDate,
+      endDate,
+      quarters: {
+        q1: { 
+          start: startDate, 
+          end: q1End.toISOString().split('T')[0], 
+          weekNumber: 9 
+        },
+        q2: { 
+          start: q1End.toISOString().split('T')[0], 
+          end: q2End.toISOString().split('T')[0], 
+          weekNumber: 18 
+        },
+        q3: { 
+          start: q2End.toISOString().split('T')[0], 
+          end: q3End.toISOString().split('T')[0], 
+          weekNumber: 27 
+        },
+        q4: { 
+          start: q3End.toISOString().split('T')[0], 
+          end: endDate, 
+          weekNumber: 36 
+        }
+      }
+    };
+  }
+  
+  // Get current quarter for nine-week progress monitoring
+  static getCurrentQuarter(): 'q1' | 'q2' | 'q3' | 'q4' {
+    const schoolYear = this.getCurrentSchoolYear();
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (today <= schoolYear.quarters.q1.end) return 'q1';
+    if (today <= schoolYear.quarters.q2.end) return 'q2';
+    if (today <= schoolYear.quarters.q3.end) return 'q3';
+    return 'q4';
+  }
+  
+  // Create SMART goal with nine-week milestones
+  static createSMARTGoal(
+    studentId: string, 
+    goalData: {
+      title: string;
+      domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
+      description: string;
+      shortTermObjective: string;
+      measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
+      criteria: string;
+      target: number;
+      priority: 'high' | 'medium' | 'low';
+      baseline?: { value: number; date: string; notes?: string };
+      nineWeekTargets?: { q1: number; q2: number; q3: number; q4: number };
+      inheritedFrom?: {
+        previousGoalId: string;
+        previousYear: string;
+        carryOverReason: string;
+        modifications: string[];
+      };
+    }
+  ): IEPGoal {
+    const now = new Date();
+    const dateCreated = now.toISOString().split('T')[0];
+    
+    // Auto-generate nine-week milestones if not provided
+    const nineWeekMilestones = goalData.nineWeekTargets ? {
+      quarter1: { target: goalData.nineWeekTargets.q1 },
+      quarter2: { target: goalData.nineWeekTargets.q2 },
+      quarter3: { target: goalData.nineWeekTargets.q3 },
+      quarter4: { target: goalData.nineWeekTargets.q4 }
+    } : {
+      quarter1: { target: Math.round(goalData.target * 0.25) },
+      quarter2: { target: Math.round(goalData.target * 0.50) },
+      quarter3: { target: Math.round(goalData.target * 0.75) },
+      quarter4: { target: goalData.target }
+    };
+    
+    const smartGoal: Omit<IEPGoal, 'id' | 'studentId'> = {
+      title: goalData.title,
+      domain: goalData.domain,
+      description: goalData.description,
+      shortTermObjective: goalData.shortTermObjective,
+      measurableObjective: goalData.shortTermObjective,
+      measurementType: goalData.measurementType,
+      criteria: goalData.criteria,
+      targetCriteria: goalData.criteria,
+      target: goalData.target,
+      priority: goalData.priority,
+      dateCreated,
+      createdDate: dateCreated,
+      lastUpdated: now.toISOString(),
+      dataPoints: 0,
+      currentProgress: goalData.baseline?.value || 0,
+      isActive: true,
+      dataCollectionSchedule: 'daily', // Default for educator workflow
+      nineWeekMilestones,
+      inheritedFrom: goalData.inheritedFrom,
+      baseline: goalData.baseline,
+      reviewDates: []
+    };
+    
+    return this.addGoalToStudent(studentId, smartGoal);
+  }
+  
+  // Update nine-week milestone progress
+  static updateNineWeekProgress(
+    goalId: string, 
+    quarter: 'quarter1' | 'quarter2' | 'quarter3' | 'quarter4',
+    actual: number,
+    notes?: string
+  ): void {
+    const students = this.getAllStudents();
+    
+    for (const student of students) {
+      const goal = student.iepData.goals.find(g => g.id === goalId);
+      if (goal) {
+        if (!goal.nineWeekMilestones) {
+          goal.nineWeekMilestones = {
+            quarter1: { target: Math.round(goal.target * 0.25) },
+            quarter2: { target: Math.round(goal.target * 0.50) },
+            quarter3: { target: Math.round(goal.target * 0.75) },
+            quarter4: { target: goal.target }
+          };
+        }
+        
+        goal.nineWeekMilestones[quarter].actual = actual;
+        if (notes) {
+          goal.nineWeekMilestones[quarter].notes = notes;
+        }
+        
+        goal.lastUpdated = new Date().toISOString();
+        this.saveStudents(students);
+        return;
+      }
+    }
+  }
+  
+  // Get progress analysis for educator dashboard
+  static getProgressAnalysis(studentId: string): {
+    overallProgress: number;
+    goalsMet: number;
+    totalGoals: number;
+    onTrackGoals: number;
+    needsAttentionGoals: number;
+    quarterProgress: {
+      quarter: 'q1' | 'q2' | 'q3' | 'q4';
+      goalsOnTrack: number;
+      goalsBehind: number;
+      goalsAhead: number;
+    };
+    lastDataCollection: string;
+    daysSinceLastData: number;
+  } {
+    const student = this.getStudent(studentId);
+    if (!student || !student.iepData.goals.length) {
+      return {
+        overallProgress: 0,
+        goalsMet: 0,
+        totalGoals: 0,
+        onTrackGoals: 0,
+        needsAttentionGoals: 0,
+        quarterProgress: {
+          quarter: this.getCurrentQuarter(),
+          goalsOnTrack: 0,
+          goalsBehind: 0,
+          goalsAhead: 0
+        },
+        lastDataCollection: '',
+        daysSinceLastData: 0
+      };
+    }
+    
+    const activeGoals = student.iepData.goals.filter(g => g.isActive);
+    const currentQuarter = this.getCurrentQuarter();
+    
+    // Calculate overall progress
+    const totalProgress = activeGoals.reduce((sum, g) => sum + (g.currentProgress || 0), 0);
+    const overallProgress = activeGoals.length > 0 ? Math.round(totalProgress / activeGoals.length) : 0;
+    
+    // Count goals met (at or above target)
+    const goalsMet = activeGoals.filter(g => (g.currentProgress || 0) >= g.target).length;
+    
+    // Analyze quarter progress
+    let goalsOnTrack = 0;
+    let goalsBehind = 0;
+    let goalsAhead = 0;
+    
+    activeGoals.forEach(goal => {
+      if (goal.nineWeekMilestones) {
+        const quarterTarget = goal.nineWeekMilestones[`quarter${currentQuarter.slice(1)}` as keyof typeof goal.nineWeekMilestones]?.target || 0;
+        const currentProgress = goal.currentProgress || 0;
+        
+        if (currentProgress >= quarterTarget * 1.1) { // 10% ahead
+          goalsAhead++;
+        } else if (currentProgress >= quarterTarget * 0.9) { // Within 10%
+          goalsOnTrack++;
+        } else {
+          goalsBehind++;
+        }
+      }
+    });
+    
+    // Find last data collection date
+    let lastDataCollection = '';
+    let daysSinceLastData = 0;
+    
+    if (student.iepData.dataCollection.length > 0) {
+      const sortedData = student.iepData.dataCollection.sort(
+        (a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime()
+      );
+      lastDataCollection = sortedData[0].date;
+      
+      const lastDate = new Date(lastDataCollection);
+      const today = new Date();
+      daysSinceLastData = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    
+    return {
+      overallProgress,
+      goalsMet,
+      totalGoals: activeGoals.length,
+      onTrackGoals: goalsOnTrack,
+      needsAttentionGoals: goalsBehind,
+      quarterProgress: {
+        quarter: currentQuarter,
+        goalsOnTrack,
+        goalsBehind,
+        goalsAhead
+      },
+      lastDataCollection,
+      daysSinceLastData
+    };
+  }
+  
+  // Add enhanced data point with trial tracking
+  static addEnhancedDataPoint(dataPoint: Omit<EnhancedDataPoint, 'id'>): EnhancedDataPoint {
+    // First add as regular data point
+    const basicDataPoint = this.addDataPoint(dataPoint);
+    
+    // Then enhance with additional properties
+    const enhancedDataPoint: EnhancedDataPoint = {
+      ...basicDataPoint,
+      trialsCorrect: dataPoint.trialsCorrect,
+      trialsTotal: dataPoint.trialsTotal,
+      trialDetails: dataPoint.trialDetails,
+      sessionType: dataPoint.sessionType,
+      environmentalFactors: dataPoint.environmentalFactors,
+      accommodationsUsed: dataPoint.accommodationsUsed,
+      behaviorNotes: dataPoint.behaviorNotes,
+      confidenceLevel: dataPoint.confidenceLevel,
+      masteryIndicator: dataPoint.masteryIndicator,
+      nextSteps: dataPoint.nextSteps,
+      percentageCorrect: dataPoint.percentageCorrect,
+      sessionDuration: dataPoint.sessionDuration,
+      dataQuality: dataPoint.dataQuality
+    };
+    
+    // Calculate percentage if trials provided
+    if (dataPoint.trialsCorrect !== undefined && dataPoint.trialsTotal !== undefined && dataPoint.trialsTotal > 0) {
+      enhancedDataPoint.percentageCorrect = Math.round((dataPoint.trialsCorrect / dataPoint.trialsTotal) * 100);
+      enhancedDataPoint.value = enhancedDataPoint.percentageCorrect;
+    }
+    
+    // Auto-determine mastery indicator
+    if (dataPoint.confidenceLevel === 'high' && (enhancedDataPoint.percentageCorrect || enhancedDataPoint.value) >= 80) {
+      enhancedDataPoint.masteryIndicator = true;
+    }
+    
+    return enhancedDataPoint;
+  }
+  
+  // Get goals needing attention (for teacher dashboard)
+  static getGoalsNeedingAttention(): {
+    studentId: string;
+    studentName: string;
+    goalId: string;
+    goalTitle: string;
+    daysSinceLastData: number;
+    currentProgress: number;
+    target: number;
+    priority: 'high' | 'medium' | 'low';
+    reason: 'no-recent-data' | 'behind-target' | 'declining-trend';
+  }[] {
+    const students = this.getAllStudents();
+    const needsAttention: any[] = [];
+    const today = new Date();
+    
+    students.forEach(student => {
+      student.iepData.goals.filter(g => g.isActive).forEach(goal => {
+        const goalDataPoints = student.iepData.dataCollection
+          .filter(dp => dp.goalId === goal.id)
+          .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
+        
+        let reason: 'no-recent-data' | 'behind-target' | 'declining-trend' | null = null;
+        let daysSinceLastData = 0;
+        
+        // Check for no recent data
+        if (goalDataPoints.length === 0) {
+          reason = 'no-recent-data';
+          daysSinceLastData = 999;
+        } else {
+          const lastDataDate = new Date(goalDataPoints[0].date);
+          daysSinceLastData = Math.floor((today.getTime() - lastDataDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceLastData > 7) {
+            reason = 'no-recent-data';
+          }
+        }
+        
+        // Check if behind target for current quarter
+        if (!reason && goal.nineWeekMilestones) {
+          const currentQuarter = this.getCurrentQuarter();
+          const quarterTarget = goal.nineWeekMilestones[`quarter${currentQuarter.slice(1)}` as keyof typeof goal.nineWeekMilestones]?.target || 0;
+          
+          if ((goal.currentProgress || 0) < quarterTarget * 0.8) { // 20% behind
+            reason = 'behind-target';
+          }
+        }
+        
+        // Check for declining trend
+        if (!reason && goalDataPoints.length >= 3) {
+          const recent3 = goalDataPoints.slice(0, 3);
+          const isDecline = recent3[0].value < recent3[1].value && recent3[1].value < recent3[2].value;
+          
+          if (isDecline) {
+            reason = 'declining-trend';
+          }
+        }
+        
+        if (reason) {
+          needsAttention.push({
+            studentId: student.id,
+            studentName: student.name,
+            goalId: goal.id,
+            goalTitle: goal.title,
+            daysSinceLastData,
+            currentProgress: goal.currentProgress || 0,
+            target: goal.target,
+            priority: goal.priority,
+            reason
+          });
+        }
+      });
+    });
+    
+    // Sort by priority and days since last data
+    return needsAttention.sort((a, b) => {
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      }
+      return b.daysSinceLastData - a.daysSinceLastData;
+    });
+  }
+  
+  // Create goal inheritance record
+  static inheritGoal(
+    currentGoalId: string,
+    previousGoalId: string,
+    previousYear: string,
+    carryOverReason: 'not-mastered' | 'partial-mastery' | 'new-environment' | 'skill-refinement',
+    modifications: string[]
+  ): void {
+    const students = this.getAllStudents();
+    
+    for (const student of students) {
+      const goal = student.iepData.goals.find(g => g.id === currentGoalId);
+      if (goal) {
+        goal.inheritedFrom = {
+          previousGoalId,
+          previousYear,
+          carryOverReason,
+          modifications
+        };
+        
+        goal.lastUpdated = new Date().toISOString();
+        this.saveStudents(students);
+        return;
+      }
+    }
+  }
+  
+  // Get goal inheritance history
+  static getGoalInheritanceHistory(goalId: string): GoalInheritance | null {
+    const students = this.getAllStudents();
+    
+    for (const student of students) {
+      const goal = student.iepData.goals.find(g => g.id === goalId);
+      if (goal && goal.inheritedFrom) {
+        // Build inheritance chain
+        const previousGoals: any[] = [];
+        
+        // Add current inheritance info
+        previousGoals.push({
+          goalId: goal.inheritedFrom.previousGoalId,
+          year: goal.inheritedFrom.previousYear,
+          finalProgress: 0, // Would need to be stored separately
+          carryOverReason: goal.inheritedFrom.carryOverReason,
+          modifications: goal.inheritedFrom.modifications
+        });
+        
+        return {
+          currentGoalId: goalId,
+          previousGoals,
+          continuityNotes: `Goal inherited from ${goal.inheritedFrom.previousYear} due to ${goal.inheritedFrom.carryOverReason}`
+        };
+      }
+    }
+    
+    return null;
+  }
+  
+  // Generate educator-friendly progress report
+  static generateEducatorProgressReport(studentId: string, timeframe: 'week' | 'month' | 'quarter'): {
+    student: { id: string; name: string };
+    reportPeriod: { start: string; end: string };
+    overallSummary: {
+      totalGoals: number;
+      goalsOnTrack: number;
+      goalsMet: number;
+      averageProgress: number;
+      dataPointsCollected: number;
+    };
+    goalDetails: {
+      goalId: string;
+      title: string;
+      domain: string;
+      currentProgress: number;
+      target: number;
+      trend: 'improving' | 'stable' | 'declining';
+      recentDataPoints: number;
+      nextSteps: string;
+    }[];
+    recommendations: string[];
+  } {
+    const student = this.getStudent(studentId);
+    if (!student) {
+      throw new Error('Student not found');
+    }
+    
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (timeframe) {
+      case 'week':
+        startDate.setDate(endDate.getDate() - 7);
+        break;
+      case 'month':
+        startDate.setMonth(endDate.getMonth() - 1);
+        break;
+      case 'quarter':
+        startDate.setMonth(endDate.getMonth() - 3);
+        break;
+    }
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Analyze goals
+    const activeGoals = student.iepData.goals.filter(g => g.isActive);
+    const goalDetails = activeGoals.map(goal => {
+      const goalDataPoints = student.iepData.dataCollection
+        .filter(dp => dp.goalId === goal.id && dp.date >= startDateStr && dp.date <= endDateStr)
+        .sort((a, b) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime());
+      
+      // Determine trend
+      let trend: 'improving' | 'stable' | 'declining' = 'stable';
+      if (goalDataPoints.length >= 3) {
+        const recent = goalDataPoints.slice(0, 3);
+        const oldest = recent[recent.length - 1].value;
+        const newest = recent[0].value;
+        
+        if (newest > oldest + 5) trend = 'improving';
+        else if (newest < oldest - 5) trend = 'declining';
+      }
+      
+      return {
+        goalId: goal.id,
+        title: goal.title,
+        domain: goal.domain,
+        currentProgress: goal.currentProgress || 0,
+        target: goal.target,
+        trend,
+        recentDataPoints: goalDataPoints.length,
+        nextSteps: goalDataPoints[0]?.notes || 'Continue current intervention'
+      };
+    });
+    
+    // Calculate summary
+    const totalDataPoints = goalDetails.reduce((sum, g) => sum + g.recentDataPoints, 0);
+    const averageProgress = goalDetails.length > 0 
+      ? Math.round(goalDetails.reduce((sum, g) => sum + g.currentProgress, 0) / goalDetails.length)
+      : 0;
+    const goalsOnTrack = goalDetails.filter(g => g.currentProgress >= g.target * 0.8).length;
+    const goalsMet = goalDetails.filter(g => g.currentProgress >= g.target).length;
+    
+    // Generate recommendations
+    const recommendations: string[] = [];
+    
+    if (totalDataPoints < activeGoals.length * 3) {
+      recommendations.push('Increase data collection frequency for more accurate progress monitoring');
+    }
+    
+    const decliningGoals = goalDetails.filter(g => g.trend === 'declining');
+    if (decliningGoals.length > 0) {
+      recommendations.push(`Review intervention strategies for ${decliningGoals.length} goal(s) showing declining trend`);
+    }
+    
+    const lowDataGoals = goalDetails.filter(g => g.recentDataPoints < 2);
+    if (lowDataGoals.length > 0) {
+      recommendations.push(`Collect more data for ${lowDataGoals.length} goal(s) with insufficient recent data`);
+    }
+    
+    return {
+      student: { id: student.id, name: student.name },
+      reportPeriod: { start: startDateStr, end: endDateStr },
+      overallSummary: {
+        totalGoals: activeGoals.length,
+        goalsOnTrack,
+        goalsMet,
+        averageProgress,
+        dataPointsCollected: totalDataPoints
+      },
+      goalDetails,
+      recommendations
+    };
+  }
+
   // Check if system is using unified data
   static isUsingUnifiedData(): boolean {
     return this.getUnifiedData() !== null;

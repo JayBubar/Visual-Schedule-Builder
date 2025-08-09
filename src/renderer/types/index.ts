@@ -593,16 +593,51 @@ export interface ChoiceFilter {
   [key: string]: any;
 }
 
-// IEP Data Collection Types
+// ===== ENHANCED IEP DATA COLLECTION TYPES =====
+// Enhanced for SMART goals and educator workflow
+
 export interface IEPGoal {
   id: string;
   studentId: string;
-  domain: string;
+  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
   description: string;
   measurableObjective: string;
-  measurementType: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
+  measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
   targetCriteria: string;
   dataCollectionSchedule: string;
+  
+  // SMART Goal Enhancement
+  title: string;
+  shortTermObjective: string;
+  criteria: string;
+  target: number; // Annual target value
+  priority: 'high' | 'medium' | 'low';
+  dateCreated: string;
+  lastDataPoint?: string;
+  dataPoints: number;
+  currentProgress: number;
+  
+  // Nine-week milestones for progress monitoring
+  nineWeekMilestones?: {
+    quarter1: { target: number; actual?: number; notes?: string };
+    quarter2: { target: number; actual?: number; notes?: string };
+    quarter3: { target: number; actual?: number; notes?: string };
+    quarter4: { target: number; actual?: number; notes?: string };
+  };
+  
+  // Goal inheritance tracking
+  inheritedFrom?: {
+    previousGoalId: string;
+    previousYear: string;
+    carryOverReason: string;
+    modifications: string[];
+  };
+  
+  // Administrative compliance
+  iepMeetingDate?: string;
+  reviewDates?: string[];
+  complianceNotes?: string;
+  
   baseline?: {
     value: number;
     date: string;
@@ -611,7 +646,7 @@ export interface IEPGoal {
   isActive: boolean;
   createdDate: string;
   lastUpdated: string;
-  linkedActivityIds?: string[]; // Connect to existing Activity Library
+  linkedActivityIds?: string[];
 }
 
 export interface DataPoint {
@@ -621,13 +656,68 @@ export interface DataPoint {
   date: string;
   time: string;
   value: number;
-  totalOpportunities?: number; // For frequency/accuracy data
+  totalOpportunities?: number; // For trial-based data (X out of Y)
   notes?: string;
   context?: string;
-  activityId?: string; // Link to existing activities
+  activityId?: string;
   collector: string;
   photos?: string[];
   voiceNotes?: string[];
+}
+
+// Enhanced data point for trial-based entry and administrative needs
+export interface EnhancedDataPoint extends DataPoint {
+  // Trial-based data entry
+  trialsCorrect?: number;
+  trialsTotal?: number;
+  trialDetails?: {
+    trial: number;
+    correct: boolean;
+    response?: string;
+    promptLevel?: 'independent' | 'verbal' | 'gestural' | 'physical';
+  }[];
+  
+  // Administrative documentation
+  sessionType: 'instruction' | 'practice' | 'assessment' | 'generalization';
+  environmentalFactors?: string[];
+  accommodationsUsed?: string[];
+  behaviorNotes?: string;
+  
+  // Progress monitoring
+  confidenceLevel: 'low' | 'medium' | 'high';
+  masteryIndicator?: boolean;
+  nextSteps?: string;
+  
+  // Auto-calculated fields
+  percentageCorrect?: number;
+  sessionDuration?: number;
+  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
+// Nine-week period calculation
+export interface SchoolYearPeriod {
+  year: string; // "2024-2025"
+  startDate: string;
+  endDate: string;
+  quarters: {
+    q1: { start: string; end: string; weekNumber: number };
+    q2: { start: string; end: string; weekNumber: number };
+    q3: { start: string; end: string; weekNumber: number };
+    q4: { start: string; end: string; weekNumber: number };
+  };
+}
+
+// Goal inheritance tracking
+export interface GoalInheritance {
+  currentGoalId: string;
+  previousGoals: {
+    goalId: string;
+    year: string;
+    finalProgress: number;
+    carryOverReason: 'not-mastered' | 'partial-mastery' | 'new-environment' | 'skill-refinement';
+    modifications: string[];
+  }[];
+  continuityNotes: string;
 }
 
 export interface IEPProgress {
