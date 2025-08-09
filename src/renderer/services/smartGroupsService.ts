@@ -1,4 +1,105 @@
-// Data Collection Integration
+// smartGroupsService.ts - Integration with UnifiedDataService
+// Connects Smart Groups AI with existing Bloom app infrastructure
+
+import UnifiedDataService, { UnifiedStudent, IEPGoal, UnifiedActivity } from './unifiedDataService';
+
+// ===== CORE INTERFACES =====
+
+export interface StateStandard {
+  id: string;
+  code: string; // e.g., "CCSS.ELA-LITERACY.RL.3.2"
+  state: string; // e.g., "SC", "NC", "GA"
+  grade: string; // e.g., "K", "1", "2", "3"
+  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies' | 'Art' | 'PE';
+  domain: string; // e.g., "Reading Literature"
+  title: string;
+  description: string;
+  subSkills: string[]; // Key skills for AI matching
+  complexity: 1 | 2 | 3 | 4 | 5;
+  prerequisites?: string[];
+  assessmentMethods: string[];
+  typicalActivities: string[];
+  accommodationSupport: string[];
+}
+
+export interface MonthlyTheme {
+  id: string;
+  month: number; // 1-12
+  year: number;
+  title: string; // "Spring & New Growth"
+  description: string;
+  keywords: string[]; // ["spring", "growth", "weather", "plants"]
+  subThemes: WeeklySubTheme[];
+  stateStandardsPriority: string[]; // Standards that must be covered this month
+  learningObjectives: string[];
+  assessmentOpportunities: string[];
+  materialSuggestions: string[];
+  fieldTripConnections?: string[];
+  familyEngagementIdeas?: string[];
+}
+
+export interface WeeklySubTheme {
+  week: number; // 1-4
+  title: string; // "Signs of Spring"
+  focus: string; // "Observation & Discovery"
+  keywords: string[];
+  suggestedActivities?: string[];
+}
+
+export interface SmartGroupRecommendation {
+  id: string;
+  groupName: string;
+  confidence: number; // 0-100 AI confidence score
+  
+  // Student Information
+  studentIds: string[];
+  studentCount: number;
+  
+  // Standards & Goals Alignment
+  standardsAddressed: {
+    standardId: string;
+    standard: StateStandard;
+    coverageReason: string;
+  }[];
+  
+  iepGoalsAddressed: {
+    goalId: string;
+    studentId: string;
+    goal: IEPGoal;
+    alignmentReason: string;
+  }[];
+  
+  // Activity Recommendation
+  recommendedActivity: {
+    activityId: string;
+    activity: UnifiedActivity;
+    adaptations: string[];
+    duration: number;
+    materials: string[];
+    setup: string;
+    implementation: string;
+  };
+  
+  // Theme Integration
+  themeConnection?: {
+    themeId: string;
+    relevance: string;
+    thematicElements: string[];
+  };
+  
+  // Benefits & Rationale
+  benefits: string[];
+  rationale: string;
+  
+  // Implementation Details
+  suggestedScheduling: {
+    frequency: 'daily' | 'weekly' | 'bi-weekly';
+    duration: number;
+    preferredTimes: string[];
+    prerequisites?: string[];
+  };
+  
+  // Data Collection Integration
   dataCollectionPlan: {
     goalIds: string[];
     measurementMoments: string[];
@@ -105,7 +206,7 @@ export class SmartGroupsAIService {
         title: 'Determine Central Message',
         description: `Recount stories and determine the central message, lesson, or moral and explain how it is conveyed through key details`,
         subSkills: ['main idea', 'supporting details', 'summarization', 'theme identification', 'story elements'],
-        complexity: Math.min(5, gradeNum + 2),
+        complexity: Math.min(5, Math.max(1, gradeNum + 2)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['oral retelling', 'graphic organizers', 'discussion', 'written response'],
         typicalActivities: ['story mapping', 'character analysis', 'theme discussions', 'read-alouds'],
         accommodationSupport: ['visual supports', 'reduced text complexity', 'partner reading', 'audio support']
@@ -120,7 +221,7 @@ export class SmartGroupsAIService {
         title: 'Phonics and Word Recognition',
         description: 'Know and apply grade-level phonics and word analysis skills in decoding words',
         subSkills: ['phonics', 'word recognition', 'decoding', 'fluency', 'sight words'],
-        complexity: Math.min(4, gradeNum + 1),
+        complexity: Math.min(4, Math.max(1, gradeNum + 1)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['reading assessments', 'word recognition tests', 'fluency checks'],
         typicalActivities: ['phonics games', 'word sorts', 'guided reading', 'sight word practice'],
         accommodationSupport: ['multisensory approaches', 'repeated practice', 'visual cues']
@@ -137,7 +238,7 @@ export class SmartGroupsAIService {
         title: 'Addition and Subtraction Word Problems',
         description: 'Use addition and subtraction within appropriate range to solve word problems',
         subSkills: ['problem solving', 'addition', 'subtraction', 'word problems', 'strategy selection'],
-        complexity: Math.min(5, gradeNum + 2),
+        complexity: Math.min(5, Math.max(1, gradeNum + 2)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['problem solving tasks', 'math journals', 'manipulative use', 'verbal explanations'],
         typicalActivities: ['real-world scenarios', 'math centers', 'collaborative problem solving', 'story problems'],
         accommodationSupport: ['manipulatives', 'visual models', 'reduced numbers', 'step-by-step guides']
@@ -152,7 +253,7 @@ export class SmartGroupsAIService {
         title: 'Measurement and Estimation',
         description: 'Measure lengths and solve problems involving measurement',
         subSkills: ['measurement', 'estimation', 'units', 'comparison', 'data collection'],
-        complexity: Math.min(4, gradeNum + 1),
+        complexity: Math.min(4, Math.max(1, gradeNum + 1)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['hands-on measurement', 'estimation games', 'data charts'],
         typicalActivities: ['measuring activities', 'estimation stations', 'science experiments', 'cooking'],
         accommodationSupport: ['concrete tools', 'visual references', 'partner work']
@@ -169,7 +270,7 @@ export class SmartGroupsAIService {
         title: 'Plant and Animal Structures',
         description: 'Use materials to design solutions based on how plants and animals use structures',
         subSkills: ['observation', 'structures', 'function', 'design', 'life science'],
-        complexity: Math.min(4, gradeNum + 1),
+        complexity: Math.min(4, Math.max(1, gradeNum + 1)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['observation logs', 'design challenges', 'experiments'],
         typicalActivities: ['nature walks', 'design challenges', 'observation journals', 'experiments'],
         accommodationSupport: ['visual guides', 'hands-on materials', 'simplified vocabulary']
@@ -186,7 +287,7 @@ export class SmartGroupsAIService {
         title: 'Community and Relationships',
         description: 'Explore factors that contribute to identity and community relationships',
         subSkills: ['community', 'identity', 'relationships', 'citizenship', 'diversity'],
-        complexity: Math.min(3, gradeNum + 1),
+        complexity: Math.min(3, Math.max(1, gradeNum + 1)) as 1 | 2 | 3 | 4 | 5,
         assessmentMethods: ['discussions', 'projects', 'role-playing', 'community maps'],
         typicalActivities: ['community helpers', 'family trees', 'cultural sharing', 'citizenship activities'],
         accommodationSupport: ['visual supports', 'discussion prompts', 'peer partnerships']
@@ -811,9 +912,6 @@ export class SmartGroupsAIService {
     // Calculate confidence based on multiple factors
     const confidence = this.calculateRecommendationConfidence(cluster, standard, activity, theme, config);
     
-    // Get student names for the cluster
-    const students = cluster.studentIds.map(id => UnifiedDataService.getStudent(id)).filter(s => s !== null);
-    
     return {
       id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       groupName: this.generateGroupName(cluster, standard, activity, theme),
@@ -923,15 +1021,7 @@ export class SmartGroupsAIService {
     const subject = standard.subject;
     const themePrefix = theme ? `${theme.title} ` : '';
     
-    // Generate contextual group names
-    const nameTemplates = [
-      `${themePrefix}${subject} ${domain.charAt(0).toUpperCase() + domain.slice(1)} Group`,
-      `${themePrefix}${standard.title} Squad`,
-      `${themePrefix}${activity.name} Team`,
-      `${subject} ${domain.charAt(0).toUpperCase() + domain.slice(1)} Stars`
-    ];
-    
-    return nameTemplates[0]; // Use the first template for consistency
+    return `${themePrefix}${subject} ${domain.charAt(0).toUpperCase() + domain.slice(1)} Group`;
   }
   
   private static generateAdaptations(goals: IEPGoal[], activity: AIEnhancedActivity): string[] {
@@ -942,64 +1032,21 @@ export class SmartGroupsAIService {
       switch (goal.domain) {
         case 'behavioral':
           adaptations.push('Provide clear behavior expectations and visual reminders');
-          adaptations.push('Use positive reinforcement and frequent feedback');
           break;
         case 'social-emotional':
           adaptations.push('Model appropriate social interactions');
-          adaptations.push('Provide social scripts and conversation starters');
           break;
         case 'communication':
           adaptations.push('Allow multiple communication modalities');
-          adaptations.push('Provide extra wait time for responses');
           break;
-        case 'physical':
-          adaptations.push('Adapt materials for fine motor accessibility');
-          adaptations.push('Provide alternative positioning options');
-          break;
-      }
-      
-      if (goal.measurementType === 'independence') {
-        adaptations.push('Implement systematic prompting with planned fading');
-      }
-      
-      if (goal.priority === 'high') {
-        adaptations.push('Provide intensive focus on high-priority objectives');
       }
     });
     
-    // Activity-specific adaptations
-    if (activity.accommodationSupport.includes('visual-supports')) {
-      adaptations.push('Use visual supports and graphic organizers');
-    }
-    
-    if (activity.accommodationSupport.includes('tactile-supports')) {
-      adaptations.push('Provide hands-on manipulatives and concrete materials');
-    }
-    
-    if (activity.cognitiveLoad >= 4) {
-      adaptations.push('Break complex tasks into smaller, manageable steps');
-    }
-    
-    // Remove duplicates and return
     return [...new Set(adaptations)];
   }
   
   private static generateSetupInstructions(activity: AIEnhancedActivity, studentCount: number): string {
-    const baseSetup = `Arrange seating for ${studentCount} students in a semi-circle for optimal teacher interaction and peer collaboration.`;
-    
-    const materialSetup = activity.materials?.length 
-      ? ` Organize materials: ${activity.materials.join(', ')}. Ensure each student has easy access to needed supplies.`
-      : ' Prepare basic classroom materials and any activity-specific supplies.';
-    
-    const environmentSetup = activity.noise === 'quiet' 
-      ? ' Create a calm, focused environment with minimal distractions.'
-      : activity.movement === 'movement'
-      ? ' Ensure adequate space for movement and active participation.'
-      : ' Set up a comfortable learning space conducive to group work.';
-    
-    const dataSetup = ' Position data collection materials within easy reach for seamless progress monitoring.';
-    
-    return baseSetup + materialSetup + environmentSetup + dataSetup;
+    return `Arrange seating for ${studentCount} students in a semi-circle for optimal teacher interaction and peer collaboration.`;
   }
   
   private static generateImplementationGuide(
@@ -1010,11 +1057,9 @@ export class SmartGroupsAIService {
     const steps = [
       `1. **Introduction (2-3 min):** Welcome students and connect today's activity to ${standard.title}`,
       `2. **Objective Review:** Explicitly state how ${activity.name} will help achieve individual IEP goals`,
-      `3. **Modeling:** Demonstrate expected behaviors and skills using clear, step-by-step examples`,
-      `4. **Guided Practice:** Support students as they engage with ${activity.name}, providing scaffolding as needed`,
-      `5. **Independent Practice:** Allow students to apply skills with decreasing support`,
-      `6. **Progress Monitoring:** Collect data on IEP goal performance throughout the activity`,
-      `7. **Wrap-up:** Review learning objectives and celebrate individual progress toward goals`
+      `3. **Guided Practice:** Support students as they engage with ${activity.name}`,
+      `4. **Progress Monitoring:** Collect data on IEP goal performance throughout the activity`,
+      `5. **Wrap-up:** Review learning objectives and celebrate individual progress toward goals`
     ];
     
     return steps.join('\n');
@@ -1030,15 +1075,6 @@ export class SmartGroupsAIService {
       }
     });
     
-    // Add thematic materials if activity supports them
-    if (activity.engagementFactors.includes('nature') && theme.keywords.includes('plants')) {
-      elements.push('nature connection');
-    }
-    
-    if (activity.engagementFactors.includes('art') && theme.title.toLowerCase().includes('spring')) {
-      elements.push('seasonal art');
-    }
-    
     return [...new Set(elements)];
   }
   
@@ -1051,21 +1087,11 @@ export class SmartGroupsAIService {
     const benefits = [
       `Addresses required ${standard.subject} standard: ${standard.code}`,
       `Targets ${cluster.goals.length} IEP goals across ${cluster.studentIds.length} students`,
-      'Enables efficient small group instruction with individualized support',
-      'Provides multiple data collection opportunities within a single activity',
-      'Promotes peer learning and social skill development'
+      'Enables efficient small group instruction with individualized support'
     ];
     
     if (theme) {
       benefits.push(`Integrates seamlessly with ${theme.title} theme for cohesive curriculum`);
-    }
-    
-    if (activity.accommodationSupport.length > 0) {
-      benefits.push('Includes built-in accommodations for diverse learning needs');
-    }
-    
-    if (activity.engagementFactors.length > 0) {
-      benefits.push(`Incorporates engaging elements: ${activity.engagementFactors.join(', ')}`);
     }
     
     return benefits;
@@ -1079,7 +1105,7 @@ export class SmartGroupsAIService {
   ): string {
     const themeText = theme ? ` The ${theme.title} theme provides meaningful context that enhances engagement and retention.` : '';
     
-    return `This small group recommendation optimizes instructional efficiency by combining state standard ${standard.code} with ${cluster.goals.length} aligned IEP goals. The ${activity.name} activity provides natural opportunities for skill practice and data collection while maintaining appropriate cognitive load for all participants.${themeText} This approach ensures both compliance requirements and individualized learning objectives are met simultaneously.`;
+    return `This small group recommendation optimizes instructional efficiency by combining state standard ${standard.code} with ${cluster.goals.length} aligned IEP goals.${themeText}`;
   }
   
   private static suggestFrequency(goals: IEPGoal[]): 'daily' | 'weekly' | 'bi-weekly' {
@@ -1098,259 +1124,8 @@ export class SmartGroupsAIService {
       return 'Frequency/accuracy tracking with quick tallies';
     }
     
-    if (measurementTypes.includes('rating')) {
-      return 'Rating scale observation (1-5 scale)';
-    }
-    
-    if (measurementTypes.includes('yes-no')) {
-      return 'Binary checklist (yes/no for each criterion)';
-    }
-    
-    if (measurementTypes.includes('independence')) {
-      return 'Independence level tracking (independent/minimal/moderate/maximum support)';
-    }
-    
     return 'Observational notes with specific criteria documentation';
   }
-  
-  // ===== RECOMMENDATION IMPLEMENTATION =====
-  
-  static implementRecommendation(recommendation: SmartGroupRecommendation): boolean {
-    try {
-      console.log('🚀 Implementing Smart Group:', recommendation.groupName);
-      
-      // 1. Create the activity in UnifiedDataService
-      const groupActivity = {
-        id: `smart_group_${recommendation.id}`,
-        name: recommendation.groupName,
-        category: 'academic' as any,
-        description: recommendation.rationale,
-        duration: recommendation.recommendedActivity.duration,
-        materials: recommendation.recommendedActivity.materials,
-        instructions: recommendation.recommendedActivity.implementation,
-        isCustom: true,
-        dateCreated: new Date().toISOString(),
-        // Add smart group metadata
-        smartGroupMetadata: {
-          recommendationId: recommendation.id,
-          confidence: recommendation.confidence,
-          studentIds: recommendation.studentIds,
-          goalIds: recommendation.iepGoalsAddressed.map(g => g.goalId),
-          standardIds: recommendation.standardsAddressed.map(s => s.standardId),
-          themeId: recommendation.themeConnection?.themeId
-        }
-      };
-
-      UnifiedDataService.addActivity(groupActivity);
-      
-      // 2. Set up data collection reminders for each goal
-      recommendation.iepGoalsAddressed.forEach(goalInfo => {
-        this.scheduleDataCollectionReminder(goalInfo.goalId, goalInfo.studentId, groupActivity.id);
-      });
-      
-      // 3. Save implementation record
-      this.saveImplementationRecord(recommendation);
-      
-      console.log('✅ Smart Group implemented successfully');
-      return true;
-      
-    } catch (error) {
-      console.error('❌ Error implementing recommendation:', error);
-      return false;
-    }
-  }
-  
-  private static scheduleDataCollectionReminder(goalId: string, studentId: string, activityId: string): void {
-    // This would integrate with your existing data collection system
-    // For now, we'll just log the scheduling
-    console.log('📊 Scheduled data collection for:', {
-      goalId,
-      studentId,
-      activityId,
-      scheduledFor: 'next activity session'
-    });
-    
-    // In a full implementation, this might:
-    // - Add reminders to teacher's calendar
-    // - Create data collection templates
-    // - Set up automatic prompts in the data entry system
-  }
-  
-  private static saveImplementationRecord(recommendation: SmartGroupRecommendation): void {
-    const implementations = this.getImplementationHistory();
-    
-    const record = {
-      ...recommendation,
-      teacherApproved: true,
-      implementationDate: new Date().toISOString(),
-      status: 'active' as const
-    };
-    
-    implementations.push(record);
-    localStorage.setItem(`${this.STORAGE_KEY}_implementations`, JSON.stringify(implementations));
-  }
-  
-  static getImplementationHistory(): SmartGroupRecommendation[] {
-    const stored = localStorage.getItem(`${this.STORAGE_KEY}_implementations`);
-    return stored ? JSON.parse(stored) : [];
-  }
-  
-  // ===== UTILITY METHODS =====
-  
-  static clearAllData(): void {
-    // Clear all Smart Groups related data
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith(this.STORAGE_KEY) || 
-          key.startsWith(this.STANDARDS_KEY) || 
-          key.startsWith(this.THEMES_KEY)) {
-        localStorage.removeItem(key);
-      }
-    });
-    
-    console.log('🧹 Smart Groups data cleared');
-  }
-  
-  static exportRecommendations(recommendations: SmartGroupRecommendation[]): string {
-    // Export recommendations as JSON for backup or sharing
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      version: '1.0',
-      recommendations
-    };
-    
-    return JSON.stringify(exportData, null, 2);
-  }
-  
-  static validateRecommendation(recommendation: SmartGroupRecommendation): boolean {
-    // Validate that recommendation has all required fields
-    const required = ['id', 'groupName', 'confidence', 'studentIds', 'standardsAddressed', 'iepGoalsAddressed'];
-    
-    for (const field of required) {
-      if (!recommendation[field as keyof SmartGroupRecommendation]) {
-        console.error(`❌ Invalid recommendation: missing ${field}`);
-        return false;
-      }
-    }
-    
-    // Validate student IDs exist in UnifiedDataService
-    const validStudents = recommendation.studentIds.every(id => 
-      UnifiedDataService.getStudent(id) !== null
-    );
-    
-    if (!validStudents) {
-      console.error('❌ Invalid recommendation: one or more student IDs not found');
-      return false;
-    }
-    
-    return true;
-  }
 }
 
-// ===== EXPORT FOR INTEGRATION =====
-
-export default SmartGroupsAIService;// smartGroupsService.ts - Integration with UnifiedDataService
-// Connects Smart Groups AI with existing Bloom app infrastructure
-
-import UnifiedDataService, { UnifiedStudent, IEPGoal, UnifiedActivity } from './unifiedDataService';
-
-// ===== CORE INTERFACES =====
-
-export interface StateStandard {
-  id: string;
-  code: string; // e.g., "CCSS.ELA-LITERACY.RL.3.2"
-  state: string; // e.g., "SC", "NC", "GA"
-  grade: string; // e.g., "K", "1", "2", "3"
-  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies' | 'Art' | 'PE';
-  domain: string; // e.g., "Reading Literature"
-  title: string;
-  description: string;
-  subSkills: string[]; // Key skills for AI matching
-  complexity: 1 | 2 | 3 | 4 | 5;
-  prerequisites?: string[];
-  assessmentMethods: string[];
-  typicalActivities: string[];
-  accommodationSupport: string[];
-}
-
-export interface MonthlyTheme {
-  id: string;
-  month: number; // 1-12
-  year: number;
-  title: string; // "Spring & New Growth"
-  description: string;
-  keywords: string[]; // ["spring", "growth", "weather", "plants"]
-  subThemes: WeeklySubTheme[];
-  stateStandardsPriority: string[]; // Standards that must be covered this month
-  learningObjectives: string[];
-  assessmentOpportunities: string[];
-  materialSuggestions: string[];
-  fieldTripConnections?: string[];
-  familyEngagementIdeas?: string[];
-}
-
-export interface WeeklySubTheme {
-  week: number; // 1-4
-  title: string; // "Signs of Spring"
-  focus: string; // "Observation & Discovery"
-  keywords: string[];
-  suggestedActivities: string[];
-}
-
-export interface SmartGroupRecommendation {
-  id: string;
-  groupName: string;
-  confidence: number; // 0-100 AI confidence score
-  
-  // Student Information
-  studentIds: string[];
-  studentCount: number;
-  
-  // Standards & Goals Alignment
-  standardsAddressed: {
-    standardId: string;
-    standard: StateStandard;
-    coverageReason: string;
-  }[];
-  
-  iepGoalsAddressed: {
-    goalId: string;
-    studentId: string;
-    goal: IEPGoal;
-    alignmentReason: string;
-  }[];
-  
-  // Activity Recommendation
-  recommendedActivity: {
-    activityId: string;
-    activity: UnifiedActivity;
-    adaptations: string[];
-    duration: number;
-    materials: string[];
-    setup: string;
-    implementation: string;
-  };
-  
-  // Theme Integration
-  themeConnection?: {
-    themeId: string;
-    relevance: string;
-    thematicElements: string[];
-  };
-  
-  // Benefits & Rationale
-  benefits: string[];
-  rationale: string;
-  
-  // Implementation Details
-  suggestedScheduling: {
-    frequency: 'daily' | 'weekly' | 'bi-weekly';
-    duration: number;
-    preferredTimes: string[];
-    prerequisites?: string[];
-  };
-  
-  // Data Collection Integration
-  dataCollectionPlan: {
-    goalIds: string[];
-    measurementMoments: string[];
-    collectionMethod: string
+export default SmartGroupsAIService;
