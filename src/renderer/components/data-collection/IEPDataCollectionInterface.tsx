@@ -79,8 +79,13 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   const handleStudentSelect = (student: any) => {
     setSelectedStudent(student);
     
-    // Get active goals for this student
-    const activeGoals = student.iepData?.goals?.filter((g: any) => g.status === 'active') || [];
+    // Get active goals for this student - FIX: Use isActive instead of status
+    const activeGoals = student.iepData?.goals?.filter((g: any) => g.isActive === true) || [];
+    
+    console.log('🎯 Student selected:', student.name);
+    console.log('🎯 Total goals:', student.iepData?.goals?.length || 0);
+    console.log('🎯 Active goals found:', activeGoals.length);
+    console.log('🎯 Active goals:', activeGoals);
     
     if (activeGoals.length === 0) {
       alert(`${student.name} doesn't have any active IEP goals. Please add goals first in Goal Management.`);
@@ -92,11 +97,13 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
       // Only one goal - auto-select it and go to data entry
       setSelectedGoal(activeGoals[0]);
       setNeedsGoalSelection(false);
+      console.log('🎯 Auto-selected single goal:', activeGoals[0].title || activeGoals[0].description);
       // Don't change view yet - let them click Data Entry tab
     } else {
       // Multiple goals - they'll need to select one
       setSelectedGoal(null);
       setNeedsGoalSelection(true);
+      console.log('🎯 Multiple goals found, user needs to select one');
     }
   };
 
@@ -138,7 +145,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   const GoalSelectionView = () => {
     if (!selectedStudent) return null;
     
-    const activeGoals = selectedStudent.iepData?.goals?.filter((g: any) => g.status === 'active') || [];
+    const activeGoals = selectedStudent.iepData?.goals?.filter((g: any) => g.isActive === true) || [];
     
     return (
       <div style={{ color: 'white', padding: '2rem' }}>
