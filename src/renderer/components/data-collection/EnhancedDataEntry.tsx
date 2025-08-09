@@ -260,77 +260,161 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
   const daysUntilIEP = Math.ceil((new Date(selectedGoalState.nextIEPDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #2563eb 0%, #9333ea 50%, #2563eb 100%)',
+      padding: '1.5rem'
+    }}>
+      <div style={{ maxWidth: '1800px', margin: '0 auto' }}>
         {/* Header with Student Info */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <img 
                 src={selectedStudentState?.photo || '/api/placeholder/60/60'} 
                 alt={selectedStudentState?.name || 'Student'}
-                className="w-16 h-16 rounded-full border-4 border-white/30"
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  border: '4px solid rgba(255,255,255,0.3)'
+                }}
               />
               <div>
-                <h1 className="text-2xl font-bold text-white">{selectedStudentState?.name || 'Student Name'}</h1>
-                <p className="text-white/80">{selectedStudentState?.grade || 'Grade'} • IEP Data Collection</p>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+                  {selectedStudentState?.name || 'Student Name'}
+                </h1>
+                <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                  {selectedStudentState?.grade || 'Grade'} • IEP Data Collection
+                </p>
               </div>
             </div>
-            <div className="text-right text-white/80">
-              <p className="text-sm">Current 9-Week Period: {selectedGoalState.currentNineWeek}/4</p>
-              <p className="text-sm">Next IEP: {new Date(selectedGoalState.nextIEPDate).toLocaleDateString()}</p>
-              <p className="text-xs">({daysUntilIEP} days remaining)</p>
+            <div style={{ textAlign: 'right', color: 'rgba(255,255,255,0.8)' }}>
+              <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                Current 9-Week Period: {selectedGoalState.currentNineWeek}/4
+              </p>
+              <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                Next IEP: {new Date(selectedGoalState.nextIEPDate).toLocaleDateString()}
+              </p>
+              <p style={{ fontSize: '0.75rem', margin: 0 }}>
+                ({daysUntilIEP} days remaining)
+              </p>
             </div>
           </div>
         </div>
 
         {/* Goal Progress Overview */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
-          <div className="flex items-center gap-3 mb-4">
-            <Target className="text-white" size={24} />
-            <h2 className="text-xl font-bold text-white">Goal Progress Overview</h2>
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <Target style={{ color: 'white' }} size={28} />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+              Goal Progress Overview
+            </h2>
             {selectedGoalState.isInherited && (
-              <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-yellow-200 text-sm">
+              <span style={{
+                padding: '0.5rem 1rem',
+                background: 'rgba(234, 179, 8, 0.2)',
+                border: '1px solid rgba(234, 179, 8, 0.3)',
+                borderRadius: '20px',
+                color: 'rgba(254, 240, 138, 1)',
+                fontSize: '0.875rem'
+              }}>
                 Inherited Goal
               </span>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Goal Description */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <h3 className="font-semibold text-white mb-2">{selectedGoalState?.title || 'Goal Title'}</h3>
-              <p className="text-white/80 text-sm">{selectedGoalState?.description || 'Goal description not available'}</p>
+            <div style={{
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: '12px',
+              padding: '1.5rem'
+            }}>
+              <h3 style={{ fontWeight: '600', color: 'white', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                {selectedGoalState?.title || selectedGoalState?.description || 'Goal Title'}
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', lineHeight: '1.5' }}>
+                {selectedGoalState?.description || 'Goal description not available'}
+              </p>
               {selectedGoalState?.inheritedFrom && (
-                <p className="text-white/60 text-xs mt-2">
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
                   📋 Inherited from: {selectedGoalState.inheritedFrom}
                 </p>
               )}
             </div>
 
             {/* Progress Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: '1.5rem' 
+            }}>
               {/* Current Progress */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/80 text-sm">Current Progress</span>
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>Current Progress</span>
                   {getTrendIcon()}
                 </div>
-                <div className="text-2xl font-bold text-white">
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
                   {selectedGoalState.currentProgress}%
                 </div>
-                <div className="text-white/60 text-xs">
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
                   {selectedGoalState.dataPointCount} data points collected
                 </div>
               </div>
 
               {/* 9-Week Target */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-white/80 text-sm mb-2">9-Week Target</div>
-                <div className="text-2xl font-bold text-white">
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                  9-Week Target
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
                   {selectedGoalState.nineWeekTargets[selectedGoalState.currentNineWeek - 1]}%
                 </div>
-                <div className={`text-xs px-2 py-1 rounded-full border inline-block ${getStatusColor(progressStatus)}`}>
+                <div style={{
+                  fontSize: '0.75rem',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '20px',
+                  border: '1px solid',
+                  display: 'inline-block',
+                  marginTop: '0.5rem',
+                  ...(progressStatus === 'onTrack' ? {
+                    color: '#16a34a',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderColor: '#16a34a'
+                  } : progressStatus === 'nearTarget' ? {
+                    color: '#ca8a04',
+                    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                    borderColor: '#ca8a04'
+                  } : {
+                    color: '#dc2626',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderColor: '#dc2626'
+                  })
+                }}>
                   {progressStatus === 'onTrack' && '✅ On Track'}
                   {progressStatus === 'nearTarget' && '⚠️ Near Target'}
                   {progressStatus === 'needsSupport' && '🔴 Needs Support'}
@@ -338,42 +422,68 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
               </div>
 
               {/* Annual Goal */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <div className="text-white/80 text-sm mb-2">Annual Target</div>
-                <div className="text-2xl font-bold text-white">
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                  Annual Target
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
                   {selectedGoalState.annualTarget}%
                 </div>
-                <div className="text-white/60 text-xs">
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
                   By {new Date(selectedGoalState.targetDate).toLocaleDateString()}
                 </div>
               </div>
             </div>
 
             {/* 9-Week Progress Timeline */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <h4 className="text-white font-medium mb-3">Nine-Week Progress Timeline</h4>
-              <div className="flex items-center space-x-2">
+            <div style={{
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: '12px',
+              padding: '1.5rem'
+            }}>
+              <h4 style={{ color: 'white', fontWeight: '500', marginBottom: '1rem', fontSize: '1rem' }}>
+                Nine-Week Progress Timeline
+              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {selectedGoalState.nineWeekTargets.map((target, index) => {
                   const isCurrentPeriod = index + 1 === selectedGoalState.currentNineWeek;
                   const isPastPeriod = index + 1 < selectedGoalState.currentNineWeek;
                   const achieved = isPastPeriod ? selectedGoalState.currentProgress >= target : false;
                   
                   return (
-                    <div key={index} className="flex-1">
-                      <div className={`text-center p-2 rounded-lg border ${
-                        isCurrentPeriod 
-                          ? 'bg-blue-500/30 border-blue-400 text-white' 
-                          : isPastPeriod && achieved
-                          ? 'bg-green-500/30 border-green-400 text-green-200'
-                          : isPastPeriod
-                          ? 'bg-red-500/30 border-red-400 text-red-200'
-                          : 'bg-white/5 border-white/20 text-white/60'
-                      }`}>
-                        <div className="text-xs">Q{index + 1}</div>
-                        <div className="font-bold">{target}%</div>
-                        {isCurrentPeriod && <div className="text-xs">Current</div>}
+                    <div key={index} style={{ flex: 1 }}>
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '0.75rem',
+                        borderRadius: '12px',
+                        border: '1px solid',
+                        ...(isCurrentPeriod ? {
+                          background: 'rgba(59, 130, 246, 0.3)',
+                          borderColor: '#60a5fa',
+                          color: 'white'
+                        } : isPastPeriod && achieved ? {
+                          background: 'rgba(34, 197, 94, 0.3)',
+                          borderColor: '#4ade80',
+                          color: '#bbf7d0'
+                        } : isPastPeriod ? {
+                          background: 'rgba(239, 68, 68, 0.3)',
+                          borderColor: '#f87171',
+                          color: '#fecaca'
+                        } : {
+                          background: 'rgba(255,255,255,0.05)',
+                          borderColor: 'rgba(255,255,255,0.2)',
+                          color: 'rgba(255,255,255,0.6)'
+                        })
+                      }}>
+                        <div style={{ fontSize: '0.75rem' }}>Q{index + 1}</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{target}%</div>
+                        {isCurrentPeriod && <div style={{ fontSize: '0.75rem' }}>Current</div>}
                         {isPastPeriod && (
-                          <div className="text-xs">
+                          <div style={{ fontSize: '0.75rem' }}>
                             {achieved ? '✅' : '❌'}
                           </div>
                         )}
@@ -387,44 +497,76 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
         </div>
 
         {/* Data Entry Form */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-          <div className="flex items-center gap-3 mb-6">
-            <FileText className="text-white" size={24} />
-            <h2 className="text-xl font-bold text-white">Today's Data Entry</h2>
-            <span className="text-white/60 text-sm">
+        <div style={{
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          padding: '2rem',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+            <FileText style={{ color: 'white' }} size={28} />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+              Today's Data Entry
+            </h2>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem' }}>
               {new Date().toLocaleDateString()} • 9-Week Period {dataEntry.nineWeekPeriod}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+            gap: '2rem' 
+          }}>
             {/* Left Column - Data Entry */}
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* Performance Entry */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <label className="block text-white font-medium mb-3">
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  color: 'white', 
+                  fontWeight: '500', 
+                  marginBottom: '1rem',
+                  fontSize: '1rem'
+                }}>
                   Performance Entry
                 </label>
                 
                 {/* Trial Details Toggle */}
-                <div className="flex items-center gap-3 mb-4">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                   <input
                     type="checkbox"
                     id="showTrials"
                     checked={showTrialDetails}
                     onChange={(e) => setShowTrialDetails(e.target.checked)}
-                    className="rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                    style={{
+                      borderRadius: '4px',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(255,255,255,0.1)',
+                      accentColor: '#3b82f6'
+                    }}
                   />
-                  <label htmlFor="showTrials" className="text-white/80 text-sm">
+                  <label htmlFor="showTrials" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>
                     Show trial details (for X out of Y tracking)
                   </label>
                 </div>
 
                 {showTrialDetails ? (
                   /* Trial-based Entry */
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                       <div>
-                        <label className="block text-white/80 text-sm mb-1">
+                        <label style={{ 
+                          display: 'block', 
+                          color: 'rgba(255,255,255,0.8)', 
+                          fontSize: '0.875rem', 
+                          marginBottom: '0.25rem' 
+                        }}>
                           Correct Responses
                         </label>
                         <input
@@ -432,12 +574,25 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                           min="0"
                           value={dataEntry.trialsCorrect || 0}
                           onChange={(e) => handleTrialUpdate('trialsCorrect', parseInt(e.target.value) || 0)}
-                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-white/50 focus:outline-none"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '1rem'
+                          }}
                           placeholder="0"
                         />
                       </div>
                       <div>
-                        <label className="block text-white/80 text-sm mb-1">
+                        <label style={{ 
+                          display: 'block', 
+                          color: 'rgba(255,255,255,0.8)', 
+                          fontSize: '0.875rem', 
+                          marginBottom: '0.25rem' 
+                        }}>
                           Total Attempts
                         </label>
                         <input
@@ -445,16 +600,29 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                           min="1"
                           value={dataEntry.trialsTotal || 0}
                           onChange={(e) => handleTrialUpdate('trialsTotal', parseInt(e.target.value) || 0)}
-                          className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-white/50 focus:outline-none"
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '1rem'
+                          }}
                           placeholder="0"
                         />
                       </div>
                     </div>
-                    <div className="bg-white/10 rounded-lg p-3 text-center">
-                      <span className="text-white font-bold text-xl">
+                    <div style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      textAlign: 'center'
+                    }}>
+                      <span style={{ color: 'white', fontWeight: 'bold', fontSize: '1.5rem' }}>
                         {dataEntry.value}%
                       </span>
-                      <div className="text-white/60 text-sm">
+                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.875rem' }}>
                         ({dataEntry.trialsCorrect || 0} out of {dataEntry.trialsTotal || 0} correct)
                       </div>
                     </div>
@@ -462,7 +630,12 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                 ) : (
                   /* Direct Percentage Entry */
                   <div>
-                    <label className="block text-white/80 text-sm mb-1">
+                    <label style={{ 
+                      display: 'block', 
+                      color: 'rgba(255,255,255,0.8)', 
+                      fontSize: '0.875rem', 
+                      marginBottom: '0.25rem' 
+                    }}>
                       Accuracy Percentage
                     </label>
                     <input
@@ -471,7 +644,16 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                       max="100"
                       value={dataEntry.value || ''}
                       onChange={(e) => handleDirectPercentageEntry(parseInt(e.target.value) || 0)}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-white/50 focus:outline-none text-xl"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '1.5rem',
+                        textAlign: 'center'
+                      }}
                       placeholder="Enter percentage..."
                     />
                   </div>
@@ -479,65 +661,115 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
               </div>
 
               {/* Context */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <label className="block text-white font-medium mb-2">
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  color: 'white', 
+                  fontWeight: '500', 
+                  marginBottom: '0.5rem',
+                  fontSize: '1rem'
+                }}>
                   Activity/Context
                 </label>
                 <input
                   type="text"
                   value={dataEntry.notes || ''}
                   onChange={(e) => setDataEntry(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-white/50 focus:outline-none"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '1rem'
+                  }}
                   placeholder="e.g., Small group reading, Independent work, Math center..."
                 />
               </div>
 
               {/* Additional Notes */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <label className="block text-white font-medium mb-2">
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <label style={{ 
+                  display: 'block', 
+                  color: 'white', 
+                  fontWeight: '500', 
+                  marginBottom: '0.5rem',
+                  fontSize: '1rem'
+                }}>
                   📝 Detailed Notes (Important for Admin/Progress Reports)
                 </label>
                 <textarea
                   value={dataEntry.notes || ''}
                   onChange={(e) => setDataEntry(prev => ({ ...prev, notes: e.target.value }))}
                   rows={4}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/30 rounded-lg text-white placeholder-white/50 focus:border-white/50 focus:outline-none resize-none"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '1rem',
+                    resize: 'none',
+                    fontFamily: 'inherit'
+                  }}
                   placeholder="Detailed observations, strategies used, support provided, environmental factors, student behavior, next steps..."
                 />
-                <div className="text-white/60 text-xs mt-1">
+                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                   💡 Tip: Include specific observations for admin requests and progress reports
                 </div>
               </div>
             </div>
 
             {/* Right Column - Progress Context */}
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* Admin Quick View */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <AlertCircle size={16} />
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <h3 style={{ 
+                  color: 'white', 
+                  fontWeight: '500', 
+                  marginBottom: '1rem', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <AlertCircle size={18} />
                   Admin Quick View
                 </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-white/80">Current 9-Week:</span>
-                    <span className="text-white font-medium">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>Current 9-Week:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>
                       {selectedGoalState.currentProgress}% / {selectedGoalState.nineWeekTargets[selectedGoalState.currentNineWeek - 1]}% target
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/80">Annual Progress:</span>
-                    <span className="text-white font-medium">
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>Annual Progress:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>
                       {selectedGoalState.currentProgress}% / {selectedGoalState.annualTarget}% target
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/80">Data Points:</span>
-                    <span className="text-white font-medium">{selectedGoalState.dataPointCount} collected</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>Data Points:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>{selectedGoalState.dataPointCount} collected</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-white/80">Last Entry:</span>
-                    <span className="text-white font-medium">
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)' }}>Last Entry:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>
                       {selectedGoal.lastDataPoint ? new Date(selectedGoal.lastDataPoint).toLocaleDateString() : 'No data'}
                     </span>
                   </div>
@@ -545,20 +777,24 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
               </div>
 
               {/* Quick Progress Summary */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Recent Trends</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/80 text-sm">This Week:</span>
-                    <span className="text-white font-medium">78% ↗️</span>
+              <div style={{
+                background: 'rgba(255,255,255,0.05)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <h3 style={{ color: 'white', fontWeight: '500', marginBottom: '1rem', fontSize: '1rem' }}>Recent Trends</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>This Week:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>78% ↗️</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/80 text-sm">This Month:</span>
-                    <span className="text-white font-medium">75% ↗️</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>This Month:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>75% ↗️</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white/80 text-sm">9-Week Period:</span>
-                    <span className="text-white font-medium">73% ↗️</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>9-Week Period:</span>
+                    <span style={{ color: 'white', fontWeight: '500' }}>73% ↗️</span>
                   </div>
                 </div>
               </div>
@@ -596,25 +832,48 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                   }
                 }}
                 disabled={!dataEntry.value || !dataEntry.notes}
-                className={`w-full py-3 px-4 rounded-lg font-medium text-lg transition-all ${
-                  dataEntry.value && dataEntry.notes
-                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg'
-                    : 'bg-white/20 text-white/50 cursor-not-allowed'
-                }`}
+                style={{
+                  width: '100%',
+                  padding: '1rem 1.5rem',
+                  borderRadius: '12px',
+                  fontWeight: '500',
+                  fontSize: '1.1rem',
+                  transition: 'all 0.3s ease',
+                  border: 'none',
+                  cursor: dataEntry.value && dataEntry.notes ? 'pointer' : 'not-allowed',
+                  ...(dataEntry.value && dataEntry.notes ? {
+                    background: 'linear-gradient(135deg, #16a34a, #22c55e)',
+                    color: 'white',
+                    boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)'
+                  } : {
+                    background: 'rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)'
+                  })
+                }}
               >
                 💾 Save Data Point
               </button>
 
               {/* Inherited Goal Notice */}
               {selectedGoalState.isInherited && (
-                <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calendar size={16} className="text-yellow-300" />
-                    <span className="text-yellow-200 font-medium text-sm">
+                <div style={{
+                  background: 'rgba(234, 179, 8, 0.2)',
+                  border: '1px solid rgba(234, 179, 8, 0.3)',
+                  borderRadius: '12px',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '0.5rem', 
+                    marginBottom: '0.5rem' 
+                  }}>
+                    <Calendar size={18} style={{ color: '#fcd34d' }} />
+                    <span style={{ color: '#fef3c7', fontWeight: '500', fontSize: '0.875rem' }}>
                       Inherited Goal Notice
                     </span>
                   </div>
-                  <p className="text-yellow-100 text-xs">
+                  <p style={{ color: '#fef9c3', fontSize: '0.75rem', lineHeight: '1.4', margin: 0 }}>
                     This goal cannot be modified until the next IEP meeting on {new Date(selectedGoalState.nextIEPDate).toLocaleDateString()}. 
                     Continue collecting data using the current criteria.
                   </p>
