@@ -10,6 +10,7 @@ export type ViewType =
   | 'library' 
   | 'data-collection' 
   | 'reports'        // ✅ ADDED - this was missing!
+  | 'smart-groups'  
   | 'settings';
 
 // Schedule category type
