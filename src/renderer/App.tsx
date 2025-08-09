@@ -21,6 +21,7 @@ import ReportsExportSystem from './components/data-collection/ReportsExportSyste
 import GoalManager from './components/data-collection/GoalManager';
 import SmartGroups from './components/smart-groups/SmartGroups';
 import SmartGroupsAIService from './services/smartGroupsService';
+import { DataPrivacyService } from './services/dataPrivacyService';
 
 const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -32,6 +33,9 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
+      // ADD this privacy initialization
+      DataPrivacyService.enableEducationalSharing();
+      
       // Force migration check and execution
       console.log('🔄 Checking for migration need...');
       
