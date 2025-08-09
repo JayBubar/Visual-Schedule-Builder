@@ -2,7 +2,7 @@
 // Integrates with existing UnifiedDataService and Bloom app architecture
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Calendar, Target, Users, Lightbulb, Settings, Upload, Download, Play, Check, X, Star, Clock, BookOpen, TrendingUp, AlertCircle, Sparkles } from 'lucide-react';
+import { Brain, Calendar, Target, Users, Lightbulb, Settings, Upload, Download, Play, Check, X, Star, Clock, BookOpen, TrendingUp, AlertCircle, Sparkles, Database } from 'lucide-react';
 import UnifiedDataService, { UnifiedStudent, IEPGoal, UnifiedActivity } from '../../services/unifiedDataService';
 import { 
   SuccessNotification, 
@@ -12,6 +12,8 @@ import {
   EnhancedImplementButton, 
   SchedulePreview 
 } from './SmartGroupsEnhancedUI';
+import { QuickVerificationPanel, SmartGroupsVerificationDashboard } from './SmartGroupsVerification';
+import { SmartGroupsDebugPanel } from './SmartGroupsDebugPanel';
 
 // Import our Smart Groups types and services
 interface SmartGroupRecommendation {
@@ -83,7 +85,7 @@ interface SmartGroupsProps {
 
 const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImplemented }) => {
   // ===== STATE MANAGEMENT =====
-  const [currentView, setCurrentView] = useState<'setup' | 'recommendations' | 'implemented' | 'settings'>('setup');
+  const [currentView, setCurrentView] = useState<'setup' | 'recommendations' | 'implemented' | 'verification'>('setup');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recommendations, setRecommendations] = useState<SmartGroupRecommendation[]>([]);
   const [implementedGroups, setImplementedGroups] = useState<SmartGroupRecommendation[]>([]);
@@ -2191,6 +2193,19 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
             >
               Active Groups ({implementedGroups.length})
             </button>
+            <button
+              onClick={() => setCurrentView('verification')}
+              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
+                currentView === 'verification' 
+                  ? 'bg-purple-600 text-white shadow-md' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Database style={{ width: '1rem', height: '1rem' }} />
+                System Check
+              </div>
+            </button>
           </div>
         </div>
 
@@ -2198,6 +2213,12 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
         {currentView === 'setup' && renderSetupView()}
         {currentView === 'recommendations' && renderRecommendationsView()}
         {currentView === 'implemented' && renderImplementedView()}
+        {currentView === 'verification' && (
+          <div className="space-y-6">
+            <QuickVerificationPanel />
+            <SmartGroupsVerificationDashboard />
+          </div>
+        )}
       </div>
 
       {/* Enhanced UI Modals */}
@@ -2209,6 +2230,9 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
           onGenerate={generateDetailedLessonPlan}
         />
       )}
+
+      {/* Floating Debug Panel */}
+      <SmartGroupsDebugPanel />
     </div>
   );
 };
