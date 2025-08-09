@@ -1,350 +1,1125 @@
-// SmartGroups.tsx - Main Smart Groups Component
-// Integrates with existing UnifiedDataService and Bloom app architecture
-
-import React, { useState, useEffect } from 'react';
-import { Brain, Calendar, Target, Users, Lightbulb, Settings, Upload, Download, Play, Check, X, Star, Clock, BookOpen, TrendingUp, AlertCircle, Sparkles } from 'lucide-react';
-import UnifiedDataService, { UnifiedStudent, IEPGoal, UnifiedActivity } from '../../services/unifiedDataService';
-
-// Import our Smart Groups types and services
-interface SmartGroupRecommendation {
-  id: string;
-  groupName: string;
-  confidence: number;
-  studentIds: string[];
-  studentCount: number;
-  standardsAddressed: {
-    standardId: string;
-    standard: StateStandard;
-    coverageReason: string;
-  }[];
-  iepGoalsAddressed: {
-    goalId: string;
-    studentId: string;
-    goal: IEPGoal;
-    alignmentReason: string;
-  }[];
-  recommendedActivity: {
-    activityId: string;
-    activity: UnifiedActivity;
-    adaptations: string[];
-    duration: number;
-    materials: string[];
-    setup: string;
-    implementation: string;
-  };
-  themeConnection?: {
-    themeId: string;
-    relevance: string;
-    thematicElements: string[];
-  };
-  benefits: string[];
-  rationale: string;
-  suggestedScheduling: {
-    frequency: 'daily' | 'weekly' | 'bi-weekly';
-    duration: number;
-    preferredTimes: string[];
-  };
+// Data Collection Integration
   dataCollectionPlan: {
     goalIds: string[];
     measurementMoments: string[];
     collectionMethod: string;
     successCriteria: string[];
   };
+  
+  // Generated metadata
   generatedAt: string;
   teacherApproved?: boolean;
   implementationDate?: string;
+  notes?: string;
 }
 
-interface MonthlyTheme {
-  id: string;
-  month: number;
-  year: number;
-  title: string;
-  description: string;
-  keywords: string[];
-  subThemes: {
-    week: number;
-    title: string;
-    focus: string;
-    keywords: string[];
-  }[];
-}
-
-interface StateStandard {
-  id: string;
-  code: string;
-  state: string;
+export interface AIAnalysisConfig {
+  state: string; // "SC", "NC", etc.
   grade: string;
-  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies';
-  domain: string;
-  title: string;
-  description: string;
-  subSkills: string[];
-  complexity: 1 | 2 | 3 | 4 | 5;
+  analysisDepth: 'quick' | 'standard' | 'comprehensive';
+  includeCustomActivities: boolean;
+  themeWeight: number; // 0-1, how much to weight theme alignment
+  standardsWeight: number; // 0-1, how much to weight standards coverage
+  iepWeight: number; // 0-1, how much to weight IEP goal alignment
+  groupSizePreference: { min: number; max: number };
+  frequencyLimit: number; // Max recommendations per week
 }
 
-interface SmartGroupsProps {
-  isActive: boolean;
-  onRecommendationImplemented?: (recommendation: SmartGroupRecommendation) => void;
+// ===== ENHANCED ACTIVITY FOR AI ANALYSIS =====
+
+export interface AIEnhancedActivity extends UnifiedActivity {
+  // AI Analysis Fields
+  academicDomains: string[]; // ["math", "reading", "science"]
+  socialSkills: string[]; // ["cooperation", "turn-taking", "communication"]
+  cognitiveLoad: 1 | 2 | 3 | 4 | 5; // Mental effort required
+  accommodationSupport: string[]; // ["visual-supports", "reduced-complexity"]
+  engagementFactors: string[]; // ["hands-on", "movement", "technology"]
+  
+  // Enhanced fields
+  skillLevel?: 'emerging' | 'developing' | 'proficient' | 'advanced';
+  groupSize?: { min: number; max: number; optimal: number };
+  supervision?: 'independent' | 'minimal' | 'moderate' | 'high';
+  noise?: 'quiet' | 'moderate' | 'active';
+  movement?: 'seated' | 'standing' | 'movement';
+  
+  // AI-Generated Enhancement
+  standardsAlignment?: string[]; // Auto-detected standards this activity supports
+  aiConfidence?: number; // 0-100 confidence in AI analysis
+  lastAIUpdate?: string; // When AI last analyzed this activity
 }
 
-const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImplemented }) => {
-  // ===== STATE MANAGEMENT =====
-  const [currentView, setCurrentView] = useState<'setup' | 'recommendations' | 'implemented' | 'settings'>('setup');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recommendations, setRecommendations] = useState<SmartGroupRecommendation[]>([]);
-  const [implementedGroups, setImplementedGroups] = useState<SmartGroupRecommendation[]>([]);
-  
-  // Configuration state
-  const [selectedState, setSelectedState] = useState('SC');
-  const [selectedGrade, setSelectedGrade] = useState('3');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedTheme, setSelectedTheme] = useState('');
-  const [customTheme, setCustomTheme] = useState('');
-  
-  // Data state
-  const [students, setStudents] = useState<UnifiedStudent[]>([]);
-  const [activities, setActivities] = useState<UnifiedActivity[]>([]);
-  const [curriculumUploaded, setCurriculumUploaded] = useState(false);
-  
-  // UI state
-  const [expandedRecommendation, setExpandedRecommendation] = useState<string | null>(null);
-  const [showDetailedLesson, setShowDetailedLesson] = useState<string | null>(null);
+// ===== GOAL CLUSTERING INTERFACE =====
 
-  // ===== PREDEFINED THEMES =====
-  const predefinedThemes = {
-    1: ['New Year Goals', 'Winter Weather', 'Martin Luther King Jr.', 'Arctic Animals'],
-    2: ['Community Helpers', 'Presidents Day', 'Dental Health', 'Love & Friendship'],
-    3: ['St. Patrick\'s Day', 'Spring Awakening', 'Weather Changes', 'Plants Growing'],
-    4: ['Spring & New Growth', 'Easter & Rebirth', 'Weather & Lifecycle', 'Earth Day'],
-    5: ['Mother\'s Day', 'Flowers & Gardens', 'Insects & Butterflies', 'May Day'],
-    6: ['Father\'s Day', 'Summer Safety', 'Ocean & Beach', 'End of School'],
-    7: ['Summer Fun', 'Independence Day', 'Space & Stars', 'Vacation Adventures'],
-    8: ['Back to School', 'Community & Friendship', 'Summer Memories', 'New Beginnings'],
-    9: ['Fall Harvest', 'Apples & Pumpkins', 'School Community', 'Changing Seasons'],
-    10: ['Halloween Fun', 'Autumn Leaves', 'Fire Safety', 'Nocturnal Animals'],
-    11: ['Thanksgiving', 'Gratitude & Family', 'Native Americans', 'Trees & Leaves'],
-    12: ['Winter Celebrations', 'Light & Dark', 'Holiday Traditions', 'Winter Animals']
-  };
+interface GoalCluster {
+  id: string;
+  goals: IEPGoal[];
+  studentIds: string[];
+  commonDomain: string;
+  commonSkills: string[];
+  averageComplexity: number;
+}
 
-  // ===== EFFECTS =====
-  useEffect(() => {
-    if (isActive) {
-      loadData();
+// ===== SMART GROUPS AI SERVICE =====
+
+export class SmartGroupsAIService {
+  private static readonly STORAGE_KEY = 'bloom_smart_groups_data';
+  private static readonly STANDARDS_KEY = 'bloom_state_standards';
+  private static readonly THEMES_KEY = 'bloom_monthly_themes';
+  
+  // ===== STATE STANDARDS MANAGEMENT =====
+  
+  static async loadStateStandards(state: string, grade: string): Promise<StateStandard[]> {
+    const cacheKey = `${state}_${grade}_standards`;
+    const cached = localStorage.getItem(`${this.STANDARDS_KEY}_${cacheKey}`);
+    
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (error) {
+        console.error('Error parsing cached standards:', error);
+      }
     }
-  }, [isActive]);
-
-  // ===== DATA LOADING =====
-  const loadData = () => {
+    
+    // Generate mock standards - in production, this would call real APIs
+    const mockStandards = await this.generateStateStandards(state, grade);
+    localStorage.setItem(`${this.STANDARDS_KEY}_${cacheKey}`, JSON.stringify(mockStandards));
+    
+    return mockStandards;
+  }
+  
+  private static async generateStateStandards(state: string, grade: string): Promise<StateStandard[]> {
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const gradeNum = grade === 'K' ? 0 : parseInt(grade);
+    
+    const standards: StateStandard[] = [
+      // ELA Standards
+      {
+        id: `${state}.ELA.${grade}.1`,
+        code: `CCSS.ELA-LITERACY.RL.${grade}.2`,
+        state,
+        grade,
+        subject: 'ELA',
+        domain: 'Reading Literature',
+        title: 'Determine Central Message',
+        description: `Recount stories and determine the central message, lesson, or moral and explain how it is conveyed through key details`,
+        subSkills: ['main idea', 'supporting details', 'summarization', 'theme identification', 'story elements'],
+        complexity: Math.min(5, gradeNum + 2),
+        assessmentMethods: ['oral retelling', 'graphic organizers', 'discussion', 'written response'],
+        typicalActivities: ['story mapping', 'character analysis', 'theme discussions', 'read-alouds'],
+        accommodationSupport: ['visual supports', 'reduced text complexity', 'partner reading', 'audio support']
+      },
+      {
+        id: `${state}.ELA.${grade}.2`,
+        code: `CCSS.ELA-LITERACY.RF.${grade}.3`,
+        state,
+        grade,
+        subject: 'ELA',
+        domain: 'Reading Foundational Skills',
+        title: 'Phonics and Word Recognition',
+        description: 'Know and apply grade-level phonics and word analysis skills in decoding words',
+        subSkills: ['phonics', 'word recognition', 'decoding', 'fluency', 'sight words'],
+        complexity: Math.min(4, gradeNum + 1),
+        assessmentMethods: ['reading assessments', 'word recognition tests', 'fluency checks'],
+        typicalActivities: ['phonics games', 'word sorts', 'guided reading', 'sight word practice'],
+        accommodationSupport: ['multisensory approaches', 'repeated practice', 'visual cues']
+      },
+      
+      // Math Standards
+      {
+        id: `${state}.MATH.${grade}.1`,
+        code: `CCSS.MATH.CONTENT.${grade}.OA.A.1`,
+        state,
+        grade,
+        subject: 'Math',
+        domain: 'Operations & Algebraic Thinking',
+        title: 'Addition and Subtraction Word Problems',
+        description: 'Use addition and subtraction within appropriate range to solve word problems',
+        subSkills: ['problem solving', 'addition', 'subtraction', 'word problems', 'strategy selection'],
+        complexity: Math.min(5, gradeNum + 2),
+        assessmentMethods: ['problem solving tasks', 'math journals', 'manipulative use', 'verbal explanations'],
+        typicalActivities: ['real-world scenarios', 'math centers', 'collaborative problem solving', 'story problems'],
+        accommodationSupport: ['manipulatives', 'visual models', 'reduced numbers', 'step-by-step guides']
+      },
+      {
+        id: `${state}.MATH.${grade}.2`,
+        code: `CCSS.MATH.CONTENT.${grade}.MD.A.1`,
+        state,
+        grade,
+        subject: 'Math',
+        domain: 'Measurement & Data',
+        title: 'Measurement and Estimation',
+        description: 'Measure lengths and solve problems involving measurement',
+        subSkills: ['measurement', 'estimation', 'units', 'comparison', 'data collection'],
+        complexity: Math.min(4, gradeNum + 1),
+        assessmentMethods: ['hands-on measurement', 'estimation games', 'data charts'],
+        typicalActivities: ['measuring activities', 'estimation stations', 'science experiments', 'cooking'],
+        accommodationSupport: ['concrete tools', 'visual references', 'partner work']
+      },
+      
+      // Science Standards
+      {
+        id: `${state}.SCI.${grade}.1`,
+        code: `NGSS.${grade}-LS1-1`,
+        state,
+        grade,
+        subject: 'Science',
+        domain: 'Life Science',
+        title: 'Plant and Animal Structures',
+        description: 'Use materials to design solutions based on how plants and animals use structures',
+        subSkills: ['observation', 'structures', 'function', 'design', 'life science'],
+        complexity: Math.min(4, gradeNum + 1),
+        assessmentMethods: ['observation logs', 'design challenges', 'experiments'],
+        typicalActivities: ['nature walks', 'design challenges', 'observation journals', 'experiments'],
+        accommodationSupport: ['visual guides', 'hands-on materials', 'simplified vocabulary']
+      },
+      
+      // Social Studies Standards
+      {
+        id: `${state}.SS.${grade}.1`,
+        code: `NCSS.${grade}.4`,
+        state,
+        grade,
+        subject: 'Social Studies',
+        domain: 'Individual Development and Identity',
+        title: 'Community and Relationships',
+        description: 'Explore factors that contribute to identity and community relationships',
+        subSkills: ['community', 'identity', 'relationships', 'citizenship', 'diversity'],
+        complexity: Math.min(3, gradeNum + 1),
+        assessmentMethods: ['discussions', 'projects', 'role-playing', 'community maps'],
+        typicalActivities: ['community helpers', 'family trees', 'cultural sharing', 'citizenship activities'],
+        accommodationSupport: ['visual supports', 'discussion prompts', 'peer partnerships']
+      }
+    ];
+    
+    return standards;
+  }
+  
+  // ===== THEME MANAGEMENT =====
+  
+  static saveMonthlyTheme(theme: MonthlyTheme): void {
+    const themes = this.getAllThemes();
+    const existingIndex = themes.findIndex(t => t.id === theme.id);
+    
+    if (existingIndex >= 0) {
+      themes[existingIndex] = theme;
+    } else {
+      themes.push(theme);
+    }
+    
+    localStorage.setItem(this.THEMES_KEY, JSON.stringify(themes));
+    console.log('💾 Monthly theme saved:', theme.title);
+  }
+  
+  static getMonthlyTheme(month: number, year: number): MonthlyTheme | null {
+    const themes = this.getAllThemes();
+    return themes.find(t => t.month === month && t.year === year) || null;
+  }
+  
+  static getAllThemes(): MonthlyTheme[] {
+    const stored = localStorage.getItem(this.THEMES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  }
+  
+  static createThemeFromSelection(month: number, year: number, title: string, description?: string): MonthlyTheme {
+    const themeKeywords = this.generateThemeKeywords(title);
+    
+    return {
+      id: `theme_${month}_${year}_${Date.now()}`,
+      month,
+      year,
+      title,
+      description: description || `${title} themed learning activities for ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })}`,
+      keywords: themeKeywords,
+      subThemes: this.generateSubThemes(title, themeKeywords),
+      stateStandardsPriority: [],
+      learningObjectives: this.generateLearningObjectives(title),
+      assessmentOpportunities: this.generateAssessmentOpportunities(title),
+      materialSuggestions: this.generateMaterialSuggestions(title)
+    };
+  }
+  
+  private static generateThemeKeywords(title: string): string[] {
+    const keywordMap: { [key: string]: string[] } = {
+      'spring': ['growth', 'plants', 'weather', 'flowers', 'gardens', 'lifecycle', 'renewal'],
+      'weather': ['temperature', 'seasons', 'rain', 'sun', 'clouds', 'wind', 'forecast'],
+      'plants': ['seeds', 'roots', 'leaves', 'growth', 'photosynthesis', 'gardening'],
+      'animals': ['habitats', 'adaptation', 'lifecycle', 'food chain', 'migration'],
+      'community': ['helpers', 'jobs', 'citizenship', 'cooperation', 'diversity'],
+      'family': ['relationships', 'traditions', 'culture', 'generations', 'heritage'],
+      'ocean': ['marine life', 'waves', 'coral reef', 'conservation', 'exploration'],
+      'space': ['planets', 'solar system', 'astronauts', 'exploration', 'gravity']
+    };
+    
+    const titleLower = title.toLowerCase();
+    let keywords: string[] = [];
+    
+    Object.keys(keywordMap).forEach(key => {
+      if (titleLower.includes(key)) {
+        keywords.push(...keywordMap[key]);
+      }
+    });
+    
+    // Add base theme words
+    keywords.push(...titleLower.split(' ').filter(word => word.length > 2));
+    
+    return [...new Set(keywords)]; // Remove duplicates
+  }
+  
+  private static generateSubThemes(title: string, keywords: string[]): WeeklySubTheme[] {
+    const baseThemes = [
+      { week: 1, title: `Introduction to ${title}`, focus: 'Exploration & Discovery' },
+      { week: 2, title: `Deep Dive into ${title}`, focus: 'Investigation & Learning' },
+      { week: 3, title: `${title} in Action`, focus: 'Application & Practice' },
+      { week: 4, title: `${title} Celebration`, focus: 'Synthesis & Sharing' }
+    ];
+    
+    return baseThemes.map(theme => ({
+      ...theme,
+      keywords: keywords.slice(0, 3) // Use first 3 keywords for each week
+    }));
+  }
+  
+  private static generateLearningObjectives(title: string): string[] {
+    return [
+      `Students will explore concepts related to ${title}`,
+      `Students will make connections between ${title} and their daily lives`,
+      `Students will demonstrate understanding through creative expression`,
+      `Students will collaborate effectively during ${title}-themed activities`
+    ];
+  }
+  
+  private static generateAssessmentOpportunities(title: string): string[] {
+    return [
+      `${title} themed project presentations`,
+      'Observation during themed activities',
+      'Student reflection journals',
+      'Peer collaboration assessments',
+      'Creative demonstrations of learning'
+    ];
+  }
+  
+  private static generateMaterialSuggestions(title: string): string[] {
+    const baseMaterials = ['books', 'visual supports', 'hands-on materials', 'art supplies'];
+    const themeMaterials: { [key: string]: string[] } = {
+      'spring': ['seeds', 'soil', 'measuring tools', 'plant pots', 'growth charts'],
+      'weather': ['thermometer', 'weather charts', 'cloud identification cards'],
+      'ocean': ['shells', 'marine life pictures', 'blue materials', 'water sensory bin'],
+      'space': ['star charts', 'planet models', 'telescope pictures', 'dark materials']
+    };
+    
+    const titleLower = title.toLowerCase();
+    let materials = [...baseMaterials];
+    
+    Object.keys(themeMaterials).forEach(key => {
+      if (titleLower.includes(key)) {
+        materials.push(...themeMaterials[key]);
+      }
+    });
+    
+    return materials;
+  }
+  
+  // ===== AI ANALYSIS ENGINE =====
+  
+  static async generateSmartGroupRecommendations(
+    config: AIAnalysisConfig,
+    theme?: MonthlyTheme
+  ): Promise<SmartGroupRecommendation[]> {
+    console.log('🧠 Starting Smart Groups AI Analysis...', config);
+    
     try {
-      const allStudents = UnifiedDataService.getAllStudents();
-      const allActivities = UnifiedDataService.getAllActivities();
+      // Get data from existing UnifiedDataService
+      const students = UnifiedDataService.getAllStudents();
+      const activities = UnifiedDataService.getAllActivities();
+      const standards = await this.loadStateStandards(config.state, config.grade);
+      
+      console.log('📊 Analysis data:', {
+        students: students.length,
+        studentsWithGoals: students.filter(s => s.iepData?.goals?.length).length,
+        activities: activities.length,
+        standards: standards.length
+      });
       
       // Filter students with IEP goals
-      const studentsWithGoals = allStudents.filter(student => 
+      const studentsWithGoals = students.filter(student => 
         student.iepData?.goals && student.iepData.goals.length > 0
       );
       
-      setStudents(studentsWithGoals);
-      setActivities(allActivities);
-      
-      console.log('📚 Smart Groups loaded:', {
-        students: studentsWithGoals.length,
-        activities: allActivities.length,
-        totalGoals: studentsWithGoals.reduce((total, s) => total + (s.iepData?.goals?.length || 0), 0)
-      });
-    } catch (error) {
-      console.error('❌ Error loading Smart Groups data:', error);
-    }
-  };
-
-  // ===== AI ANALYSIS SIMULATION =====
-  const runAIAnalysis = async () => {
-    setIsAnalyzing(true);
-    
-    try {
-      // Simulate AI analysis with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const mockRecommendations = generateMockRecommendations();
-      setRecommendations(mockRecommendations);
-      setCurrentView('recommendations');
-      
-      console.log('🧠 AI Analysis complete:', mockRecommendations.length, 'recommendations generated');
-    } catch (error) {
-      console.error('❌ AI Analysis error:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // ===== MOCK DATA GENERATION =====
-  const generateMockRecommendations = (): SmartGroupRecommendation[] => {
-    const activeTheme = customTheme || selectedTheme;
-    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
-    
-    return [
-      {
-        id: `rec_${Date.now()}_1`,
-        groupName: `${activeTheme} Reading Comprehension Group`,
-        confidence: 94,
-        studentIds: students.slice(0, 3).map(s => s.id),
-        studentCount: 3,
-        standardsAddressed: [{
-          standardId: 'CCSS.ELA.3.2',
-          standard: {
-            id: 'CCSS.ELA.3.2',
-            code: 'CCSS.ELA-LITERACY.RL.3.2',
-            state: selectedState,
-            grade: selectedGrade,
-            subject: 'ELA',
-            domain: 'Reading Literature',
-            title: 'Determine Central Message',
-            description: 'Recount stories, including fables and folktales; determine the central message, lesson, or moral',
-            subSkills: ['main idea', 'supporting details', 'theme identification'],
-            complexity: 3
-          },
-          coverageReason: 'Activity provides structured practice with story analysis and theme identification'
-        }],
-        iepGoalsAddressed: students.slice(0, 3).filter(s => s.iepData?.goals).map(student => {
-          const goal = student.iepData!.goals[0];
-          return {
-            goalId: goal.id,
-            studentId: student.id,
-            goal,
-            alignmentReason: `${activeTheme} themed stories provide engaging context for comprehension work`
-          };
-        }),
-        recommendedActivity: {
-          activityId: 'reading_comprehension_themed',
-          activity: {
-            id: 'reading_comprehension_themed',
-            name: `${activeTheme} Story Mapping`,
-            category: 'academic',
-            description: `Interactive story analysis using ${activeTheme.toLowerCase()} themed books`,
-            duration: 25,
-            materials: ['Themed storybooks', 'Graphic organizers', 'Discussion prompts'],
-            instructions: 'Students read themed stories and map main ideas using visual organizers',
-            isCustom: true,
-            dateCreated: new Date().toISOString()
-          },
-          adaptations: [
-            'Use visual supports for story elements',
-            'Provide choice of books at different reading levels',
-            'Include audio support for struggling readers'
-          ],
-          duration: 25,
-          materials: ['Themed storybooks', 'Story map templates', 'Discussion cards', 'Timer'],
-          setup: 'Arrange students in semi-circle with story materials and graphic organizers ready',
-          implementation: 'Guide students through story reading, mapping main ideas, and discussing themes'
-        },
-        themeConnection: {
-          themeId: `theme_${selectedMonth}_${activeTheme}`,
-          relevance: `All reading materials connect to ${activeTheme} theme for cohesive learning experience`,
-          thematicElements: [activeTheme.toLowerCase(), 'seasonal connections', 'vocabulary building']
-        },
-        benefits: [
-          `Covers required ${selectedGrade}rd grade ELA standard`,
-          `Targets reading comprehension IEP goals for ${students.slice(0, 3).length} students`,
-          'Efficient small group instruction with built-in data collection',
-          `Integrates with ${activeTheme} theme for engaging, cohesive learning`,
-          'Natural opportunities for peer learning and discussion'
-        ],
-        rationale: `This small group optimally combines ${selectedState} state standard CCSS.ELA.3.2 with aligned IEP reading goals. The ${activeTheme} themed approach maintains student engagement while providing structured opportunities for comprehension skill practice and progress monitoring.`,
-        suggestedScheduling: {
-          frequency: 'daily',
-          duration: 25,
-          preferredTimes: ['9:00 AM', '10:30 AM', '1:00 PM']
-        },
-        dataCollectionPlan: {
-          goalIds: students.slice(0, 3).filter(s => s.iepData?.goals).map(s => s.iepData!.goals[0].id),
-          measurementMoments: ['Story preview', 'During mapping', 'Discussion wrap-up'],
-          collectionMethod: 'Observational with quick rating scale',
-          successCriteria: ['Identifies main idea independently', 'Uses graphic organizer correctly', 'Participates in discussion']
-        },
-        generatedAt: new Date().toISOString()
-      },
-      {
-        id: `rec_${Date.now()}_2`,
-        groupName: `${activeTheme} Math Problem Solving Squad`,
-        confidence: 89,
-        studentIds: students.slice(2, 4).map(s => s.id),
-        studentCount: 2,
-        standardsAddressed: [{
-          standardId: 'CCSS.MATH.3.8',
-          standard: {
-            id: 'CCSS.MATH.3.8',
-            code: 'CCSS.MATH.CONTENT.3.OA.D.8',
-            state: selectedState,
-            grade: selectedGrade,
-            subject: 'Math',
-            domain: 'Operations & Algebraic Thinking',
-            title: 'Two-Step Word Problems',
-            description: 'Solve two-step word problems using the four operations',
-            subSkills: ['problem solving', 'multi-step thinking', 'operation selection'],
-            complexity: 4
-          },
-          coverageReason: 'Themed word problems provide authentic contexts for multi-step problem solving'
-        }],
-        iepGoalsAddressed: students.slice(2, 4).filter(s => s.iepData?.goals).map(student => {
-          const mathGoal = student.iepData!.goals.find(g => g.domain === 'academic') || student.iepData!.goals[0];
-          return {
-            goalId: mathGoal.id,
-            studentId: student.id,
-            goal: mathGoal,
-            alignmentReason: `${activeTheme} context makes abstract math concepts more concrete and engaging`
-          };
-        }),
-        recommendedActivity: {
-          activityId: 'themed_math_problems',
-          activity: {
-            id: 'themed_math_problems',
-            name: `${activeTheme} Problem Theater`,
-            category: 'academic',
-            description: `Real-world ${activeTheme.toLowerCase()} math scenarios with manipulatives`,
-            duration: 20,
-            materials: ['Problem scenario cards', 'Math manipulatives', 'Recording sheets'],
-            instructions: 'Students solve themed word problems using concrete materials and systematic approaches',
-            isCustom: true,
-            dateCreated: new Date().toISOString()
-          },
-          adaptations: [
-            'Provide manipulatives for concrete problem solving',
-            'Break complex problems into smaller steps',
-            'Use visual models and diagrams'
-          ],
-          duration: 20,
-          materials: ['Themed problem cards', 'Counting bears', 'Base-10 blocks', 'Recording sheets'],
-          setup: 'Small table with math materials organized by problem type',
-          implementation: 'Present themed scenarios, guide problem-solving process, practice with manipulatives'
-        },
-        benefits: [
-          'Addresses critical 3rd grade math standard',
-          'Supports calculation and problem-solving IEP goals',
-          'Incorporates hands-on learning with manipulatives',
-          'Easy progress monitoring during problem solving'
-        ],
-        rationale: `Combines required math standards with themed contexts to make abstract concepts concrete. Small group size allows for intensive individual support while maintaining peer learning opportunities.`,
-        suggestedScheduling: {
-          frequency: 'daily',
-          duration: 20,
-          preferredTimes: ['10:00 AM', '11:00 AM', '2:00 PM']
-        },
-        dataCollectionPlan: {
-          goalIds: students.slice(2, 4).filter(s => s.iepData?.goals).map(s => s.iepData!.goals[0].id),
-          measurementMoments: ['Problem introduction', 'Strategy selection', 'Solution completion'],
-          collectionMethod: 'Trial-by-trial accuracy tracking',
-          successCriteria: ['Selects appropriate operation', 'Uses systematic approach', 'Reaches correct solution']
-        },
-        generatedAt: new Date().toISOString()
+      if (studentsWithGoals.length < 2) {
+        console.warn('⚠️ Not enough students with IEP goals for group formation');
+        return [];
       }
+      
+      // Enhanced activity analysis
+      const enhancedActivities = await this.enhanceActivitiesWithAI(activities, standards, theme);
+      
+      // AI analysis steps
+      const recommendations: SmartGroupRecommendation[] = [];
+      
+      // 1. Analyze IEP goals for common patterns
+      const goalClusters = this.analyzeGoalClusters(studentsWithGoals);
+      console.log('🎯 Goal clusters found:', goalClusters.length);
+      
+      // 2. Find standards that need coverage
+      const priorityStandards = this.identifyPriorityStandards(standards, theme);
+      console.log('📚 Priority standards:', priorityStandards.length);
+      
+      // 3. Match goals to standards and activities
+      for (const cluster of goalClusters) {
+        for (const standard of priorityStandards) {
+          const matchingActivities = this.findMatchingActivities(
+            enhancedActivities, 
+            cluster.goals, 
+            standard, 
+            theme
+          );
+          
+          if (matchingActivities.length > 0) {
+            const recommendation = await this.createRecommendation(
+              cluster,
+              standard,
+              matchingActivities[0], // Best match
+              theme,
+              config
+            );
+            
+            if (recommendation.confidence >= 70) { // Only high-confidence recommendations
+              recommendations.push(recommendation);
+            }
+          }
+        }
+      }
+      
+      // Sort by confidence and limit results
+      const finalRecommendations = recommendations
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, config.frequencyLimit || 5);
+      
+      console.log('✅ AI Analysis complete:', finalRecommendations.length, 'recommendations generated');
+      return finalRecommendations;
+      
+    } catch (error) {
+      console.error('❌ Error in AI analysis:', error);
+      return [];
+    }
+  }
+  
+  private static async enhanceActivitiesWithAI(
+    activities: UnifiedActivity[],
+    standards: StateStandard[],
+    theme?: MonthlyTheme
+  ): Promise<AIEnhancedActivity[]> {
+    console.log('🔍 Enhancing activities with AI analysis...');
+    
+    return activities.map(activity => {
+      const enhanced: AIEnhancedActivity = {
+        ...activity,
+        academicDomains: this.inferAcademicDomains(activity),
+        socialSkills: this.inferSocialSkills(activity),
+        cognitiveLoad: this.inferCognitiveLoad(activity),
+        accommodationSupport: this.inferAccommodations(activity),
+        engagementFactors: this.inferEngagementFactors(activity),
+        standardsAlignment: this.inferStandardsAlignment(activity, standards),
+        aiConfidence: this.calculateActivityConfidence(activity),
+        lastAIUpdate: new Date().toISOString()
+      };
+      
+      return enhanced;
+    });
+  }
+  
+  private static inferAcademicDomains(activity: UnifiedActivity): string[] {
+    const domains: string[] = [];
+    const text = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    const domainKeywords = {
+      math: ['math', 'number', 'count', 'add', 'subtract', 'measure', 'geometry', 'data', 'problem', 'calculate'],
+      reading: ['read', 'story', 'book', 'text', 'comprehension', 'phonics', 'vocabulary', 'literature'],
+      writing: ['write', 'journal', 'compose', 'author', 'edit', 'draft', 'narrative', 'opinion'],
+      science: ['science', 'experiment', 'observe', 'investigate', 'hypothesis', 'nature', 'plant', 'animal'],
+      social: ['community', 'history', 'geography', 'culture', 'citizenship', 'government', 'economy'],
+      art: ['art', 'create', 'draw', 'paint', 'design', 'creative', 'aesthetic', 'visual'],
+      music: ['music', 'sing', 'rhythm', 'instrument', 'song', 'melody', 'beat'],
+      pe: ['physical', 'movement', 'exercise', 'sport', 'motor', 'coordination', 'fitness']
+    };
+    
+    Object.entries(domainKeywords).forEach(([domain, keywords]) => {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        domains.push(domain);
+      }
+    });
+    
+    // Category-based inference
+    if (activity.category === 'academic') domains.push('academic');
+    if (activity.category === 'social') domains.push('social');
+    
+    return [...new Set(domains)];
+  }
+  
+  private static inferSocialSkills(activity: UnifiedActivity): string[] {
+    const skills: string[] = [];
+    const text = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    const skillKeywords = {
+      cooperation: ['group', 'team', 'together', 'collaborate', 'share', 'partner'],
+      communication: ['talk', 'discuss', 'present', 'explain', 'ask', 'tell', 'listen'],
+      'turn-taking': ['turn', 'wait', 'alternate', 'rotate', 'sequence'],
+      'problem-solving': ['solve', 'figure out', 'find', 'decide', 'choose', 'plan'],
+      leadership: ['lead', 'guide', 'direct', 'manage', 'organize'],
+      empathy: ['feel', 'understand', 'care', 'help', 'support', 'kind']
+    };
+    
+    Object.entries(skillKeywords).forEach(([skill, keywords]) => {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        skills.push(skill);
+      }
+    });
+    
+    return skills;
+  }
+  
+  private static inferCognitiveLoad(activity: UnifiedActivity): 1 | 2 | 3 | 4 | 5 {
+    const duration = activity.duration || 20;
+    const text = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    let load = 2; // Default moderate load
+    
+    // Duration-based adjustment
+    if (duration < 10) load -= 1;
+    if (duration > 30) load += 1;
+    if (duration > 45) load += 1;
+    
+    // Complexity keywords
+    const highComplexity = ['analyze', 'evaluate', 'create', 'synthesize', 'complex', 'multi-step'];
+    const lowComplexity = ['simple', 'basic', 'easy', 'identify', 'recall', 'match'];
+    
+    if (highComplexity.some(word => text.includes(word))) load += 2;
+    if (lowComplexity.some(word => text.includes(word))) load -= 1;
+    
+    return Math.max(1, Math.min(5, load)) as 1 | 2 | 3 | 4 | 5;
+  }
+  
+  private static inferAccommodations(activity: UnifiedActivity): string[] {
+    const accommodations: string[] = [];
+    const text = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    const accommodationKeywords = {
+      'visual-supports': ['visual', 'picture', 'chart', 'graphic', 'diagram', 'image'],
+      'tactile-supports': ['hands-on', 'manipulative', 'touch', 'feel', 'concrete', 'physical'],
+      'audio-supports': ['listen', 'audio', 'sound', 'music', 'verbal', 'oral'],
+      'reduced-complexity': ['simple', 'basic', 'step-by-step', 'guided', 'scaffold'],
+      'extended-time': ['time', 'pace', 'slow', 'extended', 'flexible'],
+      'movement-breaks': ['movement', 'active', 'break', 'stretch', 'physical']
+    };
+    
+    Object.entries(accommodationKeywords).forEach(([accommodation, keywords]) => {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        accommodations.push(accommodation);
+      }
+    });
+    
+    return accommodations;
+  }
+  
+  private static inferEngagementFactors(activity: UnifiedActivity): string[] {
+    const factors: string[] = [];
+    const text = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    const factorKeywords = {
+      'hands-on': ['hands-on', 'manipulative', 'build', 'create', 'make', 'construct'],
+      'technology': ['computer', 'digital', 'app', 'tablet', 'screen', 'online'],
+      'movement': ['move', 'active', 'dance', 'exercise', 'walk', 'run'],
+      'games': ['game', 'play', 'fun', 'competition', 'challenge'],
+      'art': ['art', 'draw', 'paint', 'color', 'craft', 'creative'],
+      'music': ['music', 'sing', 'rhythm', 'song', 'instrument'],
+      'nature': ['nature', 'outdoor', 'garden', 'plant', 'animal', 'environment']
+    };
+    
+    Object.entries(factorKeywords).forEach(([factor, keywords]) => {
+      if (keywords.some(keyword => text.includes(keyword))) {
+        factors.push(factor);
+      }
+    });
+    
+    return factors;
+  }
+  
+  private static inferStandardsAlignment(activity: UnifiedActivity, standards: StateStandard[]): string[] {
+    const alignments: string[] = [];
+    const activityText = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    standards.forEach(standard => {
+      let matchScore = 0;
+      
+      // Check for subject alignment
+      const activityDomains = this.inferAcademicDomains(activity);
+      if (activityDomains.some(domain => standard.subject.toLowerCase().includes(domain))) {
+        matchScore += 2;
+      }
+      
+      // Check for skill keyword overlap
+      standard.subSkills.forEach(skill => {
+        if (activityText.includes(skill.toLowerCase())) {
+          matchScore += 1;
+        }
+      });
+      
+      // Check for typical activities mentioned
+      standard.typicalActivities.forEach(typical => {
+        if (activityText.includes(typical.toLowerCase())) {
+          matchScore += 3;
+        }
+      });
+      
+      // Check description overlap
+      const standardText = standard.description.toLowerCase();
+      const sharedWords = activityText.split(' ').filter(word => 
+        word.length > 3 && standardText.includes(word)
+      );
+      matchScore += sharedWords.length * 0.5;
+      
+      if (matchScore >= 2) {
+        alignments.push(standard.id);
+      }
+    });
+    
+    return alignments;
+  }
+  
+  private static calculateActivityConfidence(activity: UnifiedActivity): number {
+    let confidence = 70; // Base confidence
+    
+    // Boost for detailed descriptions
+    if (activity.description && activity.description.length > 50) confidence += 10;
+    
+    // Boost for materials list
+    if (activity.materials && activity.materials.length > 0) confidence += 5;
+    
+    // Boost for instructions
+    if (activity.instructions && activity.instructions.length > 20) confidence += 10;
+    
+    // Boost for custom activities (teacher-created)
+    if (activity.isCustom) confidence += 5;
+    
+    return Math.min(100, confidence);
+  }
+  
+  private static analyzeGoalClusters(students: UnifiedStudent[]): GoalCluster[] {
+    const clusters: GoalCluster[] = [];
+    const processedGoals = new Set<string>();
+    
+    students.forEach(student => {
+      student.iepData?.goals?.forEach(goal => {
+        if (processedGoals.has(goal.id)) return;
+        
+        // Find similar goals across students
+        const cluster: GoalCluster = {
+          id: `cluster_${Date.now()}_${Math.random()}`,
+          goals: [goal],
+          studentIds: [student.id],
+          commonDomain: goal.domain,
+          commonSkills: this.extractSkillsFromGoal(goal),
+          averageComplexity: this.estimateGoalComplexity(goal)
+        };
+        
+        // Look for similar goals in other students
+        students.forEach(otherStudent => {
+          if (otherStudent.id === student.id) return;
+          
+          otherStudent.iepData?.goals?.forEach(otherGoal => {
+            if (processedGoals.has(otherGoal.id)) return;
+            
+            if (this.areGoalsSimilar(goal, otherGoal)) {
+              cluster.goals.push(otherGoal);
+              cluster.studentIds.push(otherStudent.id);
+              cluster.averageComplexity = (cluster.averageComplexity + this.estimateGoalComplexity(otherGoal)) / 2;
+              processedGoals.add(otherGoal.id);
+            }
+          });
+        });
+        
+        processedGoals.add(goal.id);
+        
+        // Only include clusters with 2+ students (small group requirement)
+        if (cluster.studentIds.length >= 2 && cluster.studentIds.length <= 6) {
+          clusters.push(cluster);
+        }
+      });
+    });
+    
+    return clusters;
+  }
+  
+  private static areGoalsSimilar(goal1: IEPGoal, goal2: IEPGoal): boolean {
+    // Domain match is primary
+    if (goal1.domain !== goal2.domain) return false;
+    
+    // Measurement type compatibility
+    const compatibleMeasurements = this.areMovementTypesCompatible(goal1.measurementType, goal2.measurementType);
+    if (!compatibleMeasurements) return false;
+    
+    // Skill overlap check
+    const skills1 = this.extractSkillsFromGoal(goal1);
+    const skills2 = this.extractSkillsFromGoal(goal2);
+    const sharedSkills = skills1.filter(skill => skills2.includes(skill));
+    
+    return sharedSkills.length >= 1; // At least one shared skill
+  }
+  
+  private static areMovementTypesCompatible(type1: string, type2: string): boolean {
+    // Group compatible measurement types
+    const percentageGroup = ['percentage', 'rating'];
+    const countGroup = ['frequency', 'duration'];
+    const binaryGroup = ['yes-no', 'independence'];
+    
+    if (type1 === type2) return true;
+    if (percentageGroup.includes(type1) && percentageGroup.includes(type2)) return true;
+    if (countGroup.includes(type1) && countGroup.includes(type2)) return true;
+    if (binaryGroup.includes(type1) && binaryGroup.includes(type2)) return true;
+    
+    return false;
+  }
+  
+  private static extractSkillsFromGoal(goal: IEPGoal): string[] {
+    const text = `${goal.title || ''} ${goal.description || ''} ${goal.shortTermObjective || ''}`.toLowerCase();
+    
+    const skillKeywords = [
+      'reading', 'math', 'counting', 'writing', 'social', 'communication',
+      'behavior', 'attention', 'following directions', 'independence',
+      'comprehension', 'phonics', 'fluency', 'vocabulary', 'addition',
+      'subtraction', 'multiplication', 'problem solving', 'measurement',
+      'cooperation', 'turn-taking', 'sharing', 'asking for help',
+      'staying on task', 'completing work', 'organizing materials'
     ];
-  };
-
-  // ===== IMPLEMENTATION HANDLERS =====
-  const implementRecommendation = (recommendation: SmartGroupRecommendation) => {
+    
+    return skillKeywords.filter(skill => text.includes(skill));
+  }
+  
+  private static estimateGoalComplexity(goal: IEPGoal): number {
+    let complexity = 3; // Default moderate complexity
+    
+    const text = `${goal.description || ''} ${goal.shortTermObjective || ''}`.toLowerCase();
+    
+    // Complexity indicators
+    if (text.includes('multi-step') || text.includes('complex')) complexity += 2;
+    if (text.includes('simple') || text.includes('basic')) complexity -= 1;
+    if (text.includes('independent')) complexity += 1;
+    if (text.includes('with support')) complexity -= 1;
+    
+    // Target-based complexity
+    if (goal.target >= 90) complexity += 1;
+    if (goal.target <= 50) complexity -= 1;
+    
+    return Math.max(1, Math.min(5, complexity));
+  }
+  
+  private static identifyPriorityStandards(standards: StateStandard[], theme?: MonthlyTheme): StateStandard[] {
+    // In production, this would use curriculum calendars and pacing guides
+    let priorityStandards = standards.slice(0, 6); // Get first 6 standards
+    
+    // If theme is provided, prioritize standards that align with theme
+    if (theme) {
+      const themeAlignedStandards = standards.filter(standard => {
+        const standardText = `${standard.title} ${standard.description}`.toLowerCase();
+        return theme.keywords.some(keyword => 
+          standardText.includes(keyword.toLowerCase())
+        );
+      });
+      
+      if (themeAlignedStandards.length > 0) {
+        priorityStandards = [
+          ...themeAlignedStandards.slice(0, 3),
+          ...standards.filter(s => !themeAlignedStandards.includes(s)).slice(0, 3)
+        ];
+      }
+    }
+    
+    return priorityStandards;
+  }
+  
+  private static findMatchingActivities(
+    activities: AIEnhancedActivity[],
+    goals: IEPGoal[],
+    standard: StateStandard,
+    theme?: MonthlyTheme
+  ): AIEnhancedActivity[] {
+    return activities.filter(activity => {
+      let matchScore = 0;
+      
+      // Check if activity aligns with standard
+      if (activity.standardsAlignment?.includes(standard.id)) {
+        matchScore += 3;
+      }
+      
+      // Check if activity supports goal domains
+      const supportsGoalDomains = goals.some(goal => {
+        if (goal.domain === 'academic' && activity.academicDomains.length > 0) return true;
+        if (goal.domain === 'behavioral' && activity.socialSkills.length > 0) return true;
+        if (goal.domain === 'social-emotional' && activity.socialSkills.length > 0) return true;
+        if (goal.domain === 'communication' && activity.socialSkills.includes('communication')) return true;
+        return false;
+      });
+      
+      if (supportsGoalDomains) matchScore += 2;
+      
+      // Check subject alignment
+      if (activity.academicDomains.some(domain => 
+        standard.subject.toLowerCase().includes(domain)
+      )) {
+        matchScore += 2;
+      }
+      
+      // Check theme alignment if provided
+      if (theme && this.activityMatchesTheme(activity, theme)) {
+        matchScore += 1;
+      }
+      
+      // Check appropriate complexity
+      const averageGoalComplexity = goals.reduce((sum, goal) => 
+        sum + this.estimateGoalComplexity(goal), 0
+      ) / goals.length;
+      
+      if (Math.abs(activity.cognitiveLoad - averageGoalComplexity) <= 1) {
+        matchScore += 1;
+      }
+      
+      return matchScore >= 3; // Minimum threshold for consideration
+    }).sort((a, b) => {
+      // Sort by AI confidence and alignment strength
+      const scoreA = (a.aiConfidence || 70) + (a.standardsAlignment?.length || 0) * 10;
+      const scoreB = (b.aiConfidence || 70) + (b.standardsAlignment?.length || 0) * 10;
+      return scoreB - scoreA;
+    });
+  }
+  
+  private static activityMatchesTheme(activity: AIEnhancedActivity, theme: MonthlyTheme): boolean {
+    const activityText = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    return theme.keywords.some(keyword => 
+      activityText.includes(keyword.toLowerCase())
+    );
+  }
+  
+  private static async createRecommendation(
+    cluster: GoalCluster,
+    standard: StateStandard,
+    activity: AIEnhancedActivity,
+    theme: MonthlyTheme | undefined,
+    config: AIAnalysisConfig
+  ): Promise<SmartGroupRecommendation> {
+    // Calculate confidence based on multiple factors
+    const confidence = this.calculateRecommendationConfidence(cluster, standard, activity, theme, config);
+    
+    // Get student names for the cluster
+    const students = cluster.studentIds.map(id => UnifiedDataService.getStudent(id)).filter(s => s !== null);
+    
+    return {
+      id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      groupName: this.generateGroupName(cluster, standard, activity, theme),
+      confidence,
+      studentIds: cluster.studentIds,
+      studentCount: cluster.studentIds.length,
+      standardsAddressed: [{
+        standardId: standard.id,
+        standard,
+        coverageReason: `Activity provides structured practice for ${standard.domain} skills with ${standard.subject} focus`
+      }],
+      iepGoalsAddressed: cluster.goals.map(goal => ({
+        goalId: goal.id,
+        studentId: goal.studentId,
+        goal,
+        alignmentReason: `${activity.name} provides natural opportunities for practicing ${goal.domain} skills in a ${theme ? 'themed ' : ''}small group setting`
+      })),
+      recommendedActivity: {
+        activityId: activity.id,
+        activity: activity as UnifiedActivity, // Convert back to base type
+        adaptations: this.generateAdaptations(cluster.goals, activity),
+        duration: activity.duration || 25,
+        materials: activity.materials || [],
+        setup: this.generateSetupInstructions(activity, cluster.studentIds.length),
+        implementation: this.generateImplementationGuide(activity, cluster.goals, standard)
+      },
+      themeConnection: theme ? {
+        themeId: theme.id,
+        relevance: `All activities and materials connect to ${theme.title} theme for cohesive learning experience`,
+        thematicElements: this.identifyThematicElements(activity, theme)
+      } : undefined,
+      benefits: this.generateBenefits(cluster, standard, activity, theme),
+      rationale: this.generateRationale(cluster, standard, activity, theme),
+      suggestedScheduling: {
+        frequency: this.suggestFrequency(cluster.goals),
+        duration: activity.duration || 25,
+        preferredTimes: ['9:00 AM', '10:30 AM', '1:00 PM']
+      },
+      dataCollectionPlan: {
+        goalIds: cluster.goals.map(g => g.id),
+        measurementMoments: ['Activity start', 'Mid-activity check', 'Activity completion'],
+        collectionMethod: this.suggestDataCollectionMethod(cluster.goals),
+        successCriteria: cluster.goals.map(g => `Progress toward ${g.criteria} with ${g.target}% target`)
+      },
+      generatedAt: new Date().toISOString()
+    };
+  }
+  
+  private static calculateRecommendationConfidence(
+    cluster: GoalCluster,
+    standard: StateStandard,
+    activity: AIEnhancedActivity,
+    theme: MonthlyTheme | undefined,
+    config: AIAnalysisConfig
+  ): number {
+    let confidence = 60; // Base confidence
+    
+    // Student group size bonus (optimal is 2-4 students)
+    if (cluster.studentIds.length >= 2 && cluster.studentIds.length <= 4) {
+      confidence += 15;
+    } else if (cluster.studentIds.length <= 6) {
+      confidence += 10;
+    }
+    
+    // Standards alignment bonus
+    if (activity.standardsAlignment?.includes(standard.id)) {
+      confidence += 20;
+    }
+    
+    // Goal domain alignment bonus
+    const domainAlignment = cluster.goals.every(goal => {
+      if (goal.domain === 'academic') return activity.academicDomains.length > 0;
+      if (goal.domain === 'behavioral' || goal.domain === 'social-emotional') return activity.socialSkills.length > 0;
+      return true;
+    });
+    
+    if (domainAlignment) confidence += 15;
+    
+    // Theme alignment bonus
+    if (theme && this.activityMatchesTheme(activity, theme)) {
+      confidence += 10;
+    }
+    
+    // Activity quality bonus
+    confidence += Math.floor((activity.aiConfidence || 70) * 0.15);
+    
+    // Complexity match bonus
+    if (Math.abs(activity.cognitiveLoad - cluster.averageComplexity) <= 1) {
+      confidence += 10;
+    }
+    
+    // Accommodation support bonus
+    if (activity.accommodationSupport.length > 0) {
+      confidence += 5;
+    }
+    
+    return Math.min(100, Math.floor(confidence));
+  }
+  
+  private static generateGroupName(
+    cluster: GoalCluster,
+    standard: StateStandard,
+    activity: AIEnhancedActivity,
+    theme?: MonthlyTheme
+  ): string {
+    const domain = cluster.commonDomain;
+    const subject = standard.subject;
+    const themePrefix = theme ? `${theme.title} ` : '';
+    
+    // Generate contextual group names
+    const nameTemplates = [
+      `${themePrefix}${subject} ${domain.charAt(0).toUpperCase() + domain.slice(1)} Group`,
+      `${themePrefix}${standard.title} Squad`,
+      `${themePrefix}${activity.name} Team`,
+      `${subject} ${domain.charAt(0).toUpperCase() + domain.slice(1)} Stars`
+    ];
+    
+    return nameTemplates[0]; // Use the first template for consistency
+  }
+  
+  private static generateAdaptations(goals: IEPGoal[], activity: AIEnhancedActivity): string[] {
+    const adaptations: string[] = [];
+    
+    // Goal-specific adaptations
+    goals.forEach(goal => {
+      switch (goal.domain) {
+        case 'behavioral':
+          adaptations.push('Provide clear behavior expectations and visual reminders');
+          adaptations.push('Use positive reinforcement and frequent feedback');
+          break;
+        case 'social-emotional':
+          adaptations.push('Model appropriate social interactions');
+          adaptations.push('Provide social scripts and conversation starters');
+          break;
+        case 'communication':
+          adaptations.push('Allow multiple communication modalities');
+          adaptations.push('Provide extra wait time for responses');
+          break;
+        case 'physical':
+          adaptations.push('Adapt materials for fine motor accessibility');
+          adaptations.push('Provide alternative positioning options');
+          break;
+      }
+      
+      if (goal.measurementType === 'independence') {
+        adaptations.push('Implement systematic prompting with planned fading');
+      }
+      
+      if (goal.priority === 'high') {
+        adaptations.push('Provide intensive focus on high-priority objectives');
+      }
+    });
+    
+    // Activity-specific adaptations
+    if (activity.accommodationSupport.includes('visual-supports')) {
+      adaptations.push('Use visual supports and graphic organizers');
+    }
+    
+    if (activity.accommodationSupport.includes('tactile-supports')) {
+      adaptations.push('Provide hands-on manipulatives and concrete materials');
+    }
+    
+    if (activity.cognitiveLoad >= 4) {
+      adaptations.push('Break complex tasks into smaller, manageable steps');
+    }
+    
+    // Remove duplicates and return
+    return [...new Set(adaptations)];
+  }
+  
+  private static generateSetupInstructions(activity: AIEnhancedActivity, studentCount: number): string {
+    const baseSetup = `Arrange seating for ${studentCount} students in a semi-circle for optimal teacher interaction and peer collaboration.`;
+    
+    const materialSetup = activity.materials?.length 
+      ? ` Organize materials: ${activity.materials.join(', ')}. Ensure each student has easy access to needed supplies.`
+      : ' Prepare basic classroom materials and any activity-specific supplies.';
+    
+    const environmentSetup = activity.noise === 'quiet' 
+      ? ' Create a calm, focused environment with minimal distractions.'
+      : activity.movement === 'movement'
+      ? ' Ensure adequate space for movement and active participation.'
+      : ' Set up a comfortable learning space conducive to group work.';
+    
+    const dataSetup = ' Position data collection materials within easy reach for seamless progress monitoring.';
+    
+    return baseSetup + materialSetup + environmentSetup + dataSetup;
+  }
+  
+  private static generateImplementationGuide(
+    activity: AIEnhancedActivity,
+    goals: IEPGoal[],
+    standard: StateStandard
+  ): string {
+    const steps = [
+      `1. **Introduction (2-3 min):** Welcome students and connect today's activity to ${standard.title}`,
+      `2. **Objective Review:** Explicitly state how ${activity.name} will help achieve individual IEP goals`,
+      `3. **Modeling:** Demonstrate expected behaviors and skills using clear, step-by-step examples`,
+      `4. **Guided Practice:** Support students as they engage with ${activity.name}, providing scaffolding as needed`,
+      `5. **Independent Practice:** Allow students to apply skills with decreasing support`,
+      `6. **Progress Monitoring:** Collect data on IEP goal performance throughout the activity`,
+      `7. **Wrap-up:** Review learning objectives and celebrate individual progress toward goals`
+    ];
+    
+    return steps.join('\n');
+  }
+  
+  private static identifyThematicElements(activity: AIEnhancedActivity, theme: MonthlyTheme): string[] {
+    const elements: string[] = [];
+    const activityText = `${activity.name} ${activity.description || ''}`.toLowerCase();
+    
+    theme.keywords.forEach(keyword => {
+      if (activityText.includes(keyword.toLowerCase())) {
+        elements.push(keyword);
+      }
+    });
+    
+    // Add thematic materials if activity supports them
+    if (activity.engagementFactors.includes('nature') && theme.keywords.includes('plants')) {
+      elements.push('nature connection');
+    }
+    
+    if (activity.engagementFactors.includes('art') && theme.title.toLowerCase().includes('spring')) {
+      elements.push('seasonal art');
+    }
+    
+    return [...new Set(elements)];
+  }
+  
+  private static generateBenefits(
+    cluster: GoalCluster,
+    standard: StateStandard,
+    activity: AIEnhancedActivity,
+    theme?: MonthlyTheme
+  ): string[] {
+    const benefits = [
+      `Addresses required ${standard.subject} standard: ${standard.code}`,
+      `Targets ${cluster.goals.length} IEP goals across ${cluster.studentIds.length} students`,
+      'Enables efficient small group instruction with individualized support',
+      'Provides multiple data collection opportunities within a single activity',
+      'Promotes peer learning and social skill development'
+    ];
+    
+    if (theme) {
+      benefits.push(`Integrates seamlessly with ${theme.title} theme for cohesive curriculum`);
+    }
+    
+    if (activity.accommodationSupport.length > 0) {
+      benefits.push('Includes built-in accommodations for diverse learning needs');
+    }
+    
+    if (activity.engagementFactors.length > 0) {
+      benefits.push(`Incorporates engaging elements: ${activity.engagementFactors.join(', ')}`);
+    }
+    
+    return benefits;
+  }
+  
+  private static generateRationale(
+    cluster: GoalCluster,
+    standard: StateStandard,
+    activity: AIEnhancedActivity,
+    theme?: MonthlyTheme
+  ): string {
+    const themeText = theme ? ` The ${theme.title} theme provides meaningful context that enhances engagement and retention.` : '';
+    
+    return `This small group recommendation optimizes instructional efficiency by combining state standard ${standard.code} with ${cluster.goals.length} aligned IEP goals. The ${activity.name} activity provides natural opportunities for skill practice and data collection while maintaining appropriate cognitive load for all participants.${themeText} This approach ensures both compliance requirements and individualized learning objectives are met simultaneously.`;
+  }
+  
+  private static suggestFrequency(goals: IEPGoal[]): 'daily' | 'weekly' | 'bi-weekly' {
+    const highPriorityGoals = goals.filter(g => g.priority === 'high').length;
+    const totalGoals = goals.length;
+    
+    if (highPriorityGoals / totalGoals >= 0.5) return 'daily';
+    if (totalGoals >= 3) return 'daily';
+    return 'weekly';
+  }
+  
+  private static suggestDataCollectionMethod(goals: IEPGoal[]): string {
+    const measurementTypes = goals.map(g => g.measurementType);
+    
+    if (measurementTypes.includes('percentage') || measurementTypes.includes('frequency')) {
+      return 'Frequency/accuracy tracking with quick tallies';
+    }
+    
+    if (measurementTypes.includes('rating')) {
+      return 'Rating scale observation (1-5 scale)';
+    }
+    
+    if (measurementTypes.includes('yes-no')) {
+      return 'Binary checklist (yes/no for each criterion)';
+    }
+    
+    if (measurementTypes.includes('independence')) {
+      return 'Independence level tracking (independent/minimal/moderate/maximum support)';
+    }
+    
+    return 'Observational notes with specific criteria documentation';
+  }
+  
+  // ===== RECOMMENDATION IMPLEMENTATION =====
+  
+  static implementRecommendation(recommendation: SmartGroupRecommendation): boolean {
     try {
-      // Create activity in UnifiedDataService
+      console.log('🚀 Implementing Smart Group:', recommendation.groupName);
+      
+      // 1. Create the activity in UnifiedDataService
       const groupActivity = {
         id: `smart_group_${recommendation.id}`,
         name: recommendation.groupName,
@@ -354,840 +1129,228 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
         materials: recommendation.recommendedActivity.materials,
         instructions: recommendation.recommendedActivity.implementation,
         isCustom: true,
-        linkedGoalIds: recommendation.iepGoalsAddressed.map(g => g.goalId)
+        dateCreated: new Date().toISOString(),
+        // Add smart group metadata
+        smartGroupMetadata: {
+          recommendationId: recommendation.id,
+          confidence: recommendation.confidence,
+          studentIds: recommendation.studentIds,
+          goalIds: recommendation.iepGoalsAddressed.map(g => g.goalId),
+          standardIds: recommendation.standardsAddressed.map(s => s.standardId),
+          themeId: recommendation.themeConnection?.themeId
+        }
       };
 
       UnifiedDataService.addActivity(groupActivity);
-
-      // Mark as implemented
-      recommendation.teacherApproved = true;
-      recommendation.implementationDate = new Date().toISOString();
       
-      // Move to implemented groups
-      setImplementedGroups(prev => [...prev, recommendation]);
-      setRecommendations(prev => prev.filter(r => r.id !== recommendation.id));
-
-      // Callback for parent component
-      onRecommendationImplemented?.(recommendation);
-
-      console.log('✅ Smart Group implemented:', recommendation.groupName);
+      // 2. Set up data collection reminders for each goal
+      recommendation.iepGoalsAddressed.forEach(goalInfo => {
+        this.scheduleDataCollectionReminder(goalInfo.goalId, goalInfo.studentId, groupActivity.id);
+      });
+      
+      // 3. Save implementation record
+      this.saveImplementationRecord(recommendation);
+      
+      console.log('✅ Smart Group implemented successfully');
+      return true;
+      
     } catch (error) {
       console.error('❌ Error implementing recommendation:', error);
+      return false;
     }
-  };
-
-  const rejectRecommendation = (recommendationId: string) => {
-    setRecommendations(prev => prev.filter(r => r.id !== recommendationId));
-  };
-
-  // ===== FILE UPLOAD HANDLER =====
-  const handleCurriculumUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Simulate curriculum processing
-      setTimeout(() => {
-        setCurriculumUploaded(true);
-        console.log('📄 Curriculum uploaded:', file.name);
-      }, 1000);
-    }
-  };
-
-  // ===== RENDER HELPER COMPONENTS =====
-  const renderSetupView = () => (
-    <div className="space-y-6">
-      {/* Configuration Panel */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-blue-600" />
-          Smart Groups Configuration
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* State Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-            <select 
-              value={selectedState} 
-              onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="SC">South Carolina</option>
-              <option value="NC">North Carolina</option>
-              <option value="GA">Georgia</option>
-              <option value="FL">Florida</option>
-              <option value="TN">Tennessee</option>
-              <option value="VA">Virginia</option>
-            </select>
-          </div>
-
-          {/* Grade Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
-            <select 
-              value={selectedGrade} 
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="K">Kindergarten</option>
-              <option value="1">1st Grade</option>
-              <option value="2">2nd Grade</option>
-              <option value="3">3rd Grade</option>
-              <option value="4">4th Grade</option>
-              <option value="5">5th Grade</option>
-            </select>
-          </div>
-
-          {/* Month Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-            <select 
-              value={selectedMonth} 
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {Array.from({length: 12}, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(2025, i, 1).toLocaleString('default', { month: 'long' })}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Analysis Button */}
-          <div className="flex items-end">
-            <button 
-              onClick={runAIAnalysis}
-              disabled={isAnalyzing || students.length === 0}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isAnalyzing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Brain className="w-4 h-4" />
-                  Generate Groups
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Theme Selection */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-green-600" />
-          Theme Selection for {new Date(2025, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' })}
-        </h3>
-        
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {(predefinedThemes[selectedMonth as keyof typeof predefinedThemes] || []).map((theme) => (
-            <button
-              key={theme}
-              onClick={() => {setSelectedTheme(theme); setCustomTheme('');}}
-              className={`text-left p-3 rounded-lg border transition-all duration-200 ${
-                selectedTheme === theme 
-                  ? 'border-green-500 bg-green-50 text-green-900' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <span className="text-sm font-medium">{theme}</span>
-            </button>
-          ))}
-        </div>
-        
-        <div>
-          <input
-            type="text"
-            placeholder="Or enter custom theme..."
-            value={customTheme}
-            onChange={(e) => {setCustomTheme(e.target.value); setSelectedTheme('');}}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-      </div>
-
-      {/* Curriculum Upload */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-orange-600" />
-          Curriculum Integration (Optional)
-        </h3>
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input
-            type="file"
-            id="curriculum-upload"
-            accept=".pdf,.csv,.txt,.docx"
-            onChange={handleCurriculumUpload}
-            className="hidden"
-          />
-          <label htmlFor="curriculum-upload" className="cursor-pointer">
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="w-8 h-8 text-gray-400" />
-              <p className="text-sm text-gray-600">
-                Upload your curriculum guide, pacing calendar, or standards document
-              </p>
-              <p className="text-xs text-gray-500">
-                Supports PDF, CSV, TXT, or Word documents
-              </p>
-            </div>
-          </label>
-          
-          {curriculumUploaded && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-green-600">
-              <Check className="w-4 h-4" />
-              <span className="text-sm">Curriculum uploaded successfully!</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Data Summary */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Target className="w-5 h-5 text-red-600" />
-          Current Data Summary
-        </h3>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600">{students.length}</p>
-            <p className="text-sm text-gray-600">Students with IEP Goals</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">
-              {students.reduce((total, s) => total + (s.iepData?.goals?.length || 0), 0)}
-            </p>
-            <p className="text-sm text-gray-600">Total IEP Goals</p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-purple-600">{activities.length}</p>
-            <p className="text-sm text-gray-600">Available Activities</p>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-orange-600">
-              {selectedTheme || customTheme ? '✓' : '○'}
-            </p>
-            <p className="text-sm text-gray-600">Theme Selected</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderRecommendationsView = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">AI Recommendations Ready!</h2>
-            <p className="text-purple-100 mt-1">
-              Found {recommendations.length} optimal small group opportunities
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-yellow-300" />
-            <span className="text-lg font-semibold">Smart Groups</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Recommendations */}
-      {recommendations.map((rec) => (
-        <div key={rec.id} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-blue-500 p-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">{rec.groupName}</h3>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-300" />
-                  <span className="font-semibold">{rec.confidence}% Match</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>{rec.studentCount} Students</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{rec.recommendedActivity.duration} min</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-blue-600" />
-                    Standards Addressed
-                  </h4>
-                  {rec.standardsAddressed.map((std, idx) => (
-                    <div key={idx} className="bg-blue-50 p-3 rounded-lg">
-                      <p className="font-mono text-sm text-blue-800 mb-1">{std.standard.code}</p>
-                      <p className="text-sm text-gray-700">{std.standard.description}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-green-600" />
-                    IEP Goals ({rec.iepGoalsAddressed.length})
-                  </h4>
-                  {rec.iepGoalsAddressed.map((goal, idx) => {
-                    const student = students.find(s => s.id === goal.studentId);
-                    return (
-                      <div key={idx} className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-sm font-medium text-green-800">{student?.name}</p>
-                        <p className="text-sm text-gray-700">{goal.goal.shortTermObjective}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-yellow-600" />
-                    Recommended Activity
-                  </h4>
-                  <div className="bg-yellow-50 p-3 rounded-lg">
-                    <p className="font-semibold text-gray-900 mb-2">{rec.recommendedActivity.activity.name}</p>
-                    <p className="text-sm text-gray-700 mb-2">{rec.recommendedActivity.activity.description}</p>
-                    <p className="text-sm text-gray-600">Materials: {rec.recommendedActivity.materials.join(', ')}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
-                    Why This Works
-                  </h4>
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <ul className="space-y-1">
-                      {rec.benefits.map((benefit, idx) => (
-                        <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
-                          <Check className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
-                          {benefit}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {rec.themeConnection && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-indigo-600" />
-                      Theme Integration
-                    </h4>
-                    <div className="bg-indigo-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700 mb-1">{rec.themeConnection.relevance}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {rec.themeConnection.thematicElements.map((element, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
-                            {element}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Expandable Detailed Section */}
-            {expandedRecommendation === rec.id && (
-              <div className="mt-6 pt-6 border-t space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-2">Implementation Guide</h5>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700">{rec.recommendedActivity.implementation}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-2">Data Collection Plan</h5>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Method:</strong> {rec.dataCollectionPlan.collectionMethod}
-                      </p>
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Moments:</strong> {rec.dataCollectionPlan.measurementMoments.join(', ')}
-                      </p>
-                      <div>
-                        <strong className="text-sm text-gray-700">Success Criteria:</strong>
-                        <ul className="mt-1 space-y-1">
-                          {rec.dataCollectionPlan.successCriteria.map((criteria, idx) => (
-                            <li key={idx} className="text-xs text-gray-600 ml-4">• {criteria}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Adaptations & Modifications</h5>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <ul className="space-y-1">
-                      {rec.recommendedActivity.adaptations.map((adaptation, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">• {adaptation}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Suggested Scheduling</h5>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Frequency:</strong> {rec.suggestedScheduling.frequency} • 
-                      <strong> Duration:</strong> {rec.suggestedScheduling.duration} minutes • 
-                      <strong> Best Times:</strong> {rec.suggestedScheduling.preferredTimes.join(', ')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6 pt-4 border-t">
-              <button 
-                onClick={() => implementRecommendation(rec)}
-                className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <Play className="w-4 h-4" />
-                Implement This Group
-              </button>
-              <button 
-                onClick={() => setExpandedRecommendation(expandedRecommendation === rec.id ? null : rec.id)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
-              >
-                {expandedRecommendation === rec.id ? 'Show Less' : 'Show Details'}
-              </button>
-              <button 
-                onClick={() => setShowDetailedLesson(rec.id)}
-                className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200"
-              >
-                Generate Lesson
-              </button>
-              <button 
-                onClick={() => rejectRecommendation(rec.id)}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-all duration-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      ))}
-
-      {recommendations.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Recommendations Yet</h3>
-          <p className="text-gray-600 mb-4">Run the AI analysis to generate smart group recommendations.</p>
-          <button 
-            onClick={() => setCurrentView('setup')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Setup
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderImplementedView = () => (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Active Smart Groups</h2>
-            <p className="text-green-100 mt-1">
-              {implementedGroups.length} groups currently running
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Check className="w-6 h-6 text-green-200" />
-            <span className="text-lg font-semibold">Implemented</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Implemented Groups */}
-      {implementedGroups.map((group) => (
-        <div key={group.id} className="bg-white rounded-2xl shadow-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">{group.groupName}</h3>
-              <p className="text-sm text-gray-600">
-                Implemented on {new Date(group.implementationDate!).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full">
-              <Check className="w-4 h-4" />
-              <span className="text-sm font-semibold">Active</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm font-medium text-blue-800">Students</p>
-              <p className="text-lg font-bold text-blue-600">{group.studentCount}</p>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg">
-              <p className="text-sm font-medium text-green-800">IEP Goals</p>
-              <p className="text-lg font-bold text-green-600">{group.iepGoalsAddressed.length}</p>
-            </div>
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <p className="text-sm font-medium text-purple-800">Confidence</p>
-              <p className="text-lg font-bold text-purple-600">{group.confidence}%</p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-              View Progress Data
-            </button>
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-              Edit Group
-            </button>
-            <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-              Generate Report
-            </button>
-          </div>
-        </div>
-      ))}
-
-      {implementedGroups.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active Groups</h3>
-          <p className="text-gray-600 mb-4">Implement AI recommendations to see your active smart groups here.</p>
-          <button 
-            onClick={() => setCurrentView(recommendations.length > 0 ? 'recommendations' : 'setup')}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-          >
-            {recommendations.length > 0 ? 'View Recommendations' : 'Generate Recommendations'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  // ===== MAIN RENDER =====
-  if (!isActive) return null;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Brain className="w-8 h-8 text-purple-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Smart Groups AI</h1>
-          </div>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            AI-powered curriculum alignment that maps state standards to IEP goals and suggests optimal small group activities
-          </p>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white rounded-lg p-1 shadow-lg">
-            <button
-              onClick={() => setCurrentView('setup')}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                currentView === 'setup' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Setup & Config
-            </button>
-            <button
-              onClick={() => setCurrentView('recommendations')}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                currentView === 'recommendations' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Recommendations ({recommendations.length})
-            </button>
-            <button
-              onClick={() => setCurrentView('implemented')}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                currentView === 'implemented' 
-                  ? 'bg-blue-600 text-white shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Active Groups ({implementedGroups.length})
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        {currentView === 'setup' && renderSetupView()}
-        {currentView === 'recommendations' && renderRecommendationsView()}
-        {currentView === 'implemented' && renderImplementedView()}
-
-        {/* Detailed Lesson Modal */}
-        {showDetailedLesson && (
-          <DetailedLessonModal 
-            recommendationId={showDetailedLesson}
-            recommendation={recommendations.find(r => r.id === showDetailedLesson)!}
-            onClose={() => setShowDetailedLesson(null)}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ===== DETAILED LESSON MODAL COMPONENT =====
-interface DetailedLessonModalProps {
-  recommendationId: string;
-  recommendation: SmartGroupRecommendation;
-  onClose: () => void;
-}
-
-const DetailedLessonModal: React.FC<DetailedLessonModalProps> = ({ 
-  recommendation, 
-  onClose 
-}) => {
-  const [lessonPlan, setLessonPlan] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  useEffect(() => {
-    generateDetailedLesson();
-  }, []);
-
-  const generateDetailedLesson = async () => {
-    setIsGenerating(true);
+  }
+  
+  private static scheduleDataCollectionReminder(goalId: string, studentId: string, activityId: string): void {
+    // This would integrate with your existing data collection system
+    // For now, we'll just log the scheduling
+    console.log('📊 Scheduled data collection for:', {
+      goalId,
+      studentId,
+      activityId,
+      scheduledFor: 'next activity session'
+    });
     
-    // Simulate lesson generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // In a full implementation, this might:
+    // - Add reminders to teacher's calendar
+    // - Create data collection templates
+    // - Set up automatic prompts in the data entry system
+  }
+  
+  private static saveImplementationRecord(recommendation: SmartGroupRecommendation): void {
+    const implementations = this.getImplementationHistory();
     
-    const mockLessonPlan = {
-      title: `${recommendation.recommendedActivity.activity.name} - Detailed Lesson Plan`,
-      duration: recommendation.recommendedActivity.duration,
-      objectives: [
-        `Students will ${recommendation.standardsAddressed[0]?.standard.title.toLowerCase()}`,
-        ...recommendation.iepGoalsAddressed.map(g => g.goal.shortTermObjective)
-      ],
-      materials: recommendation.recommendedActivity.materials,
-      lessonFlow: [
-        {
-          step: 1,
-          title: 'Welcome & Review (3 min)',
-          description: 'Greet students and review expectations',
-          teacherActions: ['Welcome each student', 'Review group norms', 'Preview objectives'],
-          dataCollection: 'Note attention and engagement'
-        },
-        {
-          step: 2,
-          title: 'Introduction (5 min)',
-          description: 'Introduce activity and connect to goals',
-          teacherActions: ['Present activity overview', 'Connect to IEP goals', 'Model expected behaviors'],
-          dataCollection: 'Baseline observations for each goal'
-        },
-        {
-          step: 3,
-          title: `Main Activity (${recommendation.recommendedActivity.duration - 10} min)`,
-          description: recommendation.recommendedActivity.implementation,
-          teacherActions: ['Guide practice', 'Provide support', 'Collect data', 'Adjust as needed'],
-          dataCollection: 'Primary data collection window'
-        },
-        {
-          step: 4,
-          title: 'Wrap-up (2 min)',
-          description: 'Review learning and celebrate progress',
-          teacherActions: ['Review key points', 'Celebrate progress', 'Preview next session'],
-          dataCollection: 'Final progress checks'
-        }
-      ],
-      assessment: {
-        formative: ['Observation during activity', 'Quick progress checks'],
-        summative: ['End-of-activity demonstration', 'Goal mastery checklist'],
-        iepSpecific: recommendation.iepGoalsAddressed.map(g => ({
-          student: g.studentId,
-          goal: g.goal.shortTermObjective,
-          criteria: g.goal.criteria,
-          method: 'Direct observation with rating scale'
-        }))
-      }
+    const record = {
+      ...recommendation,
+      teacherApproved: true,
+      implementationDate: new Date().toISOString(),
+      status: 'active' as const
     };
     
-    setLessonPlan(mockLessonPlan);
-    setIsGenerating(false);
+    implementations.push(record);
+    localStorage.setItem(`${this.STORAGE_KEY}_implementations`, JSON.stringify(implementations));
+  }
+  
+  static getImplementationHistory(): SmartGroupRecommendation[] {
+    const stored = localStorage.getItem(`${this.STORAGE_KEY}_implementations`);
+    return stored ? JSON.parse(stored) : [];
+  }
+  
+  // ===== UTILITY METHODS =====
+  
+  static clearAllData(): void {
+    // Clear all Smart Groups related data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(this.STORAGE_KEY) || 
+          key.startsWith(this.STANDARDS_KEY) || 
+          key.startsWith(this.THEMES_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    console.log('🧹 Smart Groups data cleared');
+  }
+  
+  static exportRecommendations(recommendations: SmartGroupRecommendation[]): string {
+    // Export recommendations as JSON for backup or sharing
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      version: '1.0',
+      recommendations
+    };
+    
+    return JSON.stringify(exportData, null, 2);
+  }
+  
+  static validateRecommendation(recommendation: SmartGroupRecommendation): boolean {
+    // Validate that recommendation has all required fields
+    const required = ['id', 'groupName', 'confidence', 'studentIds', 'standardsAddressed', 'iepGoalsAddressed'];
+    
+    for (const field of required) {
+      if (!recommendation[field as keyof SmartGroupRecommendation]) {
+        console.error(`❌ Invalid recommendation: missing ${field}`);
+        return false;
+      }
+    }
+    
+    // Validate student IDs exist in UnifiedDataService
+    const validStudents = recommendation.studentIds.every(id => 
+      UnifiedDataService.getStudent(id) !== null
+    );
+    
+    if (!validStudents) {
+      console.error('❌ Invalid recommendation: one or more student IDs not found');
+      return false;
+    }
+    
+    return true;
+  }
+}
+
+// ===== EXPORT FOR INTEGRATION =====
+
+export default SmartGroupsAIService;// smartGroupsService.ts - Integration with UnifiedDataService
+// Connects Smart Groups AI with existing Bloom app infrastructure
+
+import UnifiedDataService, { UnifiedStudent, IEPGoal, UnifiedActivity } from './unifiedDataService';
+
+// ===== CORE INTERFACES =====
+
+export interface StateStandard {
+  id: string;
+  code: string; // e.g., "CCSS.ELA-LITERACY.RL.3.2"
+  state: string; // e.g., "SC", "NC", "GA"
+  grade: string; // e.g., "K", "1", "2", "3"
+  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies' | 'Art' | 'PE';
+  domain: string; // e.g., "Reading Literature"
+  title: string;
+  description: string;
+  subSkills: string[]; // Key skills for AI matching
+  complexity: 1 | 2 | 3 | 4 | 5;
+  prerequisites?: string[];
+  assessmentMethods: string[];
+  typicalActivities: string[];
+  accommodationSupport: string[];
+}
+
+export interface MonthlyTheme {
+  id: string;
+  month: number; // 1-12
+  year: number;
+  title: string; // "Spring & New Growth"
+  description: string;
+  keywords: string[]; // ["spring", "growth", "weather", "plants"]
+  subThemes: WeeklySubTheme[];
+  stateStandardsPriority: string[]; // Standards that must be covered this month
+  learningObjectives: string[];
+  assessmentOpportunities: string[];
+  materialSuggestions: string[];
+  fieldTripConnections?: string[];
+  familyEngagementIdeas?: string[];
+}
+
+export interface WeeklySubTheme {
+  week: number; // 1-4
+  title: string; // "Signs of Spring"
+  focus: string; // "Observation & Discovery"
+  keywords: string[];
+  suggestedActivities: string[];
+}
+
+export interface SmartGroupRecommendation {
+  id: string;
+  groupName: string;
+  confidence: number; // 0-100 AI confidence score
+  
+  // Student Information
+  studentIds: string[];
+  studentCount: number;
+  
+  // Standards & Goals Alignment
+  standardsAddressed: {
+    standardId: string;
+    standard: StateStandard;
+    coverageReason: string;
+  }[];
+  
+  iepGoalsAddressed: {
+    goalId: string;
+    studentId: string;
+    goal: IEPGoal;
+    alignmentReason: string;
+  }[];
+  
+  // Activity Recommendation
+  recommendedActivity: {
+    activityId: string;
+    activity: UnifiedActivity;
+    adaptations: string[];
+    duration: number;
+    materials: string[];
+    setup: string;
+    implementation: string;
   };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Detailed Lesson Plan</h2>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {isGenerating ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-lg font-semibold text-gray-900">Generating Detailed Lesson Plan...</p>
-              <p className="text-gray-600">AI is creating step-by-step instructions, materials list, and assessment rubrics</p>
-            </div>
-          ) : lessonPlan && (
-            <div className="space-y-6">
-              {/* Header Info */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{lessonPlan.title}</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <p><strong>Duration:</strong> {lessonPlan.duration} minutes</p>
-                  <p><strong>Group Size:</strong> {recommendation.studentCount} students</p>
-                </div>
-              </div>
-
-              {/* Objectives */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Learning Objectives</h4>
-                <ul className="space-y-2">
-                  {lessonPlan.objectives.map((obj: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Target className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{obj}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Materials */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Materials Needed</h4>
-                <div className="bg-yellow-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-700">{lessonPlan.materials.join(', ')}</p>
-                </div>
-              </div>
-
-              {/* Lesson Flow */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Lesson Flow</h4>
-                <div className="space-y-4">
-                  {lessonPlan.lessonFlow.map((step: any, idx: number) => (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                          {step.step}
-                        </div>
-                        <h5 className="font-semibold text-gray-900">{step.title}</h5>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">{step.description}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Teacher Actions:</p>
-                          <ul className="text-xs text-gray-600 space-y-1">
-                            {step.teacherActions.map((action: string, actionIdx: number) => (
-                              <li key={actionIdx}>• {action}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Data Collection:</p>
-                          <p className="text-xs text-gray-600">{step.dataCollection}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Assessment */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Assessment & Data Collection</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <h5 className="font-medium text-blue-900 mb-2">Formative Assessment</h5>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      {lessonPlan.assessment.formative.map((item: string, idx: number) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <h5 className="font-medium text-green-900 mb-2">Summative Assessment</h5>
-                    <ul className="text-sm text-green-800 space-y-1">
-                      {lessonPlan.assessment.summative.map((item: string, idx: number) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* IEP-Specific Data Collection */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">IEP Goal Data Collection</h4>
-                <div className="space-y-3">
-                  {lessonPlan.assessment.iepSpecific.map((item: any, idx: number) => {
-                    const student = UnifiedDataService.getStudent(item.student);
-                    return (
-                      <div key={idx} className="bg-purple-50 p-3 rounded-lg">
-                        <p className="font-medium text-purple-900">{student?.name}</p>
-                        <p className="text-sm text-purple-800 mb-1">{item.goal}</p>
-                        <p className="text-xs text-purple-700">
-                          <strong>Criteria:</strong> {item.criteria} • 
-                          <strong> Method:</strong> {item.method}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t">
-                <button className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-200">
-                  <Download className="w-4 h-4 inline mr-2" />
-                  Download Lesson Plan
-                </button>
-                <button className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200">
-                  Edit & Customize
-                </button>
-                <button className="px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-all duration-200">
-                  Add to Schedule
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default SmartGroups;
+  
+  // Theme Integration
+  themeConnection?: {
+    themeId: string;
+    relevance: string;
+    thematicElements: string[];
+  };
+  
+  // Benefits & Rationale
+  benefits: string[];
+  rationale: string;
+  
+  // Implementation Details
+  suggestedScheduling: {
+    frequency: 'daily' | 'weekly' | 'bi-weekly';
+    duration: number;
+    preferredTimes: string[];
+    prerequisites?: string[];
+  };
+  
+  // Data Collection Integration
+  dataCollectionPlan: {
+    goalIds: string[];
+    measurementMoments: string[];
+    collectionMethod: string
