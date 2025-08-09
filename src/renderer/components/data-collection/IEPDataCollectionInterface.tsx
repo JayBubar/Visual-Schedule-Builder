@@ -227,10 +227,11 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
     <div style={{
       height: '100vh',
       overflow: 'auto',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '1rem'
+      background: 'linear-gradient(135deg, #2563eb 0%, #9333ea 50%, #2563eb 100%)',
+      padding: '1.5rem'
     }}>
-      {/* Header */}
+      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
+        {/* Header */}
       <div style={{
         textAlign: 'center',
         marginBottom: '2rem',
@@ -663,6 +664,7 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
             )}
           </div>
         )}
+      </div>
       </div>
 
       {/* Quick Data Entry Modal */}
