@@ -55,21 +55,6 @@ interface SmartGroupRecommendation {
   implementationDate?: string;
 }
 
-interface MonthlyTheme {
-  id: string;
-  month: number;
-  year: number;
-  title: string;
-  description: string;
-  keywords: string[];
-  subThemes: {
-    week: number;
-    title: string;
-    focus: string;
-    keywords: string[];
-  }[];
-}
-
 interface StateStandard {
   id: string;
   code: string;
@@ -109,7 +94,6 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
   
   // UI state
   const [expandedRecommendation, setExpandedRecommendation] = useState<string | null>(null);
-  const [showDetailedLesson, setShowDetailedLesson] = useState<string | null>(null);
 
   // ===== PREDEFINED THEMES =====
   const predefinedThemes = {
@@ -140,16 +124,32 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
       const allStudents = UnifiedDataService.getAllStudents();
       const allActivities = UnifiedDataService.getAllActivities();
       
+      console.log('🔍 SMART GROUPS DEBUG - Raw student data:', allStudents);
+      console.log('🔍 SMART GROUPS DEBUG - First student structure:', allStudents[0]);
+      
+      // Check each student's IEP data structure
+      allStudents.forEach((student, index) => {
+        console.log(`🔍 Student ${index + 1} (${student.name}):`, {
+          hasIepData: !!student.iepData,
+          iepDataStructure: student.iepData,
+          goalsCount: student.iepData?.goals?.length || 0,
+          goals: student.iepData?.goals
+        });
+      });
+      
       // Filter students with IEP goals
       const studentsWithGoals = allStudents.filter(student => 
         student.iepData?.goals && student.iepData.goals.length > 0
       );
       
+      console.log('🔍 SMART GROUPS DEBUG - Students with goals:', studentsWithGoals);
+      
       setStudents(studentsWithGoals);
       setActivities(allActivities);
       
       console.log('📚 Smart Groups loaded:', {
-        students: studentsWithGoals.length,
+        totalStudents: allStudents.length,
+        studentsWithGoals: studentsWithGoals.length,
         activities: allActivities.length,
         totalGoals: studentsWithGoals.reduce((total, s) => total + (s.iepData?.goals?.length || 0), 0)
       });
@@ -180,16 +180,15 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
   // ===== MOCK DATA GENERATION =====
   const generateMockRecommendations = (): SmartGroupRecommendation[] => {
-    const activeTheme = customTheme || selectedTheme;
-    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+    const activeTheme = customTheme || selectedTheme || 'Spring Learning';
     
     return [
       {
         id: `rec_${Date.now()}_1`,
         groupName: `${activeTheme} Reading Comprehension Group`,
         confidence: 94,
-        studentIds: students.slice(0, 3).map(s => s.id),
-        studentCount: 3,
+        studentIds: students.slice(0, Math.min(3, students.length)).map(s => s.id),
+        studentCount: Math.min(3, students.length),
         standardsAddressed: [{
           standardId: 'CCSS.ELA.3.2',
           standard: {
@@ -206,7 +205,7 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
           },
           coverageReason: 'Activity provides structured practice with story analysis and theme identification'
         }],
-        iepGoalsAddressed: students.slice(0, 3).filter(s => s.iepData?.goals).map(student => {
+        iepGoalsAddressed: students.slice(0, Math.min(3, students.length)).filter(s => s.iepData?.goals).map(student => {
           const goal = student.iepData!.goals[0];
           return {
             goalId: goal.id,
@@ -245,7 +244,7 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
         },
         benefits: [
           `Covers required ${selectedGrade}rd grade ELA standard`,
-          `Targets reading comprehension IEP goals for ${students.slice(0, 3).length} students`,
+          `Targets reading comprehension IEP goals for ${Math.min(3, students.length)} students`,
           'Efficient small group instruction with built-in data collection',
           `Integrates with ${activeTheme} theme for engaging, cohesive learning`,
           'Natural opportunities for peer learning and discussion'
@@ -257,84 +256,10 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
           preferredTimes: ['9:00 AM', '10:30 AM', '1:00 PM']
         },
         dataCollectionPlan: {
-          goalIds: students.slice(0, 3).filter(s => s.iepData?.goals).map(s => s.iepData!.goals[0].id),
+          goalIds: students.slice(0, Math.min(3, students.length)).filter(s => s.iepData?.goals).map(s => s.iepData!.goals[0].id),
           measurementMoments: ['Story preview', 'During mapping', 'Discussion wrap-up'],
           collectionMethod: 'Observational with quick rating scale',
           successCriteria: ['Identifies main idea independently', 'Uses graphic organizer correctly', 'Participates in discussion']
-        },
-        generatedAt: new Date().toISOString()
-      },
-      {
-        id: `rec_${Date.now()}_2`,
-        groupName: `${activeTheme} Math Problem Solving Squad`,
-        confidence: 89,
-        studentIds: students.slice(2, 4).map(s => s.id),
-        studentCount: 2,
-        standardsAddressed: [{
-          standardId: 'CCSS.MATH.3.8',
-          standard: {
-            id: 'CCSS.MATH.3.8',
-            code: 'CCSS.MATH.CONTENT.3.OA.D.8',
-            state: selectedState,
-            grade: selectedGrade,
-            subject: 'Math',
-            domain: 'Operations & Algebraic Thinking',
-            title: 'Two-Step Word Problems',
-            description: 'Solve two-step word problems using the four operations',
-            subSkills: ['problem solving', 'multi-step thinking', 'operation selection'],
-            complexity: 4
-          },
-          coverageReason: 'Themed word problems provide authentic contexts for multi-step problem solving'
-        }],
-        iepGoalsAddressed: students.slice(2, 4).filter(s => s.iepData?.goals).map(student => {
-          const mathGoal = student.iepData!.goals.find(g => g.domain === 'academic') || student.iepData!.goals[0];
-          return {
-            goalId: mathGoal.id,
-            studentId: student.id,
-            goal: mathGoal,
-            alignmentReason: `${activeTheme} context makes abstract math concepts more concrete and engaging`
-          };
-        }),
-        recommendedActivity: {
-          activityId: 'themed_math_problems',
-          activity: {
-            id: 'themed_math_problems',
-            name: `${activeTheme} Problem Theater`,
-            category: 'academic',
-            description: `Real-world ${activeTheme.toLowerCase()} math scenarios with manipulatives`,
-            duration: 20,
-            materials: ['Problem scenario cards', 'Math manipulatives', 'Recording sheets'],
-            instructions: 'Students solve themed word problems using concrete materials and systematic approaches',
-            isCustom: true,
-            dateCreated: new Date().toISOString()
-          },
-          adaptations: [
-            'Provide manipulatives for concrete problem solving',
-            'Break complex problems into smaller steps',
-            'Use visual models and diagrams'
-          ],
-          duration: 20,
-          materials: ['Themed problem cards', 'Counting bears', 'Base-10 blocks', 'Recording sheets'],
-          setup: 'Small table with math materials organized by problem type',
-          implementation: 'Present themed scenarios, guide problem-solving process, practice with manipulatives'
-        },
-        benefits: [
-          'Addresses critical 3rd grade math standard',
-          'Supports calculation and problem-solving IEP goals',
-          'Incorporates hands-on learning with manipulatives',
-          'Easy progress monitoring during problem solving'
-        ],
-        rationale: `Combines required math standards with themed contexts to make abstract concepts concrete. Small group size allows for intensive individual support while maintaining peer learning opportunities.`,
-        suggestedScheduling: {
-          frequency: 'daily',
-          duration: 20,
-          preferredTimes: ['10:00 AM', '11:00 AM', '2:00 PM']
-        },
-        dataCollectionPlan: {
-          goalIds: students.slice(2, 4).filter(s => s.iepData?.goals).map(s => s.iepData!.goals[0].id),
-          measurementMoments: ['Problem introduction', 'Strategy selection', 'Solution completion'],
-          collectionMethod: 'Trial-by-trial accuracy tracking',
-          successCriteria: ['Selects appropriate operation', 'Uses systematic approach', 'Reaches correct solution']
         },
         generatedAt: new Date().toISOString()
       }
@@ -394,22 +319,99 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
   // ===== RENDER HELPER COMPONENTS =====
   const renderSetupView = () => (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Configuration Panel */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-blue-600" />
+      <div style={{
+        background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Top accent bar */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '20px 20px 0 0'
+        }} />
+        
+        <h2 style={{
+          margin: '0 0 2rem 0',
+          color: '#2c3e50',
+          fontSize: '1.6rem',
+          fontWeight: '700',
+          textAlign: 'center',
+          position: 'relative',
+          paddingBottom: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.75rem'
+        }}>
+          <Settings style={{ width: '1.5rem', height: '1.5rem', color: '#667eea' }} />
           Smart Groups Configuration
         </h2>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '60px',
+          height: '3px',
+          background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '2px',
+          marginTop: '1rem'
+        }} />
+        
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1.5rem',
+          marginBottom: '2rem'
+        }}>
           {/* State Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+            <label style={{
+              display: 'block',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              color: '#495057',
+              marginBottom: '0.5rem'
+            }}>
+              State Standards
+            </label>
             <select 
               value={selectedState} 
               onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #e1e8ed',
+                borderRadius: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.15)';
+                e.target.style.background = '#ffffff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e1e8ed';
+                e.target.style.boxShadow = 'none';
+                e.target.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
+              }}
             >
               <option value="SC">South Carolina</option>
               <option value="NC">North Carolina</option>
@@ -422,11 +424,39 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
           {/* Grade Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Grade Level</label>
+            <label style={{
+              display: 'block',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              color: '#495057',
+              marginBottom: '0.5rem'
+            }}>
+              Grade Level
+            </label>
             <select 
               value={selectedGrade} 
               onChange={(e) => setSelectedGrade(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #e1e8ed',
+                borderRadius: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.15)';
+                e.target.style.background = '#ffffff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e1e8ed';
+                e.target.style.boxShadow = 'none';
+                e.target.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
+              }}
             >
               <option value="K">Kindergarten</option>
               <option value="1">1st Grade</option>
@@ -439,11 +469,39 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
           {/* Month Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+            <label style={{
+              display: 'block',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              color: '#495057',
+              marginBottom: '0.5rem'
+            }}>
+              Target Month
+            </label>
             <select 
               value={selectedMonth} 
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                border: '2px solid #e1e8ed',
+                borderRadius: '12px',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = '#667eea';
+                e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.15)';
+                e.target.style.background = '#ffffff';
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = '#e1e8ed';
+                e.target.style.boxShadow = 'none';
+                e.target.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
+              }}
             >
               {Array.from({length: 12}, (_, i) => (
                 <option key={i + 1} value={i + 1}>
@@ -454,20 +512,65 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
           </div>
 
           {/* Analysis Button */}
-          <div className="flex items-end">
+          <div style={{ display: 'flex', alignItems: 'end' }}>
             <button 
               onClick={runAIAnalysis}
               disabled={isAnalyzing || students.length === 0}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{
+                width: '100%',
+                background: isAnalyzing || students.length === 0 
+                  ? 'linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '12px',
+                cursor: isAnalyzing || students.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '700',
+                transition: 'all 0.3s ease',
+                boxShadow: isAnalyzing || students.length === 0 
+                  ? 'none'
+                  : '0 4px 15px rgba(102, 126, 234, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onMouseEnter={(e) => {
+                if (!isAnalyzing && students.length > 0) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isAnalyzing && students.length > 0) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                }
+              }}
             >
               {isAnalyzing ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div style={{
+                    width: '1rem',
+                    height: '1rem',
+                    border: '2px solid transparent',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
                   Analyzing...
                 </>
               ) : (
                 <>
-                  <Brain className="w-4 h-4" />
+                  <Brain style={{ width: '1rem', height: '1rem' }} />
                   Generate Groups
                 </>
               )}
@@ -477,24 +580,87 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
       </div>
 
       {/* Theme Selection */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-green-600" />
+      <div style={{
+        background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Top accent bar */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #28a745 0%, #20c997 100%)',
+          borderRadius: '20px 20px 0 0'
+        }} />
+        
+        <h3 style={{
+          margin: '0 0 1.5rem 0',
+          color: '#2c3e50',
+          fontSize: '1.3rem',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <Calendar style={{ width: '1.25rem', height: '1.25rem', color: '#28a745' }} />
           Theme Selection for {new Date(2025, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' })}
         </h3>
         
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '0.75rem',
+          marginBottom: '1.5rem'
+        }}>
           {(predefinedThemes[selectedMonth as keyof typeof predefinedThemes] || []).map((theme) => (
             <button
               key={theme}
               onClick={() => {setSelectedTheme(theme); setCustomTheme('');}}
-              className={`text-left p-3 rounded-lg border transition-all duration-200 ${
-                selectedTheme === theme 
-                  ? 'border-green-500 bg-green-50 text-green-900' 
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}
+              style={{
+                textAlign: 'left',
+                padding: '1rem',
+                borderRadius: '12px',
+                border: selectedTheme === theme 
+                  ? '2px solid #28a745' 
+                  : '2px solid #e1e8ed',
+                background: selectedTheme === theme 
+                  ? 'linear-gradient(145deg, #e8f5e8 0%, #d4edda 100%)' 
+                  : 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                color: selectedTheme === theme ? '#155724' : '#2c3e50',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                boxShadow: selectedTheme === theme 
+                  ? '0 4px 12px rgba(40, 167, 69, 0.2)'
+                  : '0 2px 8px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={(e) => {
+                if (selectedTheme !== theme) {
+                  e.currentTarget.style.borderColor = '#28a745';
+                  e.currentTarget.style.background = 'linear-gradient(145deg, #f8fff8 0%, #f0fff0 100%)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.15)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedTheme !== theme) {
+                  e.currentTarget.style.borderColor = '#e1e8ed';
+                  e.currentTarget.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
+                }
+              }}
             >
-              <span className="text-sm font-medium">{theme}</span>
+              {theme}
             </button>
           ))}
         </div>
@@ -505,74 +671,184 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
             placeholder="Or enter custom theme..."
             value={customTheme}
             onChange={(e) => {setCustomTheme(e.target.value); setSelectedTheme('');}}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              border: '2px solid #e1e8ed',
+              borderRadius: '12px',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+              transition: 'all 0.3s ease'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#28a745';
+              e.target.style.boxShadow = '0 0 0 3px rgba(40, 167, 69, 0.15)';
+              e.target.style.background = '#ffffff';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e1e8ed';
+              e.target.style.boxShadow = 'none';
+              e.target.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)';
+            }}
           />
-        </div>
-      </div>
-
-      {/* Curriculum Upload */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Upload className="w-5 h-5 text-orange-600" />
-          Curriculum Integration (Optional)
-        </h3>
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <input
-            type="file"
-            id="curriculum-upload"
-            accept=".pdf,.csv,.txt,.docx"
-            onChange={handleCurriculumUpload}
-            className="hidden"
-          />
-          <label htmlFor="curriculum-upload" className="cursor-pointer">
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="w-8 h-8 text-gray-400" />
-              <p className="text-sm text-gray-600">
-                Upload your curriculum guide, pacing calendar, or standards document
-              </p>
-              <p className="text-xs text-gray-500">
-                Supports PDF, CSV, TXT, or Word documents
-              </p>
-            </div>
-          </label>
-          
-          {curriculumUploaded && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-green-600">
-              <Check className="w-4 h-4" />
-              <span className="text-sm">Curriculum uploaded successfully!</span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Data Summary */}
-      <div className="bg-white rounded-2xl shadow-xl p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Target className="w-5 h-5 text-red-600" />
+      <div style={{
+        background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.4)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Top accent bar */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '4px',
+          background: 'linear-gradient(90deg, #dc3545 0%, #e74c3c 100%)',
+          borderRadius: '20px 20px 0 0'
+        }} />
+        
+        <h3 style={{
+          margin: '0 0 1.5rem 0',
+          color: '#2c3e50',
+          fontSize: '1.3rem',
+          fontWeight: '700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <Target style={{ width: '1.25rem', height: '1.25rem', color: '#dc3545' }} />
           Current Data Summary
         </h3>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-blue-600">{students.length}</p>
-            <p className="text-sm text-gray-600">Students with IEP Goals</p>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '1rem'
+        }}>
+          <div style={{
+            background: 'linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%)',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '2px solid #2196f3',
+            boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)'
+          }}>
+            <p style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              color: '#1976d2',
+              margin: '0 0 0.5rem 0',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              {students.length}
+            </p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: '#1565c0',
+              margin: '0',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Students with IEP Goals
+            </p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-green-600">
+          
+          <div style={{
+            background: 'linear-gradient(145deg, #e8f5e8 0%, #d4edda 100%)',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '2px solid #28a745',
+            boxShadow: '0 4px 12px rgba(40, 167, 69, 0.2)'
+          }}>
+            <p style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              color: '#155724',
+              margin: '0 0 0.5rem 0',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
               {students.reduce((total, s) => total + (s.iepData?.goals?.length || 0), 0)}
             </p>
-            <p className="text-sm text-gray-600">Total IEP Goals</p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: '#155724',
+              margin: '0',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Total IEP Goals
+            </p>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-purple-600">{activities.length}</p>
-            <p className="text-sm text-gray-600">Available Activities</p>
+          
+          <div style={{
+            background: 'linear-gradient(145deg, #f3e5f5 0%, #e1bee7 100%)',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '2px solid #9c27b0',
+            boxShadow: '0 4px 12px rgba(156, 39, 176, 0.2)'
+          }}>
+            <p style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              color: '#6a1b9a',
+              margin: '0 0 0.5rem 0',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
+              {activities.length}
+            </p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: '#6a1b9a',
+              margin: '0',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Available Activities
+            </p>
           </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <p className="text-2xl font-bold text-orange-600">
+          
+          <div style={{
+            background: 'linear-gradient(145deg, #fff3e0 0%, #ffe0b2 100%)',
+            padding: '1.5rem',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '2px solid #ff9800',
+            boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+          }}>
+            <p style={{
+              fontSize: '2rem',
+              fontWeight: '700',
+              color: '#e65100',
+              margin: '0 0 0.5rem 0',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+            }}>
               {selectedTheme || customTheme ? '✓' : '○'}
             </p>
-            <p className="text-sm text-gray-600">Theme Selected</p>
+            <p style={{
+              fontSize: '0.85rem',
+              color: '#e65100',
+              margin: '0',
+              fontWeight: '600',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              Theme Selected
+            </p>
           </div>
         </div>
       </div>
@@ -580,124 +856,182 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
   );
 
   const renderRecommendationsView = () => (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white">
+      <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 text-white shadow-2xl">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">AI Recommendations Ready!</h2>
-            <p className="text-purple-100 mt-1">
+            <h2 className="text-3xl font-bold mb-2">AI Recommendations Ready!</h2>
+            <p className="text-purple-100 text-lg">
               Found {recommendations.length} optimal small group opportunities
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-yellow-300" />
-            <span className="text-lg font-semibold">Smart Groups</span>
+          <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3">
+            <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
+            <span className="text-xl font-bold">Smart Groups</span>
           </div>
         </div>
       </div>
 
       {/* Recommendations */}
       {recommendations.map((rec) => (
-        <div key={rec.id} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-green-500 to-blue-500 p-4 text-white">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">{rec.groupName}</h3>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-300" />
-                  <span className="font-semibold">{rec.confidence}% Match</span>
+        <div key={rec.id} className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 hover:shadow-3xl transition-all duration-300">
+          {/* Header with Confidence Badge */}
+          <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-6 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+            <div className="relative flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold mb-1">{rec.groupName}</h3>
+                <p className="text-emerald-100 text-sm">AI-optimized small group recommendation</p>
+              </div>
+              <div className="flex items-center gap-6">
+                {/* Confidence Score - Prominent */}
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/30">
+                  <div className="flex items-center gap-2">
+                    <Star className="w-6 h-6 text-yellow-300" />
+                    <span className="text-2xl font-bold">{rec.confidence}%</span>
+                  </div>
+                  <p className="text-xs text-emerald-100 text-center">Match</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span>{rec.studentCount} Students</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{rec.recommendedActivity.duration} min</span>
+                {/* Quick Stats */}
+                <div className="flex items-center gap-4 text-emerald-100">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    <span className="font-semibold">{rec.studentCount} Students</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    <span className="font-semibold">{rec.recommendedActivity.duration} min</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-blue-600" />
+          {/* Content with Better Structure */}
+          <div className="p-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+              {/* Left Column - Standards & Goals */}
+              <div className="space-y-6">
+                {/* Standards Section */}
+                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                  <h4 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-3">
+                    <div className="p-2 bg-blue-500 rounded-lg">
+                      <BookOpen className="w-5 h-5 text-white" />
+                    </div>
                     Standards Addressed
                   </h4>
                   {rec.standardsAddressed.map((std, idx) => (
-                    <div key={idx} className="bg-blue-50 p-3 rounded-lg">
-                      <p className="font-mono text-sm text-blue-800 mb-1">{std.standard.code}</p>
-                      <p className="text-sm text-gray-700">{std.standard.description}</p>
+                    <div key={idx} className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">
+                          {std.standard.subject}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-mono text-sm font-bold text-blue-800 mb-2">{std.standard.code}</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{std.standard.description}</p>
+                          <p className="text-xs text-blue-600 mt-2 italic">{std.coverageReason}</p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-green-600" />
+                {/* IEP Goals Section */}
+                <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
+                  <h4 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-3">
+                    <div className="p-2 bg-green-500 rounded-lg">
+                      <Target className="w-5 h-5 text-white" />
+                    </div>
                     IEP Goals ({rec.iepGoalsAddressed.length})
                   </h4>
-                  {rec.iepGoalsAddressed.map((goal, idx) => {
-                    const student = students.find(s => s.id === goal.studentId);
-                    return (
-                      <div key={idx} className="bg-green-50 p-3 rounded-lg">
-                        <p className="text-sm font-medium text-green-800">{student?.name}</p>
-                        <p className="text-sm text-gray-700">{goal.goal.shortTermObjective}</p>
-                      </div>
-                    );
-                  })}
+                  <div className="space-y-3">
+                    {rec.iepGoalsAddressed.map((goal, idx) => {
+                      const student = students.find(s => s.id === goal.studentId);
+                      return (
+                        <div key={idx} className="bg-white rounded-xl p-4 border border-green-200 shadow-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                              <span className="text-green-800 font-bold text-sm">
+                                {student?.name?.charAt(0) || '?'}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-green-800 mb-1">{student?.name}</p>
+                              <p className="text-sm text-gray-700 mb-2">{goal.goal.shortTermObjective}</p>
+                              <p className="text-xs text-green-600 italic">{goal.alignmentReason}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-yellow-600" />
+              {/* Right Column - Activity & Benefits */}
+              <div className="space-y-6">
+                {/* Recommended Activity */}
+                <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
+                  <h4 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-3">
+                    <div className="p-2 bg-amber-500 rounded-lg">
+                      <Lightbulb className="w-5 h-5 text-white" />
+                    </div>
                     Recommended Activity
                   </h4>
-                  <div className="bg-yellow-50 p-3 rounded-lg">
-                    <p className="font-semibold text-gray-900 mb-2">{rec.recommendedActivity.activity.name}</p>
-                    <p className="text-sm text-gray-700 mb-2">{rec.recommendedActivity.activity.description}</p>
-                    <p className="text-sm text-gray-600">Materials: {rec.recommendedActivity.materials.join(', ')}</p>
+                  <div className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm">
+                    <h5 className="text-xl font-bold text-gray-900 mb-3">{rec.recommendedActivity.activity.name}</h5>
+                    <p className="text-gray-700 mb-4 leading-relaxed">{rec.recommendedActivity.activity.description}</p>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-amber-50 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-amber-800 mb-1">Materials Needed:</p>
+                        <p className="text-sm text-gray-700">{rec.recommendedActivity.materials.join(', ')}</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-3">
+                        <p className="text-sm font-semibold text-amber-800 mb-1">Setup:</p>
+                        <p className="text-sm text-gray-700">{rec.recommendedActivity.setup}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                {/* Benefits */}
+                <div className="bg-purple-50 rounded-2xl p-6 border border-purple-100">
+                  <h4 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-3">
+                    <div className="p-2 bg-purple-500 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
                     Why This Works
                   </h4>
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <ul className="space-y-1">
+                  <div className="bg-white rounded-xl p-5 border border-purple-200 shadow-sm">
+                    <ul className="space-y-3">
                       {rec.benefits.map((benefit, idx) => (
-                        <li key={idx} className="text-sm text-gray-700 flex items-start gap-2">
-                          <Check className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
-                          {benefit}
+                        <li key={idx} className="flex items-start gap-3">
+                          <div className="p-1 bg-green-100 rounded-full mt-0.5">
+                            <Check className="w-3 h-3 text-green-600" />
+                          </div>
+                          <span className="text-sm text-gray-700 leading-relaxed">{benefit}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
 
+                {/* Theme Integration */}
                 {rec.themeConnection && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-indigo-600" />
+                  <div className="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
+                    <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-3">
+                      <div className="p-2 bg-indigo-500 rounded-lg">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
                       Theme Integration
                     </h4>
-                    <div className="bg-indigo-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700 mb-1">{rec.themeConnection.relevance}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
+                    <div className="bg-white rounded-xl p-5 border border-indigo-200 shadow-sm">
+                      <p className="text-sm text-gray-700 mb-3 leading-relaxed">{rec.themeConnection.relevance}</p>
+                      <div className="flex flex-wrap gap-2">
                         {rec.themeConnection.thematicElements.map((element, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">
+                          <span key={idx} className="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full border border-indigo-200">
                             {element}
                           </span>
                         ))}
@@ -708,102 +1042,43 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
               </div>
             </div>
 
-            {/* Expandable Detailed Section */}
-            {expandedRecommendation === rec.id && (
-              <div className="mt-6 pt-6 border-t space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-2">Implementation Guide</h5>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700">{rec.recommendedActivity.implementation}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h5 className="font-semibold text-gray-900 mb-2">Data Collection Plan</h5>
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Method:</strong> {rec.dataCollectionPlan.collectionMethod}
-                      </p>
-                      <p className="text-sm text-gray-700 mb-2">
-                        <strong>Moments:</strong> {rec.dataCollectionPlan.measurementMoments.join(', ')}
-                      </p>
-                      <div>
-                        <strong className="text-sm text-gray-700">Success Criteria:</strong>
-                        <ul className="mt-1 space-y-1">
-                          {rec.dataCollectionPlan.successCriteria.map((criteria, idx) => (
-                            <li key={idx} className="text-xs text-gray-600 ml-4">• {criteria}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Adaptations & Modifications</h5>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <ul className="space-y-1">
-                      {rec.recommendedActivity.adaptations.map((adaptation, idx) => (
-                        <li key={idx} className="text-sm text-gray-700">• {adaptation}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Suggested Scheduling</h5>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong>Frequency:</strong> {rec.suggestedScheduling.frequency} • 
-                      <strong> Duration:</strong> {rec.suggestedScheduling.duration} minutes • 
-                      <strong> Best Times:</strong> {rec.suggestedScheduling.preferredTimes.join(', ')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6 pt-4 border-t">
+            {/* Action Buttons - Improved Styling */}
+            <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t-2 border-gray-100">
               <button 
                 onClick={() => implementRecommendation(rec)}
-                className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 min-w-[200px] bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white px-6 py-4 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 font-bold text-lg"
               >
-                <Play className="w-4 h-4" />
+                <Play className="w-5 h-5" />
                 Implement This Group
               </button>
               <button 
                 onClick={() => setExpandedRecommendation(expandedRecommendation === rec.id ? null : rec.id)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold"
               >
                 {expandedRecommendation === rec.id ? 'Show Less' : 'Show Details'}
               </button>
               <button 
-                onClick={() => setShowDetailedLesson(rec.id)}
-                className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200"
-              >
-                Generate Lesson
-              </button>
-              <button 
                 onClick={() => rejectRecommendation(rec.id)}
-                className="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-all duration-200"
+                className="px-4 py-4 border-2 border-red-300 text-red-700 rounded-2xl hover:bg-red-50 hover:border-red-400 transition-all duration-300"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
       ))}
 
+      {/* Empty State */}
       {recommendations.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
-          <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Recommendations Yet</h3>
-          <p className="text-gray-600 mb-4">Run the AI analysis to generate smart group recommendations.</p>
+        <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
+          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-12 h-12 text-gray-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">No Recommendations Yet</h3>
+          <p className="text-gray-600 mb-8 text-lg">Run the AI analysis to generate smart group recommendations.</p>
           <button 
             onClick={() => setCurrentView('setup')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-8 py-3 rounded-2xl hover:bg-blue-700 transition-colors font-semibold"
           >
             Back to Setup
           </button>
@@ -948,243 +1223,6 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
         {currentView === 'setup' && renderSetupView()}
         {currentView === 'recommendations' && renderRecommendationsView()}
         {currentView === 'implemented' && renderImplementedView()}
-
-        {/* Detailed Lesson Modal */}
-        {showDetailedLesson && (
-          <DetailedLessonModal 
-            recommendationId={showDetailedLesson}
-            recommendation={recommendations.find(r => r.id === showDetailedLesson)!}
-            onClose={() => setShowDetailedLesson(null)}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ===== DETAILED LESSON MODAL COMPONENT =====
-interface DetailedLessonModalProps {
-  recommendationId: string;
-  recommendation: SmartGroupRecommendation;
-  onClose: () => void;
-}
-
-const DetailedLessonModal: React.FC<DetailedLessonModalProps> = ({ 
-  recommendation, 
-  onClose 
-}) => {
-  const [lessonPlan, setLessonPlan] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  useEffect(() => {
-    generateDetailedLesson();
-  }, []);
-
-  const generateDetailedLesson = async () => {
-    setIsGenerating(true);
-    
-    // Simulate lesson generation
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const mockLessonPlan = {
-      title: `${recommendation.recommendedActivity.activity.name} - Detailed Lesson Plan`,
-      duration: recommendation.recommendedActivity.duration,
-      objectives: [
-        `Students will ${recommendation.standardsAddressed[0]?.standard.title.toLowerCase()}`,
-        ...recommendation.iepGoalsAddressed.map(g => g.goal.shortTermObjective)
-      ],
-      materials: recommendation.recommendedActivity.materials,
-      lessonFlow: [
-        {
-          step: 1,
-          title: 'Welcome & Review (3 min)',
-          description: 'Greet students and review expectations',
-          teacherActions: ['Welcome each student', 'Review group norms', 'Preview objectives'],
-          dataCollection: 'Note attention and engagement'
-        },
-        {
-          step: 2,
-          title: 'Introduction (5 min)',
-          description: 'Introduce activity and connect to goals',
-          teacherActions: ['Present activity overview', 'Connect to IEP goals', 'Model expected behaviors'],
-          dataCollection: 'Baseline observations for each goal'
-        },
-        {
-          step: 3,
-          title: `Main Activity (${recommendation.recommendedActivity.duration - 10} min)`,
-          description: recommendation.recommendedActivity.implementation,
-          teacherActions: ['Guide practice', 'Provide support', 'Collect data', 'Adjust as needed'],
-          dataCollection: 'Primary data collection window'
-        },
-        {
-          step: 4,
-          title: 'Wrap-up (2 min)',
-          description: 'Review learning and celebrate progress',
-          teacherActions: ['Review key points', 'Celebrate progress', 'Preview next session'],
-          dataCollection: 'Final progress checks'
-        }
-      ],
-      assessment: {
-        formative: ['Observation during activity', 'Quick progress checks'],
-        summative: ['End-of-activity demonstration', 'Goal mastery checklist'],
-        iepSpecific: recommendation.iepGoalsAddressed.map(g => ({
-          student: g.studentId,
-          goal: g.goal.shortTermObjective,
-          criteria: g.goal.criteria,
-          method: 'Direct observation with rating scale'
-        }))
-      }
-    };
-    
-    setLessonPlan(mockLessonPlan);
-    setIsGenerating(false);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Detailed Lesson Plan</h2>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {isGenerating ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-lg font-semibold text-gray-900">Generating Detailed Lesson Plan...</p>
-              <p className="text-gray-600">AI is creating step-by-step instructions, materials list, and assessment rubrics</p>
-            </div>
-          ) : lessonPlan && (
-            <div className="space-y-6">
-              {/* Header Info */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{lessonPlan.title}</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <p><strong>Duration:</strong> {lessonPlan.duration} minutes</p>
-                  <p><strong>Group Size:</strong> {recommendation.studentCount} students</p>
-                </div>
-              </div>
-
-              {/* Objectives */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Learning Objectives</h4>
-                <ul className="space-y-2">
-                  {lessonPlan.objectives.map((obj: string, idx: number) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <Target className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-700">{obj}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Materials */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Materials Needed</h4>
-                <div className="bg-yellow-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-700">{lessonPlan.materials.join(', ')}</p>
-                </div>
-              </div>
-
-              {/* Lesson Flow */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Lesson Flow</h4>
-                <div className="space-y-4">
-                  {lessonPlan.lessonFlow.map((step: any, idx: number) => (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                          {step.step}
-                        </div>
-                        <h5 className="font-semibold text-gray-900">{step.title}</h5>
-                      </div>
-                      <p className="text-sm text-gray-700 mb-3">{step.description}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Teacher Actions:</p>
-                          <ul className="text-xs text-gray-600 space-y-1">
-                            {step.teacherActions.map((action: string, actionIdx: number) => (
-                              <li key={actionIdx}>• {action}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-gray-600 mb-1">Data Collection:</p>
-                          <p className="text-xs text-gray-600">{step.dataCollection}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Assessment */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Assessment & Data Collection</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-3 rounded-lg">
-                    <h5 className="font-medium text-blue-900 mb-2">Formative Assessment</h5>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      {lessonPlan.assessment.formative.map((item: string, idx: number) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <h5 className="font-medium text-green-900 mb-2">Summative Assessment</h5>
-                    <ul className="text-sm text-green-800 space-y-1">
-                      {lessonPlan.assessment.summative.map((item: string, idx: number) => (
-                        <li key={idx}>• {item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* IEP-Specific Data Collection */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">IEP Goal Data Collection</h4>
-                <div className="space-y-3">
-                  {lessonPlan.assessment.iepSpecific.map((item: any, idx: number) => {
-                    const student = UnifiedDataService.getStudent(item.student);
-                    return (
-                      <div key={idx} className="bg-purple-50 p-3 rounded-lg">
-                        <p className="font-medium text-purple-900">{student?.name}</p>
-                        <p className="text-sm text-purple-800 mb-1">{item.goal}</p>
-                        <p className="text-xs text-purple-700">
-                          <strong>Criteria:</strong> {item.criteria} • 
-                          <strong> Method:</strong> {item.method}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t">
-                <button className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all duration-200">
-                  <Download className="w-4 h-4 inline mr-2" />
-                  Download Lesson Plan
-                </button>
-                <button className="px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-all duration-200">
-                  Edit & Customize
-                </button>
-                <button className="px-4 py-2 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-all duration-200">
-                  Add to Schedule
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
