@@ -505,6 +505,13 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           color: 'white',
           boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)'
         };
+      case 'system':
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(45deg, #FF9800, #FFB74D)',
+          color: 'white',
+          boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
+        };
       case 'academic':
         return { ...baseStyle, background: '#E3F2FD', color: '#1976D2' };
       case 'social':
@@ -531,8 +538,8 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     return combinedActivities;
   }, [customActivities]);
 
-  // 🎯 UPDATED: Include transition and choice-items in categories list
-  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition', 'choice-items'];
+  // 🎯 UPDATED: Include transition and system in categories list
+  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition', 'system'];
 
   // Filter activities based on search and category
   const filteredActivities = useMemo(() => {
