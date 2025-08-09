@@ -3580,7 +3580,9 @@ body {
     box-shadow: none;
     border: 1px solid #000;
   }
-  /* ============================================
+}
+
+/* ============================================
    ASSIGNMENT PANEL FIXES
    ============================================ */
 
@@ -4600,3 +4602,10 @@ input[type="checkbox"]:hover {
 .groups-grid::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+/* ============================================
+   SMART GROUPS ENHANCED UI ANIMATIONS
+   ============================================ */
+
+/* Import Smart Groups Enhanced UI Animations */
+@import './smart-groups-animations.css';
