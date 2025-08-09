@@ -100,6 +100,17 @@ interface EnhancedDataPoint {
   voiceNotes?: string[];
 }
 
+// Data entry interface for the form state
+interface DataEntry {
+  goalId: string;
+  studentId: string;
+  value?: number;
+  trialsCorrect?: number;
+  trialsTotal?: number;
+  notes: string;
+  nineWeekPeriod: number;
+}
+
 const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
   selectedStudent,
   selectedGoal,
@@ -202,11 +213,9 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
   const getTrendIcon = () => {
     // In real implementation, this would calculate from recent data points
     const trend: 'improving' | 'declining' | 'stable' = 'improving'; // Sample
-    switch (trend) {
-      case 'improving': return <TrendingUp className="text-green-500" size={16} />;
-      case 'declining': return <TrendingDown className="text-red-500" size={16} />;
-      default: return <Minus className="text-yellow-500" size={16} />;
-    }
+    if (trend === 'improving') return <TrendingUp className="text-green-500" size={16} />;
+    if (trend === 'declining') return <TrendingDown className="text-red-500" size={16} />;
+    return <Minus className="text-yellow-500" size={16} />;
   };
 
   const getStatusColor = (status: string) => {
@@ -513,23 +522,23 @@ const EnhancedIEPDataEntry: React.FC<EnhancedDataEntryProps> = ({
                   <div className="flex justify-between">
                     <span className="text-white/80">Current 9-Week:</span>
                     <span className="text-white font-medium">
-                      {selectedGoal.currentProgress}% / {selectedGoal.nineWeekTargets[selectedGoal.currentNineWeek - 1]}% target
+                      {selectedGoalState.currentProgress}% / {selectedGoalState.nineWeekTargets[selectedGoalState.currentNineWeek - 1]}% target
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/80">Annual Progress:</span>
                     <span className="text-white font-medium">
-                      {selectedGoal.currentProgress}% / {selectedGoal.annualTarget}% target
+                      {selectedGoalState.currentProgress}% / {selectedGoalState.annualTarget}% target
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/80">Data Points:</span>
-                    <span className="text-white font-medium">{selectedGoal.dataPointCount} collected</span>
+                    <span className="text-white font-medium">{selectedGoalState.dataPointCount} collected</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/80">Last Entry:</span>
                     <span className="text-white font-medium">
-                      {selectedGoal.lastDataDate ? new Date(selectedGoal.lastDataDate).toLocaleDateString() : 'No data'}
+                      {selectedGoal.lastDataPoint ? new Date(selectedGoal.lastDataPoint).toLocaleDateString() : 'No data'}
                     </span>
                   </div>
                 </div>
