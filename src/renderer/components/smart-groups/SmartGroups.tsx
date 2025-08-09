@@ -856,52 +856,187 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
   );
 
   const renderRecommendationsView = () => (
-    <div className="space-y-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-8 text-white shadow-2xl">
-        <div className="flex items-center justify-between">
+      <div style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        color: 'white',
+        boxShadow: '0 20px 40px rgba(102, 126, 234, 0.3)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%)',
+          pointerEvents: 'none'
+        }} />
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
+          zIndex: 2
+        }}>
           <div>
-            <h2 className="text-3xl font-bold mb-2">AI Recommendations Ready!</h2>
-            <p className="text-purple-100 text-lg">
+            <h2 style={{
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              margin: '0 0 0.5rem 0',
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+            }}>
+              AI Recommendations Ready!
+            </h2>
+            <p style={{
+              fontSize: '1.2rem',
+              opacity: 0.9,
+              margin: '0'
+            }}>
               Found {recommendations.length} optimal small group opportunities
             </p>
           </div>
-          <div className="flex items-center gap-3 bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3">
-            <Sparkles className="w-8 h-8 text-yellow-300 animate-pulse" />
-            <span className="text-xl font-bold">Smart Groups</span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '16px',
+            padding: '1rem 1.5rem',
+            border: '1px solid rgba(255, 255, 255, 0.3)'
+          }}>
+            <Sparkles style={{ width: '2rem', height: '2rem', color: '#fbbf24' }} />
+            <span style={{ fontSize: '1.25rem', fontWeight: '700' }}>Smart Groups</span>
           </div>
         </div>
       </div>
 
       {/* Recommendations */}
       {recommendations.map((rec) => (
-        <div key={rec.id} className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 hover:shadow-3xl transition-all duration-300">
+        <div key={rec.id} style={{
+          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+          borderRadius: '20px',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          overflow: 'hidden',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-4px)';
+          e.currentTarget.style.boxShadow = '0 25px 50px rgba(102, 126, 234, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
+        }}>
           {/* Header with Confidence Badge */}
-          <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 p-6 text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
-            <div className="relative flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold mb-1">{rec.groupName}</h3>
-                <p className="text-emerald-100 text-sm">AI-optimized small group recommendation</p>
+          <div style={{
+            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+            padding: '1.5rem',
+            color: 'white',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)',
+              pointerEvents: 'none'
+            }} />
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              <div style={{ flex: 1, minWidth: '300px' }}>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  margin: '0 0 0.5rem 0',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                }}>
+                  {rec.groupName}
+                </h3>
+                <p style={{
+                  fontSize: '0.9rem',
+                  opacity: 0.9,
+                  margin: '0'
+                }}>
+                  AI-optimized small group recommendation
+                </p>
               </div>
-              <div className="flex items-center gap-6">
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1.5rem',
+                flexWrap: 'wrap'
+              }}>
                 {/* Confidence Score - Prominent */}
-                <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3 border border-white/30">
-                  <div className="flex items-center gap-2">
-                    <Star className="w-6 h-6 text-yellow-300" />
-                    <span className="text-2xl font-bold">{rec.confidence}%</span>
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  borderRadius: '16px',
+                  padding: '1rem 1.5rem',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  textAlign: 'center'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '0.25rem'
+                  }}>
+                    <Star style={{ width: '1.5rem', height: '1.5rem', color: '#fbbf24' }} />
+                    <span style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700'
+                    }}>
+                      {rec.confidence}%
+                    </span>
                   </div>
-                  <p className="text-xs text-emerald-100 text-center">Match</p>
+                  <p style={{
+                    fontSize: '0.75rem',
+                    opacity: 0.9,
+                    margin: '0'
+                  }}>
+                    Match
+                  </p>
                 </div>
                 {/* Quick Stats */}
-                <div className="flex items-center gap-4 text-emerald-100">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    <span className="font-semibold">{rec.studentCount} Students</span>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  opacity: 0.9
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <Users style={{ width: '1.25rem', height: '1.25rem' }} />
+                    <span style={{ fontWeight: '600' }}>{rec.studentCount} Students</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span className="font-semibold">{rec.recommendedActivity.duration} min</span>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <Clock style={{ width: '1.25rem', height: '1.25rem' }} />
+                    <span style={{ fontWeight: '600' }}>{rec.recommendedActivity.duration} min</span>
                   </div>
                 </div>
               </div>
@@ -909,28 +1044,89 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
           </div>
 
           {/* Content with Better Structure */}
-          <div className="p-8">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div style={{ padding: '2rem' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+              gap: '2rem'
+            }}>
               {/* Left Column - Standards & Goals */}
-              <div className="space-y-6">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {/* Standards Section */}
-                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-                  <h4 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-3">
-                    <div className="p-2 bg-blue-500 rounded-lg">
-                      <BookOpen className="w-5 h-5 text-white" />
+                <div style={{
+                  background: 'linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  border: '2px solid #2196f3',
+                  boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)'
+                }}>
+                  <h4 style={{
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    color: '#1565c0',
+                    margin: '0 0 1rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      padding: '0.5rem',
+                      background: '#2196f3',
+                      borderRadius: '8px'
+                    }}>
+                      <BookOpen style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
                     </div>
                     Standards Addressed
                   </h4>
                   {rec.standardsAddressed.map((std, idx) => (
-                    <div key={idx} className="bg-white rounded-xl p-4 border border-blue-200 shadow-sm">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold">
+                    <div key={idx} style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      border: '1px solid #bbdefb',
+                      boxShadow: '0 2px 8px rgba(33, 150, 243, 0.1)'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '0.75rem'
+                      }}>
+                        <div style={{
+                          background: '#e3f2fd',
+                          color: '#1565c0',
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '20px',
+                          fontSize: '0.75rem',
+                          fontWeight: '700'
+                        }}>
                           {std.standard.subject}
                         </div>
-                        <div className="flex-1">
-                          <p className="font-mono text-sm font-bold text-blue-800 mb-2">{std.standard.code}</p>
-                          <p className="text-sm text-gray-700 leading-relaxed">{std.standard.description}</p>
-                          <p className="text-xs text-blue-600 mt-2 italic">{std.coverageReason}</p>
+                        <div style={{ flex: 1 }}>
+                          <p style={{
+                            fontFamily: 'monospace',
+                            fontSize: '0.85rem',
+                            fontWeight: '700',
+                            color: '#1565c0',
+                            margin: '0 0 0.5rem 0'
+                          }}>
+                            {std.standard.code}
+                          </p>
+                          <p style={{
+                            fontSize: '0.85rem',
+                            color: '#2c3e50',
+                            lineHeight: '1.5',
+                            margin: '0 0 0.5rem 0'
+                          }}>
+                            {std.standard.description}
+                          </p>
+                          <p style={{
+                            fontSize: '0.75rem',
+                            color: '#1976d2',
+                            fontStyle: 'italic',
+                            margin: '0'
+                          }}>
+                            {std.coverageReason}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -938,28 +1134,87 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
                 </div>
 
                 {/* IEP Goals Section */}
-                <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
-                  <h4 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-3">
-                    <div className="p-2 bg-green-500 rounded-lg">
-                      <Target className="w-5 h-5 text-white" />
+                <div style={{
+                  background: 'linear-gradient(145deg, #e8f5e8 0%, #d4edda 100%)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  border: '2px solid #28a745',
+                  boxShadow: '0 4px 12px rgba(40, 167, 69, 0.2)'
+                }}>
+                  <h4 style={{
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    color: '#155724',
+                    margin: '0 0 1rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      padding: '0.5rem',
+                      background: '#28a745',
+                      borderRadius: '8px'
+                    }}>
+                      <Target style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
                     </div>
                     IEP Goals ({rec.iepGoalsAddressed.length})
                   </h4>
-                  <div className="space-y-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {rec.iepGoalsAddressed.map((goal, idx) => {
                       const student = students.find(s => s.id === goal.studentId);
                       return (
-                        <div key={idx} className="bg-white rounded-xl p-4 border border-green-200 shadow-sm">
-                          <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                              <span className="text-green-800 font-bold text-sm">
+                        <div key={idx} style={{
+                          background: 'white',
+                          borderRadius: '12px',
+                          padding: '1rem',
+                          border: '1px solid #d4edda',
+                          boxShadow: '0 2px 8px rgba(40, 167, 69, 0.1)'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '0.75rem'
+                          }}>
+                            <div style={{
+                              width: '2.5rem',
+                              height: '2.5rem',
+                              background: '#e8f5e8',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <span style={{
+                                color: '#155724',
+                                fontWeight: '700',
+                                fontSize: '0.85rem'
+                              }}>
                                 {student?.name?.charAt(0) || '?'}
                               </span>
                             </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-green-800 mb-1">{student?.name}</p>
-                              <p className="text-sm text-gray-700 mb-2">{goal.goal.shortTermObjective}</p>
-                              <p className="text-xs text-green-600 italic">{goal.alignmentReason}</p>
+                            <div style={{ flex: 1 }}>
+                              <p style={{
+                                fontWeight: '600',
+                                color: '#155724',
+                                margin: '0 0 0.25rem 0'
+                              }}>
+                                {student?.name}
+                              </p>
+                              <p style={{
+                                fontSize: '0.85rem',
+                                color: '#2c3e50',
+                                margin: '0 0 0.5rem 0'
+                              }}>
+                                {goal.goal.shortTermObjective}
+                              </p>
+                              <p style={{
+                                fontSize: '0.75rem',
+                                color: '#28a745',
+                                fontStyle: 'italic',
+                                margin: '0'
+                              }}>
+                                {goal.alignmentReason}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -970,48 +1225,169 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
               </div>
 
               {/* Right Column - Activity & Benefits */}
-              <div className="space-y-6">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {/* Recommended Activity */}
-                <div className="bg-amber-50 rounded-2xl p-6 border border-amber-100">
-                  <h4 className="text-lg font-bold text-amber-900 mb-4 flex items-center gap-3">
-                    <div className="p-2 bg-amber-500 rounded-lg">
-                      <Lightbulb className="w-5 h-5 text-white" />
+                <div style={{
+                  background: 'linear-gradient(145deg, #fff3e0 0%, #ffe0b2 100%)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  border: '2px solid #ff9800',
+                  boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+                }}>
+                  <h4 style={{
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    color: '#e65100',
+                    margin: '0 0 1rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      padding: '0.5rem',
+                      background: '#ff9800',
+                      borderRadius: '8px'
+                    }}>
+                      <Lightbulb style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
                     </div>
                     Recommended Activity
                   </h4>
-                  <div className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm">
-                    <h5 className="text-xl font-bold text-gray-900 mb-3">{rec.recommendedActivity.activity.name}</h5>
-                    <p className="text-gray-700 mb-4 leading-relaxed">{rec.recommendedActivity.activity.description}</p>
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                    border: '1px solid #ffe0b2',
+                    boxShadow: '0 2px 8px rgba(255, 152, 0, 0.1)'
+                  }}>
+                    <h5 style={{
+                      fontSize: '1.25rem',
+                      fontWeight: '700',
+                      color: '#2c3e50',
+                      margin: '0 0 0.75rem 0'
+                    }}>
+                      {rec.recommendedActivity.activity.name}
+                    </h5>
+                    <p style={{
+                      color: '#2c3e50',
+                      margin: '0 0 1rem 0',
+                      lineHeight: '1.5'
+                    }}>
+                      {rec.recommendedActivity.activity.description}
+                    </p>
                     
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="bg-amber-50 rounded-lg p-3">
-                        <p className="text-sm font-semibold text-amber-800 mb-1">Materials Needed:</p>
-                        <p className="text-sm text-gray-700">{rec.recommendedActivity.materials.join(', ')}</p>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr',
+                      gap: '1rem'
+                    }}>
+                      <div style={{
+                        background: '#fff3e0',
+                        borderRadius: '8px',
+                        padding: '0.75rem'
+                      }}>
+                        <p style={{
+                          fontSize: '0.85rem',
+                          fontWeight: '600',
+                          color: '#e65100',
+                          margin: '0 0 0.25rem 0'
+                        }}>
+                          Materials Needed:
+                        </p>
+                        <p style={{
+                          fontSize: '0.85rem',
+                          color: '#2c3e50',
+                          margin: '0'
+                        }}>
+                          {rec.recommendedActivity.materials.join(', ')}
+                        </p>
                       </div>
-                      <div className="bg-amber-50 rounded-lg p-3">
-                        <p className="text-sm font-semibold text-amber-800 mb-1">Setup:</p>
-                        <p className="text-sm text-gray-700">{rec.recommendedActivity.setup}</p>
+                      <div style={{
+                        background: '#fff3e0',
+                        borderRadius: '8px',
+                        padding: '0.75rem'
+                      }}>
+                        <p style={{
+                          fontSize: '0.85rem',
+                          fontWeight: '600',
+                          color: '#e65100',
+                          margin: '0 0 0.25rem 0'
+                        }}>
+                          Setup:
+                        </p>
+                        <p style={{
+                          fontSize: '0.85rem',
+                          color: '#2c3e50',
+                          margin: '0'
+                        }}>
+                          {rec.recommendedActivity.setup}
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Benefits */}
-                <div className="bg-purple-50 rounded-2xl p-6 border border-purple-100">
-                  <h4 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-3">
-                    <div className="p-2 bg-purple-500 rounded-lg">
-                      <TrendingUp className="w-5 h-5 text-white" />
+                <div style={{
+                  background: 'linear-gradient(145deg, #f3e5f5 0%, #e1bee7 100%)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  border: '2px solid #9c27b0',
+                  boxShadow: '0 4px 12px rgba(156, 39, 176, 0.2)'
+                }}>
+                  <h4 style={{
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    color: '#6a1b9a',
+                    margin: '0 0 1rem 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      padding: '0.5rem',
+                      background: '#9c27b0',
+                      borderRadius: '8px'
+                    }}>
+                      <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
                     </div>
                     Why This Works
                   </h4>
-                  <div className="bg-white rounded-xl p-5 border border-purple-200 shadow-sm">
-                    <ul className="space-y-3">
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                    border: '1px solid #e1bee7',
+                    boxShadow: '0 2px 8px rgba(156, 39, 176, 0.1)'
+                  }}>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: '0',
+                      margin: '0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem'
+                    }}>
                       {rec.benefits.map((benefit, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <div className="p-1 bg-green-100 rounded-full mt-0.5">
-                            <Check className="w-3 h-3 text-green-600" />
+                        <li key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.75rem'
+                        }}>
+                          <div style={{
+                            padding: '0.25rem',
+                            background: '#e8f5e8',
+                            borderRadius: '50%',
+                            marginTop: '0.125rem'
+                          }}>
+                            <Check style={{ width: '0.75rem', height: '0.75rem', color: '#28a745' }} />
                           </div>
-                          <span className="text-sm text-gray-700 leading-relaxed">{benefit}</span>
+                          <span style={{
+                            fontSize: '0.85rem',
+                            color: '#2c3e50',
+                            lineHeight: '1.5'
+                          }}>
+                            {benefit}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -1020,18 +1396,61 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
                 {/* Theme Integration */}
                 {rec.themeConnection && (
-                  <div className="bg-indigo-50 rounded-2xl p-6 border border-indigo-100">
-                    <h4 className="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500 rounded-lg">
-                        <Calendar className="w-5 h-5 text-white" />
+                  <div style={{
+                    background: 'linear-gradient(145deg, #e8eaf6 0%, #c5cae9 100%)',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    border: '2px solid #3f51b5',
+                    boxShadow: '0 4px 12px rgba(63, 81, 181, 0.2)'
+                  }}>
+                    <h4 style={{
+                      fontSize: '1.1rem',
+                      fontWeight: '700',
+                      color: '#283593',
+                      margin: '0 0 1rem 0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem'
+                    }}>
+                      <div style={{
+                        padding: '0.5rem',
+                        background: '#3f51b5',
+                        borderRadius: '8px'
+                      }}>
+                        <Calendar style={{ width: '1.25rem', height: '1.25rem', color: 'white' }} />
                       </div>
                       Theme Integration
                     </h4>
-                    <div className="bg-white rounded-xl p-5 border border-indigo-200 shadow-sm">
-                      <p className="text-sm text-gray-700 mb-3 leading-relaxed">{rec.themeConnection.relevance}</p>
-                      <div className="flex flex-wrap gap-2">
+                    <div style={{
+                      background: 'white',
+                      borderRadius: '12px',
+                      padding: '1.25rem',
+                      border: '1px solid #c5cae9',
+                      boxShadow: '0 2px 8px rgba(63, 81, 181, 0.1)'
+                    }}>
+                      <p style={{
+                        fontSize: '0.85rem',
+                        color: '#2c3e50',
+                        margin: '0 0 0.75rem 0',
+                        lineHeight: '1.5'
+                      }}>
+                        {rec.themeConnection.relevance}
+                      </p>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem'
+                      }}>
                         {rec.themeConnection.thematicElements.map((element, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded-full border border-indigo-200">
+                          <span key={idx} style={{
+                            padding: '0.25rem 0.75rem',
+                            background: '#e8eaf6',
+                            color: '#283593',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
+                            borderRadius: '20px',
+                            border: '1px solid #c5cae9'
+                          }}>
                             {element}
                           </span>
                         ))}
@@ -1043,25 +1462,101 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
             </div>
 
             {/* Action Buttons - Improved Styling */}
-            <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t-2 border-gray-100">
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              marginTop: '2rem',
+              paddingTop: '1.5rem',
+              borderTop: '2px solid #e1e8ed'
+            }}>
               <button 
                 onClick={() => implementRecommendation(rec)}
-                className="flex-1 min-w-[200px] bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white px-6 py-4 rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 font-bold text-lg"
+                style={{
+                  flex: '1',
+                  minWidth: '200px',
+                  background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '1rem 1.5rem',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem',
+                  fontWeight: '700',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(40, 167, 69, 0.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 8px 25px rgba(40, 167, 69, 0.5)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #218838 0%, #1e7e34 100%)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(40, 167, 69, 0.4)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                }}
               >
-                <Play className="w-5 h-5" />
+                <Play style={{ width: '1.25rem', height: '1.25rem' }} />
                 Implement This Group
               </button>
               <button 
                 onClick={() => setExpandedRecommendation(expandedRecommendation === rec.id ? null : rec.id)}
-                className="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-2xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 font-semibold"
+                style={{
+                  padding: '1rem 1.5rem',
+                  border: '2px solid #6c757d',
+                  borderRadius: '16px',
+                  background: 'transparent',
+                  color: '#6c757d',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f8f9fa';
+                  e.currentTarget.style.borderColor = '#495057';
+                  e.currentTarget.style.color = '#495057';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = '#6c757d';
+                  e.currentTarget.style.color = '#6c757d';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
                 {expandedRecommendation === rec.id ? 'Show Less' : 'Show Details'}
               </button>
               <button 
                 onClick={() => rejectRecommendation(rec.id)}
-                className="px-4 py-4 border-2 border-red-300 text-red-700 rounded-2xl hover:bg-red-50 hover:border-red-400 transition-all duration-300"
+                style={{
+                  padding: '1rem',
+                  border: '2px solid #dc3545',
+                  borderRadius: '16px',
+                  background: 'transparent',
+                  color: '#dc3545',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f8d7da';
+                  e.currentTarget.style.borderColor = '#c82333';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = '#dc3545';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
               >
-                <X className="w-5 h-5" />
+                <X style={{ width: '1.25rem', height: '1.25rem' }} />
               </button>
             </div>
           </div>
@@ -1070,15 +1565,62 @@ const SmartGroups: React.FC<SmartGroupsProps> = ({ isActive, onRecommendationImp
 
       {/* Empty State */}
       {recommendations.length === 0 && (
-        <div className="bg-white rounded-3xl shadow-2xl p-12 text-center border border-gray-100">
-          <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle className="w-12 h-12 text-gray-400" />
+        <div style={{
+          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%)',
+          borderRadius: '20px',
+          padding: '3rem',
+          textAlign: 'center',
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)'
+        }}>
+          <div style={{
+            width: '6rem',
+            height: '6rem',
+            background: '#f1f3f4',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1.5rem auto'
+          }}>
+            <AlertCircle style={{ width: '3rem', height: '3rem', color: '#9ca3af' }} />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">No Recommendations Yet</h3>
-          <p className="text-gray-600 mb-8 text-lg">Run the AI analysis to generate smart group recommendations.</p>
+          <h3 style={{
+            fontSize: '1.5rem',
+            fontWeight: '700',
+            color: '#2c3e50',
+            margin: '0 0 1rem 0'
+          }}>
+            No Recommendations Yet
+          </h3>
+          <p style={{
+            color: '#6c757d',
+            margin: '0 0 2rem 0',
+            fontSize: '1.1rem'
+          }}>
+            Run the AI analysis to generate smart group recommendations.
+          </p>
           <button 
             onClick={() => setCurrentView('setup')}
-            className="bg-blue-600 text-white px-8 py-3 rounded-2xl hover:bg-blue-700 transition-colors font-semibold"
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '1rem 2rem',
+              borderRadius: '16px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
           >
             Back to Setup
           </button>
