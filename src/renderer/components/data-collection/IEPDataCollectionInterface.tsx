@@ -20,7 +20,8 @@ interface IEPDataCollectionInterfaceProps {
 const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({ isActive, preSelectedStudentId }) => {
   const [students, setStudents] = useState<UnifiedStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<UnifiedStudent | null>(null);
-  const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<any>(null);
+  const [needsGoalSelection, setNeedsGoalSelection] = useState(false);
   const [view, setView] = useState<ViewType>('dashboard');
   const [systemStatus, setSystemStatus] = useState<any>(null);
   
@@ -75,9 +76,28 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
   };
 
   // Event handlers
-  const handleStudentSelect = (student: UnifiedStudent) => {
+  const handleStudentSelect = (student: any) => {
     setSelectedStudent(student);
-    setSelectedGoal(null); // Reset goal selection when changing students
+    
+    // Get active goals for this student
+    const activeGoals = student.iepData?.goals?.filter((g: any) => g.status === 'active') || [];
+    
+    if (activeGoals.length === 0) {
+      alert(`${student.name} doesn't have any active IEP goals. Please add goals first in Goal Management.`);
+      setView('goal-selection'); // Send them to goal manager
+      return;
+    }
+    
+    if (activeGoals.length === 1) {
+      // Only one goal - auto-select it and go to data entry
+      setSelectedGoal(activeGoals[0]);
+      setNeedsGoalSelection(false);
+      // Don't change view yet - let them click Data Entry tab
+    } else {
+      // Multiple goals - they'll need to select one
+      setSelectedGoal(null);
+      setNeedsGoalSelection(true);
+    }
   };
 
   const handleGoalSelect = (goal: IEPGoal) => {
@@ -112,6 +132,86 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
 
   const getStudentInitials = (name: string): string => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  // Goal Selection Component
+  const GoalSelectionView = () => {
+    if (!selectedStudent) return null;
+    
+    const activeGoals = selectedStudent.iepData?.goals?.filter((g: any) => g.status === 'active') || [];
+    
+    return (
+      <div style={{ color: 'white', padding: '2rem' }}>
+        <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem' }}>
+          Select Goal for Data Entry - {selectedStudent.name}
+        </h2>
+        
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {activeGoals.map((goal: any) => (
+            <div
+              key={goal.id}
+              onClick={() => {
+                setSelectedGoal(goal);
+                setNeedsGoalSelection(false);
+                setView('data-entry'); // Auto-switch to data entry
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                border: '1px solid rgba(255,255,255,0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    color: '#60a5fa', 
+                    fontWeight: '600', 
+                    marginBottom: '0.5rem' 
+                  }}>
+                    {goal.domain}
+                  </div>
+                  <h3 style={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: '600', 
+                    marginBottom: '1rem',
+                    lineHeight: '1.4'
+                  }}>
+                    {goal.description}
+                  </h3>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '2rem', 
+                    fontSize: '0.9rem',
+                    opacity: 0.8
+                  }}>
+                    <span>Current: {goal.currentProgress}%</span>
+                    <span>Target: {goal.targetCriteria}%</span>
+                    <span>Type: {goal.measurementType}</span>
+                  </div>
+                </div>
+                <div style={{ 
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: '0.9rem',
+                  textAlign: 'right'
+                }}>
+                  Click to enter data →
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   if (!isActive) return null;
@@ -184,7 +284,15 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
         }}>
           {[
             { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
-            { id: 'data-entry', icon: '📝', label: 'Data Entry' },
+            { 
+              id: 'data-entry', 
+              icon: '📝', 
+              label: selectedStudent && selectedGoal 
+                ? 'Data Entry ✅' 
+                : selectedStudent 
+                  ? 'Data Entry ⚠️' 
+                  : 'Data Entry'
+            },
             { id: 'progress', icon: '📈', label: 'Progress' },
             { id: 'goal-selection', icon: '🎯', label: 'Goal Manager' },
             { id: 'print-sheets', icon: '🖨️', label: 'Print Sheets' }
@@ -450,13 +558,61 @@ const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({
           </div>
         )}
 
-        {view === 'data-entry' && selectedStudent && selectedGoal && (
-          <EnhancedDataEntry
-            selectedStudent={selectedStudent}
-            selectedGoal={selectedGoal}
-            onBack={() => setView('dashboard')}
-            onDataSaved={handleDataSaved}
-          />
+        {view === 'data-entry' && (
+          <>
+            {!selectedStudent && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
+                <h3>Please select a student first</h3>
+                <p>Choose a student from the list above to begin data entry</p>
+              </div>
+            )}
+            
+            {selectedStudent && needsGoalSelection && (
+              <GoalSelectionView />
+            )}
+            
+            {selectedStudent && !needsGoalSelection && !selectedGoal && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
+                <h3>No active goals found</h3>
+                <p>{selectedStudent.name} needs active IEP goals before data entry can begin.</p>
+                <button
+                  onClick={() => setView('goal-selection')}
+                  style={{
+                    marginTop: '1rem',
+                    padding: '12px 24px',
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add Goals in Goal Manager
+                </button>
+              </div>
+            )}
+            
+            {selectedStudent && selectedGoal && (
+              <EnhancedDataEntry
+                selectedStudent={selectedStudent}
+                selectedGoal={selectedGoal}
+                onBack={() => {
+                  setSelectedGoal(null);
+                  setView('dashboard');
+                }}
+                onDataSaved={() => {
+                  // Refresh student data after saving
+                  const updatedStudents = students.map(s => 
+                    s.id === selectedStudent.id 
+                      ? UnifiedDataService.getStudent(s.id) 
+                      : s
+                  );
+                  setStudents(updatedStudents);
+                  alert('Data saved successfully!');
+                }}
+              />
+            )}
+          </>
         )}
 
         {view === 'progress' && selectedStudent && (
