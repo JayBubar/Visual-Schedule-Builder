@@ -19,6 +19,8 @@ import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
 import GoalManager from './components/data-collection/GoalManager';
+import SmartGroups from './components/smart-groups/SmartGroups';
+import SmartGroupsAIService from './services/smartGroupsService';
 
 const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
