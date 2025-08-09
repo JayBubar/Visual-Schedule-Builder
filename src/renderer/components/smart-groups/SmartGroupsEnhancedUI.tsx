@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Check, X, Download, Calendar, ClipboardList, Users, FileText, Target, Clock, Star } from 'lucide-react';
+import { exportLessonPlan, DownloadOptionsModal } from './enhanced-lesson-plan-download';
 
 // Import types from SmartGroups
 interface SmartGroupRecommendation {
@@ -449,6 +450,7 @@ export const DetailedLessonModal: React.FC<DetailedLessonModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLesson, setGeneratedLesson] = useState<DetailedLessonPlan | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'procedures' | 'materials' | 'assessment'>('overview');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -463,9 +465,16 @@ export const DetailedLessonModal: React.FC<DetailedLessonModalProps> = ({
   };
 
   const handleDownload = () => {
-    if (generatedLesson) {
-      // Trigger download functionality
-      console.log('Downloading lesson plan...');
+    setShowDownloadModal(true);
+  };
+
+  const handleDownloadWithOptions = async (format: string, options: any) => {
+    try {
+      await exportLessonPlan(generatedLesson!, options);
+      console.log(`✅ Lesson plan downloaded as ${format.toUpperCase()}`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
     }
   };
 
@@ -710,6 +719,16 @@ export const DetailedLessonModal: React.FC<DetailedLessonModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Enhanced Download Modal */}
+      {showDownloadModal && generatedLesson && (
+        <DownloadOptionsModal
+          isOpen={showDownloadModal}
+          lessonPlan={generatedLesson}
+          onClose={() => setShowDownloadModal(false)}
+          onDownload={handleDownloadWithOptions}
+        />
+      )}
     </div>
   );
 };
