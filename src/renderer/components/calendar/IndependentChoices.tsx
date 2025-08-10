@@ -684,12 +684,6 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({
   const [showActivityLibrary, setShowActivityLibrary] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
 
-  // 🐛 DEBUG CODE AT THE TOP OF IndependentChoices component:
-  console.log('🐛 IndependentChoices Debug:');
-  console.log('- students:', students?.length || 0, 'students');
-  console.log('- choiceEligibleActivities:', choiceEligibleActivities?.length || 0, 'activities');
-  console.log('- currentRotation:', currentRotation);
-  console.log('- Component is rendering');
 
   // Load data on component mount
   useEffect(() => {
