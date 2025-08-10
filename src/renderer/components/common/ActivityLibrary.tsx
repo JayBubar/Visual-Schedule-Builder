@@ -711,13 +711,38 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     );
 
     if (deleteConfirmed) {
-      const updatedActivities = customActivities.filter(a => a.id !== activity.id);
-      saveCustomActivities(updatedActivities);
-      
-      // Show success message
-      setTimeout(() => {
-        alert(`✅ "${activity.name}" has been deleted successfully.`);
-      }, 100);
+      try {
+        // Delete from UnifiedDataService first
+        UnifiedDataService.deleteActivity(activity.id);
+        
+        // Update local state
+        const updatedActivities = customActivities.filter(a => a.id !== activity.id);
+        setCustomActivities(updatedActivities);
+        
+        // Notify Schedule Builder of changes
+        window.dispatchEvent(new CustomEvent('activitiesUpdated', {
+          detail: { 
+            activities: [...baseActivities, ...updatedActivities],
+            source: 'ActivityLibrary',
+            timestamp: Date.now(),
+            customCount: updatedActivities.length,
+            totalCount: [...baseActivities, ...updatedActivities].length,
+            action: 'delete',
+            deletedActivity: activity
+          }
+        }));
+        
+        console.log(`✅ Activity "${activity.name}" deleted successfully from UnifiedDataService`);
+        
+        // Show success message
+        setTimeout(() => {
+          alert(`✅ "${activity.name}" has been deleted successfully.`);
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ Error deleting activity:', error);
+        alert(`❌ Error deleting "${activity.name}". Please try again.`);
+      }
     }
   };
 
