@@ -275,11 +275,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const handleNext = () => {
     let nextStep = currentStep + 1;
     
-    // Skip behavior commitments step (step 6) since it's disabled
-    if (nextStep === 6) {
-      nextStep = 7; // Jump to choices
-    }
-    
     if (nextStep <= 10) {
       setCurrentStep(nextStep);
     }
@@ -287,11 +282,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   const handleBack = () => {
     let prevStep = currentStep - 1;
-    
-    // Skip behavior commitments step (step 6) when going back
-    if (prevStep === 6) {
-      prevStep = 5; // Jump back to celebrations
-    }
     
     if (prevStep >= 1) {
       setCurrentStep(prevStep);
@@ -861,80 +851,16 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 6: Behavior Commitments - TEMPORARILY DISABLED FOR TROUBLESHOOTING */}
-        {currentStep === 6 && (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            minHeight: '600px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '20px',
-              padding: '3rem',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.2)'
-            }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                💪 Behavior Commitments
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Behavior goals temporarily disabled for troubleshooting.
-              </p>
-              
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '1rem'
-              }}>
-                <button
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '2px solid rgba(255,255,255,0.3)',
-                    borderRadius: '12px',
-                    color: 'white',
-                    padding: '1rem 2rem',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ← Back to Celebrations
-                </button>
-                
-                <button
-                  onClick={() => setCurrentStep(currentStep + 1)}
-                  style={{
-                    background: 'rgba(34, 197, 94, 0.8)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    color: 'white',
-                    padding: '1rem 3rem',
-                    fontSize: '1.1rem',
-                    fontWeight: '700',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Continue to Choices →
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Step 6: Behavior Commitments */}
+        {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableBehaviorCommitments !== false && (
+          <BehaviorCommitments
+            students={presentStudents}
+            currentDate={currentDate}
+            todayCheckIn={todayCheckIn}
+            onUpdateCheckIn={saveTodayCheckIn}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
         )}
 
         {/* Step 7: Choice Activities - Independent Choices */}

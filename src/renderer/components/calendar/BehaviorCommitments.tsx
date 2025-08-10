@@ -90,145 +90,85 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   const [behaviorStatements, setBehaviorStatements] = useState<BehaviorStatement[]>(DEFAULT_BEHAVIOR_STATEMENTS);
   const [isLoadingStatements, setIsLoadingStatements] = useState(true);
 
-  // Behavior categories with commitments
-  const behaviorCategories: BehaviorCategory[] = [
-    {
-      id: 'kindness',
-      name: 'Kindness',
-      icon: '💝',
-      color: '#e91e63',
-      description: 'Being caring and helpful to others',
-      commitments: [
-        'I will be kind to my friends',
-        'I will help others when they need it',
-        'I will share with my classmates',
-        'I will use nice words',
-        'I will include everyone in activities',
-        'I will say please and thank you'
-      ]
-    },
-    {
-      id: 'respect',
-      name: 'Respect',
-      icon: '🤝',
-      color: '#2196f3',
-      description: 'Treating others and our classroom with care',
-      commitments: [
-        'I will listen when others are talking',
-        'I will raise my hand to speak',
-        'I will take care of our classroom',
-        'I will follow directions the first time',
-        'I will use my inside voice',
-        'I will keep my hands to myself'
-      ]
-    },
-    {
-      id: 'effort',
-      name: 'Effort',
-      icon: '💪',
-      color: '#ff9800',
-      description: 'Trying my best in everything I do',
-      commitments: [
-        'I will try my best in all activities',
-        'I will ask for help when I need it',
-        'I will finish my work',
-        'I will not give up when things are hard',
-        'I will pay attention during lessons',
-        'I will practice what I learn'
-      ]
-    },
-    {
-      id: 'responsibility',
-      name: 'Responsibility',
-      icon: '🎯',
-      color: '#4caf50',
-      description: 'Taking care of myself and my belongings',
-      commitments: [
-        'I will clean up after myself',
-        'I will take care of my belongings',
-        'I will remember my homework',
-        'I will be ready for activities',
-        'I will make good choices',
-        'I will tell the truth'
-      ]
-    },
-    {
-      id: 'safety',
-      name: 'Safety',
-      icon: '🛡️',
-      color: '#f44336',
-      description: 'Keeping myself and others safe',
-      commitments: [
-        'I will walk in the hallways',
-        'I will use materials safely',
-        'I will ask before leaving my seat',
-        'I will keep food out of my mouth during non-eating times',
-        'I will follow playground rules',
-        'I will tell an adult if someone is hurt'
-      ]
-    },
-    {
-      id: 'learning',
-      name: 'Learning',
-      icon: '📚',
-      color: '#9c27b0',
-      description: 'Growing my mind and skills every day',
-      commitments: [
-        'I will ask questions when I don\'t understand',
-        'I will listen to learn new things',
-        'I will try new activities',
-        'I will help my friends learn too',
-        'I will celebrate my mistakes as learning',
-        'I will be proud of my progress'
-      ]
-    }
-  ];
+  // Dynamic behavior categories - will be populated from custom statements or defaults
+  const [behaviorCategories, setBehaviorCategories] = useState<BehaviorCategory[]>([]);
 
-  // FIXED: Load behavior statements from UnifiedDataService with comprehensive data structure handling
+  // FIXED: Load behavior statements with proper data loading (same approach as celebrations)
   useEffect(() => {
-    const loadBehaviorStatementsFixed = async () => {
+    const loadBehaviorStatementsFixed = () => {
       try {
-        console.log('🔄 [FIXED] Loading behavior statements from UnifiedDataService...');
+        console.log('🔄 [DEBUG] Loading behavior statements...');
         setIsLoadingStatements(true);
         
-        // Get settings from UnifiedDataService (matching Settings component exactly)
-        const settings = UnifiedDataService.getSettings();
-        console.log('📋 Full settings loaded:', settings);
+        // Method 1: Try UnifiedDataService (same pattern that worked for celebrations)
+        const unifiedSettings = UnifiedDataService.getSettings();
+        console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
         
-        // Check the exact path that Settings component uses for custom statements
-        const customStatements = settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
-        console.log('🎯 Custom behavior statements found:', customStatements);
+        let customStatements = [];
         
-        if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
-          console.log('✅ Found custom statements, converting to category format...');
-          
-          // FIXED: Convert flat custom statements array to category structure
-          const categoriesWithCustom = convertCustomStatementsToCategoryFormat(customStatements);
-          setBehaviorStatements(categoriesWithCustom);
-          console.log('📊 Using converted custom statements:', categoriesWithCustom);
-          
+        // Check multiple possible paths for custom statements
+        if (unifiedSettings?.dailyCheckIn?.behaviorCommitments?.customStatements) {
+          customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
+          console.log('✅ [DEBUG] Found custom statements in dailyCheckIn.behaviorCommitments:', customStatements);
+        } else if (unifiedSettings?.behaviorCommitments?.customStatements) {
+          customStatements = unifiedSettings.behaviorCommitments.customStatements;
+          console.log('✅ [DEBUG] Found custom statements in root behaviorCommitments:', customStatements);
+        } else if (unifiedSettings?.customBehaviorStatements) {
+          customStatements = unifiedSettings.customBehaviorStatements;
+          console.log('✅ [DEBUG] Found custom statements in root customBehaviorStatements:', customStatements);
         } else {
-          console.log('ℹ️ No custom statements found, checking alternative paths...');
-          
-          // Try alternative data structure that Settings might be using
-          const altPath1 = settings?.dailyCheckIn?.behaviorStatements;
-          const altPath2 = settings?.behaviorCommitments;
-          const altPath3 = settings?.customBehaviorStatements;
-          
-          console.log('🔍 Checking alternative paths:', { altPath1, altPath2, altPath3 });
-          
-          if (altPath1 || altPath2 || altPath3) {
-            const foundStatements = altPath1 || altPath2 || altPath3;
-            const converted = convertCustomStatementsToCategoryFormat(foundStatements);
-            setBehaviorStatements(converted);
-            console.log('📊 Using alternative path statements:', converted);
-          } else {
-            console.log('ℹ️ Using default behavior categories');
-            setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+          console.log('ℹ️ [DEBUG] No custom statements found in UnifiedDataService');
+        }
+        
+        // Method 2: Try legacy calendarSettings (same as celebrations)
+        if (customStatements.length === 0) {
+          console.log('🔍 [DEBUG] Checking legacy calendarSettings for behavior statements...');
+          const legacySettings = localStorage.getItem('calendarSettings');
+          if (legacySettings) {
+            const parsed = JSON.parse(legacySettings);
+            console.log('📋 [DEBUG] Legacy settings:', parsed);
+            if (parsed.customBehaviorCommitments) {
+              // Convert legacy format: { categoryId: string[] } to BehaviorStatement[]
+              const legacyStatements = parsed.customBehaviorCommitments;
+              customStatements = [];
+              
+              Object.keys(legacyStatements).forEach(categoryId => {
+                const statements = legacyStatements[categoryId] || [];
+                statements.forEach((statement, index) => {
+                  customStatements.push({
+                    id: `legacy_${categoryId}_${index}`,
+                    text: statement,
+                    category: categoryId,
+                    isActive: true,
+                    isDefault: false,
+                    createdAt: new Date().toISOString()
+                  });
+                });
+              });
+              
+              console.log('✅ [DEBUG] Converted legacy behavior statements:', customStatements);
+            }
           }
         }
+        
+        // Method 3: Create behavior categories with custom statements
+        if (customStatements.length > 0) {
+          // Convert custom statements to category format for the modal
+          const categoriesWithCustom = convertStatementsToCategoryFormat(customStatements);
+          setBehaviorCategories(categoriesWithCustom);
+          setBehaviorStatements(customStatements); // Keep original format for other uses
+          console.log('📊 [DEBUG] Using behavior categories with custom statements:', categoriesWithCustom);
+        } else {
+          // Use defaults - create default categories
+          console.log('🧪 [DEBUG] No custom statements found, using defaults...');
+          const defaultCategories = createDefaultCategories();
+          setBehaviorCategories(defaultCategories);
+          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+          console.log('🧪 [DEBUG] Using default categories:', defaultCategories);
+        }
+        
       } catch (error) {
-        console.error('❌ Failed to load behavior statements:', error);
+        console.error('❌ [DEBUG] Error loading behavior statements:', error);
         setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
       } finally {
         setIsLoadingStatements(false);
@@ -237,6 +177,92 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
 
     loadBehaviorStatementsFixed();
   }, []);
+
+  // Helper function to create default categories from DEFAULT_BEHAVIOR_STATEMENTS
+  const createDefaultCategories = (): BehaviorCategory[] => {
+    const categoryMeta = {
+      kindness: { name: 'Kindness', icon: '💝', color: '#e91e63', description: 'Being caring and helpful to others' },
+      respect: { name: 'Respect', icon: '🤝', color: '#2196f3', description: 'Treating others and our classroom with care' },
+      effort: { name: 'Effort', icon: '💪', color: '#ff9800', description: 'Trying my best in everything I do' },
+      responsibility: { name: 'Responsibility', icon: '🎯', color: '#4caf50', description: 'Taking care of myself and my belongings' },
+      safety: { name: 'Safety', icon: '🛡️', color: '#f44336', description: 'Keeping myself and others safe' },
+      learning: { name: 'Learning', icon: '📚', color: '#9c27b0', description: 'Growing my mind and skills every day' }
+    };
+
+    // Group default statements by category
+    const defaultByCategory: { [key: string]: string[] } = {};
+    DEFAULT_BEHAVIOR_STATEMENTS.forEach(statement => {
+      const category = statement.category;
+      if (!defaultByCategory[category]) {
+        defaultByCategory[category] = [];
+      }
+      defaultByCategory[category].push(statement.text);
+    });
+
+    // Create categories with default statements
+    const defaultCategories: BehaviorCategory[] = [];
+    Object.keys(defaultByCategory).forEach(categoryId => {
+      const meta = categoryMeta[categoryId] || categoryMeta.kindness;
+      defaultCategories.push({
+        id: categoryId,
+        name: meta.name,
+        icon: meta.icon,
+        color: meta.color,
+        description: meta.description,
+        commitments: defaultByCategory[categoryId]
+      });
+    });
+
+    return defaultCategories;
+  };
+
+  // Helper function to convert custom statements to category structure
+  const convertStatementsToCategoryFormat = (customStatements) => {
+    console.log('🔄 [DEBUG] Converting custom statements to categories:', customStatements);
+    
+    // Group custom statements by category
+    const customByCategory = {};
+    customStatements.forEach(statement => {
+      if (statement.isActive !== false) {
+        const category = statement.category || 'kindness';
+        if (!customByCategory[category]) {
+          customByCategory[category] = [];
+        }
+        customByCategory[category].push(statement.text);
+      }
+    });
+    
+    console.log('📊 [DEBUG] Grouped by category:', customByCategory);
+    
+    // Create new categories based on custom statements ONLY
+    const newCategories = [];
+    
+    // Define category metadata
+    const categoryMeta = {
+      kindness: { name: 'Kindness', icon: '💝', color: '#e91e63', description: 'Being caring and helpful to others' },
+      respect: { name: 'Respect', icon: '🤝', color: '#2196f3', description: 'Treating others and our classroom with care' },
+      effort: { name: 'Effort', icon: '💪', color: '#ff9800', description: 'Trying my best in everything I do' },
+      responsibility: { name: 'Responsibility', icon: '🎯', color: '#4caf50', description: 'Taking care of myself and my belongings' },
+      safety: { name: 'Safety', icon: '🛡️', color: '#f44336', description: 'Keeping myself and others safe' },
+      learning: { name: 'Learning', icon: '📚', color: '#9c27b0', description: 'Growing my mind and skills every day' }
+    };
+    
+    // Create categories with ONLY custom statements
+    Object.keys(customByCategory).forEach(categoryId => {
+      const meta = categoryMeta[categoryId] || categoryMeta.kindness;
+      newCategories.push({
+        id: categoryId,
+        name: meta.name,
+        icon: meta.icon,
+        color: meta.color,
+        description: meta.description,
+        commitments: customByCategory[categoryId]
+      });
+    });
+    
+    console.log('✅ [DEBUG] Created categories with custom statements only:', newCategories);
+    return newCategories;
+  };
 
   // Helper function to convert flat custom statements to category structure
   const convertCustomStatementsToCategoryFormat = (customStatements: any[]): BehaviorStatement[] => {
@@ -470,24 +496,184 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       flexDirection: 'column',
       gap: '2rem'
     }}>
-      {/* Temporary debug button - add this near the top of the component */}
-      <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+      {/* Debug Tools for Behavior Statements */}
+      <div style={{ 
+        position: 'fixed', 
+        top: '60px', // Below celebration buttons
+        right: '10px', 
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '5px'
+      }}>
         <button
           onClick={() => {
-            console.log('🔄 Refreshing behavior statements...');
-            window.location.reload(); // Quick refresh for testing
+            console.log('🧪 Testing behavior statement data...');
+            console.log('📋 UnifiedDataService.getSettings():', UnifiedDataService.getSettings());
+            console.log('🗄️ localStorage calendarSettings:', localStorage.getItem('calendarSettings'));
+            console.log('📊 Current behaviorStatements:', behaviorStatements);
+            
+            // Add a test custom statement directly to UnifiedDataService
+            const testSettings = {
+              dailyCheckIn: {
+                behaviorCommitments: {
+                  customStatements: [
+                    {
+                      id: 'manual_test_1',
+                      text: 'I will test my custom behavior statement',
+                      category: 'kindness',
+                      isActive: true,
+                      isDefault: false,
+                      createdAt: new Date().toISOString()
+                    },
+                    {
+                      id: 'manual_test_2', 
+                      text: 'I will verify the behavior fix works',
+                      category: 'respect',
+                      isActive: true,
+                      isDefault: false,
+                      createdAt: new Date().toISOString()
+                    }
+                  ]
+                }
+              }
+            };
+            
+            UnifiedDataService.updateSettings(testSettings);
+            window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', { detail: testSettings }));
+            
+            console.log('✅ Added manual test behavior statements');
+            alert('Test behavior statements added! Check console for details.');
           }}
           style={{
-            background: 'rgba(33, 150, 243, 0.8)',
-            border: 'none',
-            borderRadius: '8px',
+            background: '#007bff',
             color: 'white',
-            padding: '0.5rem 1rem',
-            cursor: 'pointer',
-            fontSize: '0.9rem'
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            fontSize: '11px',
+            cursor: 'pointer'
           }}
         >
-          🔄 Refresh Statements
+          🧪 Add Test Behaviors
+        </button>
+        
+        <button
+          onClick={() => {
+            console.log('🧪 Refreshing behavior data...');
+            const loadBehaviorStatementsFixed = () => {
+              try {
+                console.log('🔄 [DEBUG] Loading behavior statements...');
+                setIsLoadingStatements(true);
+                
+                const unifiedSettings = UnifiedDataService.getSettings();
+                console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
+                
+                let customStatements = [];
+                
+                if (unifiedSettings?.dailyCheckIn?.behaviorCommitments?.customStatements) {
+                  customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
+                  console.log('✅ [DEBUG] Found custom statements in dailyCheckIn.behaviorCommitments:', customStatements);
+                } else if (unifiedSettings?.behaviorCommitments?.customStatements) {
+                  customStatements = unifiedSettings.behaviorCommitments.customStatements;
+                  console.log('✅ [DEBUG] Found custom statements in root behaviorCommitments:', customStatements);
+                } else if (unifiedSettings?.customBehaviorStatements) {
+                  customStatements = unifiedSettings.customBehaviorStatements;
+                  console.log('✅ [DEBUG] Found custom statements in root customBehaviorStatements:', customStatements);
+                } else {
+                  console.log('ℹ️ [DEBUG] No custom statements found in UnifiedDataService');
+                }
+                
+                if (customStatements.length === 0) {
+                  console.log('🔍 [DEBUG] Checking legacy calendarSettings for behavior statements...');
+                  const legacySettings = localStorage.getItem('calendarSettings');
+                  if (legacySettings) {
+                    const parsed = JSON.parse(legacySettings);
+                    console.log('📋 [DEBUG] Legacy settings:', parsed);
+                    if (parsed.customBehaviorCommitments) {
+                      const legacyStatements = parsed.customBehaviorCommitments;
+                      customStatements = [];
+                      
+                      Object.keys(legacyStatements).forEach(categoryId => {
+                        const statements = legacyStatements[categoryId] || [];
+                        statements.forEach((statement, index) => {
+                          customStatements.push({
+                            id: `legacy_${categoryId}_${index}`,
+                            text: statement,
+                            category: categoryId,
+                            isActive: true,
+                            isDefault: false,
+                            createdAt: new Date().toISOString()
+                          });
+                        });
+                      });
+                      
+                      console.log('✅ [DEBUG] Converted legacy behavior statements:', customStatements);
+                    }
+                  }
+                }
+                
+                if (customStatements.length > 0) {
+                  const categoriesWithCustom = convertStatementsToCategoryFormat(customStatements);
+                  setBehaviorStatements(categoriesWithCustom);
+                  console.log('📊 [DEBUG] Using behavior categories with custom statements:', categoriesWithCustom);
+                } else {
+                  console.log('🧪 [DEBUG] No custom statements found, using defaults with test data...');
+                  const defaultsWithTest = [...DEFAULT_BEHAVIOR_STATEMENTS];
+                  
+                  defaultsWithTest[0] = {
+                    ...defaultsWithTest[0],
+                    text: '🧪 I will test that behavior statements are working'
+                  };
+                  
+                  setBehaviorStatements(defaultsWithTest);
+                  console.log('🧪 [DEBUG] Using defaults with test statement:', defaultsWithTest);
+                }
+                
+              } catch (error) {
+                console.error('❌ [DEBUG] Error loading behavior statements:', error);
+                setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+              } finally {
+                setIsLoadingStatements(false);
+              }
+            };
+            
+            loadBehaviorStatementsFixed();
+            alert('Behavior data refreshed! Check console for details.');
+          }}
+          style={{
+            background: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            fontSize: '11px',
+            cursor: 'pointer'
+          }}
+        >
+          🔄 Refresh Data
+        </button>
+        
+        <button
+          onClick={() => {
+            console.log('🔍 Inspecting behavior categories:');
+            behaviorCategories.forEach(category => {
+              console.log(`📂 ${category.name} (${category.id}):`, category.commitments);
+            });
+            console.log('📊 Current behaviorStatements:', behaviorStatements);
+            alert('Behavior categories logged! Check console for details.');
+          }}
+          style={{
+            background: '#ffc107',
+            color: 'black',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            fontSize: '11px',
+            cursor: 'pointer'
+          }}
+        >
+          🔍 Inspect Categories
         </button>
       </div>
 
@@ -919,6 +1105,77 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
         </div>
       )}
 
+
+      {/* Statement Count Display */}
+      <div style={{
+        background: 'rgba(255,255,255,0.1)',
+        borderRadius: '12px',
+        padding: '1rem',
+        marginBottom: '2rem',
+        textAlign: 'center',
+        backdropFilter: 'blur(10px)'
+      }}>
+        <div style={{ color: 'white', fontSize: '1rem', fontWeight: '600' }}>
+          📊 Behavior Statements Loaded
+        </div>
+        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+          {behaviorCategories.length} categories • {' '}
+          {behaviorCategories.reduce((total, cat) => total + cat.commitments.length, 0)} total statements
+        </div>
+        {behaviorStatements.some(statement => statement.text.includes('🧪')) && (
+          <div style={{ color: '#ffc107', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+            ⚠️ Test statements included
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Buttons */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: '2rem',
+        position: 'relative', // Ensure proper stacking context
+        zIndex: 10 // Above any modal content
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back to Celebrations
+        </button>
+        
+        <button
+          onClick={onNext}
+          style={{
+            background: 'rgba(34, 197, 94, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 3rem',
+            fontSize: '1.1rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            zIndex: 11 // Highest priority for the continue button
+          }}
+        >
+          Continue to Choices →
+        </button>
+      </div>
 
       <style>{`
         @keyframes celebrate {
