@@ -301,6 +301,44 @@ const CelebrationsManagementModal: React.FC<{
                   🗑️
                 </button>
               </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#333' }}>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={celebration.date || ''}
+                    onChange={(e) => updateCelebration(celebration.id, { date: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'end', paddingBottom: '0.5rem' }}>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    color: '#333'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={celebration.recurring || false}
+                      onChange={(e) => updateCelebration(celebration.id, { recurring: e.target.checked })}
+                      style={{ transform: 'scale(1.1)' }}
+                    />
+                    Repeat Annually
+                  </label>
+                </div>
+              </div>
+              
               <textarea
                 placeholder="Celebration message..."
                 value={celebration.message}

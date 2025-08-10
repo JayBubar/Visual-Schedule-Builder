@@ -236,25 +236,34 @@ const getCustomCelebrations = () => {
   // Load custom celebrations from UnifiedDataService settings
   try {
     const settings = UnifiedDataService.getSettings();
-    const customCelebrations = settings.customCelebrations || [];
+    const customCelebrations = settings.dailyCheckIn?.celebrations?.customCelebrations || [];
     const today = formatDateForComparison(currentDate);
     const todayFullDate = currentDate.toISOString().split('T')[0];
 
     return customCelebrations
       .filter((celebration: any) => {
-        if (!celebration.enabled) return false;
+        // Check if celebrations are enabled in settings
+        if (settings.dailyCheckIn?.celebrations?.enabled === false) return false;
         
-        if (celebration.isRecurring) {
-          return celebration.date === today;
+        if (celebration.recurring) {
+          // For recurring celebrations, compare MM-DD format
+          const celebrationDate = celebration.date;
+          if (celebrationDate && celebrationDate.length === 10) {
+            // Full date format YYYY-MM-DD, extract MM-DD
+            const mmdd = celebrationDate.substring(5);
+            return mmdd === today;
+          }
+          return celebrationDate === today;
         } else {
+          // For one-time celebrations, compare full date
           return celebration.date === todayFullDate;
         }
       })
       .map((celebration: any) => ({
         type: 'custom',
         celebration,
-        icon: celebration.emoji,
-        title: celebration.title,
+        icon: celebration.emoji || '🎉',
+        title: celebration.name || celebration.title,
         description: celebration.message
       }));
   } catch (error) {
@@ -760,8 +769,6 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
         </div>
       )}
 
-      {/* Interactive Custom Celebration Management */}
-      <CustomCelebrationManager currentDate={currentDate} />
 
       {/* Navigation */}
       <div style={{
