@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface AbsentStudentsDisplayProps {
   absentStudents: string[];
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  compact?: boolean;
 }
 
-const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStudents }) => {
+const EnhancedAbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ 
+  absentStudents, 
+  position = 'top-left',
+  compact = true 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [students, setStudents] = useState<any[]>([]);
+
   // Use robust data loading hook
   const {
-    students,
+    students: allStudents,
     isLoading,
     error
   } = useRobustDataLoading({
@@ -17,63 +27,170 @@ const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStu
     dependencies: [absentStudents]
   });
 
-  // Get student details using robust data loading
-  const getStudentDetails = (studentId: string) => {
-    return students.find(student => student.id === studentId);
+  // Load student data
+  useEffect(() => {
+    const loadStudentData = () => {
+      const absentStudentData = absentStudents.map(id => 
+        allStudents.find(student => student.id === id)
+      ).filter(Boolean);
+      setStudents(absentStudentData);
+    };
+
+    if (absentStudents.length > 0 && allStudents.length > 0) {
+      loadStudentData();
+    }
+  }, [absentStudents, allStudents]);
+
+  if (absentStudents.length === 0) return null;
+
+  // Position styles based on position prop
+  const getPositionStyles = () => {
+    const baseStyles = {
+      position: 'fixed' as const,
+      zIndex: 100,
+      maxWidth: isExpanded ? '400px' : '280px',
+      transition: 'all 0.3s ease',
+    };
+
+    switch (position) {
+      case 'top-left':
+        return {
+          ...baseStyles,
+          top: '80px', // Moved down to not hide logo
+          left: '20px',
+        };
+      case 'top-right':
+        return {
+          ...baseStyles,
+          top: '80px',
+          right: '20px',
+        };
+      case 'bottom-left':
+        return {
+          ...baseStyles,
+          bottom: '20px',
+          left: '20px',
+        };
+      case 'bottom-right':
+        return {
+          ...baseStyles,
+          bottom: '20px',
+          right: '20px',
+        };
+      default:
+        return {
+          ...baseStyles,
+          top: '80px',
+          left: '20px',
+        };
+    }
   };
 
-  // Don't render if no absent students
-  if (!absentStudents || absentStudents.length === 0) {
-    return null;
-  }
-
   return (
-    <div style={{
-      position: 'absolute',
-      top: '20px',
-      left: '20px',
-      background: 'rgba(220, 53, 69, 0.95)',
-      backdropFilter: 'blur(10px)',
-      borderRadius: '16px',
-      padding: '1rem',
-      border: '2px solid rgba(220, 53, 69, 0.3)',
-      boxShadow: '0 8px 32px rgba(220, 53, 69, 0.3)',
-      zIndex: 100,
-      minWidth: '200px',
-      maxWidth: '300px'
-    }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        marginBottom: '0.75rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-        paddingBottom: '0.5rem'
-      }}>
-        <span style={{ fontSize: '1.2rem' }}>🏠</span>
-        <h4 style={{
-          margin: '0',
-          color: 'white',
-          fontSize: '0.9rem',
-          fontWeight: '700',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-        }}>
-          Not at School Today
-        </h4>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '12px',
-          padding: '0.2rem 0.5rem',
-          fontSize: '0.7rem',
-          fontWeight: '700',
-          color: 'white',
-          minWidth: '20px',
-          textAlign: 'center'
-        }}>
-          {absentStudents.length}
+    <div style={getPositionStyles()}>
+      {/* Collapsed Header Bar */}
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          background: 'rgba(239, 68, 68, 0.9)',
+          borderRadius: isExpanded ? '12px 12px 0 0' : '12px',
+          padding: '12px 16px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          boxShadow: '0 4px 20px rgba(239, 68, 68, 0.3)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.2s ease',
+          minHeight: '48px'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+          e.currentTarget.style.transform = 'scale(1.02)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {/* Icon and Count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.2rem' }}>🏠</span>
+          <span style={{
+            color: 'white',
+            fontWeight: '700',
+            fontSize: '1rem'
+          }}>
+            {absentStudents.length} Absent
+          </span>
         </div>
-        {/* Data Loading Indicator */}
+
+        {/* Compact Student Photos (when collapsed) */}
+        {!isExpanded && (
+          <div style={{ 
+            display: 'flex', 
+            gap: '4px',
+            marginLeft: '8px'
+          }}>
+            {students.slice(0, 3).map((student, index) => (
+              <div
+                key={student?.id || index}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: student?.photo ? 'transparent' : 'rgba(255, 255, 255, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {student?.photo ? (
+                  <img 
+                    src={student.photo} 
+                    alt={student.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <span style={{ 
+                    color: 'white', 
+                    fontSize: '10px', 
+                    fontWeight: '600' 
+                  }}>
+                    {student?.name?.charAt(0) || '?'}
+                  </span>
+                )}
+              </div>
+            ))}
+            {students.length > 3 && (
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                color: 'white',
+                fontWeight: '600'
+              }}>
+                +{students.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Data Loading Indicators */}
         {isLoading && (
           <div style={{
             background: 'rgba(34, 197, 94, 0.3)',
@@ -98,121 +215,167 @@ const AbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({ absentStu
             ⚠️
           </div>
         )}
+
+        {/* Expand/Collapse Arrow */}
+        <span style={{
+          color: 'white',
+          fontSize: '1rem',
+          transition: 'transform 0.2s ease',
+          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
       </div>
 
-      {/* Absent Students List */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem'
-      }}>
-        {absentStudents.map(studentId => {
-          const student = getStudentDetails(studentId);
-          
-          return (
-            <div
-              key={studentId}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: '8px',
-                padding: '0.5rem',
-                border: '1px solid rgba(255, 255, 255, 0.2)'
-              }}
-            >
-              {/* Student Photo/Avatar */}
-              <div style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: student?.photo ? 'transparent' : 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.8rem',
-                overflow: 'hidden',
-                border: '2px solid rgba(255, 255, 255, 0.3)',
-                flexShrink: 0
-              }}>
-                {student?.photo ? (
-                  <img 
-                    src={student.photo} 
-                    alt={student.name || 'Student'} 
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }} 
-                  />
-                ) : (
-                  <span style={{ 
-                    color: 'white', 
-                    fontWeight: '700',
-                    fontSize: '0.7rem'
-                  }}>
-                    {student?.name ? student.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?'}
-                  </span>
-                )}
-              </div>
-
-              {/* Student Name */}
-              <div style={{ flex: 1, minWidth: 0 }}>
+      {/* Expanded Student List */}
+      {isExpanded && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '0 0 12px 12px',
+          padding: '16px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          borderTop: 'none',
+          maxHeight: '300px',
+          overflowY: 'auto'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            {students.map((student, index) => (
+              <div
+                key={student?.id || index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(239, 68, 68, 0.2)'
+                }}
+              >
+                {/* Student Photo */}
                 <div style={{
-                  color: 'white',
-                  fontSize: '0.8rem',
-                  fontWeight: '600',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                  whiteSpace: 'nowrap',
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: student?.photo ? 'transparent' : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                  border: '2px solid rgba(239, 68, 68, 0.3)',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}>
-                  {student?.name || 'Unknown Student'}
+                  {student?.photo ? (
+                    <img 
+                      src={student.photo} 
+                      alt={student.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <span style={{ 
+                      color: 'white', 
+                      fontSize: '1rem', 
+                      fontWeight: '600' 
+                    }}>
+                      {student?.name?.charAt(0) || '?'}
+                    </span>
+                  )}
                 </div>
-                {student?.grade && (
+
+                {/* Student Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    color: 'rgba(255, 255, 255, 0.8)',
-                    fontSize: '0.7rem',
-                    fontWeight: '500'
+                    fontWeight: '700',
+                    color: '#1f2937',
+                    fontSize: '0.95rem',
+                    marginBottom: '2px'
                   }}>
-                    Grade {student.grade}
+                    {student?.name || 'Unknown Student'}
                   </div>
-                )}
+                  {student?.grade && (
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#6b7280',
+                      fontWeight: '500'
+                    }}>
+                      Grade {student.grade}
+                    </div>
+                  )}
+                </div>
+
+                {/* Absent Icon */}
+                <div style={{
+                  color: '#ef4444',
+                  fontSize: '1.2rem'
+                }}>
+                  🏠
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer Actions */}
+          <div style={{
+            marginTop: '12px',
+            paddingTop: '12px',
+            borderTop: '1px solid rgba(239, 68, 68, 0.2)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{
+                fontSize: '0.8rem',
+                color: '#6b7280',
+                fontWeight: '500'
+              }}>
+                {students.length} student{students.length !== 1 ? 's' : ''} absent today
+              </span>
+              <div style={{
+                color: 'rgba(34, 197, 94, 0.9)',
+                fontSize: '0.6rem',
+                fontWeight: '600'
+              }}>
+                ✅ Updated: {new Date().toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </div>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Footer with timestamp and data source */}
-      <div style={{
-        marginTop: '0.75rem',
-        paddingTop: '0.5rem',
-        borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          color: 'rgba(255, 255, 255, 0.8)',
-          fontSize: '0.7rem',
-          fontWeight: '500',
-          marginBottom: '0.25rem'
-        }}>
-          Updated: {new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(false);
+              }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '6px',
+                color: '#ef4444',
+                padding: '4px 8px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Collapse
+            </button>
+          </div>
         </div>
-        <div style={{
-          color: 'rgba(34, 197, 94, 0.9)',
-          fontSize: '0.6rem',
-          fontWeight: '600'
-        }}>
-          ✅ Robust Loading ({students.length} students)
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default AbsentStudentsDisplay;
+export default EnhancedAbsentStudentsDisplay;

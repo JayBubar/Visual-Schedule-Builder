@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Student, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
-import AbsentStudentsDisplay from './AbsentStudentsDisplay';
+import EnhancedAbsentStudentsDisplay from './AbsentStudentsDisplay';
 import OutOfClassDisplay from './OutOfClassDisplay';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
@@ -630,8 +630,10 @@ useEffect(() => {
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
         return absentStudentIds.length > 0 && (
-          <AbsentStudentsDisplay 
+          <EnhancedAbsentStudentsDisplay 
             absentStudents={absentStudentIds}
+            position="top-left"
+            compact={true}
           />
         );
       })()}
