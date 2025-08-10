@@ -702,9 +702,22 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete "${activity.name}"?`)) {
+    // Create a proper delete confirmation dialog
+    const deleteConfirmed = window.confirm(
+      `🗑️ DELETE ACTIVITY\n\n` +
+      `Are you sure you want to permanently delete "${activity.name}"?\n\n` +
+      `This action cannot be undone.\n\n` +
+      `Click OK to DELETE or Cancel to keep the activity.`
+    );
+
+    if (deleteConfirmed) {
       const updatedActivities = customActivities.filter(a => a.id !== activity.id);
       saveCustomActivities(updatedActivities);
+      
+      // Show success message
+      setTimeout(() => {
+        alert(`✅ "${activity.name}" has been deleted successfully.`);
+      }, 100);
     }
   };
 
@@ -934,18 +947,20 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
                   </button>
                   <button 
                     className="action-button secondary" 
-                    title="More options"
-                    onClick={() => {
-                      const action = window.confirm('Choose action:\nOK = Duplicate\nCancel = Delete');
-                      if (action) {
-                        handleDuplicateActivity(activity);
-                      } else {
-                        handleDeleteActivity(activity);
-                      }
-                    }}
+                    title="Duplicate activity"
+                    onClick={() => handleDuplicateActivity(activity)}
                   >
-                    ⋯
+                    📋
                   </button>
+                  {activity.isCustom && (
+                    <button 
+                      className="action-button danger" 
+                      title="Delete activity"
+                      onClick={() => handleDeleteActivity(activity)}
+                    >
+                      🗑️
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1484,6 +1499,20 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .action-button.secondary:hover {
           background: #f8f9fa;
           border-color: #adb5bd;
+        }
+
+        .action-button.danger {
+          background: white;
+          color: #dc3545;
+          border-color: #dc3545;
+        }
+
+        .action-button.danger:hover {
+          background: #dc3545;
+          color: white;
+          border-color: #dc3545;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
         }
 
         .no-results {
