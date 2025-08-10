@@ -263,7 +263,7 @@ const styles = `
   to { transform: rotate(360deg); }
 }
 
-/* Control buttons matching Daily Highlights style */
+/* Control buttons matching Daily Highlights style - FIXED Z-INDEX */
 .control-button {
   background: rgba(255, 255, 255, 0.2) !important;
   backdrop-filter: blur(20px) !important;
@@ -279,6 +279,7 @@ const styles = `
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   position: relative !important;
   overflow: hidden !important;
+  z-index: 100 !important; /* FIXED: Ensure buttons are above other content */
 }
 
 .control-button::before {

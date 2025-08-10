@@ -1112,8 +1112,93 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           </div>
         )}
 
-        {/* Steps 8-10: COMBINED - Single Smooth Transition */}
-        {(currentStep === 8 || currentStep === 9 || currentStep === 10) && (
+        {/* Step 8: Schedule Review - NEW STEP ADDED */}
+        {currentStep === 8 && (
+          <div style={{ padding: '2rem', minHeight: '600px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '2.5rem',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                📅 Today's Schedule Preview
+              </h2>
+              <p style={{
+                fontSize: '1.3rem',
+                color: 'rgba(255,255,255,0.9)',
+                marginBottom: '2rem'
+              }}>
+                Let's review what we'll be doing today!
+              </p>
+            </div>
+
+            {/* Schedule Preview */}
+            <div style={{
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+              padding: '2rem',
+              marginBottom: '2rem',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</div>
+                <p style={{ fontSize: '1.2rem' }}>
+                  No specific schedule loaded for today.<br />
+                  We'll follow our regular daily routine!
+                </p>
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '1rem',
+              marginTop: '2rem'
+            }}>
+              <button
+                onClick={handleBack}
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderRadius: '12px',
+                  color: 'white',
+                  padding: '1rem 2rem',
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                ← Back to Choices
+              </button>
+              
+              <button
+                onClick={handleNext}
+                style={{
+                  background: 'rgba(34, 197, 94, 0.8)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  padding: '1rem 3rem',
+                  fontSize: '1.1rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Continue to Daily Highlights →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Steps 9-10: COMBINED - Single Smooth Transition */}
+        {(currentStep === 9 || currentStep === 10) && (
           <div style={{
             padding: '2rem',
             textAlign: 'center',

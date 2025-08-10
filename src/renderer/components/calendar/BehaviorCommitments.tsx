@@ -183,41 +183,43 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   ];
 
-  // Load custom behavior statements from settings
+  // FIXED: Load behavior statements from Settings instead of demo data
   useEffect(() => {
-    const loadBehaviorStatements = async () => {
+    const loadBehaviorStatementsFromSettings = async () => {
       try {
+        console.log('🔄 Loading behavior statements from Settings...');
         setIsLoadingStatements(true);
-        const data = await UnifiedDataService.getUnifiedData();
         
-        // Debug logging to see what we're getting
-        console.log('🔍 Full data structure:', data);
-        console.log('🔍 Settings:', data?.settings);
-        console.log('🔍 Daily check-in:', data?.settings?.dailyCheckIn);
-        console.log('🔍 Behavior commitments:', data?.settings?.dailyCheckIn?.behaviorCommitments);
-        console.log('🔍 Custom statements:', data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements);
+        // Get settings from UnifiedDataService
+        const unifiedSettings = UnifiedDataService.getSettings();
         
-        const customStatements = data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
-        
-        if (customStatements && customStatements.length > 0) {
+        if (unifiedSettings.dailyCheckIn?.behaviorCommitments?.customStatements) {
+          console.log('✅ Found custom behavior statements in Settings');
+          
           // Use custom statements from settings, only show active ones
+          const customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
           const activeStatements = customStatements.filter(s => s.isActive);
-          console.log('✅ Found custom statements:', activeStatements);
-          setBehaviorStatements(activeStatements.length > 0 ? activeStatements : DEFAULT_BEHAVIOR_STATEMENTS);
+          
+          if (activeStatements.length > 0) {
+            console.log('📊 Using custom behavior statements:', activeStatements);
+            setBehaviorStatements(activeStatements);
+          } else {
+            console.log('ℹ️ No active custom statements, using defaults');
+            setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+          }
         } else {
           console.log('ℹ️ No custom statements found, using defaults');
-          // Fallback to defaults if no custom settings
           setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
         }
       } catch (error) {
-        console.error('Failed to load behavior statements:', error);
+        console.error('❌ Failed to load behavior statements from Settings:', error);
         setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
       } finally {
         setIsLoadingStatements(false);
       }
     };
 
-    loadBehaviorStatements();
+    loadBehaviorStatementsFromSettings();
   }, []);
 
   // Load existing commitments on mount

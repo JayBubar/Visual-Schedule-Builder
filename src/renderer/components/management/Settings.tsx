@@ -154,6 +154,198 @@ const DEFAULT_SETTINGS: SettingsData = {
   }
 };
 
+// Celebrations Management Modal Component
+const CelebrationsManagementModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  settings: any;
+  onUpdateSettings: (settings: any) => void;
+}> = ({ isOpen, onClose, settings, onUpdateSettings }) => {
+  const [customCelebrations, setCustomCelebrations] = useState(
+    settings.dailyCheckIn?.celebrations?.customCelebrations || []
+  );
+
+  if (!isOpen) return null;
+
+  const addCustomCelebration = () => {
+    const newCelebration = {
+      id: `custom_${Date.now()}`,
+      name: '',
+      emoji: '🎉',
+      message: '',
+      type: 'custom',
+      recurring: false,
+      date: '',
+      students: [],
+      createdAt: new Date().toISOString()
+    };
+    setCustomCelebrations([...customCelebrations, newCelebration]);
+  };
+
+  const updateCelebration = (id: string, updates: any) => {
+    setCustomCelebrations(prev => 
+      prev.map(cel => cel.id === id ? { ...cel, ...updates } : cel)
+    );
+  };
+
+  const deleteCelebration = (id: string) => {
+    if (confirm('Delete this celebration?')) {
+      setCustomCelebrations(prev => prev.filter(cel => cel.id !== id));
+    }
+  };
+
+  const saveCelebrations = () => {
+    const updatedSettings = {
+      ...settings,
+      dailyCheckIn: {
+        ...settings.dailyCheckIn,
+        celebrations: {
+          ...settings.dailyCheckIn.celebrations,
+          customCelebrations
+        }
+      }
+    };
+    onUpdateSettings(updatedSettings);
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        padding: '2rem',
+        maxWidth: '600px',
+        maxHeight: '80vh',
+        overflow: 'auto',
+        width: '90%'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ margin: 0, color: '#333' }}>🎊 Manage Celebrations</h2>
+          <button onClick={onClose} style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            color: '#666'
+          }}>×</button>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <button onClick={addCustomCelebration} style={{
+            background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}>
+            ➕ Add Custom Celebration
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {customCelebrations.map(celebration => (
+            <div key={celebration.id} style={{
+              border: '1px solid #e1e8ed',
+              borderRadius: '8px',
+              padding: '1rem',
+              background: '#f8f9fa'
+            }}>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <input
+                  type="text"
+                  placeholder="Celebration Name"
+                  value={celebration.name}
+                  onChange={(e) => updateCelebration(celebration.id, { name: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px'
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="🎉"
+                  value={celebration.emoji}
+                  onChange={(e) => updateCelebration(celebration.id, { emoji: e.target.value })}
+                  style={{
+                    width: '60px',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    textAlign: 'center'
+                  }}
+                />
+                <button onClick={() => deleteCelebration(celebration.id)} style={{
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer'
+                }}>
+                  🗑️
+                </button>
+              </div>
+              <textarea
+                placeholder="Celebration message..."
+                value={celebration.message}
+                onChange={(e) => updateCelebration(celebration.id, { message: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  minHeight: '60px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            background: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer'
+          }}>
+            Cancel
+          </button>
+          <button onClick={saveCelebrations} style={{
+            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}>
+            Save Celebrations
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Settings storage key
 const SETTINGS_STORAGE_KEY = 'visualScheduleBuilderSettings';
 
@@ -165,6 +357,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showBehaviorManager, setShowBehaviorManager] = useState(false);
+  const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
@@ -882,10 +1075,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                 </div>
 
                 <button
-                  onClick={() => {
-                    // TODO: Open celebration management modal
-                    alert('Celebration management interface coming soon!\n\nThis will allow you to:\n• Create custom celebrations\n• Set recurring vs one-time events\n• Choose celebration emojis and messages\n• Configure birthday display options');
-                  }}
+                  onClick={() => setShowCelebrationsModal(true)}
                   className="action-button"
                   style={{
                     background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
@@ -1568,6 +1758,14 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           }));
           setShowBehaviorManager(false);
         }}
+      />
+
+      {/* Celebrations Management Modal */}
+      <CelebrationsManagementModal
+        isOpen={showCelebrationsModal}
+        onClose={() => setShowCelebrationsModal(false)}
+        settings={settings}
+        onUpdateSettings={setSettings}
       />
 
       <style>{`
