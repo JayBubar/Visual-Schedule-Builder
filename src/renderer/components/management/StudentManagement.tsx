@@ -85,36 +85,14 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     filterStudents();
   }, [students, searchTerm, gradeFilter]);
 
-  // Debug birthday data persistence on component mount
-  useEffect(() => {
-    if (isActive) {
-      console.log('🎂 StudentManagement component mounted - checking birthday data persistence...');
-      UnifiedDataService.checkBirthdayDataPersistence();
-    }
-  }, [isActive]);
 
-  // Refresh data function - Fixed to avoid page reload
+  // Refresh data function
   const refreshData = () => {
-    console.log('🔄 StudentManagement refreshData called');
-    
-    // Debug current student data
-    const currentStudents = UnifiedDataService.getAllStudents();
-    console.log('🔍 DEBUGGING StudentManagement - Current students from UnifiedDataService:', currentStudents);
-    currentStudents.forEach((student, index) => {
-      console.log(`🔍 Student ${index + 1}:`, {
-        id: student.id,
-        name: student.name,
-        iepData: student.iepData,
-        goalCount: student.iepData?.goals?.length || 0,
-        goals: student.iepData?.goals
-      });
-    });
-    
     // Force immediate re-render by dispatching multiple events
     window.dispatchEvent(new CustomEvent('studentDataUpdated'));
     window.dispatchEvent(new CustomEvent('dataRefresh'));
     
-    // Force immediate state update - no delay
+    // Force immediate state update
     filterStudents();
   };
 
@@ -224,18 +202,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   const handleSaveStudent = (studentData: Partial<ExtendedStudent>) => {
     try {
-      console.log('🔧 Saving student data:', studentData);
-      console.log('🎂 Birthday data being saved:', {
-        birthday: studentData.birthday,
-        allowBirthdayDisplay: studentData.allowBirthdayDisplay,
-        allowPhotoInCelebrations: studentData.allowPhotoInCelebrations
-      });
-
       if (editingStudent) {
         // Update existing student directly in UnifiedDataService
-        console.log('📝 Updating existing student:', editingStudent.id);
-        
-        // Ensure birthday fields are properly included in the update
         const updateData = {
           ...studentData,
           // Explicitly include birthday fields to ensure they're saved
@@ -244,11 +212,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           allowPhotoInCelebrations: studentData.allowPhotoInCelebrations !== undefined ? studentData.allowPhotoInCelebrations : true
         };
         
-        console.log('🎂 Final update data with birthday fields:', updateData);
         UnifiedDataService.updateStudent(editingStudent.id, updateData);
       } else {
         // Add new student directly to UnifiedDataService
-        console.log('➕ Adding new student');
         const newStudent: ExtendedStudent = {
           id: Date.now().toString(),
           name: '',
@@ -270,7 +236,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           ...studentData
         };
         
-        console.log('🎂 New student with birthday fields:', newStudent);
         UnifiedDataService.addStudent(newStudent);
       }
       
@@ -281,7 +246,7 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       setShowModal(false);
       setEditingStudent(null);
       
-      // Immediate refresh - no delay
+      // Immediate refresh
       refreshData();
     } catch (error) {
       console.error('Error saving student:', error);
@@ -348,14 +313,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   };
 
   const handlePrintSheets = (student: ExtendedStudent) => {
-    console.log('🖨️ Print Sheets clicked for student:', student.name);
-    console.log('🎯 Student IEP goals:', student.iepData?.goals);
-    
     // Check if student has IEP goals
     const studentGoals = student.iepData?.goals || [];
     const activeGoals = studentGoals.filter(goal => goal.isActive !== false);
-
-    console.log('📊 Active goals found:', activeGoals.length);
 
     if (activeGoals.length === 0) {
       alert(`${student.name} doesn't have any active IEP goals set up yet. Please add goals first in Goal Management.`);
@@ -363,7 +323,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
     }
 
     // Set up for print sheets modal with active goals
-    console.log('✅ Opening Print Sheets modal for:', student.name);
     setSelectedStudentForIntegration(student);
     setShowPrintSheetsModal(true);
   };
@@ -531,73 +490,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           ➕ Add Student
         </button>
 
-        {/* Diagnostic Button */}
-        <button
-          onClick={() => {
-            console.log('🔍 Running Student Data Diagnostic...');
-            runStudentDiagnostic();
-          }}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '12px',
-            border: 'none',
-            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
-          }}
-        >
-          🔍 Diagnose Data
-        </button>
-
-        {/* Quick Fix Button */}
-        <button
-          onClick={async () => {
-            if (window.confirm('This will fix the student ID conflicts by removing duplicate students from legacy storage. A backup will be created first. Continue?')) {
-              console.log('🧹 Running Quick Fix for Student Conflicts...');
-              const result = await quickFixStudentConflicts();
-              if (result.success) {
-                alert(`✅ ${result.message}\n\nPlease refresh the page to see the changes.`);
-                window.location.reload();
-              } else {
-                alert(`❌ ${result.message}`);
-              }
-            }
-          }}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '12px',
-            border: 'none',
-            background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(220, 38, 38, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
-          }}
-        >
-          🧹 Fix Conflicts
-        </button>
       </div>
 
       {/* Main Content */}

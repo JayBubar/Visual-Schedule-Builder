@@ -33,14 +33,11 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      console.log('🔄 Starting app initialization...');
-      
       // Check for legacy data that needs migration
       const hasLegacyData = localStorage.getItem('calendarSettings') || 
                             localStorage.getItem('students');
       
       if (hasLegacyData) {
-        console.log('⚡ Legacy data detected, performing migration...');
         migrateLegacyDataQuick();
       }
       
@@ -98,8 +95,6 @@ const App: React.FC = () => {
           // Backup and remove legacy data
           localStorage.setItem('calendarSettings_backup', legacyCalendarSettings);
           localStorage.removeItem('calendarSettings');
-          
-          console.log('✅ Legacy data migrated successfully');
         }
       }
     } catch (error) {
@@ -116,11 +111,6 @@ const App: React.FC = () => {
       const unifiedStudents = UnifiedDataService.getAllStudents();
       const unifiedStaff = UnifiedDataService.getAllStaff();
       const unifiedActivities = UnifiedDataService.getAllActivities();
-      
-      console.log('🔍 UnifiedDataService results:');
-      console.log('- Students returned:', unifiedStudents.length);
-      console.log('- Staff returned:', unifiedStaff.length);
-      console.log('- Activities returned:', unifiedActivities.length);
       
       // Convert unified data to legacy format for components that still expect it
       const legacyStudents: Student[] = unifiedStudents.map(student => ({
@@ -175,12 +165,6 @@ const App: React.FC = () => {
       setStaff(legacyStaff);
       setActivities(legacyActivities);
       
-      console.log('App initialized with unified data:', {
-        students: legacyStudents.length,
-        staff: legacyStaff.length,
-        activities: legacyActivities.length
-      });
-      
     } catch (error) {
       console.error('Error loading unified data, falling back to legacy storage:', error);
       
@@ -192,23 +176,15 @@ const App: React.FC = () => {
       setStudents(savedStudents);
       setStaff(savedStaff);
       setActivities(savedActivities);
-      
-      console.log('App initialized with legacy data:', {
-        students: savedStudents.length,
-        staff: savedStaff.length,
-        activities: savedActivities.length
-      });
     }
   };
 
   const handleViewChange = (view: ViewType) => {
     setCurrentView(view);
-    console.log('View changed to:', view);
   };
 
   const handleScheduleSelect = (schedule: ScheduleVariation) => {
     setSelectedSchedule(schedule);
-    console.log('Schedule selected:', schedule.name);
   };
 
   const handleStudentsUpdate = (updatedStudents: Student[]) => {
@@ -242,7 +218,6 @@ const App: React.FC = () => {
   };
 
   const handleSmartGroupImplementation = (recommendation: any) => {
-    console.log('Smart group recommendation implemented:', recommendation);
     // Handle the implementation of smart group recommendations
     // This could involve updating student assignments, schedules, etc.
     // The recommendation contains groupName, studentIds, recommendedActivity, etc.
@@ -316,24 +291,16 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // 🚀 Handle "Use Built Schedule" event from Schedule Builder
+  // Handle "Use Built Schedule" event from Schedule Builder
   useEffect(() => {
     const handleUseBuiltSchedule = (event: CustomEvent) => {
-      const { schedule, source, timestamp } = event.detail;
-      console.log('🚀 App received useBuiltSchedule event:', {
-        scheduleName: schedule.name,
-        source,
-        timestamp: new Date(timestamp).toLocaleTimeString(),
-        activityCount: schedule.activities.length
-      });
+      const { schedule } = event.detail;
       
       // Set the temporary schedule as selected
       setSelectedSchedule(schedule);
       
       // Switch to Display mode immediately
       setCurrentView('display');
-      
-      console.log('✅ Switched to Display mode with temporary schedule');
     };
 
     window.addEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);

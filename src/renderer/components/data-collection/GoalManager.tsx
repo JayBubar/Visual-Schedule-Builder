@@ -60,7 +60,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
         }
       });
       
-      console.log('📚 Loaded goals from UnifiedDataService:', allGoals.length);
       setGoals(allGoals);
     } catch (error) {
       console.error('Error loading goals from UnifiedDataService:', error);
@@ -71,7 +70,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
   const loadStudentsData = () => {
     try {
       const unifiedStudents = UnifiedDataService.getAllStudents();
-      console.log('👥 Loaded students from UnifiedDataService:', unifiedStudents.length);
       setStudents(unifiedStudents);
     } catch (error) {
       console.error('Error loading students from UnifiedDataService:', error);
@@ -108,22 +106,8 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
     }
 
     try {
-      console.log('🔍 DEBUGGING GOAL SAVE - START');
-      console.log('SAVING GOAL:', goalForm);
-      console.log('SELECTED STUDENT ID:', goalForm.studentId);
-      
-      // Get unified data before save to debug
-      const unifiedDataBefore = UnifiedDataService.getUnifiedData();
-      console.log('UNIFIED DATA BEFORE SAVE:', unifiedDataBefore);
-      console.log('STUDENTS BEFORE SAVE:', unifiedDataBefore?.students);
-      
-      const targetStudent = unifiedDataBefore?.students?.find(s => s.id === goalForm.studentId);
-      console.log('TARGET STUDENT BEFORE SAVE:', targetStudent);
-      console.log('TARGET STUDENT IEP GOALS BEFORE:', targetStudent?.iepData?.goals);
-
       if (editingGoal) {
         // Update existing goal via UnifiedDataService
-        console.log('📝 Updating existing goal:', editingGoal.id);
         UnifiedDataService.updateGoal(editingGoal.id, {
           ...goalForm,
           lastDataPoint: editingGoal.lastDataPoint,
@@ -132,7 +116,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
         });
       } else {
         // Add new goal via UnifiedDataService
-        console.log('➕ Adding new goal for student:', goalForm.studentId);
         const goalData = {
           ...goalForm,
           measurableObjective: goalForm.shortTermObjective,
@@ -144,31 +127,8 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
           dataPoints: 0,
           currentProgress: 0
         };
-        console.log('GOAL DATA TO SAVE:', goalData);
         
-        const savedGoal = UnifiedDataService.addGoalToStudent(goalForm.studentId, goalData);
-        console.log('SAVED GOAL RETURNED:', savedGoal);
-      }
-
-      // Check unified data after save
-      const unifiedDataAfter = UnifiedDataService.getUnifiedData();
-      console.log('UNIFIED DATA AFTER SAVE:', unifiedDataAfter);
-      console.log('STUDENTS AFTER SAVE:', unifiedDataAfter?.students);
-      
-      const targetStudentAfter = unifiedDataAfter?.students?.find(s => s.id === goalForm.studentId);
-      console.log('TARGET STUDENT AFTER SAVE:', targetStudentAfter);
-      console.log('TARGET STUDENT IEP GOALS AFTER:', targetStudentAfter?.iepData?.goals);
-      console.log('GOAL COUNT AFTER SAVE:', targetStudentAfter?.iepData?.goals?.length);
-
-      // Check localStorage directly
-      const localStorageData = localStorage.getItem('visual-schedule-builder-unified-data');
-      console.log('LOCALSTORAGE RAW DATA:', localStorageData);
-      if (localStorageData) {
-        const parsedData = JSON.parse(localStorageData);
-        console.log('LOCALSTORAGE PARSED DATA:', parsedData);
-        const lsStudent = parsedData.students?.find((s: any) => s.id === goalForm.studentId);
-        console.log('LOCALSTORAGE STUDENT:', lsStudent);
-        console.log('LOCALSTORAGE STUDENT GOALS:', lsStudent?.iepData?.goals);
+        UnifiedDataService.addGoalToStudent(goalForm.studentId, goalData);
       }
 
       // Reload goals data to reflect changes
@@ -176,7 +136,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
       
       // Call the callback to refresh parent component data
       if (onGoalSaved) {
-        console.log('🔄 Calling onGoalSaved callback');
         onGoalSaved();
       }
       
@@ -184,9 +143,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
       resetForm();
       setIsModalOpen(false);
       setEditingGoal(null);
-      
-      console.log('✅ Goal saved successfully via UnifiedDataService');
-      console.log('🔍 DEBUGGING GOAL SAVE - END');
     } catch (error) {
       console.error('❌ Error saving goal:', error);
       alert('Error saving goal. Please try again.');
@@ -233,8 +189,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
             
             // Reload goals data to reflect changes
             loadGoalsData();
-            
-            console.log('✅ Goal deleted successfully via UnifiedDataService');
           }
         }
       } catch (error) {
@@ -256,8 +210,6 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
         
         // Reload goals data to reflect changes
         loadGoalsData();
-        
-        console.log('✅ Goal status toggled successfully via UnifiedDataService');
       }
     } catch (error) {
       console.error('❌ Error toggling goal status:', error);

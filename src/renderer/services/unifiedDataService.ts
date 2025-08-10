@@ -213,63 +213,6 @@ class UnifiedDataService {
   private static readonly UNIFIED_KEY = 'visual-schedule-builder-unified-data';
   private static readonly LEGACY_STUDENT_KEY = 'students';
   
-  // Debug method to inspect localStorage
-  static debugLocalStorage(): void {
-    console.log('🔍 DEBUGGING localStorage contents:');
-    console.log('- All localStorage keys:', Object.keys(localStorage));
-    console.log('- visual-schedule-builder-unified-data:', localStorage.getItem(this.UNIFIED_KEY) ? 'EXISTS' : 'MISSING');
-    console.log('- students:', localStorage.getItem('students') ? 'EXISTS' : 'MISSING');
-    console.log('- vsb_students:', localStorage.getItem('vsb_students') ? 'EXISTS' : 'MISSING');
-    
-    const unifiedDataRaw = localStorage.getItem(this.UNIFIED_KEY);
-    if (unifiedDataRaw) {
-      try {
-        const parsed = JSON.parse(unifiedDataRaw);
-        console.log('- Unified data structure:', parsed);
-        console.log('- Students in unified data:', parsed.students);
-        console.log('- Students count:', Array.isArray(parsed.students) ? parsed.students.length : 'Not an array');
-        
-        // Check for birthday data specifically
-        if (Array.isArray(parsed.students)) {
-          parsed.students.forEach((student: any, index: number) => {
-            console.log(`- Student ${index + 1} (${student.name}):`, {
-              id: student.id,
-              birthday: student.birthday,
-              allowBirthdayDisplay: student.allowBirthdayDisplay,
-              allowPhotoInCelebrations: student.allowPhotoInCelebrations
-            });
-          });
-        }
-      } catch (e) {
-        console.error('- Error parsing unified data:', e);
-      }
-    }
-  }
-
-  // New method to force check birthday data persistence
-  static checkBirthdayDataPersistence(): void {
-    console.log('🎂 CHECKING BIRTHDAY DATA PERSISTENCE:');
-    this.debugLocalStorage();
-    
-    // Also check if there are any competing storage operations
-    console.log('🔍 Checking for competing storage keys:');
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.includes('student') || key.includes('birthday') || key.includes('unified'))) {
-        console.log(`- Found storage key: ${key}`);
-        try {
-          const value = localStorage.getItem(key);
-          if (value && value.length < 1000) { // Only log short values
-            console.log(`  Value: ${value.substring(0, 200)}...`);
-          } else {
-            console.log(`  Value: [${value?.length || 0} characters]`);
-          }
-        } catch (e) {
-          console.log(`  Error reading value: ${e}`);
-        }
-      }
-    }
-  }
 
   // Get all unified data
   static getUnifiedData(): UnifiedData | null {
@@ -279,34 +222,21 @@ class UnifiedDataService {
       
       const parsedData = JSON.parse(data);
       
-      // 🔧 FIXED: Convert object structure to array structure if needed
+      // Convert object structure to array structure if needed
       if (parsedData.students && !Array.isArray(parsedData.students)) {
-        console.log('🔄 Converting students object to array format...');
-        console.log('🔍 Original students object keys:', Object.keys(parsedData.students));
-        console.log('🔍 Original students object values:', Object.values(parsedData.students));
-        
         const studentsArray = Object.values(parsedData.students);
-        console.log('🔍 Converted array length:', studentsArray.length);
-        console.log('🔍 First student in array:', studentsArray[0]);
-        
         parsedData.students = studentsArray;
         
         // Save the converted structure
         this.saveUnifiedData(parsedData);
-        console.log('✅ Successfully converted and saved students as array');
-      } else if (parsedData.students && Array.isArray(parsedData.students)) {
-        console.log('✅ Students already in array format:', parsedData.students.length, 'students');
       }
       
-      // 🔧 FIXED: Convert staff object structure to array structure if needed
+      // Convert staff object structure to array structure if needed
       if (parsedData.staff && !Array.isArray(parsedData.staff)) {
-        console.log('🔄 Converting staff object to array format...');
         parsedData.staff = Object.values(parsedData.staff);
         
         // Save the converted structure
         this.saveUnifiedData(parsedData);
-      } else if (parsedData.staff && Array.isArray(parsedData.staff)) {
-        console.log('✅ Staff already in array format:', parsedData.staff.length, 'staff');
       }
       
       return parsedData;
@@ -346,8 +276,6 @@ class UnifiedDataService {
       
       const legacyDataPoints = JSON.parse(legacyDataPointsStr);
       const legacyGoals = legacyGoalsStr ? JSON.parse(legacyGoalsStr) : [];
-      
-      console.log(`Found ${legacyDataPoints.length} legacy data points to recover`);
       
       // Create a map of legacy goal IDs to new goal IDs
       const goalIdMap = new Map();
@@ -422,7 +350,6 @@ class UnifiedDataService {
       // Save updated data
       this.saveUnifiedData(unifiedData);
       
-      console.log(`Successfully recovered ${recoveredCount} data points`);
       return recoveredCount > 0;
       
     } catch (error) {
@@ -433,17 +360,12 @@ class UnifiedDataService {
   
   // Get all students with full data
   static getAllStudents(): UnifiedStudent[] {
-    console.log('🔍 UnifiedDataService.getAllStudents() called');
-    
     // Try unified data first
     const unifiedData = this.getUnifiedData();
-    console.log('Unified data exists:', !!unifiedData);
     
     if (unifiedData && unifiedData.students) {
       // The unified data has students as an array inside the object
       if (Array.isArray(unifiedData.students) && unifiedData.students.length > 0) {
-        console.log('✅ Using unified data:', unifiedData.students.length, 'students');
-        
         // Before returning, ensure all students have proper iepData structure
         const studentsWithProperStructure = unifiedData.students.map(student => 
           this.ensureStudentIEPDataStructure(student)
@@ -451,20 +373,14 @@ class UnifiedDataService {
         
         return studentsWithProperStructure;
       }
-      console.log('⚠️ Unified data exists but students array is empty or invalid');
-    } else {
-      console.log('⚠️ No unified data found or no students property');
     }
     
     // FALLBACK: Read directly from legacy students key
-    console.log('⚡ Falling back to legacy student data...');
     try {
       const legacyStudents = localStorage.getItem('students');
-      console.log('Legacy students raw:', legacyStudents ? 'EXISTS' : 'MISSING');
       
       if (legacyStudents) {
         const students = JSON.parse(legacyStudents);
-        console.log('✅ Parsed legacy students:', students.length);
         
         // Convert legacy format to unified format
         const convertedStudents = students.map((student: any) => ({
@@ -494,14 +410,12 @@ class UnifiedDataService {
           this.ensureStudentIEPDataStructure(student)
         );
         
-        console.log('🚀 Returning converted students:', studentsWithProperStructure.length);
         return studentsWithProperStructure;
       }
     } catch (error) {
       console.error('❌ Failed to load legacy students:', error);
     }
     
-    console.log('💥 No student data found anywhere!');
     return [];
   }
   
@@ -541,34 +455,27 @@ class UnifiedDataService {
   static getStudentDataPoints(studentId: string): DataPoint[] {
     const student = this.getStudent(studentId);
     
-    // ✅ Add null checks here too
+    // Add null checks
     if (student && student.iepData && student.iepData.dataCollection && Array.isArray(student.iepData.dataCollection)) {
       return student.iepData.dataCollection;
     }
     
-    console.log('⚠️ No data collection found for student:', studentId);
     return [];
   }
   
   // Get data points for a specific goal
   static getGoalDataPoints(goalId: string): DataPoint[] {
-    console.log('🔍 getGoalDataPoints called for goalId:', goalId);
-    
     const students = this.getAllStudents();
     const allDataPoints: DataPoint[] = [];
     
     students.forEach(student => {
-      console.log('🔍 Checking student:', student.name, 'iepData:', student.iepData);
-      
-      // ✅ FIX: Add proper null/undefined checks
+      // Add proper null/undefined checks
       if (student.iepData && student.iepData.dataCollection && Array.isArray(student.iepData.dataCollection)) {
         const goalDataPoints = student.iepData.dataCollection.filter(
           dp => dp.goalId === goalId
         );
         allDataPoints.push(...goalDataPoints);
-        console.log('✅ Found', goalDataPoints.length, 'data points for student', student.name);
       } else {
-        console.log('⚠️ Student', student.name, 'has no dataCollection array');
         // Initialize empty dataCollection if missing
         if (!student.iepData) {
           student.iepData = { goals: [], dataCollection: [] };
@@ -578,7 +485,6 @@ class UnifiedDataService {
       }
     });
     
-    console.log('📊 Total data points found:', allDataPoints.length);
     return allDataPoints.sort((a, b) => 
       new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime()
     );
