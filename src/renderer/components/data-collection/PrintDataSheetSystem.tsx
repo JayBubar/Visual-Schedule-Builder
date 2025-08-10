@@ -599,7 +599,7 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
   // MAIN SETUP INTERFACE
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.15)',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       backdropFilter: 'blur(20px)',
       borderRadius: '20px',
       padding: '2rem',
