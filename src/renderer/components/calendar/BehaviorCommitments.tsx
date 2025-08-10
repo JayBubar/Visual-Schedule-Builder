@@ -190,15 +190,18 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
         console.log('🔄 Loading behavior statements from UnifiedDataService...');
         setIsLoadingStatements(true);
         
-        // Get unified data (same method as BehaviorStatementManager uses)
-        const unifiedData = await UnifiedDataService.getUnifiedData();
-        const customStatements = unifiedData?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+        // Get settings directly from UnifiedDataService
+        const settings = UnifiedDataService.getSettings();
+        console.log('📋 Full settings from UnifiedDataService:', settings);
         
-        if (customStatements && customStatements.length > 0) {
-          console.log('✅ Found custom behavior statements in UnifiedDataService:', customStatements);
+        const customStatements = settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+        console.log('🎯 Custom behavior statements found:', customStatements);
+        
+        if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
+          console.log('✅ Found custom behavior statements in settings:', customStatements);
           
           // Use custom statements from settings, only show active ones
-          const activeStatements = customStatements.filter((s: any) => s.isActive);
+          const activeStatements = customStatements.filter((s: any) => s.isActive !== false);
           
           if (activeStatements.length > 0) {
             console.log('📊 Using active custom behavior statements:', activeStatements);
@@ -208,7 +211,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
             setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
           }
         } else {
-          console.log('ℹ️ No custom statements found in UnifiedDataService, using defaults');
+          console.log('ℹ️ No custom statements found in settings, using defaults');
           setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
         }
       } catch (error) {
