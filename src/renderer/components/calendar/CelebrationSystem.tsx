@@ -66,8 +66,30 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     { id: 'red-nose-day', name: 'Red Nose Day', icon: '🔴', description: 'Having fun for a good cause!', category: 'fun' }
   ];
 
+  // Add settings sync hook for real-time updates
+  const useSettingsSync = () => {
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    
+    useEffect(() => {
+      const handleSettingsChange = (event: CustomEvent) => {
+        console.log('🔄 Settings changed, refreshing celebrations...');
+        setRefreshTrigger(prev => prev + 1);
+      };
+      
+      window.addEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+      
+      return () => {
+        window.removeEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+      };
+    }, []);
+    
+    return refreshTrigger;
+  };
+
+  const refreshTrigger = useSettingsSync();
+
   useEffect(() => {
-    // FIXED: Handle async custom celebrations loading
+    // FIXED: Handle async custom celebrations loading with real-time sync
     const loadCelebrations = async () => {
       const celebrations = [];
       
@@ -109,7 +131,7 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
     };
 
     loadCelebrations();
-  }, [currentDate, students]);
+  }, [currentDate, students, refreshTrigger]);
 
   const getTodaysHolidays = (): Holiday[] => {
     // This is a simplified version - you'd want a more sophisticated matching system
@@ -237,48 +259,49 @@ const getTodaysBirthdays = () => {
 };
 
 const getCustomCelebrations = async () => {
-  // FIXED: Load custom celebrations from UnifiedDataService (matching Settings component)
+  // FIXED: Load custom celebrations from UnifiedDataService with comprehensive data structure handling
   try {
-    console.log('🔄 Loading custom celebrations from UnifiedDataService...');
+    console.log('🔄 [FIXED] Loading custom celebrations from UnifiedDataService...');
     
-    // Get unified data (same method as Settings component uses)
-    const unifiedData = await UnifiedDataService.getUnifiedData();
-    const settings = unifiedData?.settings || {};
+    // Get settings from UnifiedDataService (matching Settings component exactly)
+    const settings = UnifiedDataService.getSettings();
+    console.log('📋 Full settings loaded for celebrations:', settings);
     
     // Check if celebrations are enabled
-    if (settings.dailyCheckIn?.celebrations?.enabled === false) {
+    if (settings?.dailyCheckIn?.celebrations?.enabled === false) {
       console.log('ℹ️ Celebrations are disabled in settings');
       return [];
     }
     
-    const customCelebrations = settings.dailyCheckIn?.celebrations?.customCelebrations || [];
-    console.log('📊 Found custom celebrations in UnifiedDataService:', customCelebrations);
+    // Try multiple paths where celebrations might be stored
+    const celebrations = 
+      settings?.dailyCheckIn?.celebrations?.customCelebrations || 
+      settings?.celebrations?.customCelebrations ||
+      settings?.customCelebrations ||
+      [];
     
-    if (customCelebrations.length === 0) {
-      console.log('ℹ️ No custom celebrations found');
-      return [];
-    }
+    console.log('🎊 Found celebrations:', celebrations);
     
-    const today = formatDateForComparison(currentDate);
-    const todayFullDate = currentDate.toISOString().split('T')[0];
-
-    const todaysCelebrations = customCelebrations
-      .filter((celebration: any) => {
-        if (celebration.recurring) {
-          // For recurring celebrations, compare MM-DD format
-          const celebrationDate = celebration.date;
-          if (celebrationDate && celebrationDate.length === 10) {
-            // Full date format YYYY-MM-DD, extract MM-DD
-            const mmdd = celebrationDate.substring(5);
-            return mmdd === today;
-          }
-          return celebrationDate === today;
-        } else {
-          // For one-time celebrations, compare full date
-          return celebration.date === todayFullDate;
+    if (Array.isArray(celebrations) && celebrations.length > 0) {
+      // Filter for today's celebrations
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const todayMD = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+      
+      const todaysCelebrations = celebrations.filter(celebration => {
+        if (!celebration.enabled || celebration.enabled === false) return false;
+        
+        // Check for exact date match
+        if (celebration.date === todayStr) return true;
+        
+        // Check for recurring celebrations (MM-DD format)
+        if (celebration.isRecurring && celebration.date) {
+          const celebrationMD = celebration.date.substring(5); // Extract MM-DD from YYYY-MM-DD
+          return celebrationMD === todayMD;
         }
-      })
-      .map((celebration: any) => ({
+        
+        return false;
+      }).map((celebration: any) => ({
         type: 'custom',
         celebration,
         icon: celebration.emoji || '🎉',
@@ -286,10 +309,15 @@ const getCustomCelebrations = async () => {
         description: celebration.message
       }));
       
-    console.log('🎉 Today\'s custom celebrations:', todaysCelebrations);
-    return todaysCelebrations;
+      console.log('🎉 Today\'s celebrations:', todaysCelebrations);
+      return todaysCelebrations;
+    } else {
+      console.log('ℹ️ No custom celebrations found');
+      return [];
+    }
+    
   } catch (error) {
-    console.error('❌ Error loading custom celebrations:', error);
+    console.error('❌ Failed to load custom celebrations:', error);
     return [];
   }
 };

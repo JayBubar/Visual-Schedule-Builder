@@ -183,47 +183,152 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   ];
 
-  // FIXED: Load behavior statements from UnifiedDataService (matching BehaviorStatementManager)
+  // FIXED: Load behavior statements from UnifiedDataService with comprehensive data structure handling
   useEffect(() => {
-    const loadBehaviorStatementsFromSettings = async () => {
+    const loadBehaviorStatementsFixed = async () => {
       try {
-        console.log('🔄 Loading behavior statements from UnifiedDataService...');
+        console.log('🔄 [FIXED] Loading behavior statements from UnifiedDataService...');
         setIsLoadingStatements(true);
         
-        // Get settings directly from UnifiedDataService
+        // Get settings from UnifiedDataService (matching Settings component exactly)
         const settings = UnifiedDataService.getSettings();
-        console.log('📋 Full settings from UnifiedDataService:', settings);
+        console.log('📋 Full settings loaded:', settings);
         
+        // Check the exact path that Settings component uses for custom statements
         const customStatements = settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
         console.log('🎯 Custom behavior statements found:', customStatements);
         
         if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
-          console.log('✅ Found custom behavior statements in settings:', customStatements);
+          console.log('✅ Found custom statements, converting to category format...');
           
-          // Use custom statements from settings, only show active ones
-          const activeStatements = customStatements.filter((s: any) => s.isActive !== false);
+          // FIXED: Convert flat custom statements array to category structure
+          const categoriesWithCustom = convertCustomStatementsToCategoryFormat(customStatements);
+          setBehaviorStatements(categoriesWithCustom);
+          console.log('📊 Using converted custom statements:', categoriesWithCustom);
           
-          if (activeStatements.length > 0) {
-            console.log('📊 Using active custom behavior statements:', activeStatements);
-            setBehaviorStatements(activeStatements);
+        } else {
+          console.log('ℹ️ No custom statements found, checking alternative paths...');
+          
+          // Try alternative data structure that Settings might be using
+          const altPath1 = settings?.dailyCheckIn?.behaviorStatements;
+          const altPath2 = settings?.behaviorCommitments;
+          const altPath3 = settings?.customBehaviorStatements;
+          
+          console.log('🔍 Checking alternative paths:', { altPath1, altPath2, altPath3 });
+          
+          if (altPath1 || altPath2 || altPath3) {
+            const foundStatements = altPath1 || altPath2 || altPath3;
+            const converted = convertCustomStatementsToCategoryFormat(foundStatements);
+            setBehaviorStatements(converted);
+            console.log('📊 Using alternative path statements:', converted);
           } else {
-            console.log('ℹ️ No active custom statements, using defaults');
+            console.log('ℹ️ Using default behavior categories');
             setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
           }
-        } else {
-          console.log('ℹ️ No custom statements found in settings, using defaults');
-          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
         }
       } catch (error) {
-        console.error('❌ Failed to load behavior statements from UnifiedDataService:', error);
+        console.error('❌ Failed to load behavior statements:', error);
         setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
       } finally {
         setIsLoadingStatements(false);
       }
     };
 
-    loadBehaviorStatementsFromSettings();
+    loadBehaviorStatementsFixed();
   }, []);
+
+  // Helper function to convert flat custom statements to category structure
+  const convertCustomStatementsToCategoryFormat = (customStatements: any[]): BehaviorStatement[] => {
+    const categories = [...DEFAULT_BEHAVIOR_STATEMENTS];
+    
+    // Group custom statements by category
+    const customByCategory: { [key: string]: string[] } = {};
+    
+    customStatements.forEach(statement => {
+      if (statement.isActive !== false) {
+        const category = statement.category || 'kindness';
+        if (!customByCategory[category]) {
+          customByCategory[category] = [];
+        }
+        customByCategory[category].push(statement.text || statement.commitment || statement.statement);
+      }
+    });
+    
+    // Add custom statements to existing categories
+    Object.keys(customByCategory).forEach(categoryId => {
+      const categoryIndex = categories.findIndex(cat => cat.category === categoryId);
+      if (categoryIndex !== -1) {
+        // Add custom statements to existing category
+        customByCategory[categoryId].forEach(customText => {
+          categories.push({
+            id: `custom_${Date.now()}_${Math.random()}`,
+            text: customText,
+            category: categoryId as any,
+            emoji: categories[categoryIndex].emoji,
+            isActive: true,
+            isDefault: false,
+            createdAt: new Date().toISOString()
+          });
+        });
+      }
+    });
+    
+    return categories;
+  };
+
+  // Add settings sync hook for real-time updates
+  const useSettingsSync = () => {
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    
+    useEffect(() => {
+      const handleSettingsChange = (event: CustomEvent) => {
+        console.log('🔄 Settings changed, refreshing behavior statements...');
+        setRefreshTrigger(prev => prev + 1);
+      };
+      
+      window.addEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+      
+      return () => {
+        window.removeEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
+      };
+    }, []);
+    
+    return refreshTrigger;
+  };
+
+  const refreshTrigger = useSettingsSync();
+
+  // Re-run data loading when settings change
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      // Reload behavior statements when settings change
+      const reloadBehaviorStatements = async () => {
+        try {
+          console.log('🔄 [REFRESH] Reloading behavior statements from settings change...');
+          setIsLoadingStatements(true);
+          
+          const settings = UnifiedDataService.getSettings();
+          const customStatements = settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+          
+          if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
+            const categoriesWithCustom = convertCustomStatementsToCategoryFormat(customStatements);
+            setBehaviorStatements(categoriesWithCustom);
+            console.log('📊 Refreshed with custom statements:', categoriesWithCustom);
+          } else {
+            setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+            console.log('📊 Refreshed with default statements');
+          }
+        } catch (error) {
+          console.error('❌ Failed to reload behavior statements:', error);
+          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
+        } finally {
+          setIsLoadingStatements(false);
+        }
+      };
+      
+      reloadBehaviorStatements();
+    }
+  }, [refreshTrigger]);
 
   // Load existing commitments on mount
   useEffect(() => {
