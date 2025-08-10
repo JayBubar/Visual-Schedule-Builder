@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import GroupCreator from './GroupCreator';
+import AttendanceManager from '../management/AttendanceManager';
+import ScheduleConflictDetector from './ScheduleConflictDetector';
+import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
+import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 // Type aliases to avoid conflicts with enhanced components
 type BuilderStudent = ProjectStudent;
@@ -840,12 +845,41 @@ const SaveScheduleModal: React.FC<{
 };
 
 const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleUpdate }) => {
+  // Use robust data loading hook
+  const { students: loadedStudents, staff: loadedStaff, isLoading, error } = useRobustDataLoading(
+    { loadStudents: true, loadStaff: true, dependencies: [isActive] }
+  );
+
   // State management
   const [schedule, setSchedule] = useState<EnhancedActivity[]>([]);
   const [startTime, setStartTime] = useState('08:00');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [students, setStudents] = useState<BuilderStudent[]>([]);
   const [groups, setGroups] = useState<StudentGroup[]>([]);
+
+  // Add these new state variables
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState<string | null>(null);
+  const [showDraftNotification, setShowDraftNotification] = useState(false);
+
+  const DRAFT_STORAGE_KEY = 'schedule_builder_draft';
+
+  // Update local state when robust data loading completes
+  useEffect(() => {
+    if (loadedStudents.length > 0) {
+      const activeStudents = loadedStudents.filter(s => s.isActive !== false);
+      console.log(`🛠️ ScheduleBuilder - Updated students from robust loading:`, activeStudents.length);
+      setStudents(activeStudents);
+    }
+  }, [loadedStudents]);
+
+  useEffect(() => {
+    if (loadedStaff.length > 0) {
+      const activeStaff = loadedStaff.filter(s => s.isActive !== false);
+      console.log(`🛠️ ScheduleBuilder - Updated staff from robust loading:`, activeStaff.length);
+      setStaff(activeStaff);
+    }
+  }, [loadedStaff]);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [showAssignmentPanel, setShowAssignmentPanel] = useState(false);
   const [showGroupCreator, setShowGroupCreator] = useState(false);
@@ -875,6 +909,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
   });
   const [bulkEditMode, setBulkEditMode] = useState(false);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  
+  // Attendance management state
+  const [showAttendanceManager, setShowAttendanceManager] = useState(false);
 
   // 🎯 CRITICAL: Notify parent of schedule changes
   useEffect(() => {
@@ -1258,6 +1295,111 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
     setGroups([]);
   }, []);
 
+  // ============================================================================
+  // STEP 3: ADD THESE UTILITY FUNCTIONS (After existing functions)
+  // ============================================================================
+
+  const saveDraft = useCallback(() => {
+    if (schedule.length > 0 || startTime !== '09:00') {
+      const draft = {
+        schedule,
+        startTime,
+        savedAt: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setDraftLastSaved(new Date().toLocaleTimeString());
+        console.log('📝 Draft saved automatically');
+      } catch (error) {
+        console.error('Error saving draft:', error);
+      }
+    }
+  }, [schedule, startTime]);
+
+  const loadDraft = useCallback(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        setSchedule(draft.schedule || []);
+        setStartTime(draft.startTime || '09:00');
+        setDraftLastSaved(new Date(draft.savedAt).toLocaleTimeString());
+        setHasDraft(false);
+        setShowDraftNotification(false);
+        console.log('📥 Draft loaded successfully');
+        
+        // Show success message briefly
+        setTimeout(() => {
+          alert('Draft restored successfully!');
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasDraft(false);
+      setDraftLastSaved(null);
+      setShowDraftNotification(false);
+      console.log('🗑️ Draft cleared');
+    } catch (error) {
+      console.error('Error clearing draft:', error);
+    }
+  }, []);
+
+  const checkForExistingDraft = useCallback(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        // Only show notification if current schedule is empty and draft has content
+        if ((schedule.length === 0) && (draft.schedule?.length > 0)) {
+          setHasDraft(true);
+          setDraftLastSaved(new Date(draft.savedAt).toLocaleTimeString());
+          setShowDraftNotification(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for draft:', error);
+    }
+  }, [schedule.length]);
+
+  // ============================================================================
+  // STEP 4: ADD THESE useEffect HOOKS (After existing useEffect hooks)
+  // ============================================================================
+
+  // Auto-save draft every 30 seconds if there's content
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (schedule.length > 0) {
+        saveDraft();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [schedule, saveDraft]);
+
+  // Auto-save when schedule or startTime changes (debounced)
+  useEffect(() => {
+    const saveTimeout = setTimeout(() => {
+      if (schedule.length > 0) {
+        saveDraft();
+      }
+    }, 2000); // 2 second delay after changes
+
+    return () => clearTimeout(saveTimeout);
+  }, [schedule, startTime, saveDraft]);
+
+  // Check for existing draft when component mounts
+  useEffect(() => {
+    checkForExistingDraft();
+  }, [checkForExistingDraft]);
+
   // Default activity library removed - using only Activity Library activities
 
   // Helper functions
@@ -1493,6 +1635,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
       })));
     }, 100);
     
+    // ADD THIS LINE:
+    clearDraft();
+    
     console.log(`💾 Saved schedule with group assignments: ${newSchedule.name}`);
   };
 
@@ -1552,6 +1697,116 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
     }));
   };
 
+  // Edit a saved schedule
+  const editSchedule = (scheduleVariation: ScheduleVariation) => {
+    // Load the schedule into the builder for editing
+    const enhancedActivities = (scheduleVariation.activities || []).map((activity: any) => ({
+      ...activity,
+      assignment: activity.assignment || {
+        staffIds: [],
+        groupIds: [],
+        isWholeClass: true,
+        notes: ''
+      },
+      // CRITICAL: Preserve groupAssignments when loading for editing
+      groupAssignments: activity.groupAssignments || [],
+      
+      // 🎯 EXPLICITLY preserve transition properties
+      ...(activity.isTransition && {
+        isTransition: activity.isTransition,
+        transitionType: activity.transitionType,
+        animationStyle: activity.animationStyle,
+        showNextActivity: activity.showNextActivity,
+        movementPrompts: activity.movementPrompts,
+        autoStart: activity.autoStart,
+        soundEnabled: activity.soundEnabled,
+        customMessage: activity.customMessage
+      })
+    }));
+
+    setSchedule(enhancedActivities);
+    setStartTime(scheduleVariation.startTime);
+    setActiveTab('builder');
+
+    // Show confirmation message
+    console.log(`📝 Loaded schedule for editing: ${scheduleVariation.name}`);
+    
+    // Optional: Show a toast or notification that the schedule is loaded for editing
+    // You could add a state for showing edit mode indicator
+  };
+
+  // 🚀 NEW: Use Built Schedule - Revolutionary workflow
+  const useBuiltSchedule = () => {
+    if (schedule.length === 0) {
+      alert('No schedule built yet. Please add activities first.');
+      return;
+    }
+
+    // Create temporary schedule for today's use
+    const todaySchedule = {
+      id: `temp_schedule_${Date.now()}`,
+      name: `Today's Schedule - ${new Date().toLocaleDateString()}`,
+      type: 'daily' as const,
+      category: 'academic' as const,
+      activities: schedule.map((activity: any) => ({
+        // Base activity properties
+        ...activity,
+        
+        // 🎯 CRITICAL: Preserve ALL transition properties
+        ...(activity.isTransition && {
+          isTransition: activity.isTransition,
+          transitionType: activity.transitionType,
+          animationStyle: activity.animationStyle,
+          showNextActivity: activity.showNextActivity,
+          movementPrompts: activity.movementPrompts,
+          autoStart: activity.autoStart,
+          soundEnabled: activity.soundEnabled,
+          customMessage: activity.customMessage
+        })
+      })),
+      startTime,
+      endTime: getEndTime(),
+      totalDuration: getTotalDuration(),
+      color: '#10B981',
+      icon: '🚀',
+      createdAt: new Date().toISOString(),
+      lastUsed: new Date().toISOString(),
+      usageCount: 1,
+      description: 'Temporary schedule for today\'s use',
+      tags: ['temporary', 'today'],
+      applicableDays: [],
+      isDefault: false,
+      isTemporary: true,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    // Store as today's temporary schedule
+    localStorage.setItem('todaySchedule', JSON.stringify(todaySchedule));
+    
+    // Also store in scheduleVariations for compatibility
+    localStorage.setItem('scheduleVariations', JSON.stringify([todaySchedule]));
+    
+    console.log('🚀 Created temporary schedule for today:', {
+      name: todaySchedule.name,
+      activityCount: todaySchedule.activities.length,
+      duration: `${Math.floor(todaySchedule.totalDuration / 60)}h ${todaySchedule.totalDuration % 60}m`,
+      startTime: todaySchedule.startTime,
+      endTime: todaySchedule.endTime
+    });
+
+    // Dispatch event to notify App.tsx to switch to Display mode
+    const useScheduleEvent = new CustomEvent('useBuiltSchedule', {
+      detail: {
+        schedule: todaySchedule,
+        source: 'ScheduleBuilder',
+        timestamp: Date.now()
+      }
+    });
+    window.dispatchEvent(useScheduleEvent);
+    
+    console.log('📡 Dispatched useBuiltSchedule event to switch to Display mode');
+  };
+
   // Delete a saved schedule
   const deleteSchedule = (scheduleId: string) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
@@ -1567,9 +1822,189 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
 
   const selectedActivityData = selectedActivity ? schedule.find(a => a.id === selectedActivity) : null;
 
+  // ============================================================================
+  // ADD THESE 3 COMPONENT DEFINITIONS (After the utility functions, before the main return statement)
+  // ============================================================================
+
+  // Draft Notification Banner Component
+  const DraftNotificationBanner = () => {
+    if (!showDraftNotification || !hasDraft) return null;
+
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        color: 'white',
+        padding: '1rem 1.5rem',
+        borderRadius: '12px',
+        marginBottom: '1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+        animation: 'slideInFromTop 0.5s ease-out'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            padding: '8px',
+            fontSize: '1.2rem'
+          }}>
+            💾
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', fontWeight: '600' }}>
+              Draft Found!
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+              You have unsaved work from {draftLastSaved}. Would you like to restore it?
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={loadDraft}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            📥 Restore Draft
+          </button>
+          <button
+            onClick={() => {
+              clearDraft();
+              setShowDraftNotification(false);
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            🗑️ Discard
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Draft Status Indicator Component
+  const DraftStatusIndicator = () => {
+    if (schedule.length === 0) return null;
+
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '0.5rem 1rem',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        color: 'rgba(255, 255, 255, 0.8)'
+      }}>
+        <span style={{ color: '#10b981' }}>💾</span>
+        {draftLastSaved ? (
+          <span>Auto-saved at {draftLastSaved}</span>
+        ) : (
+          <span>Auto-saving...</span>
+        )}
+      </div>
+    );
+  };
+
+  // Manual Draft Controls Component
+  const ManualDraftControls = () => {
+    if (schedule.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <button
+          onClick={saveDraft}
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          }}
+        >
+          💾 Save Draft
+        </button>
+        
+        {hasDraft && (
+          <button
+            onClick={loadDraft}
+            style={{
+              background: 'rgba(245, 158, 11, 0.8)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.8)';
+            }}
+          >
+            📥 Load Draft
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{
-      padding: '2rem',
+      padding: '1rem',
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
     }}>
@@ -1587,6 +2022,17 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
         @keyframes confetti-fall {
           0% { transform: translateY(-150px) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
+        }
+
+        @keyframes slideInFromTop {
+          0% {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
       `}</style>
       {/* Header */}
@@ -1611,6 +2057,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
           Build your daily schedule and assign staff and groups
         </p>
       </div>
+
+      {/* ADD THIS: Draft Notification Banner */}
+      <DraftNotificationBanner />
 
       {/* Schedule Controls */}
       <div style={{
@@ -1654,6 +2103,22 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
           Total: {Math.floor(getTotalDuration() / 60)}h {getTotalDuration() % 60}m
         </div>
         
+        <button
+          onClick={() => setShowAttendanceManager(true)}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          📋 Manage Attendance
+        </button>
+        
         {schedule.length > 0 && (
           <button
             onClick={() => setSchedule([])}
@@ -1671,6 +2136,12 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
             🗑️ Clear All
           </button>
         )}
+        
+        {/* ADD THIS: Draft Status and Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+          <DraftStatusIndicator />
+          <ManualDraftControls />
+        </div>
       </div>
 
       {/* Glassmorphism Tab Interface */}
@@ -1921,26 +2392,6 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
               }}>
                 📂 My Saved Schedules
               </h3>
-              
-              <button
-                onClick={() => setShowSaveDialog(true)}
-                disabled={schedule.length === 0}
-                style={{
-                  background: schedule.length === 0 
-                    ? 'rgba(108, 117, 125, 0.5)' 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                  opacity: schedule.length === 0 ? 0.6 : 1
-                }}
-              >
-                💾 Save Current Schedule
-              </button>
             </div>
 
             {savedSchedules.length === 0 ? (
@@ -2029,6 +2480,21 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
                         📥 Load
                       </button>
                       <button
+                        onClick={() => editSchedule(schedule)}
+                        style={{
+                          background: 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px 16px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          fontWeight: '600'
+                        }}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
                         onClick={() => deleteSchedule(schedule.id)}
                         style={{
                           background: '#dc3545',
@@ -2068,25 +2534,68 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
                 🛠️ Schedule Builder
               </h3>
               
-              <button
-                onClick={() => setShowSaveDialog(true)}
-                disabled={schedule.length === 0}
-                style={{
-                  background: schedule.length === 0 
-                    ? 'rgba(108, 117, 125, 0.5)' 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1.5rem',
-                  fontSize: '0.9rem',
-                  fontWeight: '600',
-                  cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
-                  opacity: schedule.length === 0 ? 0.6 : 1
-                }}
-              >
-                💾 Save Current Schedule
-              </button>
+              {/* NEW: Three-button layout in Schedule Builder */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                <button
+                  onClick={useBuiltSchedule}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '1rem 2rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1,
+                    boxShadow: schedule.length === 0 ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  🚀 Use Built Schedule
+                </button>
+                
+                <button
+                  onClick={() => setShowSaveDialog(true)}
+                  disabled={schedule.length === 0}
+                  style={{
+                    background: schedule.length === 0 
+                      ? 'rgba(108, 117, 125, 0.5)' 
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: schedule.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: schedule.length === 0 ? 0.6 : 1
+                  }}
+                >
+                  💾 Save Current Schedule
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('saved')}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  📂 Load Different Schedule
+                </button>
+              </div>
             </div>
 
             {schedule.length === 0 ? (
@@ -2778,6 +3287,61 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
           </div>
         </div>
       )}
+
+      {/* Schedule Conflict Detector - Show for current activity being built */}
+      {schedule.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          {schedule.map((activity, index) => {
+            const activityStartTime = index === 0 
+              ? startTime 
+              : calculateTime(startTime, schedule.slice(0, index).reduce((sum, act) => sum + act.duration, 0));
+            
+            return (
+              <ScheduleConflictDetector
+                key={`conflict-${activity.id}-${index}`}
+                activityTime={activityStartTime}
+                activityName={activity.name}
+                day="today"
+                assignedStudents={students.map(student => ({
+                  id: student.id,
+                  name: student.name,
+                  grade: student.grade || 'Unknown',
+                  photo: student.photo,
+                  dateCreated: new Date().toISOString().split('T')[0],
+                  accommodations: student.accommodations || [],
+                  goals: student.goals || [],
+                  preferredPartners: student.preferredPartners || [],
+                  avoidPartners: student.avoidPartners || [],
+                  resourceInfo: student.resourceInfo || {
+                    attendsResource: false,
+                    resourceType: '',
+                    resourceTeacher: '',
+                    timeframe: ''
+                  },
+                  iepData: {
+                    goals: [],
+                    dataCollection: []
+                  }
+                }))}
+                onDismiss={() => {
+                  // Optional: Handle dismissing conflict warnings
+                  console.log(`Dismissed conflict warning for ${activity.name}`);
+                }}
+                className="mb-2"
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Attendance Manager Modal */}
+      {showAttendanceManager && (
+        <AttendanceManager
+          allStudents={students.filter(s => s.isActive !== false)}
+          isOpen={showAttendanceManager}
+          onClose={() => setShowAttendanceManager(false)}
+        />
+      )}
     </div>
   );
 };
@@ -2992,26 +3556,76 @@ const ClassroomGroupAssignment: React.FC<AssignmentPanelProps> = ({
   const [unassignedStudents, setUnassignedStudents] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load real student data
+    // Load real student data from UnifiedDataService
     try {
-      const savedStudents = localStorage.getItem('students');
-      const studentData = savedStudents ? JSON.parse(savedStudents) : propStudents || [];
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      // Convert UnifiedStudent[] to compatible format
+      const studentData = unifiedStudents.map((student: UnifiedStudent) => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        workingStyle: student.workingStyle,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes
+      }));
+      
       setRealStudents(studentData);
       setUnassignedStudents(studentData.map((s: any) => s.id));
     } catch (error) {
-      console.error('Error loading students:', error);
-      setRealStudents(propStudents || []);
-      setUnassignedStudents((propStudents || []).map((s: any) => s.id));
+      console.error('Error loading students from UnifiedDataService:', error);
+      // Fallback to localStorage
+      try {
+        const savedStudents = localStorage.getItem('students');
+        const studentData = savedStudents ? JSON.parse(savedStudents) : propStudents || [];
+        setRealStudents(studentData);
+        setUnassignedStudents(studentData.map((s: any) => s.id));
+      } catch (fallbackError) {
+        console.error('Error loading students from localStorage:', fallbackError);
+        setRealStudents(propStudents || []);
+        setUnassignedStudents((propStudents || []).map((s: any) => s.id));
+      }
     }
 
-    // Load real staff data
+    // Load real staff data from UnifiedDataService
     try {
-      const savedStaff = localStorage.getItem('staff_members');
-      const staffData = savedStaff ? JSON.parse(savedStaff) : propStaff || [];
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      // Convert UnifiedStaff[] to compatible format
+      const staffData = unifiedStaff.map((staff: UnifiedStaff) => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email,
+        phone: staff.phone,
+        photo: staff.photo,
+        isActive: staff.isActive,
+        startDate: staff.dateCreated,
+        specialties: staff.specialties || [],
+        notes: staff.notes,
+        isResourceTeacher: staff.isResourceTeacher,
+        isRelatedArtsTeacher: staff.isRelatedArtsTeacher
+      }));
+      
       setRealStaff(staffData);
     } catch (error) {
-      console.error('Error loading staff:', error);
-      setRealStaff(propStaff || []);
+      console.error('Error loading staff from UnifiedDataService:', error);
+      // Fallback to localStorage
+      try {
+        const savedStaff = localStorage.getItem('staff_members');
+        const staffData = savedStaff ? JSON.parse(savedStaff) : propStaff || [];
+        setRealStaff(staffData);
+      } catch (fallbackError) {
+        console.error('Error loading staff from localStorage:', fallbackError);
+        setRealStaff(propStaff || []);
+      }
     }
   }, [propStudents, propStaff]);
 

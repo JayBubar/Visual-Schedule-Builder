@@ -1,126 +1,64 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StaffMember } from '../../types';
+import UnifiedDataService, { UnifiedStaff } from '../../services/unifiedDataService';
+import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface StaffManagementProps {
   isActive: boolean;
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
-  const [staff, setStaff] = useState<StaffMember[]>([]);
+  // Use robust data loading hook
+  const {
+    staff,
+    isLoading,
+    error
+  } = useRobustDataLoading({
+    loadStudents: false,
+    loadStaff: true,
+    dependencies: [isActive]
+  });
+
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editingStaff, setEditingStaff] = useState<UnifiedStaff | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Load staff data on mount
-  useEffect(() => {
-    loadStaffData();
-  }, []);
-
-  const loadStaffData = () => {
-    try {
-      const savedStaff = localStorage.getItem('staff_members');
-      if (savedStaff) {
-        setStaff(JSON.parse(savedStaff));
-      } else {
-        // Initialize with default staff if none exist
-        const defaultStaff: StaffMember[] = [
-          {
-            id: 'staff1',
-            name: 'Ms. Johnson',
-            role: 'Special Education Teacher',
-            email: 'johnson@school.edu',
-            phone: '(555) 123-4567',
-            specialties: ['Autism Support', 'Behavior Management'],
-            photo: null,
-            isActive: true,
-            startDate: '2023-08-15',
-            notes: 'Lead teacher with 8 years experience',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff2',
-            name: 'Mr. Rodriguez',
-            role: 'Paraprofessional',
-            email: 'rodriguez@school.edu',
-            phone: '(555) 234-5678',
-            specialties: ['Math Support', 'Individual Assistance'],
-            photo: null,
-            isActive: true,
-            startDate: '2024-01-08',
-            notes: 'Excellent with one-on-one instruction',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff3',
-            name: 'Dr. Williams',
-            role: 'Speech Therapist',
-            email: 'williams@school.edu',
-            phone: '(555) 345-6789',
-            specialties: ['Speech Therapy', 'Communication Devices'],
-            photo: null,
-            isActive: true,
-            startDate: '2022-09-01',
-            notes: 'Specialist in AAC devices',
-            isResourceTeacher: true,
-            isRelatedArtsTeacher: false
-          },
-          {
-            id: 'staff4',
-            name: 'Mrs. Chen',
-            role: 'Art Teacher',
-            email: 'chen@school.edu',
-            phone: '(555) 456-7890',
-            specialties: ['Art Therapy', 'Creative Expression'],
-            photo: null,
-            isActive: true,
-            startDate: '2023-01-15',
-            notes: 'Comes to classroom for art sessions',
-            isResourceTeacher: false,
-            isRelatedArtsTeacher: true
-          }
-        ];
-        setStaff(defaultStaff);
-        saveStaffData(defaultStaff);
-      }
-    } catch (error) {
-      console.error('Error loading staff data:', error);
-    }
+  // Refresh data function
+  const refreshData = () => {
+    // Force re-render by updating dependencies
+    window.location.reload();
   };
 
-  const saveStaffData = (staffData: StaffMember[]) => {
-    try {
-      localStorage.setItem('staff_members', JSON.stringify(staffData));
-      // Also trigger a global data update event for other components
-      window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
-        detail: staffData 
-      }));
-    } catch (error) {
-      console.error('Error saving staff data:', error);
-    }
+  const saveStaffData = () => {
+    // No need for explicit save - UnifiedDataService handles persistence
+    // Trigger global data update event for other components
+    window.dispatchEvent(new CustomEvent('staffDataUpdated', { 
+      detail: staff 
+    }));
+    
+    // Refresh data after save
+    setTimeout(() => {
+      refreshData();
+    }, 100);
   };
 
   const handlePhotoUpload = async (staffId: string, file: File) => {
     try {
-      console.log('Uploading photo for staff ID:', staffId); // Debug log
+      console.log('Uploading photo for staff ID:', staffId);
       
       // Convert file to base64 for local storage
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64Photo = e.target?.result as string;
-        console.log('Photo loaded for staff ID:', staffId); // Debug log
+        console.log('Photo loaded for staff ID:', staffId);
         
-        setStaff(currentStaff => {
-          const updatedStaff = currentStaff.map(member => 
-            member.id === staffId 
-              ? { ...member, photo: base64Photo }
-              : member
-          );
-          console.log('Updated staff array:', updatedStaff); // Debug log
-          saveStaffData(updatedStaff);
-          return updatedStaff;
-        });
+        // Update via UnifiedDataService
+        UnifiedDataService.updateStaff(staffId, { photo: base64Photo });
+        
+        // Refresh data to get updated state
+        refreshData();
+        
+        saveStaffData();
       };
       
       reader.readAsDataURL(file);
@@ -131,60 +69,77 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
   };
 
   const handleRemovePhoto = (staffId: string) => {
-    const updatedStaff = staff.map(member => 
-      member.id === staffId 
-        ? { ...member, photo: null }
-        : member
-    );
+    // Update via UnifiedDataService
+    UnifiedDataService.updateStaff(staffId, { photo: null });
     
-    setStaff(updatedStaff);
-    saveStaffData(updatedStaff);
+    // Refresh data to get updated state
+    refreshData();
+    
+    saveStaffData();
   };
 
-  const handleAddStaff = (newStaff: Omit<StaffMember, 'id'>) => {
-    const staffWithId: StaffMember = {
-      ...newStaff,
-      id: `staff_${Date.now()}`
-    };
+  const handleAddStaff = (newStaff: Omit<UnifiedStaff, 'id'>) => {
+    // Add via UnifiedDataService
+    const addedStaff = UnifiedDataService.addStaff(newStaff);
     
-    const updatedStaff = [...staff, staffWithId];
-    setStaff(updatedStaff);
-    saveStaffData(updatedStaff);
+    // Refresh data to get updated state
+    refreshData();
+    
+    saveStaffData();
     setShowAddModal(false);
   };
 
-  const handleEditStaff = (updatedStaff: StaffMember) => {
-    const newStaffList = staff.map(member => 
-      member.id === updatedStaff.id ? updatedStaff : member
-    );
+  const handleEditStaff = (updatedStaff: UnifiedStaff) => {
+    // Update via UnifiedDataService
+    UnifiedDataService.updateStaff(updatedStaff.id, updatedStaff);
     
-    setStaff(newStaffList);
-    saveStaffData(newStaffList);
+    // Refresh data to get updated state
+    refreshData();
+    
+    saveStaffData();
     setEditingStaff(null);
   };
 
   const handleDeleteStaff = (staffId: string) => {
     if (window.confirm('Are you sure you want to remove this staff member?')) {
-      const updatedStaff = staff.filter(member => member.id !== staffId);
-      setStaff(updatedStaff);
-      saveStaffData(updatedStaff);
+      // Delete via UnifiedDataService
+      UnifiedDataService.deleteStaff(staffId);
+      
+      // Refresh data to get updated state
+      refreshData();
+      
+      saveStaffData();
     }
   };
 
-  const filteredStaff = staff.filter(member =>
+  // Convert StaffMember[] to UnifiedStaff[] for compatibility
+  const unifiedStaff: UnifiedStaff[] = staff.map(member => ({
+    ...member,
+    dateCreated: (member as any).dateCreated || (member as any).startDate || new Date().toISOString().split('T')[0],
+    specialties: member.specialties || [],
+    isResourceTeacher: (member as any).isResourceTeacher || false,
+    isRelatedArtsTeacher: (member as any).isRelatedArtsTeacher || false,
+    permissions: (member as any).permissions || {
+      canEditStudents: false,
+      canViewReports: true,
+      canManageGoals: false
+    }
+  }));
+
+  const filteredStaff = unifiedStaff.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.specialties.some(specialty => 
+    (member.specialties && member.specialties.some(specialty => 
       specialty.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    ))
   );
 
   if (!isActive) return null;
 
   return (
     <div style={{ 
-      padding: '2rem', 
-      minHeight: '100vh', 
+      padding: '1rem', 
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
     }}>
       {/* Header */}
@@ -204,10 +159,28 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
         <p style={{ 
           color: 'rgba(255,255,255,0.9)', 
           fontSize: '1.1rem',
-          margin: 0
+          margin: '0 0 1rem 0'
         }}>
           Manage your classroom team, resource teachers, and related arts staff
         </p>
+        
+        {/* Data Source Indicator */}
+        <div style={{
+          display: 'inline-block',
+          background: 'rgba(34, 197, 94, 0.2)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          border: '1px solid #22c55e',
+          color: '#22c55e',
+          fontSize: '0.9rem'
+        }}>
+          ✅ Robust Data Loading Active
+          <span style={{ marginLeft: '10px' }}>
+            {staff.length} staff members loaded
+          </span>
+          {isLoading && <span style={{ marginLeft: '10px' }}>🔄 Loading...</span>}
+          {error && <span style={{ marginLeft: '10px' }}>⚠️ {error}</span>}
+        </div>
       </div>
 
       {/* Controls */}
@@ -383,7 +356,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
                   gap: '0.5rem',
                   flexWrap: 'wrap'
                 }}>
-                  {member.specialties.slice(0, 2).map(specialty => (
+                  {(member.specialties || []).slice(0, 2).map(specialty => (
                     <span
                       key={specialty}
                       style={{
@@ -475,7 +448,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
                 📞 {member.phone}
               </div>
               <div>
-                📅 Started: {new Date(member.startDate).toLocaleDateString()}
+                📅 Started: {new Date(member.dateCreated).toLocaleDateString()}
               </div>
             </div>
 
@@ -586,8 +559,8 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
 
 // Staff Modal Component
 interface StaffModalProps {
-  staff?: StaffMember;
-  onSave: (staff: StaffMember | Omit<StaffMember, 'id'>) => void;
+  staff?: UnifiedStaff;
+  onSave: (staff: UnifiedStaff | Omit<UnifiedStaff, 'id'>) => void;
   onCancel: () => void;
 }
 
@@ -600,10 +573,15 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
     specialties: staff?.specialties || [],
     photo: staff?.photo || null,
     isActive: staff?.isActive ?? true,
-    startDate: staff?.startDate || new Date().toISOString().split('T')[0],
+    dateCreated: staff?.dateCreated || new Date().toISOString().split('T')[0],
     notes: staff?.notes || '',
     isResourceTeacher: staff?.isResourceTeacher ?? false,
-    isRelatedArtsTeacher: staff?.isRelatedArtsTeacher ?? false
+    isRelatedArtsTeacher: staff?.isRelatedArtsTeacher ?? false,
+    permissions: staff?.permissions || {
+      canEditStudents: false,
+      canViewReports: true,
+      canManageGoals: false
+    }
   });
 
   const [newSpecialty, setNewSpecialty] = useState('');
@@ -732,8 +710,8 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
                 <label>Start Date</label>
                 <input
                   type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                  value={formData.dateCreated}
+                  onChange={(e) => setFormData({...formData, dateCreated: e.target.value})}
                   style={{ width: '100%' }}
                 />
               </div>
@@ -879,14 +857,3 @@ const StaffModal: React.FC<StaffModalProps> = ({ staff, onSave, onCancel }) => {
 };
 
 export default StaffManagement;
-
-// Global function to get staff data for other components
-export const getStaffData = (): StaffMember[] => {
-  try {
-    const savedStaff = localStorage.getItem('staff_members');
-    return savedStaff ? JSON.parse(savedStaff) : [];
-  } catch (error) {
-    console.error('Error getting staff data:', error);
-    return [];
-  }
-};

@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityLibraryItem, Student, Staff, ChoiceFilter } from '../../types';
+import UnifiedDataService from '../../services/unifiedDataService';
+import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
 // 🎨 GLASSMORPHISM STYLES FOR IndependentChoices
 const styles = `
@@ -128,6 +130,59 @@ const styles = `
   min-height: 80px !important;
 }
 
+/* Student avatar styling */
+.student-avatar {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.student-avatar img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.student-avatar-initials {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: bold !important;
+  color: white !important;
+  font-size: 1rem !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.student-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.student-name {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  margin-bottom: 0.25rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.student-status {
+  font-size: 0.875rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.3 !important;
+}
+
 .student-card:hover {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.4) !important;
@@ -208,7 +263,7 @@ const styles = `
   to { transform: rotate(360deg); }
 }
 
-/* Control buttons matching Daily Highlights style */
+/* Control buttons matching Daily Highlights style - FIXED Z-INDEX */
 .control-button {
   background: rgba(255, 255, 255, 0.2) !important;
   backdrop-filter: blur(20px) !important;
@@ -224,6 +279,7 @@ const styles = `
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
   position: relative !important;
   overflow: hidden !important;
+  z-index: 100 !important; /* FIXED: Ensure buttons are above other content */
 }
 
 .control-button::before {
@@ -608,9 +664,14 @@ interface ChoiceRotation {
 interface IndependentChoicesProps {
   onClose?: () => void;
   selectedDate?: string;
+  mode?: 'full' | 'assignment-only'; // NEW: Control which interface to show
 }
 
-const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, selectedDate }) => {
+const IndependentChoices: React.FC<IndependentChoicesProps> = ({ 
+  onClose, 
+  selectedDate,
+  mode = 'full' // DEFAULT to full for existing usage
+}) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [choiceEligibleActivities, setChoiceEligibleActivities] = useState<ActivityLibraryItem[]>([]);
   const [currentRotation, setCurrentRotation] = useState<ChoiceRotation | null>(null);
@@ -623,6 +684,7 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
   const [showActivityLibrary, setShowActivityLibrary] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
 
+
   // Load data on component mount
   useEffect(() => {
     loadStudents();
@@ -630,6 +692,22 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     loadRotationHistory();
     loadAnalytics();
   }, []);
+
+  // Auto-start rotation for assignment-only mode
+  useEffect(() => {
+    if (mode === 'assignment-only' && !currentRotation && choiceEligibleActivities.length > 0) {
+      const autoRotation: ChoiceRotation = {
+        id: `rotation-${Date.now()}`,
+        rotationNumber: 1,
+        duration: 20, // Default duration
+        assignments: [],
+        isActive: true,
+        isCompleted: false
+      };
+      setCurrentRotation(autoRotation);
+      setTimeRemaining(20 * 60); // 20 minutes in seconds
+    }
+  }, [mode, choiceEligibleActivities, currentRotation]);
 
   // Timer effect
   useEffect(() => {
@@ -649,21 +727,83 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     return () => clearInterval(interval);
   }, [isTimerRunning, timeRemaining]);
 
-  // 🎯 Load students from localStorage
+  // 🎯 Load students from UnifiedDataService
   const loadStudents = () => {
-    const savedStudents = localStorage.getItem('students');
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
+    try {
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      // Convert UnifiedStudent to Student format for compatibility
+      const convertedStudents: Student[] = unifiedStudents.map(student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade,
+        photo: student.photo,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive !== false,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes,
+        workingStyle: (student.workingStyle as "independent" | "collaborative" | "guided" | "needs-support") || "independent"
+      }));
+      setStudents(convertedStudents);
+    } catch (error) {
+      console.error('Error loading students:', error);
+      setStudents([]);
     }
   };
 
-  // 🎯 Load choice-eligible activities from Activity Library
+  // 🎯 Load choice-eligible activities from UnifiedDataService
   const loadChoiceEligibleActivities = () => {
-    const savedActivities = localStorage.getItem('activityLibrary');
-    if (savedActivities) {
-      const allActivities: ActivityLibraryItem[] = JSON.parse(savedActivities);
-      const choiceEligible = allActivities.filter(activity => activity.isChoiceEligible);
-      setChoiceEligibleActivities(choiceEligible);
+    try {
+      const allActivities = UnifiedDataService.getAllActivities();
+      // Convert UnifiedActivity to ActivityLibraryItem format for compatibility
+      const convertedActivities: ActivityLibraryItem[] = allActivities
+        .filter(activity => (activity as any).choiceEligible === true) // Only get choice-eligible activities
+        .map(activity => ({
+          id: activity.id,
+          name: activity.name,
+          description: activity.description || '',
+          emoji: (activity as any).icon || '📝', // Use icon from activity or default
+          defaultDuration: activity.duration || 20,
+          category: activity.category as any,
+          materials: activity.materials || [],
+          instructions: activity.instructions || '',
+          isChoiceEligible: true, // These are all choice-eligible
+          choiceProperties: {
+            maxStudents: 4, // Default max students
+            requiresSupervision: true,
+            isIndoor: true,
+            setupTime: 2,
+            cleanupTime: 3,
+            skillLevel: 'all',
+            staffSupervision: 'minimal',
+            socialInteraction: 'small-group',
+            quietActivity: (activity as any).tags?.includes('quiet') || false,
+            messyActivity: (activity as any).tags?.includes('messy') || false,
+            preparationTime: 5
+          },
+          usageStats: {
+            timesChosen: 0,
+            lastUsed: undefined,
+            averageRating: undefined
+          },
+          tags: (activity as any).tags || [],
+          difficulty: 'medium' as const,
+          ageGroup: 'all' as const,
+          createdAt: activity.dateCreated,
+          updatedAt: activity.dateCreated,
+          isCustom: activity.isCustom
+        }));
+      
+      setChoiceEligibleActivities(convertedActivities);
+      console.log(`🎯 Loaded ${convertedActivities.length} choice-eligible activities`);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      setChoiceEligibleActivities([]);
     }
   };
 
@@ -773,6 +913,8 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
 
     // Check if student is already assigned
     const existingAssignment = currentRotation.assignments.find(a => a.studentId === student.id);
+    let updatedRotation;
+    
     if (existingAssignment) {
       // Update existing assignment
       const updatedAssignments = currentRotation.assignments.map(assignment =>
@@ -787,10 +929,10 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
           : assignment
       );
       
-      setCurrentRotation({
+      updatedRotation = {
         ...currentRotation,
         assignments: updatedAssignments
-      });
+      };
     } else {
       // Create new assignment
       const newAssignment: StudentAssignment = {
@@ -804,11 +946,28 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
         rotationNumber: currentRotation.rotationNumber
       };
 
-      setCurrentRotation({
+      updatedRotation = {
         ...currentRotation,
         assignments: [...currentRotation.assignments, newAssignment]
-      });
+      };
     }
+
+    setCurrentRotation(updatedRotation);
+
+    // 🎯 REAL-TIME SYNC: Update ChoiceDataManager immediately
+    const choiceDataManager = ChoiceDataManager.getInstance();
+    const studentChoices: StudentChoice[] = updatedRotation.assignments.map(assignment => ({
+      studentId: assignment.studentId,
+      studentName: assignment.studentName,
+      activityId: assignment.activityId,
+      activityName: assignment.activityName,
+      activityIcon: assignment.activityEmoji,
+      assignedAt: assignment.assignedAt,
+      rotationNumber: assignment.rotationNumber
+    }));
+    
+    choiceDataManager.saveTodayChoices(studentChoices);
+    console.log(`🎯 Real-time sync: Updated choice data with ${studentChoices.length} assignments`);
 
     // Update usage analytics
     updateActivityUsage(activity.id);
@@ -885,12 +1044,27 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     const updatedHistory = [...rotationHistory, completedRotation];
     saveRotationHistory(updatedHistory);
 
+    // 🎯 NEW: Sync with ChoiceDataManager for SmartboardDisplay integration
+    const choiceDataManager = ChoiceDataManager.getInstance();
+    const studentChoices: StudentChoice[] = completedRotation.assignments.map(assignment => ({
+      studentId: assignment.studentId,
+      studentName: assignment.studentName,
+      activityId: assignment.activityId,
+      activityName: assignment.activityName,
+      activityIcon: assignment.activityEmoji,
+      assignedAt: assignment.assignedAt,
+      rotationNumber: assignment.rotationNumber
+    }));
+    
+    choiceDataManager.saveTodayChoices(studentChoices);
+    console.log(`🎯 Synced ${studentChoices.length} choice assignments to ChoiceDataManager`);
+
     // Reset current rotation
     setCurrentRotation(null);
     setTimeRemaining(0);
 
     // Show completion celebration
-    alert(`🎉 Choice Time Complete! Rotation #${completedRotation.rotationNumber} finished.`);
+    alert(`🎉 Choice Time Complete! Rotation #${completedRotation.rotationNumber} finished.\n\n✅ Student assignments saved for "Choice Item Time" activities.`);
   };
 
   // 🎯 Auto-assign students to activities
@@ -951,6 +1125,44 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
     return currentRotation.assignments.filter(a => a.activityId === activityId).length;
   };
 
+  // 🎯 Helper functions for student assignment interface
+  const getCurrentAssignment = (studentId: string) => {
+    return currentRotation?.assignments.find(a => a.studentId === studentId);
+  };
+
+  const handleStudentAssignment = (studentId: string, activityId: string) => {
+    if (!currentRotation || !activityId) return;
+    
+    setCurrentRotation(prev => {
+      if (!prev) return prev;
+      
+      const newAssignments = prev.assignments.filter(a => a.studentId !== studentId);
+      if (activityId) {
+        const activity = choiceEligibleActivities.find(a => a.id === activityId);
+        if (activity) {
+          const student = students.find(s => s.id === studentId);
+          if (student) {
+            newAssignments.push({
+              studentId,
+              studentName: formatStudentName(student.name),
+              studentPhoto: student.photo,
+              activityId,
+              activityName: activity.name,
+              activityEmoji: activity.emoji,
+              assignedAt: new Date().toISOString(),
+              rotationNumber: prev.rotationNumber
+            });
+          }
+        }
+      }
+      
+      return {
+        ...prev,
+        assignments: newAssignments
+      };
+    });
+  };
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
@@ -961,127 +1173,246 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
         <h3 className="header-title">
           🎯 Independent Choices
         </h3>
-        <p className="header-subtitle">
-          Enhanced with Activity Library Integration
-        </p>
       </div>
 
-      {/* Action buttons */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '1rem',
-        marginBottom: '2rem',
-        flexWrap: 'wrap'
-      }}>
-        <button
-          onClick={() => setShowActivityLibrary(true)}
-          className="control-button secondary"
-        >
-          📚 Activity Library
-        </button>
-        
-        {!currentRotation && (
-          <button
-            onClick={createNewRotation}
-            className="control-button primary"
-          >
-            ➕ New Choice Time
-          </button>
-        )}
-        {currentRotation && (
-          <button
-            onClick={createNewRotation}
-            className="control-button"
-          >
-            ➕ New Rotation
-          </button>
-        )}        
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="control-button"
-          >
-            ✕ Close
-          </button>
-        )}
-      </div>
+      {/* ASSIGNMENT-ONLY MODE: Skip to assignment interface */}
+      {mode === 'assignment-only' && currentRotation && (
+        <div>
+          {/* Assignment Progress */}
+          <div className="progress-container">
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1rem'
+            }}>
+              <span className="text-primary" style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+                Student Assignment Progress
+              </span>
+              <span className="text-secondary">
+                {currentRotation.assignments.length} / {students.length} students assigned
+              </span>
+            </div>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill"
+                style={{ 
+                  width: `${students.length > 0 ? (currentRotation.assignments.length / students.length) * 100 : 0}%` 
+                }}
+              />
+            </div>
+          </div>
 
-      {/* Statistics matching Daily Highlights */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h4>⭐ Today's Special</h4>
-          <div style={{ fontSize: '1rem', lineHeight: '1.5' }}>
-            {choiceEligibleActivities.length} choice-eligible activities available for students.
-          </div>
-        </div>
-        <div className="stat-card">
-          <h4>👥 Students Ready</h4>
-          <div style={{ fontSize: '1rem', lineHeight: '1.5' }}>
-            {students.length} students ready for independent choice time.
-          </div>
-        </div>
-        <div className="stat-card">
-          <h4>📊 Progress</h4>
-          <div style={{ fontSize: '1rem', lineHeight: '1.5' }}>
-            {rotationHistory.length} completed rotations. {currentRotation?.assignments.length || 0} current assignments.
-          </div>
-        </div>
-      </div>
-
-      {/* Choice Filters */}
-      <div className="glass-panel">
-        <h4 className="section-header">🔧 Activity Filters</h4>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
-          <label style={{
+          {/* Quick Auto-Assign Action */}
+          <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            color: 'white',
-            cursor: 'pointer'
+            justifyContent: 'center',
+            gap: '1rem',
+            marginBottom: '2rem'
           }}>
-            <input
-              type="checkbox"
-              checked={choiceFilter.quietActivity || false}
-              onChange={(e) => setChoiceFilter({...choiceFilter, quietActivity: e.target.checked})}
-            />
-            🤫 Quiet Activities Only
-          </label>
-          
-          <select
-            value={choiceFilter.maxStudents || ''}
-            onChange={(e) => setChoiceFilter({...choiceFilter, maxStudents: e.target.value ? parseInt(e.target.value) : undefined})}
-            style={{
-              padding: '0.5rem',
-              borderRadius: '8px',
-              border: '2px solid rgba(255,255,255,0.3)',
-              background: 'rgba(255,255,255,0.1)',
-              color: 'white'
-            }}
-          >
-            <option value="">Any Group Size</option>
-            <option value="2">Max 2 Students</option>
-            <option value="3">Max 3 Students</option>
-            <option value="4">Max 4 Students</option>
-          </select>
+            <button
+              onClick={autoAssignStudents}
+              className="control-button secondary"
+              disabled={getUnassignedStudents().length === 0}
+            >
+              🎲 Auto-Assign All Students
+            </button>
+          </div>
 
-          <button
-            onClick={() => setChoiceFilter({})}
-            className="control-button"
-            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
-          >
-            Clear Filters
-          </button>
+          {/* Main Assignment Interface */}
+          <div className="main-content-grid">
+            {/* Available Activities - SAME AS EXISTING */}
+            <div className="glass-panel">
+              <h4 className="section-header">
+                📚 Available Activities ({filteredActivities.length})
+              </h4>
+              
+              <div className="activities-grid">
+                {filteredActivities.map(activity => (
+                  <div
+                    key={activity.id}
+                    className={`activity-card ${
+                      selectedActivity?.id === activity.id ? 'selected' : ''
+                    }`}
+                    onClick={() => setSelectedActivity(
+                      selectedActivity?.id === activity.id ? null : activity
+                    )}
+                  >
+                    <div className="activity-emoji">{activity.emoji}</div>
+                    <div className="activity-name">{activity.name}</div>
+                    <div className="activity-capacity">
+                      {getActivityAssignmentCount(activity.id)} / {activity.choiceProperties?.maxStudents || 6} students
+                    </div>
+
+                    {/* Activity Properties - SAME AS EXISTING */}
+                    {activity.choiceProperties && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        justifyContent: 'center',
+                        marginBottom: '1rem'
+                      }}>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          background: 'rgba(34, 197, 94, 0.2)',
+                          color: 'rgba(34, 197, 94, 0.9)',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(34, 197, 94, 0.3)'
+                        }}>
+                          {activity.choiceProperties.skillLevel}
+                        </span>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          background: 'rgba(59, 130, 246, 0.2)',
+                          color: 'rgba(59, 130, 246, 0.9)',
+                          fontSize: '0.75rem',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(59, 130, 246, 0.3)'
+                        }}>
+                          {activity.choiceProperties.socialInteraction}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Assigned Students Preview - SAME AS EXISTING */}
+                    {getActivityAssignmentCount(activity.id) > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        flexWrap: 'wrap',
+                        marginTop: 'auto'
+                      }}>
+                        {currentRotation.assignments
+                          .filter(a => a.activityId === activity.id)
+                          .slice(0, 3)
+                          .map(assignment => (
+                            <div
+                              key={assignment.studentId}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                border: '2px solid rgba(255, 255, 255, 0.4)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                color: 'white',
+                                overflow: 'hidden'
+                              }}
+                              title={assignment.studentName}
+                            >
+                              {assignment.studentPhoto ? (
+                                <img
+                                  src={assignment.studentPhoto}
+                                  alt={assignment.studentName}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover'
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
+                                  background: 'linear-gradient(145deg, #28a745, #20c997)',
+                                  width: '100%',
+                                  height: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  {assignment.studentName.split(' ').map(n => n[0]).join('')}
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        }
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Students Panel - SAME AS EXISTING LOGIC */}
+            <div className="glass-panel">
+              <h4 className="section-header">
+                👥 Students ({students.length})
+              </h4>
+
+              {/* Unassigned Students */}
+              {getUnassignedStudents().length > 0 && (
+                <div style={{ marginBottom: '2rem' }}>
+                  <h5 style={{
+                    fontSize: '1.2rem',
+                    color: 'rgba(239, 68, 68, 0.9)',
+                    marginBottom: '1rem',
+                    fontWeight: '600'
+                  }}>
+                    ⚠️ Unassigned ({getUnassignedStudents().length})
+                  </h5>
+                  <div className="students-responsive-grid">
+                    {getUnassignedStudents().map(student => (
+                      <div
+                        key={student.id}
+                        className={`student-card unassigned ${
+                          selectedActivity ? 'selectable' : ''
+                        }`}
+                        onClick={() => {
+                          if (selectedActivity) {
+                            assignStudentToActivity(student, selectedActivity);
+                          }
+                        }}
+                      >
+                        <div className="student-avatar">
+                          {student.photo ? (
+                            <img
+                              src={student.photo}
+                              alt={formatStudentName(student.name)}
+                            />
+                          ) : (
+                            <div className="student-avatar-initials" style={{
+                              background: 'linear-gradient(145deg, #ef4444, #dc2626)'
+                            }}>
+                              {formatStudentName(student.name).split(' ').map(n => n[0]).join('')}
+                            </div>
+                          )}
+                        </div>
+                        <div className="student-info">
+                          <div className="student-name">
+                            {formatStudentName(student.name)}
+                          </div>
+                          {selectedActivity ? (
+                            <div className="student-status">
+                              ☝️ Click to assign to {selectedActivity.emoji} {selectedActivity.name}
+                            </div>
+                          ) : (
+                            <div className="student-status">
+                              Select an activity first
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* REST OF STUDENTS PANEL LOGIC - KEEP SAME AS EXISTING */}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* No Current Rotation */}
-      {!currentRotation && (
+      {/* FULL MODE: Original functionality for when NOT in assignment-only mode */}
+      {mode === 'full' && (
+        <>
+          {/* No Current Rotation */}
+          {!currentRotation && (
         <div className="p-8 text-center">
           <div className="text-6xl mb-4">🎯</div>
           <h2 className="text-2xl font-bold text-gray-700 mb-4">Ready to Start Choice Time!</h2>
@@ -1419,16 +1750,16 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
                             </div>
                           )}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div className="text-primary" style={{ fontWeight: '600', fontSize: '1rem' }}>
+                        <div className="student-info">
+                          <div className="student-name">
                             {formatStudentName(student.name)}
                           </div>
                           {selectedActivity ? (
-                            <div className="text-secondary" style={{ fontSize: '0.9rem' }}>
+                            <div className="student-status">
                               ☝️ Click to assign to {selectedActivity.emoji} {selectedActivity.name}
                             </div>
                           ) : (
-                            <div className="text-muted" style={{ fontSize: '0.9rem' }}>
+                            <div className="student-status">
                               Select an activity first
                             </div>
                           )}
@@ -1705,7 +2036,9 @@ const IndependentChoices: React.FC<IndependentChoicesProps> = ({ onClose, select
             </div>
           </div>
         </div>
-       )}
+      )}
+        </>
+      )}
       </div>
     </>
   );

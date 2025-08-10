@@ -1,486 +1,434 @@
+// 🚀 Visual Schedule Builder - Main Application Component
+// File: src/renderer/App.tsx - FIXED TO MATCH ACTUAL COMPONENT INTERFACES
+
 import React, { useState, useEffect, useMemo } from 'react';
+import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
+import { loadFromStorage, saveToStorage } from './utils/storage';
+import UnifiedDataService from './services/unifiedDataService';
+// Remove the DataMigrationManager import - use existing UnifiedDataService instead
+import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
+import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
-import ActivityLibrary from './components/common/ActivityLibrary';
 import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
-import Settings from './components/management/Settings';
-import CelebrationAnimations from './components/common/CelebrationAnimations';
 import DailyCheckIn from './components/calendar/DailyCheckIn';
-import { useStaffData } from './hooks/useStaffData';
-import { useStudentData } from './hooks/useStudentData';
-import { ViewType, ScheduleVariation, Student, StaffMember } from './types';
+import ActivityLibrary from './components/common/ActivityLibrary';
+import Reports from './components/reports/Reports';
+import Settings from './components/management/Settings';
+import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
+import GoalManager from './components/data-collection/GoalManager';
+import SmartGroups from './components/smart-groups/SmartGroups';
+import { SmartGroupsAIService } from './services/smartGroupsService';
+import { DataPrivacyService } from './services/dataPrivacyService';
 
 const App: React.FC = () => {
+  const [showStartScreen, setShowStartScreen] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('builder');
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleVariation | null>(null);
-  const [scheduleVariations, setScheduleVariations] = useState<ScheduleVariation[]>([]);
-  
-  // Use actual data from hooks (includes uploaded photos and real data)
-  const { staff } = useStaffData();
-  const { students } = useStudentData();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [staff, setStaff] = useState<Staff[]>([]);
+  const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
 
-  // 🔧 CRITICAL FIX: Enhanced schedule loading with group preservation
-  const loadScheduleVariations = () => {
-    console.log('🔄 App.tsx - Loading schedule variations...');
-    
-    // Try multiple localStorage keys for maximum compatibility
-    const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
-    
-    for (const key of possibleKeys) {
-      try {
-        const saved = localStorage.getItem(key);
-        if (saved) {
-          const variations: ScheduleVariation[] = JSON.parse(saved);
-          console.log(`📋 Found ${variations.length} schedule variations in '${key}'`);
-          
-          // 🎯 CRITICAL: Preserve groupAssignments during load
-          const preservedVariations = variations.map(variation => ({
-            ...variation,
-            activities: (variation.activities || []).map(activity => ({
-              ...activity,
-              // Ensure groupAssignments are preserved at top level
-              groupAssignments: activity.groupAssignments || 
-                               (activity.assignment as any)?.groupAssignments || 
-                               []
-            }))
-          }));
-          
-          console.log('✅ Preserved group assignments:', preservedVariations.map(v => ({
-            name: v.name,
-            activitiesWithGroups: v.activities.filter(a => a.groupAssignments && a.groupAssignments.length > 0).length
-          })));
-          
-          setScheduleVariations(preservedVariations);
-          
-          // 🎯 CRITICAL: Auto-select the most recently saved schedule
-          const mostRecentSchedule = preservedVariations
-            .filter(s => s.lastUsed)
-            .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())[0];
-          
-          if (mostRecentSchedule) {
-            console.log(`🎯 Auto-selecting most recent schedule: "${mostRecentSchedule.name}"`);
-            setSelectedSchedule(mostRecentSchedule);
-          } else if (preservedVariations.length > 0) {
-            console.log(`🎯 Auto-selecting first schedule: "${preservedVariations[0].name}"`);
-            setSelectedSchedule(preservedVariations[0]);
-          }
-          
-          return; // Stop after finding schedules
-        }
-      } catch (error) {
-        console.error(`Error loading schedules from ${key}:`, error);
-      }
-    }
-    
-    console.log('⚠️ No schedules found in localStorage');
-  };
-
-  // Initial load
   useEffect(() => {
-    loadScheduleVariations();
+    try {
+      // Check for legacy data that needs migration
+      const hasLegacyData = localStorage.getItem('calendarSettings') || 
+                            localStorage.getItem('students');
+      
+      if (hasLegacyData) {
+        migrateLegacyDataQuick();
+      }
+      
+      // Load initial data from unified service
+      loadInitialData();
+      
+    } catch (error) {
+      console.error('❌ Error initializing app:', error);
+    }
   }, []);
 
-  // 🔧 ENHANCED: Event listeners with proper cleanup
-  useEffect(() => {
-    // Listen for storage events (when localStorage changes)
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'scheduleVariations' || event.key === 'saved_schedules') {
-        console.log(`🔄 Storage change detected for ${event.key}, reloading...`);
-        loadScheduleVariations();
-      }
-    };
-
-    // Listen for custom events from ScheduleBuilder
-    const handleScheduleUpdate = (event: CustomEvent) => {
-      console.log('🔄 Custom schedule update event received:', event.detail);
-      loadScheduleVariations();
-    };
-
-    // 🎯 CRITICAL: Listen for when user LOADS a schedule in ScheduleBuilder
-    const handleScheduleLoaded = (event: CustomEvent) => {
-      const { schedule, source } = event.detail;
-      console.log('📥 Schedule loaded event received:', {
-        scheduleName: schedule.name,
-        source: source,
-        activitiesWithGroups: schedule.activities.filter((a: any) => 
-          a.groupAssignments && a.groupAssignments.length > 0
-        ).length
-      });
-      
-      // 🔧 CRITICAL FIX: Update selectedSchedule immediately
-      const preservedSchedule = {
-        ...schedule,
-        activities: (schedule.activities || []).map((activity: any) => ({
-          ...activity,
-          groupAssignments: activity.groupAssignments || 
-                           (activity.assignment as any)?.groupAssignments || 
-                           []
-        }))
-      };
-      
-      setSelectedSchedule(preservedSchedule);
-      console.log(`✅ Updated selectedSchedule to: ${schedule.name}`);
-      
-      // Also refresh schedule variations to update usage tracking
-      loadScheduleVariations();
-    };
-
-    // 🎯 CRITICAL: Listen for when user saves a schedule in ScheduleBuilder
-    const handleScheduleSaved = (event: CustomEvent) => {
-      const { scheduleId, scheduleName } = event.detail;
-      console.log('💾 Schedule saved event detected:', { scheduleId, scheduleName });
-      
-      // Reload schedules and auto-select the newly saved one
-      setTimeout(() => {
-        loadScheduleVariations();
+  // Add this migration function
+  const migrateLegacyDataQuick = () => {
+    try {
+      // Migrate calendar settings (the main issue we're fixing)
+      const legacyCalendarSettings = localStorage.getItem('calendarSettings');
+      if (legacyCalendarSettings) {
+        const settings = JSON.parse(legacyCalendarSettings);
         
-        // Try to auto-select the newly saved schedule
-        setTimeout(() => {
-          const saved = localStorage.getItem('scheduleVariations') || localStorage.getItem('saved_schedules');
-          if (saved) {
-            try {
-              const schedules: ScheduleVariation[] = JSON.parse(saved);
-              const newSchedule = schedules.find(s => s.id === scheduleId);
-              if (newSchedule) {
-                setSelectedSchedule(newSchedule);
-                console.log(`✅ Auto-selected newly saved schedule: ${newSchedule.name}`);
+        // Migrate behavior statements
+        if (settings.customBehaviorCommitments) {
+          const customStatements = [];
+          Object.keys(settings.customBehaviorCommitments).forEach(category => {
+            const statements = settings.customBehaviorCommitments[category];
+            statements.forEach((statement, index) => {
+              customStatements.push({
+                id: `migrated_${category}_${index}`,
+                text: statement,
+                category: category,
+                isActive: true,
+                isDefault: false,
+                createdAt: new Date().toISOString()
+              });
+            });
+          });
+          
+          // Save to unified settings
+          const currentSettings = UnifiedDataService.getSettings();
+          const updatedSettings = {
+            ...currentSettings,
+            dailyCheckIn: {
+              ...currentSettings.dailyCheckIn,
+              behaviorCommitments: {
+                customStatements: customStatements
+              },
+              celebrations: {
+                enabled: settings.celebrationsEnabled !== false,
+                customCelebrations: settings.customCelebrations || []
               }
-            } catch (error) {
-              console.error('Error auto-selecting saved schedule:', error);
             }
-          }
-        }, 200);
-      }, 100);
-    };
-
-    // 🎯 NEW: Listen for real-time schedule building updates
-    const handleScheduleBuilding = (event: CustomEvent) => {
-      const { activities, startTime, name } = event.detail;
-      console.log('🛠️ Schedule building update:', { 
-        activityCount: activities?.length || 0, 
-        startTime, 
-        name 
-      });
-      
-      // Update current working schedule for immediate display
-      if (activities && activities.length > 0) {
-        const workingSchedule = {
-          id: 'working_schedule',
-          name: name || 'Working Schedule',
-          type: 'daily' as const,
-          category: 'academic' as const,
-          activities: activities,
-          startTime: startTime || '09:00',
-          createdAt: new Date().toISOString(),
-          lastUsed: new Date().toISOString()
-        };
-        
-        // Temporarily set as selected for immediate display
-        setSelectedSchedule(workingSchedule);
-      }
-    };
-
-    // Add all event listeners
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('scheduleUpdated', handleScheduleUpdate as EventListener);
-    window.addEventListener('scheduleLoaded', handleScheduleLoaded as EventListener);
-    window.addEventListener('scheduleSaved', handleScheduleSaved as EventListener);
-    window.addEventListener('scheduleBuilding', handleScheduleBuilding as EventListener);
-
-    console.log('✅ App.tsx event listeners registered:', {
-      storage: '✅',
-      scheduleUpdated: '✅', 
-      scheduleLoaded: '✅ CRITICAL FIX',
-      scheduleSaved: '✅',
-      scheduleBuilding: '✅ NEW'
-    });
-
-    // 🎯 CRITICAL: Polling fallback for same-tab updates
-    const interval = setInterval(() => {
-      const saved = localStorage.getItem('scheduleVariations') || localStorage.getItem('saved_schedules');
-      if (saved) {
-        try {
-          const current = JSON.parse(saved);
-          // Only reload if the count changed (new schedule added)
-          if (current.length !== scheduleVariations.length) {
-            console.log('🔄 Schedule count changed, reloading...');
-            loadScheduleVariations();
-          }
-        } catch (error) {
-          // Ignore parsing errors
+          };
+          
+          UnifiedDataService.updateSettings(updatedSettings);
+          
+          // Backup and remove legacy data
+          localStorage.setItem('calendarSettings_backup', legacyCalendarSettings);
+          localStorage.removeItem('calendarSettings');
         }
       }
-    }, 2000); // Check every 2 seconds
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+    }
+  };
 
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('scheduleUpdated', handleScheduleUpdate as EventListener);
-      window.removeEventListener('scheduleLoaded', handleScheduleLoaded as EventListener);
-      window.removeEventListener('scheduleSaved', handleScheduleSaved as EventListener);
-      window.removeEventListener('scheduleBuilding', handleScheduleBuilding as EventListener);
-      clearInterval(interval);
-      console.log('🧹 App.tsx event listeners cleaned up');
-    };
-  }, [scheduleVariations.length]);
+  const loadInitialData = () => {
+    try {
+      // ADD this privacy initialization
+      DataPrivacyService.enableEducationalSharing();
+      
+      // Load from unified data service first
+      const unifiedStudents = UnifiedDataService.getAllStudents();
+      const unifiedStaff = UnifiedDataService.getAllStaff();
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      // Convert unified data to legacy format for components that still expect it
+      const legacyStudents: Student[] = unifiedStudents.map(student => ({
+        id: student.id,
+        name: student.name,
+        grade: student.grade || '',
+        photo: student.photo,
+        workingStyle: student.workingStyle as any,
+        accommodations: student.accommodations || [],
+        goals: student.goals || [],
+        parentName: student.parentName,
+        parentEmail: student.parentEmail,
+        parentPhone: student.parentPhone,
+        isActive: student.isActive ?? true,
+        behaviorNotes: student.behaviorNotes,
+        medicalNotes: student.medicalNotes,
+        preferredPartners: student.preferredPartners || [],
+        avoidPartners: student.avoidPartners || []
+      }));
+
+      const legacyStaff: Staff[] = unifiedStaff.map(staff => ({
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        email: staff.email || '',
+        phone: staff.phone || '',
+        photo: staff.photo,
+        isActive: staff.isActive ?? true,
+        specialties: staff.specialties || [],
+        notes: staff.notes,
+        startDate: staff.dateCreated,
+        isResourceTeacher: staff.isResourceTeacher ?? false,
+        isRelatedArtsTeacher: staff.isRelatedArtsTeacher ?? false
+      }));
+
+      const legacyActivities: ActivityLibraryItem[] = unifiedActivities.map(activity => ({
+        id: activity.id,
+        name: activity.name,
+        category: activity.category as any, // Cast to match ScheduleCategory
+        description: activity.description || '',
+        duration: activity.duration || 30,
+        defaultDuration: activity.duration || 30,
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        adaptations: activity.adaptations || [],
+        isCustom: activity.isCustom,
+        dateCreated: activity.dateCreated,
+        emoji: '📚' // Default emoji for activities
+      }));
+      
+      setStudents(legacyStudents);
+      setStaff(legacyStaff);
+      setActivities(legacyActivities);
+      
+    } catch (error) {
+      console.error('Error loading unified data, falling back to legacy storage:', error);
+      
+      // Fallback to legacy storage if unified data fails
+      const savedStudents = loadFromStorage<Student[]>('vsb_students', []);
+      const savedStaff = loadFromStorage<Staff[]>('vsb_staff', []);
+      const savedActivities = loadFromStorage<ActivityLibraryItem[]>('vsb_activities', []);
+      
+      setStudents(savedStudents);
+      setStaff(savedStaff);
+      setActivities(savedActivities);
+    }
+  };
+
+  const handleViewChange = (view: ViewType) => {
+    setCurrentView(view);
+  };
+
+  const handleScheduleSelect = (schedule: ScheduleVariation) => {
+    setSelectedSchedule(schedule);
+  };
+
+  const handleStudentsUpdate = (updatedStudents: Student[]) => {
+    setStudents(updatedStudents);
+    saveToStorage('vsb_students', updatedStudents);
+  };
+
+  const handleStaffUpdate = (updatedStaff: Staff[]) => {
+    setStaff(updatedStaff);
+    saveToStorage('vsb_staff', updatedStaff);
+  };
+
+  const handleActivitiesUpdate = (updatedActivities: ActivityLibraryItem[]) => {
+    setActivities(updatedActivities);
+    saveToStorage('vsb_activities', updatedActivities);
+  };
+
+  // StartScreen handlers
+  const handleStartMyDay = () => {
+    setShowStartScreen(false);
+    setCurrentView('calendar'); // Goes to Daily Check-In
+  };
+
+  const handleManageClassroom = () => {
+    setShowStartScreen(false);
+    setCurrentView('builder'); // Always go to Schedule Builder (main management interface)
+  };
+
+  const handleBackToStart = () => {
+    setShowStartScreen(true);
+  };
+
+  const handleSmartGroupImplementation = (recommendation: any) => {
+    // Handle the implementation of smart group recommendations
+    // This could involve updating student assignments, schedules, etc.
+    // The recommendation contains groupName, studentIds, recommendedActivity, etc.
+  };
+
+  // Convert Staff[] to StaffMember[] for components that expect StaffMember
+  const staffMembers = useMemo(() => {
+    return staff.map(member => ({
+      ...member,
+      email: member.email || '', // Ensure required email field
+      phone: member.phone || '', // Ensure required phone field
+      specialties: member.specialties || [], // Ensure required specialties field
+      photo: member.photo || null, // Ensure required photo field (can be null)
+      isActive: member.isActive ?? true, // Ensure required isActive field
+      startDate: member.startDate || new Date().toISOString(), // Ensure required startDate field
+      isResourceTeacher: member.isResourceTeacher ?? false, // Ensure required field
+      isRelatedArtsTeacher: member.isRelatedArtsTeacher ?? false // Ensure required field
+    }));
+  }, [staff]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey) {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
           case '1':
             event.preventDefault();
-            setCurrentView('builder');
+            handleViewChange('builder');
             break;
           case '2':
             event.preventDefault();
-            setCurrentView('display');
+            handleViewChange('display');
             break;
           case '3':
             event.preventDefault();
-            setCurrentView('students');
+            handleViewChange('students');
             break;
           case '4':
             event.preventDefault();
-            setCurrentView('staff');
+            handleViewChange('staff');
             break;
           case '5':
             event.preventDefault();
-            setCurrentView('calendar');
+            handleViewChange('iep-goals');
             break;
           case '6':
             event.preventDefault();
-            setCurrentView('library');
+            handleViewChange('calendar');
             break;
           case '7':
             event.preventDefault();
-            setCurrentView('celebrations');
+            handleViewChange('library');
             break;
-          case ',':
+          case '8':
             event.preventDefault();
-            setCurrentView('settings');
+            handleViewChange('smart-groups');
+            break;
+          case '9':
+            event.preventDefault();
+            handleViewChange('reports');
+            break;
+          case '0':
+            event.preventDefault();
+            handleViewChange('settings');
             break;
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Handler functions for schedule management
-  const handleScheduleSelect = (schedule: ScheduleVariation | null) => {
-    console.log('🎯 App.tsx - Schedule selected:', schedule?.name || 'none');
-    
-    if (schedule) {
-      // 🔧 CRITICAL: Preserve groupAssignments when selecting
-      const preservedSchedule = {
-        ...schedule,
-        activities: (schedule.activities || []).map(activity => ({
-          ...activity,
-          groupAssignments: activity.groupAssignments || 
-                           (activity.assignment as any)?.groupAssignments || 
-                           []
-        }))
-      };
+  // Handle "Use Built Schedule" event from Schedule Builder
+  useEffect(() => {
+    const handleUseBuiltSchedule = (event: CustomEvent) => {
+      const { schedule } = event.detail;
       
-      console.log('✅ Schedule preserved with groups:', {
-        name: preservedSchedule.name,
-        activitiesWithGroups: preservedSchedule.activities.filter(a => a.groupAssignments && a.groupAssignments.length > 0).length,
-        totalActivities: preservedSchedule.activities.length
-      });
+      // Set the temporary schedule as selected
+      setSelectedSchedule(schedule);
       
-      setSelectedSchedule(preservedSchedule);
-      
-      // Update usage tracking
-      const updatedVariations = scheduleVariations.map(s => 
-        s.id === schedule.id 
-          ? { ...s, lastUsed: new Date().toISOString(), usageCount: (s.usageCount || 0) + 1 }
-          : s
-      );
-      setScheduleVariations(updatedVariations);
-      localStorage.setItem('scheduleVariations', JSON.stringify(updatedVariations));
-    } else {
-      setSelectedSchedule(null);
-    }
-  };
-
-  const handleScheduleUpdate = (updatedVariations: ScheduleVariation[]) => {
-    console.log('🔄 App.tsx - Schedule variations updated:', updatedVariations.length);
-    setScheduleVariations(updatedVariations);
-    localStorage.setItem('scheduleVariations', JSON.stringify(updatedVariations));
-  };
-
-  // 🎯 CRITICAL: Enhanced schedule preparation for SmartboardDisplay
-  const currentScheduleForDisplay = useMemo(() => {
-    if (!selectedSchedule) {
-      console.log('⚠️ No selectedSchedule available for display');
-      return undefined;
-    }
-
-    // Ensure activities have proper structure with preserved groups
-    const enhancedActivities = (selectedSchedule.activities || []).map((activity: any) => ({
-      ...activity,
-      // 🔧 CRITICAL: Ensure all required properties exist
-      id: activity.id || `activity_${Date.now()}`,
-      name: activity.name || 'Untitled Activity',
-      icon: activity.icon || activity.emoji || '📝',
-      duration: activity.duration || 30,
-      category: activity.category || 'academic',
-      description: activity.description || '',
-      
-      // 🎯 CRITICAL: Preserve groupAssignments for SmartboardDisplay
-      groupAssignments: activity.groupAssignments || 
-                       (activity.assignment as any)?.groupAssignments || 
-                       [],
-      
-      // Preserve assignment data
-      assignment: activity.assignment || {
-        staffIds: [],
-        groupIds: [],
-        isWholeClass: true,
-        notes: '',
-        groupAssignments: activity.groupAssignments || []
-      },
-      
-      // 🔥 CRITICAL: Preserve transition properties
-      ...(activity.isTransition && {
-        isTransition: activity.isTransition,
-        transitionType: activity.transitionType,
-        animationStyle: activity.animationStyle,
-        showNextActivity: activity.showNextActivity,
-        movementPrompts: activity.movementPrompts,
-        autoStart: activity.autoStart,
-        soundEnabled: activity.soundEnabled,
-        customMessage: activity.customMessage
-      })
-    }));
-
-    const displaySchedule = {
-      activities: enhancedActivities,
-      startTime: selectedSchedule.startTime || '09:00',
-      name: selectedSchedule.name || 'Untitled Schedule'
+      // Switch to Display mode immediately
+      setCurrentView('display');
     };
 
-    console.log('🖥️ Prepared schedule for SmartboardDisplay:', {
-      scheduleName: displaySchedule.name,
-      activityCount: displaySchedule.activities.length,
-      activitiesWithGroups: displaySchedule.activities.filter(a => 
-        a.groupAssignments && a.groupAssignments.length > 0
-      ).length,
-      transitionActivities: displaySchedule.activities.filter(a => a.isTransition).length,
-      startTime: displaySchedule.startTime
-    });
-
-    return displaySchedule;
-  }, [selectedSchedule]);
-
-  // 🎯 NEW: Debug logging for SmartboardDisplay data flow
-  useEffect(() => {
-    if (currentView === 'display') {
-      console.log('🖥️ App.tsx - Switching to SmartboardDisplay with data:', {
-        hasCurrentSchedule: !!currentScheduleForDisplay,
-        scheduleName: currentScheduleForDisplay?.name,
-        activityCount: currentScheduleForDisplay?.activities?.length || 0,
-        activitiesWithGroups: currentScheduleForDisplay?.activities?.filter(a => 
-          a.groupAssignments && a.groupAssignments.length > 0
-        ).length || 0,
-        staffCount: staff.length,
-        studentCount: students.length,
-        selectedScheduleId: selectedSchedule?.id
-      });
-      
-      // Log first activity with groups for debugging
-      const firstActivityWithGroups = currentScheduleForDisplay?.activities?.find(a => 
-        a.groupAssignments && a.groupAssignments.length > 0
-      );
-      
-      if (firstActivityWithGroups) {
-        console.log('🎯 Sample activity with groups for SmartboardDisplay:', {
-          name: firstActivityWithGroups.name,
-          groupCount: firstActivityWithGroups.groupAssignments?.length,
-          groups: firstActivityWithGroups.groupAssignments?.map(g => ({
-            name: g.groupName,
-            color: g.color,
-            studentCount: g.studentIds?.length || 0
-          }))
-        });
-      } else {
-        console.log('⚠️ No activities with groups found for SmartboardDisplay');
-      }
-    }
-  }, [currentView, currentScheduleForDisplay, staff, students, selectedSchedule]);
+    window.addEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
+    
+    return () => {
+      window.removeEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
+    };
+  }, []);
 
   return (
-    <div className="app">
-      <Navigation 
-        currentView={currentView} 
-        onViewChange={setCurrentView}
-        selectedSchedule={selectedSchedule}
-      />
-      
-      <main className="main-content">
-        <ScheduleBuilder 
-          isActive={currentView === 'builder'}
-        />
-        
-        {/* 🎯 CRITICAL: Pass all necessary data to SmartboardDisplay */}
-        <SmartboardDisplay 
-          isActive={currentView === 'display'}
-          currentSchedule={currentScheduleForDisplay}
-          staff={staff}
-          students={students}
-        />
-        
-        <StudentManagement 
-          isActive={currentView === 'students'} 
-        />
-        
-        <StaffManagement 
-          isActive={currentView === 'staff'} 
-        />
-        
-        <DailyCheckIn 
-          isActive={currentView === 'calendar'}
-          selectedSchedule={selectedSchedule}
-          staff={staff}
-        />
-        
-        <ActivityLibrary 
-          isActive={currentView === 'library'} 
-        />
-        
-        <CelebrationAnimations 
-          isActive={currentView === 'celebrations'} 
-        />
-        
-        <Settings 
-          isActive={currentView === 'settings'} 
-        />
-      </main>
+    <ResourceScheduleProvider allStudents={students.map(student => ({
+      ...student,
+      dateCreated: new Date().toISOString(), // Add required dateCreated field
+      grade: student.grade || '',
+      resourceInfo: student.resourceInfo || undefined
+    }))}>
+      <div className="main-app-container">
+        {/* Start Screen */}
+        {showStartScreen && (
+          <StartScreen 
+            onStartMyDay={handleStartMyDay}
+            onManageClassroom={handleManageClassroom}
+          />
+        )}
 
-      <style>
-        {`
-          .app {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-          }
+        {/* App Content - Only show when not on start screen */}
+        {!showStartScreen && (
+          <>
+            {/* Navigation */}
+            <Navigation 
+              currentView={currentView} 
+              onViewChange={handleViewChange}
+              selectedSchedule={selectedSchedule}
+              onBackToStart={handleBackToStart}
+              isInDailyCheckIn={currentView === 'calendar'}
+            />
 
-          .main-content {
-            flex: 1;
-            overflow: auto;
-          }
+            {/* Main Content */}
+            <div className="main-content">
+            {/* Schedule Builder */}
+            {currentView === 'builder' && (
+              <ScheduleBuilder 
+                isActive={true}
+              />
+            )}
 
-          @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
-          }
-        `}
-      </style>
-    </div>
+            {/* Smartboard Display */}
+            {currentView === 'display' && (
+              <SmartboardDisplay
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                currentSchedule={selectedSchedule ? {
+                  activities: selectedSchedule.activities,
+                  startTime: selectedSchedule.startTime,
+                  name: selectedSchedule.name
+                } : undefined}
+              />
+            )}
+
+            {/* Student Management */}
+            {currentView === 'students' && (
+              <StudentManagement 
+                isActive={true}
+              />
+            )}
+
+            {/* Staff Management */}
+            {currentView === 'staff' && (
+              <StaffManagement 
+                isActive={true}
+              />
+            )}
+
+            {/* IEP Goals Management */}
+            {currentView === 'iep-goals' && (
+              <GoalManager />
+            )}
+
+            {/* Daily Check-In Calendar */}
+            {currentView === 'calendar' && (
+              <DailyCheckIn 
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                selectedSchedule={selectedSchedule}
+                onSwitchToScheduleBuilder={() => handleViewChange('builder')}
+                onSwitchToDisplay={() => handleViewChange('display')}
+              />
+            )}
+
+            {/* Activity Library */}
+            {currentView === 'library' && (
+              <ActivityLibrary 
+                isActive={true}
+              />
+            )}
+
+
+            {/* Reports */}
+            {currentView === 'reports' && (
+              <Reports 
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                activities={activities}
+              />
+            )}
+
+            {/* Settings */}
+            {currentView === 'settings' && (
+              <Settings 
+                isActive={true}
+              />
+            )}
+
+            {/* Smart Groups */}
+            {currentView === 'smart-groups' && (
+              <SmartGroups 
+                isActive={true} 
+                onRecommendationImplemented={handleSmartGroupImplementation}
+              />
+            )}
+            </div>
+          </>
+        )}
+        </div>
+    </ResourceScheduleProvider>
   );
 };
 

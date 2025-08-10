@@ -1,4 +1,6 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
+import UnifiedDataService from '../../services/unifiedDataService';
+import BehaviorStatementManager from './BehaviorStatementManager';
 
 interface SettingsProps {
   isActive: boolean;
@@ -25,6 +27,36 @@ interface SettingsData {
     displayMode: 'standard' | 'presentation' | 'kiosk';
     autoFullscreen: boolean;
     gestureControls: boolean;
+  };
+  dailyCheckIn: {
+    birthdaySettings: {
+      enableBirthdayDisplay: boolean;
+      birthdayCountdownDays: number;
+      weekendBirthdayHandling: 'friday' | 'monday' | 'exact';
+      birthdayDisplayMode: 'photo' | 'name' | 'both';
+      showBirthdayBadges: boolean;
+    };
+    welcomeSettings: {
+      customWelcomeMessage: string;
+      showTeacherName: boolean;
+      substituteMode: boolean;
+      substituteMessage: string;
+      schoolName: string;
+      className: string;
+    };
+    checkInFlow: {
+      enableWeather: boolean;
+      enableCelebrations: boolean;
+      enableBehaviorCommitments: boolean;
+      enableChoiceActivities: boolean;
+    };
+    behaviorCommitments?: {
+      customStatements?: any[];
+    };
+    celebrations?: {
+      enabled?: boolean;
+      showBirthdayPhotos?: boolean;
+    };
   };
   schedule: {
     defaultDuration: number;
@@ -74,6 +106,29 @@ const DEFAULT_SETTINGS: SettingsData = {
     autoFullscreen: false,
     gestureControls: true
   },
+  dailyCheckIn: {
+    birthdaySettings: {
+      enableBirthdayDisplay: true,
+      birthdayCountdownDays: 3,
+      weekendBirthdayHandling: 'friday',
+      birthdayDisplayMode: 'both',
+      showBirthdayBadges: true
+    },
+    welcomeSettings: {
+      customWelcomeMessage: 'Welcome to Our Classroom!',
+      showTeacherName: true,
+      substituteMode: false,
+      substituteMessage: 'Today we have a substitute teacher',
+      schoolName: '',
+      className: ''
+    },
+    checkInFlow: {
+      enableWeather: true,
+      enableCelebrations: true,
+      enableBehaviorCommitments: true,
+      enableChoiceActivities: true
+    }
+  },
   schedule: {
     defaultDuration: 30,
     timeFormat: '12h',
@@ -99,6 +154,236 @@ const DEFAULT_SETTINGS: SettingsData = {
   }
 };
 
+// Celebrations Management Modal Component
+const CelebrationsManagementModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  settings: any;
+  onUpdateSettings: (settings: any) => void;
+}> = ({ isOpen, onClose, settings, onUpdateSettings }) => {
+  const [customCelebrations, setCustomCelebrations] = useState(
+    settings.dailyCheckIn?.celebrations?.customCelebrations || []
+  );
+
+  if (!isOpen) return null;
+
+  const addCustomCelebration = () => {
+    const newCelebration = {
+      id: `custom_${Date.now()}`,
+      name: '',
+      emoji: '🎉',
+      message: '',
+      type: 'custom',
+      recurring: false,
+      date: '',
+      students: [],
+      createdAt: new Date().toISOString()
+    };
+    setCustomCelebrations([...customCelebrations, newCelebration]);
+  };
+
+  const updateCelebration = (id: string, updates: any) => {
+    setCustomCelebrations(prev => 
+      prev.map(cel => cel.id === id ? { ...cel, ...updates } : cel)
+    );
+  };
+
+  const deleteCelebration = (id: string) => {
+    if (confirm('Delete this celebration?')) {
+      setCustomCelebrations(prev => prev.filter(cel => cel.id !== id));
+    }
+  };
+
+  const saveCelebrations = () => {
+    const updatedSettings = {
+      ...settings,
+      dailyCheckIn: {
+        ...settings.dailyCheckIn,
+        celebrations: {
+          ...settings.dailyCheckIn.celebrations,
+          customCelebrations
+        }
+      }
+    };
+    onUpdateSettings(updatedSettings);
+    onClose();
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.8)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        padding: '2rem',
+        maxWidth: '600px',
+        maxHeight: '80vh',
+        overflow: 'auto',
+        width: '90%'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+          <h2 style={{ margin: 0, color: '#333' }}>🎊 Manage Celebrations</h2>
+          <button onClick={onClose} style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            color: '#666'
+          }}>×</button>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <button onClick={addCustomCelebration} style={{
+            background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}>
+            ➕ Add Custom Celebration
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {customCelebrations.map(celebration => (
+            <div key={celebration.id} style={{
+              border: '1px solid #e1e8ed',
+              borderRadius: '8px',
+              padding: '1rem',
+              background: '#f8f9fa'
+            }}>
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <input
+                  type="text"
+                  placeholder="Celebration Name"
+                  value={celebration.name}
+                  onChange={(e) => updateCelebration(celebration.id, { name: e.target.value })}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px'
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="🎉"
+                  value={celebration.emoji}
+                  onChange={(e) => updateCelebration(celebration.id, { emoji: e.target.value })}
+                  style={{
+                    width: '60px',
+                    padding: '0.5rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    textAlign: 'center'
+                  }}
+                />
+                <button onClick={() => deleteCelebration(celebration.id)} style={{
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer'
+                }}>
+                  🗑️
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#333' }}>
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={celebration.date || ''}
+                    onChange={(e) => updateCelebration(celebration.id, { date: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'end', paddingBottom: '0.5rem' }}>
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    color: '#333'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={celebration.recurring || false}
+                      onChange={(e) => updateCelebration(celebration.id, { recurring: e.target.checked })}
+                      style={{ transform: 'scale(1.1)' }}
+                    />
+                    Repeat Annually
+                  </label>
+                </div>
+              </div>
+              
+              <textarea
+                placeholder="Celebration message..."
+                value={celebration.message}
+                onChange={(e) => updateCelebration(celebration.id, { message: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  minHeight: '60px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            background: '#6c757d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer'
+          }}>
+            Cancel
+          </button>
+          <button onClick={saveCelebrations} style={{
+            background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}>
+            Save Celebrations
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Settings storage key
 const SETTINGS_STORAGE_KEY = 'visualScheduleBuilderSettings';
 
@@ -109,19 +394,46 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [showErrorMessage, setShowErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showBehaviorManager, setShowBehaviorManager] = useState(false);
+  const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState<SettingsData>(DEFAULT_SETTINGS);
 
-  // Load settings from localStorage on component mount
+  // Load settings from UnifiedDataService
   const loadSettings = useCallback(() => {
     try {
       setIsLoading(true);
-      const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
       
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
+      // First try to get settings from UnifiedDataService
+      const unifiedSettings = UnifiedDataService.getSettings();
+      console.log('🔍 UnifiedDataService settings:', unifiedSettings);
+      
+      let parsedSettings = null;
+      
+      // Check if we have settings in the unified system
+      if (unifiedSettings && Object.keys(unifiedSettings).length > 0) {
+        // Check for the main settings object or legacy format
+        parsedSettings = unifiedSettings.visualScheduleBuilderSettings || unifiedSettings;
+        console.log('✅ Found settings in UnifiedDataService:', parsedSettings);
+      } else {
+        // Fallback: Try to migrate from localStorage
+        console.log('⚠️ No settings in UnifiedDataService, checking localStorage for migration...');
+        const legacySettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
         
+        if (legacySettings) {
+          parsedSettings = JSON.parse(legacySettings);
+          console.log('🔄 Migrating settings from localStorage to UnifiedDataService');
+          
+          // Save to unified system immediately
+          UnifiedDataService.updateSettings({ 
+            visualScheduleBuilderSettings: parsedSettings,
+            ...parsedSettings // Also save at root level for easier access
+          });
+        }
+      }
+      
+      if (parsedSettings) {
         // Merge with defaults to ensure all keys exist
         const mergedSettings = {
           ...DEFAULT_SETTINGS,
@@ -130,23 +442,38 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           appearance: { ...DEFAULT_SETTINGS.appearance, ...parsedSettings.appearance },
           accessibility: { ...DEFAULT_SETTINGS.accessibility, ...parsedSettings.accessibility },
           smartboard: { ...DEFAULT_SETTINGS.smartboard, ...parsedSettings.smartboard },
+          dailyCheckIn: {
+            ...DEFAULT_SETTINGS.dailyCheckIn,
+            ...parsedSettings.dailyCheckIn,
+            birthdaySettings: { ...DEFAULT_SETTINGS.dailyCheckIn.birthdaySettings, ...parsedSettings.dailyCheckIn?.birthdaySettings },
+            welcomeSettings: { ...DEFAULT_SETTINGS.dailyCheckIn.welcomeSettings, ...parsedSettings.dailyCheckIn?.welcomeSettings },
+            checkInFlow: { ...DEFAULT_SETTINGS.dailyCheckIn.checkInFlow, ...parsedSettings.dailyCheckIn?.checkInFlow }
+          },
           schedule: { ...DEFAULT_SETTINGS.schedule, ...parsedSettings.schedule },
           notifications: { ...DEFAULT_SETTINGS.notifications, ...parsedSettings.notifications },
           data: { ...DEFAULT_SETTINGS.data, ...parsedSettings.data }
         };
         
         setSettings(mergedSettings);
-        console.log('✅ Settings loaded from localStorage:', mergedSettings);
+        console.log('✅ Settings loaded and merged:', mergedSettings);
         
         // Apply settings immediately
         applySettings(mergedSettings);
       } else {
-        console.log('📝 No saved settings found, using defaults');
+        console.log('📝 No saved settings found anywhere, using defaults');
+        setSettings(DEFAULT_SETTINGS);
         applySettings(DEFAULT_SETTINGS);
+        
+        // Save defaults to unified system
+        UnifiedDataService.updateSettings({ 
+          visualScheduleBuilderSettings: DEFAULT_SETTINGS,
+          ...DEFAULT_SETTINGS
+        });
       }
     } catch (error) {
       console.error('❌ Error loading settings:', error);
       setShowErrorMessage('Failed to load settings. Using defaults.');
+      setSettings(DEFAULT_SETTINGS);
       applySettings(DEFAULT_SETTINGS);
     } finally {
       setIsLoading(false);
@@ -201,7 +528,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
     }
   }, []);
 
-  // Save settings to localStorage
+  // Save settings to UnifiedDataService
   const saveSettings = useCallback(() => {
     try {
       // Validate settings before saving
@@ -211,7 +538,15 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
         return;
       }
 
+      // Save to UnifiedDataService
+      UnifiedDataService.updateSettings({ 
+        visualScheduleBuilderSettings: settings,
+        ...settings // Also save at root level for easier access by other components
+      });
+      
+      // Also save to localStorage for backward compatibility (temporary)
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      
       setHasUnsavedChanges(false);
       
       // Apply settings immediately
@@ -221,7 +556,13 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
       
-      console.log('💾 Settings saved successfully:', settings);
+      console.log('💾 Settings saved successfully to UnifiedDataService:', settings);
+      
+      // Dispatch event for other components to listen to settings changes
+      window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', {
+        detail: settings
+      }));
+      
     } catch (error) {
       console.error('❌ Error saving settings:', error);
       setShowErrorMessage('Failed to save settings. Please try again.');
@@ -320,6 +661,13 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
               appearance: { ...DEFAULT_SETTINGS.appearance, ...importedSettings.appearance },
               accessibility: { ...DEFAULT_SETTINGS.accessibility, ...importedSettings.accessibility },
               smartboard: { ...DEFAULT_SETTINGS.smartboard, ...importedSettings.smartboard },
+              dailyCheckIn: {
+                ...DEFAULT_SETTINGS.dailyCheckIn,
+                ...importedSettings.dailyCheckIn,
+                birthdaySettings: { ...DEFAULT_SETTINGS.dailyCheckIn.birthdaySettings, ...importedSettings.dailyCheckIn?.birthdaySettings },
+                welcomeSettings: { ...DEFAULT_SETTINGS.dailyCheckIn.welcomeSettings, ...importedSettings.dailyCheckIn?.welcomeSettings },
+                checkInFlow: { ...DEFAULT_SETTINGS.dailyCheckIn.checkInFlow, ...importedSettings.dailyCheckIn?.checkInFlow }
+              },
               schedule: { ...DEFAULT_SETTINGS.schedule, ...importedSettings.schedule },
               notifications: { ...DEFAULT_SETTINGS.notifications, ...importedSettings.notifications },
               data: { ...DEFAULT_SETTINGS.data, ...importedSettings.data }
@@ -364,8 +712,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
     { id: 'appearance', name: 'Appearance', icon: '🎨', description: 'Themes, fonts, and visual preferences' },
     { id: 'accessibility', name: 'Accessibility', icon: '♿', description: 'Screen readers, navigation, and inclusive features' },
     { id: 'smartboard', name: 'Smartboard', icon: '📺', description: 'Touch settings and classroom display options' },
-    { id: 'schedule', name: 'Schedule', icon: '📅', description: 'Default durations, time formats, and automation' },
+    { id: 'dailyCheckIn', name: 'Daily Check-In', icon: '👋', description: 'Birthday celebrations, welcome messages, and check-in flow' },
     { id: 'notifications', name: 'Notifications', icon: '🔔', description: 'Alerts, sounds, and reminder settings' },
+    { id: 'schedule', name: 'Schedule', icon: '📅', description: 'Default durations, time formats, and automation' },
     { id: 'data', name: 'Data & Backup', icon: '💾', description: 'Backup, export, and sync preferences' }
   ] as const;
 
@@ -683,6 +1032,389 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <span className="toggle-text">Gesture Controls</span>
                   </label>
                   <p className="setting-description">Enable swipe and multi-touch gestures</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Check-In Settings */}
+          {activeSection === 'dailyCheckIn' && (
+            <div className="settings-section">
+              <h3>👋 Daily Check-In Settings</h3>
+              <p className="section-description">Customize behavior statements, birthday celebrations, welcome messages, and check-in flow</p>
+
+              {/* Behavior Statements Management */}
+              <div className="settings-subsection">
+                <h4>💪 Behavior Statements</h4>
+                <p className="setting-description">
+                  Current behavior statements: {settings.dailyCheckIn?.behaviorCommitments?.customStatements?.length || 0} configured
+                </p>
+                
+                <button
+                  onClick={() => setShowBehaviorManager(true)}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  💪 Manage Behavior Statements
+                </button>
+              </div>
+
+              {/* Celebration Management */}
+              <div className="settings-subsection">
+                <h4>🎉 Celebrations</h4>
+                <p className="setting-description">
+                  Manage custom celebrations and birthday settings
+                </p>
+                
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn?.celebrations?.enabled ?? true}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
+                          ...settings.dailyCheckIn.celebrations,
+                          enabled: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable celebrations in Daily Check-In</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn?.celebrations?.showBirthdayPhotos ?? true}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
+                          ...settings.dailyCheckIn.celebrations,
+                          showBirthdayPhotos: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Show photos in birthday celebrations</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowCelebrationsModal(true)}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  🎊 Manage Celebrations
+                </button>
+              </div>
+
+              {/* Birthday Settings */}
+              <div className="settings-subsection">
+                <h4>🎂 Birthday Management</h4>
+                
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.birthdaySettings.enableBirthdayDisplay}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
+                          ...settings.dailyCheckIn.birthdaySettings,
+                          enableBirthdayDisplay: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable Birthday Celebrations</span>
+                    </label>
+                    <p className="setting-description">Show birthday celebrations in Daily Check-In</p>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <label className="setting-label">Birthday Countdown Days</label>
+                  <div className="input-group">
+                    <input
+                      type="number"
+                      min="0"
+                      max="7"
+                      value={settings.dailyCheckIn.birthdaySettings.birthdayCountdownDays}
+                      onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
+                        ...settings.dailyCheckIn.birthdaySettings,
+                        birthdayCountdownDays: parseInt(e.target.value)
+                      })}
+                      className="number-input"
+                    />
+                    <span className="input-suffix">days before</span>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <label className="setting-label">Weekend Birthday Handling</label>
+                  <div className="radio-group">
+                    {(['friday', 'monday', 'exact'] as const).map(handling => (
+                      <label key={handling} className="radio-item">
+                        <input
+                          type="radio"
+                          name="weekendBirthdayHandling"
+                          value={handling}
+                          checked={settings.dailyCheckIn.birthdaySettings.weekendBirthdayHandling === handling}
+                          onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
+                            ...settings.dailyCheckIn.birthdaySettings,
+                            weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact'
+                          })}
+                        />
+                        <span className="radio-label">
+                          {handling === 'friday' && 'Celebrate on Friday'}
+                          {handling === 'monday' && 'Celebrate on Monday'}
+                          {handling === 'exact' && 'Exact Date'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <label className="setting-label">Birthday Display Mode</label>
+                  <div className="radio-group">
+                    {(['photo', 'name', 'both'] as const).map(mode => (
+                      <label key={mode} className="radio-item">
+                        <input
+                          type="radio"
+                          name="birthdayDisplayMode"
+                          value={mode}
+                          checked={settings.dailyCheckIn.birthdaySettings.birthdayDisplayMode === mode}
+                          onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
+                            ...settings.dailyCheckIn.birthdaySettings,
+                            birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both'
+                          })}
+                        />
+                        <span className="radio-label">
+                          {mode === 'photo' && 'Photo Only'}
+                          {mode === 'name' && 'Name Only'}
+                          {mode === 'both' && 'Photo & Name'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.birthdaySettings.showBirthdayBadges}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
+                          ...settings.dailyCheckIn.birthdaySettings,
+                          showBirthdayBadges: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Show Birthday Badges</span>
+                    </label>
+                    <p className="setting-description">Display birthday badges on student cards</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Welcome Settings */}
+              <div className="settings-subsection">
+                <h4>👋 Welcome Personalization</h4>
+                
+                <div className="settings-group">
+                  <label className="setting-label">Custom Welcome Message</label>
+                  <input
+                    type="text"
+                    value={settings.dailyCheckIn.welcomeSettings.customWelcomeMessage}
+                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                      ...settings.dailyCheckIn.welcomeSettings,
+                      customWelcomeMessage: e.target.value
+                    })}
+                    placeholder="Welcome to Our Classroom!"
+                    className="text-input"
+                  />
+                </div>
+
+                <div className="settings-group">
+                  <label className="setting-label">School Name</label>
+                  <input
+                    type="text"
+                    value={settings.dailyCheckIn.welcomeSettings.schoolName}
+                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                      ...settings.dailyCheckIn.welcomeSettings,
+                      schoolName: e.target.value
+                    })}
+                    placeholder="Lincoln Elementary School"
+                    className="text-input"
+                  />
+                </div>
+
+                <div className="settings-group">
+                  <label className="setting-label">Class Name</label>
+                  <input
+                    type="text"
+                    value={settings.dailyCheckIn.welcomeSettings.className}
+                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                      ...settings.dailyCheckIn.welcomeSettings,
+                      className: e.target.value
+                    })}
+                    placeholder="Mrs. Smith's 3rd Grade"
+                    className="text-input"
+                  />
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.welcomeSettings.showTeacherName}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                          ...settings.dailyCheckIn.welcomeSettings,
+                          showTeacherName: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Show Teacher Name</span>
+                    </label>
+                    <p className="setting-description">Include teacher name in welcome message</p>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.welcomeSettings.substituteMode}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                          ...settings.dailyCheckIn.welcomeSettings,
+                          substituteMode: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Substitute Mode</span>
+                    </label>
+                    <p className="setting-description">Show substitute teacher message</p>
+                  </div>
+                </div>
+
+                {settings.dailyCheckIn.welcomeSettings.substituteMode && (
+                  <div className="settings-group">
+                    <label className="setting-label">Substitute Message</label>
+                    <input
+                      type="text"
+                      value={settings.dailyCheckIn.welcomeSettings.substituteMessage}
+                      onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
+                        ...settings.dailyCheckIn.welcomeSettings,
+                        substituteMessage: e.target.value
+                      })}
+                      placeholder="Today we have a substitute teacher"
+                      className="text-input"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Check-In Flow Settings */}
+              <div className="settings-subsection">
+                <h4>📅 Check-In Flow Options</h4>
+                
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.checkInFlow.enableWeather}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
+                          ...settings.dailyCheckIn.checkInFlow,
+                          enableWeather: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable Weather Display</span>
+                    </label>
+                    <p className="setting-description">Show weather information in Daily Check-In</p>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.checkInFlow.enableCelebrations}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
+                          ...settings.dailyCheckIn.checkInFlow,
+                          enableCelebrations: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable Celebrations</span>
+                    </label>
+                    <p className="setting-description">Show birthday and custom celebrations</p>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.checkInFlow.enableBehaviorCommitments}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
+                          ...settings.dailyCheckIn.checkInFlow,
+                          enableBehaviorCommitments: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable Behavior Commitments</span>
+                    </label>
+                    <p className="setting-description">Include "I will..." behavior commitment step</p>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.dailyCheckIn.checkInFlow.enableChoiceActivities}
+                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
+                          ...settings.dailyCheckIn.checkInFlow,
+                          enableChoiceActivities: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable Choice Activities</span>
+                    </label>
+                    <p className="setting-description">Include independent choice activities step</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1046,6 +1778,34 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
         </div>
       )}
 
+      {/* Behavior Statement Manager Modal */}
+      <BehaviorStatementManager
+        isOpen={showBehaviorManager}
+        onClose={() => setShowBehaviorManager(false)}
+        onSave={(statements) => {
+          // Update settings state
+          setSettings(prev => ({
+            ...prev,
+            dailyCheckIn: {
+              ...prev.dailyCheckIn,
+              behaviorCommitments: {
+                ...prev.dailyCheckIn.behaviorCommitments,
+                customStatements: statements
+              }
+            }
+          }));
+          setShowBehaviorManager(false);
+        }}
+      />
+
+      {/* Celebrations Management Modal */}
+      <CelebrationsManagementModal
+        isOpen={showCelebrationsModal}
+        onClose={() => setShowCelebrationsModal(false)}
+        settings={settings}
+        onUpdateSettings={setSettings}
+      />
+
       <style>{`
         .settings-page {
           padding: 1.5rem;
@@ -1272,6 +2032,38 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           font-size: 0.875rem;
           line-height: 1.4;
           margin: 0;
+        }
+
+        .settings-subsection {
+          margin-bottom: 2.5rem;
+          padding: 1.5rem;
+          background: rgba(102, 126, 234, 0.05);
+          border-radius: 12px;
+          border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .settings-subsection h4 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #495057;
+          margin: 0 0 1.5rem 0;
+          padding-bottom: 0.5rem;
+          border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .text-input {
+          width: 100%;
+          padding: 0.75rem;
+          border: 2px solid #dee2e6;
+          border-radius: 8px;
+          font-size: 0.875rem;
+          transition: border-color 0.2s ease;
+        }
+
+        .text-input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .input-group {

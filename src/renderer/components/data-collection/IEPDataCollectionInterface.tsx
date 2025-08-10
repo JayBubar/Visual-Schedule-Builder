@@ -1,931 +1,738 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  IEPGoal, 
-  DataCollectionSession, 
-  StudentWithIEP, 
-  Student, 
-  DataPoint, 
-  FrequencyDataPoint, 
-  AccuracyDataPoint, 
-  DurationDataPoint, 
-  IndependenceDataPoint, 
-  RatingDataPoint, 
-  ProgressSummary 
-} from '../../types';
+// Updated IEP Data Collection Interface - Now uses Unified Data
+// src/renderer/components/data-collection/IEPDataCollectionInterface.tsx
 
-interface IEPDataCollectionProps {
+import React, { useState, useEffect } from 'react';
+import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
+import { DataPoint } from '../../types';
+import EnhancedDataEntry from './EnhancedDataEntry';
+import ProgressDashboard from './ProgressDashboard';
+import PrintDataSheetSystem from './PrintDataSheetSystem';
+import GoalManager from './GoalManager';
+import QuickDataEntry from './QuickDataEntry';
+
+type ViewType = 'dashboard' | 'print-sheets' | 'data-entry' | 'progress' | 'goal-selection'
+
+interface IEPDataCollectionInterfaceProps {
   isActive: boolean;
+  preSelectedStudentId?: string;
 }
 
-const IEPDataCollectionInterface: React.FC<IEPDataCollectionProps> = ({ isActive }) => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<StudentWithIEP | null>(null);
-  const [activeGoals, setActiveGoals] = useState<IEPGoal[]>([]);
-  const [currentSession, setCurrentSession] = useState<DataCollectionSession | null>(null);
-  const [selectedGoal, setSelectedGoal] = useState<IEPGoal | null>(null);
-  const [dataEntry, setDataEntry] = useState<any>({});
-  const [view, setView] = useState<'dashboard' | 'data-entry' | 'progress' | 'goals'>('dashboard');
+const IEPDataCollectionInterface: React.FC<IEPDataCollectionInterfaceProps> = ({ isActive, preSelectedStudentId }) => {
+  const [students, setStudents] = useState<UnifiedStudent[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<UnifiedStudent | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<any>(null);
+  const [needsGoalSelection, setNeedsGoalSelection] = useState(false);
+  const [view, setView] = useState<ViewType>('dashboard');
+  const [systemStatus, setSystemStatus] = useState<any>(null);
+  
+  // Modal states for Quick Entry and Print Sheets
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
+  const [showPrintSheets, setShowPrintSheets] = useState(false);
 
-  // Load students and IEP data on component mount
+  // Load data on component mount
   useEffect(() => {
-    if (isActive) {
-      loadStudentData();
-    }
-  }, [isActive]);
+    loadUnifiedData();
+    checkSystemStatus();
+  }, []);
 
-  const loadStudentData = () => {
-    // Load students from localStorage
-    const storedStudents = localStorage.getItem('student_data');
-    if (storedStudents) {
-      const studentData = JSON.parse(storedStudents);
-      setStudents(studentData);
+  const loadUnifiedData = () => {
+    try {
+      const unifiedStudents = UnifiedDataService.getAllStudents();
       
-      // Load IEP data for students
-      const iepStudents = studentData.filter((student: Student) => student.iep);
-      if (iepStudents.length > 0 && !selectedStudent) {
-        // Auto-select first IEP student
-        const firstIEPStudent = iepStudents[0];
-        loadStudentIEPData(firstIEPStudent);
+      // Ensure all students have properly initialized iepData
+      const safeStudents = unifiedStudents.map(student => ({
+        ...student,
+        iepData: {
+          goals: student.iepData?.goals || [],
+          dataCollection: student.iepData?.dataCollection || [],
+          progressAnalytics: student.iepData?.progressAnalytics
+        }
+      }));
+      
+      setStudents(safeStudents);
+      
+      // If we have a preSelectedStudentId, select that student
+      if (preSelectedStudentId && safeStudents.length > 0) {
+        const preSelectedStudent = safeStudents.find(s => s.id === preSelectedStudentId);
+        if (preSelectedStudent) {
+          setSelectedStudent(preSelectedStudent);
+          return;
+        }
+      }
+      
+      // If we have students but no selected student, select the first one
+      if (safeStudents.length > 0 && !selectedStudent) {
+        setSelectedStudent(safeStudents[0]);
+      }
+    } catch (error) {
+      console.error('Error loading unified data:', error);
+    }
+  };
+
+  const checkSystemStatus = () => {
+    const status = UnifiedDataService.getSystemStatus();
+    setSystemStatus(status);
+    console.log('System Status:', status);
+  };
+
+  // Event handlers
+  const handleStudentSelect = (student: any) => {
+    setSelectedStudent(student);
+    
+    // Get active goals for this student - FIX: Use isActive instead of status
+    const activeGoals = student.iepData?.goals?.filter((g: any) => g.isActive === true) || [];
+    
+    console.log('🎯 Student selected:', student.name);
+    console.log('🎯 Total goals:', student.iepData?.goals?.length || 0);
+    console.log('🎯 Active goals found:', activeGoals.length);
+    console.log('🎯 Active goals:', activeGoals);
+    
+    if (activeGoals.length === 0) {
+      alert(`${student.name} doesn't have any active IEP goals. Please add goals first in Goal Management.`);
+      setView('goal-selection'); // Send them to goal manager
+      return;
+    }
+    
+    if (activeGoals.length === 1) {
+      // Only one goal - auto-select it and go to data entry
+      setSelectedGoal(activeGoals[0]);
+      setNeedsGoalSelection(false);
+      console.log('🎯 Auto-selected single goal:', activeGoals[0].title || activeGoals[0].description);
+      // Don't change view yet - let them click Data Entry tab
+    } else {
+      // Multiple goals - they'll need to select one
+      setSelectedGoal(null);
+      setNeedsGoalSelection(true);
+      console.log('🎯 Multiple goals found, user needs to select one');
+    }
+  };
+
+  const handleGoalSelect = (goal: IEPGoal) => {
+    setSelectedGoal(goal);
+  };
+
+  const handleDataSaved = () => {
+    // Refresh data after saving
+    loadUnifiedData();
+    
+    // Update selected student data
+    if (selectedStudent) {
+      const updatedStudent = UnifiedDataService.getStudent(selectedStudent.id);
+      if (updatedStudent) {
+        setSelectedStudent(updatedStudent);
       }
     }
   };
 
-  const loadStudentIEPData = (student: Student) => {
-    // Load IEP goals for this student
-    const storedGoals = localStorage.getItem(`iep_goals_${student.id}`);
-    const goals: IEPGoal[] = storedGoals ? JSON.parse(storedGoals) : [];
-    
-    const studentWithIEP: StudentWithIEP = {
-      ...student,
-      hasIEP: true,
-      iepGoals: goals,
-      dataCollectionSessions: [],
-      progressSummaries: [],
-      iepStartDate: new Date().toISOString().split('T')[0],
-      iepEndDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    };
-    
-    setSelectedStudent(studentWithIEP);
-    setActiveGoals(goals.filter(goal => goal.isActive));
+  const handleGoalAdded = (goalData: Omit<IEPGoal, 'id' | 'studentId'>) => {
+    if (selectedStudent) {
+      try {
+        const newGoal = UnifiedDataService.addGoalToStudent(selectedStudent.id, goalData);
+        loadUnifiedData(); // Refresh all data
+        setSelectedGoal(newGoal); // Select the new goal
+      } catch (error) {
+        console.error('Error adding goal:', error);
+        alert('Error adding goal. Please try again.');
+      }
+    }
   };
 
-  const startDataSession = (goalId?: string) => {
-    if (!selectedStudent) return;
-    
-    const session: DataCollectionSession = {
-      id: `session_${Date.now()}`,
-      studentId: selectedStudent.id,
-      goalIds: goalId ? [goalId] : activeGoals.map(g => g.id),
-      startTime: new Date().toISOString(),
-      setting: 'classroom',
-      staffMember: 'Current User', // Would get from auth context
-      dataPoints: [],
-      isCompleted: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    setCurrentSession(session);
-    setView('data-entry');
+  const getStudentInitials = (name: string): string => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const recordDataPoint = (goalId: string, value: any, type: string) => {
-    if (!currentSession) return;
+  // Goal Selection Component
+  const GoalSelectionView = () => {
+    if (!selectedStudent) return null;
     
-    const dataPoint: DataPoint = {
-      id: `datapoint_${Date.now()}`,
-      goalId,
-      sessionId: currentSession.id,
-      timestamp: new Date().toISOString(),
-      value,
-      context: type
-    };
+    const activeGoals = selectedStudent.iepData?.goals?.filter((g: any) => g.isActive === true) || [];
     
-    const updatedSession = {
-      ...currentSession,
-      dataPoints: [...currentSession.dataPoints, dataPoint],
-      updatedAt: new Date().toISOString()
-    };
-    
-    setCurrentSession(updatedSession);
-    
-    // Save to localStorage
-    const sessionKey = `session_${currentSession.id}`;
-    localStorage.setItem(sessionKey, JSON.stringify(updatedSession));
+    return (
+      <div style={{ color: 'white', padding: '2rem' }}>
+        <h2 style={{ marginBottom: '2rem', fontSize: '1.5rem' }}>
+          Select Goal for Data Entry - {selectedStudent.name}
+        </h2>
+        
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {activeGoals.map((goal: any) => (
+            <div
+              key={goal.id}
+              onClick={() => {
+                setSelectedGoal(goal);
+                setNeedsGoalSelection(false);
+                setView('data-entry'); // Auto-switch to data entry
+              }}
+              style={{
+                background: 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                border: '1px solid rgba(255,255,255,0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ 
+                    color: '#60a5fa', 
+                    fontWeight: '600', 
+                    marginBottom: '0.5rem' 
+                  }}>
+                    {goal.domain}
+                  </div>
+                  <h3 style={{ 
+                    fontSize: '1.1rem', 
+                    fontWeight: '600', 
+                    marginBottom: '1rem',
+                    lineHeight: '1.4'
+                  }}>
+                    {goal.description}
+                  </h3>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '2rem', 
+                    fontSize: '0.9rem',
+                    opacity: 0.8
+                  }}>
+                    <span>Current: {goal.currentProgress}%</span>
+                    <span>Target: {goal.targetCriteria}%</span>
+                    <span>Type: {goal.measurementType}</span>
+                  </div>
+                </div>
+                <div style={{ 
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: '0.9rem',
+                  textAlign: 'right'
+                }}>
+                  Click to enter data →
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
-
-  const completeSession = () => {
-    if (!currentSession) return;
-    
-    const completedSession = {
-      ...currentSession,
-      endTime: new Date().toISOString(),
-      isCompleted: true,
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Save completed session
-    const sessionKey = `session_${currentSession.id}`;
-    localStorage.setItem(sessionKey, JSON.stringify(completedSession));
-    
-    setCurrentSession(null);
-    setView('dashboard');
-  };
-
-  const iepStudents = useMemo(() => {
-    return students.filter(student => student.iep);
-  }, [students]);
 
   if (!isActive) return null;
 
   return (
-    <div className="iep-data-collection">
-      <div className="iep-header">
-        <h2 className="component-title">📊 IEP Data Collection</h2>
-        <p className="component-subtitle">
-          Track progress on individualized education program goals
+    <div style={{
+      height: '100vh',
+      overflow: 'auto',
+      background: 'linear-gradient(135deg, #2563eb 0%, #9333ea 50%, #2563eb 100%)',
+      padding: '1.5rem'
+    }}>
+      <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
+        {/* Header */}
+      <div style={{
+        textAlign: 'center',
+        marginBottom: '2rem',
+        color: 'white'
+      }}>
+        <h1 style={{
+          fontSize: '3rem',
+          fontWeight: 'bold',
+          marginBottom: '0.5rem',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        }}>
+          📊 IEP Data Collection
+        </h1>
+        <p style={{
+          fontSize: '1.2rem',
+          opacity: 0.9
+        }}>
+          Professional data collection with unified student records
         </p>
+        
+        {/* System Status Indicator */}
+        {systemStatus && (
+          <div style={{
+            display: 'inline-block',
+            background: systemStatus.hasUnifiedData 
+              ? 'rgba(34, 197, 94, 0.2)' 
+              : 'rgba(239, 68, 68, 0.2)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            marginTop: '10px',
+            border: `1px solid ${systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444'}`,
+            color: systemStatus.hasUnifiedData ? '#22c55e' : '#ef4444'
+          }}>
+            {systemStatus.hasUnifiedData ? '✅ Unified Data Active' : '⚠️ Legacy Data Mode'}
+            {systemStatus.hasUnifiedData && (
+              <span style={{ marginLeft: '10px', fontSize: '0.9em' }}>
+                {systemStatus.totalStudents} students • {systemStatus.totalGoals} goals • {systemStatus.totalDataPoints} data points
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Student Selection */}
-      <div className="student-selection">
-        <h3>Select Student</h3>
-        <div className="student-cards">
-          {iepStudents.length === 0 ? (
-            <div className="no-iep-students">
-              <p>No students with IEPs found. Mark students as having IEPs in Student Management.</p>
-            </div>
-          ) : (
-            iepStudents.map(student => (
-              <div
-                key={student.id}
-                className={`student-card ${selectedStudent?.id === student.id ? 'selected' : ''}`}
-                onClick={() => loadStudentIEPData(student)}
-              >
-                <div className="student-photo">
-                  {student.photo ? (
-                    <img src={student.photo} alt={student.name} />
-                  ) : (
-                    <div className="student-avatar">
-                      {student.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <div className="student-info">
-                  <h4>{student.name}</h4>
-                  <p>{student.grade || 'No grade specified'}</p>
-                </div>
-              </div>
-            ))
-          )}
+      {/* Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '2rem'
+      }}>
+        <div style={{
+          display: 'flex',
+          background: 'rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '16px',
+          padding: '8px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+          border: '1px solid rgba(255,255,255,0.2)'
+        }}>
+          {[
+            { id: 'dashboard', icon: '🏠', label: 'Dashboard' },
+            { 
+              id: 'data-entry', 
+              icon: '📝', 
+              label: selectedStudent && selectedGoal 
+                ? 'Data Entry ✅' 
+                : selectedStudent 
+                  ? 'Data Entry ⚠️' 
+                  : 'Data Entry'
+            },
+            { id: 'progress', icon: '📈', label: 'Progress' },
+            { id: 'goal-selection', icon: '🎯', label: 'Goal Manager' },
+            { id: 'print-sheets', icon: '🖨️', label: 'Print Sheets' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setView(tab.id as ViewType)}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: '600',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: view === tab.id 
+                  ? 'rgba(255,255,255,0.9)' 
+                  : 'transparent',
+                color: view === tab.id 
+                  ? '#667eea' 
+                  : 'white',
+                transform: view === tab.id ? 'scale(1.05)' : 'scale(1)'
+              }}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {selectedStudent && (
-        <>
-          {/* Navigation Tabs */}
-          <div className="view-tabs">
-            <button
-              className={`tab-button ${view === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setView('dashboard')}
-            >
-              📈 Dashboard
-            </button>
-            <button
-              className={`tab-button ${view === 'goals' ? 'active' : ''}`}
-              onClick={() => setView('goals')}
-            >
-              🎯 Goals
-            </button>
-            <button
-              className={`tab-button ${view === 'data-entry' ? 'active' : ''}`}
-              onClick={() => setView('data-entry')}
-            >
-              📝 Data Entry
-            </button>
-            <button
-              className={`tab-button ${view === 'progress' ? 'active' : ''}`}
-              onClick={() => setView('progress')}
-            >
-              📊 Progress
-            </button>
-          </div>
-
-          {/* Dashboard View */}
-          {view === 'dashboard' && (
-            <div className="dashboard-view">
-              <div className="dashboard-header">
-                <h3>Data Collection Dashboard - {selectedStudent.name}</h3>
-                <button 
-                  className="start-session-btn"
-                  onClick={() => startDataSession()}
+      {/* Main Content */}
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '24px',
+        padding: '2rem',
+        border: '1px solid rgba(255,255,255,0.2)'
+      }}>
+        
+        {/* Student Selection */}
+        {students.length > 0 && (
+          <div style={{ marginBottom: '2rem' }}>
+            <h3 style={{ color: 'white', marginBottom: '1rem' }}>Select Student:</h3>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              flexWrap: 'wrap'
+            }}>
+              {students.map(student => (
+                <button
+                  key={student.id}
+                  onClick={() => handleStudentSelect(student)}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '12px',
+                    border: selectedStudent?.id === student.id 
+                      ? '3px solid #22c55e' 
+                      : '2px solid rgba(255,255,255,0.3)',
+                    background: selectedStudent?.id === student.id
+                      ? 'rgba(34, 197, 94, 0.2)'
+                      : 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
                 >
-                  🎯 Start Data Collection Session
-                </button>
-              </div>
-
-              <div className="dashboard-grid">
-                <div className="active-goals-summary">
-                  <h4>Active Goals ({activeGoals.length})</h4>
-                  <div className="goals-list">
-                    {activeGoals.map(goal => (
-                      <div key={goal.id} className="goal-summary-card">
-                        <div className="goal-header">
-                          <span className={`goal-category ${goal.category}`}>
-                            {goal.category}
-                          </span>
-                          <span className="measurement-type">
-                            {goal.measurementType}
-                          </span>
-                        </div>
-                        <h5>{goal.title}</h5>
-                        <p>{goal.description}</p>
-                        <button
-                          className="quick-collect-btn"
-                          onClick={() => startDataSession(goal.id)}
-                        >
-                          📝 Quick Collect
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="recent-sessions">
-                  <h4>Recent Sessions</h4>
-                  <p>No recent sessions found. Start collecting data to see progress!</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Goals Management View */}
-          {view === 'goals' && (
-            <div className="goals-view">
-              <div className="goals-header">
-                <h3>IEP Goals - {selectedStudent.name}</h3>
-                <button className="add-goal-btn">➕ Add New Goal</button>
-              </div>
-              
-              <div className="goals-grid">
-                {activeGoals.length > 0 ? (
-                  activeGoals.map(goal => (
-                    <div key={goal.id} className="goal-card">
-                      <div className="goal-category-badge">
-                        {goal.category}
-                      </div>
-                      <h4>{goal.title}</h4>
-                      <p><strong>Target:</strong> {goal.targetBehavior}</p>
-                      <p><strong>Measurement:</strong> {goal.measurementType}</p>
-                      <p><strong>Criteria:</strong> {goal.targetCriteria}</p>
-                      <p><strong>Current Level:</strong> {goal.currentLevel}</p>
-                      {goal.notes && <p><strong>Notes:</strong> {goal.notes}</p>}
-                      
-                      <div className="goal-actions">
-                        <button onClick={() => startDataSession(goal.id)}>
-                          📝 Collect Data
-                        </button>
-                        <button>✏️ Edit</button>
-                      </div>
+                  {student.photo ? (
+                    <img 
+                      src={student.photo} 
+                      alt={student.name}
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#667eea',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold'
+                    }}>
+                      {getStudentInitials(student.name)}
                     </div>
-                  ))
-                ) : (
-                  <div className="no-goals">
-                    <h4>No Goals Defined</h4>
-                    <p>Add IEP goals to start collecting data.</p>
+                  )}
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 'bold' }}>{student.name}</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>{student.grade}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>
+                      {student.iepData?.goals?.length || 0} goals • {student.iepData?.dataCollection?.length || 0} data points
+                    </div>
                   </div>
-                )}
-              </div>
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Data Entry View */}
-          {view === 'data-entry' && (
-            <div className="data-entry-view">
-              <div className="session-header">
-                <h3>Data Collection Session</h3>
-                {currentSession && (
-                  <div className="session-info">
-                    <span>Started: {new Date(currentSession.startTime).toLocaleTimeString()}</span>
-                    <button 
-                      className="complete-session-btn"
-                      onClick={completeSession}
+        {/* Content based on selected view */}
+        {view === 'dashboard' && (
+          <div style={{ color: 'white' }}>
+            <h2 style={{ marginBottom: '1rem' }}>📊 Dashboard</h2>
+            {selectedStudent ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <h3>Student: {selectedStudent.name}</h3>
+                  
+                  {/* Quick Action Buttons */}
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button
+                      onClick={() => setShowQuickEntry(true)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                     >
-                      ✅ Complete Session
+                      📊 Quick Data Entry
+                    </button>
+                    
+                    <button
+                      onClick={() => setShowPrintSheets(true)}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '12px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 92, 246, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      🖨️ Print Sheets
                     </button>
                   </div>
-                )}
-              </div>
-
-              {currentSession ? (
-                <div className="data-entry-forms">
-                  {currentSession.goalIds.map(goalId => {
-                    const goal = activeGoals.find(g => g.id === goalId);
-                    if (!goal) return null;
-
-                    return (
-                      <div key={goalId} className="goal-data-entry">
-                        <h4>{goal.title}</h4>
-                        <div className="measurement-form">
-                          {goal.measurementType === 'frequency' && (
-                            <div className="frequency-form">
-                              <label>Count:</label>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="Number of occurrences"
-                                onChange={(e) => recordDataPoint(goalId, parseInt(e.target.value), 'frequency')}
-                              />
-                            </div>
-                          )}
-                          
-                          {goal.measurementType === 'accuracy' && (
-                            <div className="accuracy-form">
-                              <label>Correct:</label>
-                              <input type="number" min="0" placeholder="Correct responses" />
-                              <label>Total:</label>
-                              <input type="number" min="1" placeholder="Total attempts" />
-                            </div>
-                          )}
-                          
-                          {goal.measurementType === 'duration' && (
-                            <div className="duration-form">
-                              <label>Duration (seconds):</label>
-                              <input
-                                type="number"
-                                min="0"
-                                placeholder="Duration in seconds"
-                                onChange={(e) => recordDataPoint(goalId, parseInt(e.target.value), 'duration')}
-                              />
-                            </div>
-                          )}
-                          
-                          {goal.measurementType === 'independence' && (
-                            <div className="independence-form">
-                              <label>Independence Level:</label>
-                              <select onChange={(e) => recordDataPoint(goalId, e.target.value, 'independence')}>
-                                <option value="">Select level...</option>
-                                <option value="independent">Independent</option>
-                                <option value="minimal-prompt">Minimal Prompt</option>
-                                <option value="moderate-prompt">Moderate Prompt</option>
-                                <option value="maximum-prompt">Maximum Prompt</option>
-                                <option value="hand-over-hand">Hand-over-Hand</option>
-                              </select>
-                            </div>
-                          )}
-                          
-                          {goal.measurementType === 'rating' && (
-                            <div className="rating-form">
-                              <label>Rating (1-5):</label>
-                              <div className="rating-buttons">
-                                {[1, 2, 3, 4, 5].map(rating => (
-                                  <button
-                                    key={rating}
-                                    className="rating-btn"
-                                    onClick={() => recordDataPoint(goalId, rating, 'rating')}
-                                  >
-                                    {rating}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                </div>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '1rem',
+                  marginTop: '1rem'
+                }}>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>🎯 Active Goals</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData?.goals?.filter(g => g.isActive)?.length || 0}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>📝 Data Points</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData?.dataCollection?.length || 0}
+                    </div>
+                  </div>
+                  <div style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    padding: '1rem',
+                    borderRadius: '12px'
+                  }}>
+                    <h4>📈 Total Goals</h4>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
+                      {selectedStudent.iepData?.goals?.length || 0}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Recent Goals */}
+                <div style={{ marginTop: '2rem' }}>
+                  <h3>Recent Goals:</h3>
+                  {selectedStudent.iepData?.goals?.length > 0 ? (
+                    selectedStudent.iepData.goals.slice(0, 3).map(goal => (
+                      <div key={goal.id} style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        padding: '1rem',
+                        marginBottom: '0.5rem',
+                        borderRadius: '8px',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => {
+                        setSelectedGoal(goal);
+                        setView('data-entry');
+                      }}>
+                        <div style={{ fontWeight: 'bold' }}>{goal.description}</div>
+                        <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                          {goal.domain} • {goal.isActive ? 'Active' : 'Inactive'}
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    <div style={{
+                      background: 'rgba(255,255,255,0.1)',
+                      padding: '2rem',
+                      borderRadius: '8px',
+                      textAlign: 'center',
+                      opacity: 0.7
+                    }}>
+                      <p>No goals found for this student.</p>
+                      <p style={{ fontSize: '0.9rem' }}>Add goals in the Goal Manager section.</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="no-session">
-                  <p>No active data collection session. Start a session from the dashboard.</p>
-                  <button onClick={() => setView('dashboard')}>
-                    🏠 Back to Dashboard
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Progress View */}
-          {view === 'progress' && (
-            <div className="progress-view">
-              <h3>Progress Reports - {selectedStudent.name}</h3>
-              <div className="progress-placeholder">
-                <p>Progress tracking charts and reports will be displayed here.</p>
-                <p>Feature coming soon!</p>
               </div>
-            </div>
-          )}
-        </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '3rem' }}>
+                <h3>Select a student to view their dashboard</h3>
+              </div>
+            )}
+          </div>
+        )}
+
+        {view === 'data-entry' && (
+          <>
+            {!selectedStudent && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
+                <h3>Please select a student first</h3>
+                <p>Choose a student from the list above to begin data entry</p>
+              </div>
+            )}
+            
+            {selectedStudent && needsGoalSelection && (
+              <GoalSelectionView />
+            )}
+            
+            {selectedStudent && !needsGoalSelection && !selectedGoal && (
+              <div style={{ textAlign: 'center', padding: '3rem', color: 'white' }}>
+                <h3>No active goals found</h3>
+                <p>{selectedStudent.name} needs active IEP goals before data entry can begin.</p>
+                <button
+                  onClick={() => setView('goal-selection')}
+                  style={{
+                    marginTop: '1rem',
+                    padding: '12px 24px',
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add Goals in Goal Manager
+                </button>
+              </div>
+            )}
+            
+            {selectedStudent && selectedGoal && (
+              <EnhancedDataEntry
+                selectedStudent={selectedStudent}
+                selectedGoal={selectedGoal}
+                onBack={() => {
+                  setSelectedGoal(null);
+                  setView('dashboard');
+                }}
+                onDataSaved={() => {
+                  // Refresh student data after saving
+                  const updatedStudents = students.map(s => 
+                    s.id === selectedStudent.id 
+                      ? UnifiedDataService.getStudent(s.id) 
+                      : s
+                  );
+                  setStudents(updatedStudents);
+                  alert('Data saved successfully!');
+                }}
+              />
+            )}
+          </>
+        )}
+
+        {view === 'progress' && selectedStudent && (
+          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
+            <h3>📈 Progress Dashboard</h3>
+            <p>Progress tracking component will be integrated with unified data system.</p>
+          </div>
+        )}
+
+        {view === 'goal-selection' && (
+          <GoalManager />
+        )}
+
+        {view === 'print-sheets' && selectedStudent && (
+          <div style={{ color: 'white', textAlign: 'center', padding: '3rem' }}>
+            <h3>🖨️ Print Data Sheets</h3>
+            <p>Print functionality component will be integrated with unified data system.</p>
+          </div>
+        )}
+
+        {/* No students message */}
+        {students.length === 0 && (
+          <div style={{
+            textAlign: 'center',
+            color: 'white',
+            padding: '3rem'
+          }}>
+            <h2>No Students Found</h2>
+            <p>Add students in the Student Management section to begin IEP data collection.</p>
+            {systemStatus && !systemStatus.hasUnifiedData && (
+              <div style={{
+                marginTop: '2rem',
+                padding: '1rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                borderRadius: '12px',
+                border: '1px solid #ef4444'
+              }}>
+                <h3>⚠️ Migration Required</h3>
+                <p>It looks like you have data in the old format. Please run the data migration to use the new unified system.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
+      {/* Quick Data Entry Modal */}
+      {showQuickEntry && selectedStudent && (
+        <QuickDataEntry
+          studentId={selectedStudent.id}
+          isOpen={showQuickEntry}
+          onClose={() => setShowQuickEntry(false)}
+          onDataSaved={() => {
+            handleDataSaved();
+            setShowQuickEntry(false);
+          }}
+        />
       )}
 
-      <style>{`
-        .iep-data-collection {
-          padding: 1.5rem;
-          background: white;
-          min-height: calc(100vh - 80px);
-        }
-
-        .iep-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .component-title {
-          font-size: 2rem;
-          color: #2c3e50;
-          margin-bottom: 0.5rem;
-        }
-
-        .component-subtitle {
-          color: #7f8c8d;
-          font-size: 1rem;
-        }
-
-        .student-selection {
-          margin-bottom: 2rem;
-        }
-
-        .student-selection h3 {
-          margin-bottom: 1rem;
-          color: #34495e;
-        }
-
-        .student-cards {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          gap: 1rem;
-        }
-
-        .student-card {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 12px;
-          padding: 1rem;
-          color: white;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .student-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .student-card.selected {
-          background: linear-gradient(135deg, #2ecc71 0%, #3498db 100%);
-          box-shadow: 0 8px 25px rgba(46, 204, 113, 0.4);
-        }
-
-        .student-photo {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          overflow: hidden;
-          background: rgba(255, 255, 255, 0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .student-photo img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .student-avatar {
-          font-size: 1.5rem;
-          font-weight: bold;
-        }
-
-        .student-info h4 {
-          margin: 0 0 0.25rem 0;
-          font-size: 1.1rem;
-        }
-
-        .student-info p {
-          margin: 0;
-          opacity: 0.9;
-          font-size: 0.9rem;
-        }
-
-        .no-iep-students {
-          text-align: center;
-          padding: 2rem;
-          background: #ecf0f1;
-          border-radius: 8px;
-          color: #7f8c8d;
-        }
-
-        .view-tabs {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 2rem;
-          border-bottom: 2px solid #ecf0f1;
-          padding-bottom: 0.5rem;
-        }
-
-        .tab-button {
-          padding: 0.75rem 1.5rem;
-          border: none;
-          background: transparent;
-          border-radius: 8px 8px 0 0;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s ease;
-          color: #7f8c8d;
-        }
-
-        .tab-button:hover {
-          background: rgba(102, 126, 234, 0.1);
-          color: #667eea;
-        }
-
-        .tab-button.active {
-          background: #667eea;
-          color: white;
-        }
-
-        .dashboard-view {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: 1.5rem;
-        }
-
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
-
-        .start-session-btn {
-          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: all 0.2s ease;
-        }
-
-        .start-session-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-        }
-
-        .dashboard-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 2rem;
-        }
-
-        .active-goals-summary h4,
-        .recent-sessions h4 {
-          margin-bottom: 1rem;
-          color: #2c3e50;
-        }
-
-        .goals-list {
-          display: grid;
-          gap: 1rem;
-        }
-
-        .goal-summary-card {
-          background: white;
-          border-radius: 8px;
-          padding: 1rem;
-          border-left: 4px solid #667eea;
-        }
-
-        .goal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.5rem;
-        }
-
-        .goal-category {
-          padding: 0.25rem 0.75rem;
-          border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          text-transform: uppercase;
-        }
-
-        .goal-category.academic {
-          background: #e3f2fd;
-          color: #1565c0;
-        }
-
-        .goal-category.behavioral {
-          background: #fff3e0;
-          color: #ef6c00;
-        }
-
-        .goal-category.social-emotional {
-          background: #f3e5f5;
-          color: #7b1fa2;
-        }
-
-        .goal-category.physical {
-          background: #e8f5e8;
-          color: #2e7d32;
-        }
-
-        .measurement-type {
-          background: #ecf0f1;
-          padding: 0.25rem 0.5rem;
-          border-radius: 6px;
-          font-size: 0.75rem;
-          color: #2c3e50;
-        }
-
-        .goal-summary-card h5 {
-          margin: 0.5rem 0;
-          color: #2c3e50;
-        }
-
-        .goal-summary-card p {
-          color: #7f8c8d;
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-        }
-
-        .quick-collect-btn {
-          background: #667eea;
-          color: white;
-          border: none;
-          padding: 0.5rem 1rem;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.9rem;
-          transition: all 0.2s ease;
-        }
-
-        .quick-collect-btn:hover {
-          background: #5a67d8;
-        }
-
-        .goals-view {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: 1.5rem;
-        }
-
-        .goals-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
-
-        .add-goal-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        .goals-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1.5rem;
-        }
-
-        .goal-card {
-          background: white;
-          border-radius: 12px;
-          padding: 1.5rem;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-          position: relative;
-        }
-
-        .goal-category-badge {
-          position: absolute;
-          top: -10px;
-          right: 20px;
-          background: #667eea;
-          color: white;
-          padding: 0.25rem 0.75rem;
-          border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 600;
-        }
-
-        .goal-card h4 {
-          margin: 0 0 1rem 0;
-          color: #2c3e50;
-        }
-
-        .goal-card p {
-          margin: 0.5rem 0;
-          color: #7f8c8d;
-          font-size: 0.9rem;
-        }
-
-        .goal-actions {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
-
-        .goal-actions button {
-          flex: 1;
-          padding: 0.5rem;
-          border: 1px solid #dee2e6;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .goal-actions button:first-child {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        .goal-actions button:first-child:hover {
-          background: #5a67d8;
-        }
-
-        .goal-actions button:last-child {
-          background: white;
-          color: #7f8c8d;
-        }
-
-        .goal-actions button:last-child:hover {
-          background: #f8f9fa;
-        }
-
-        .no-goals {
-          text-align: center;
-          padding: 3rem;
-          color: #7f8c8d;
-        }
-
-        .data-entry-view {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: 1.5rem;
-        }
-
-        .session-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
-
-        .session-info {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .complete-session-btn {
-          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-        .data-entry-forms {
-          display: grid;
-          gap: 2rem;
-        }
-
-        .goal-data-entry {
-          background: white;
-          border-radius: 8px;
-          padding: 1.5rem;
-          border-left: 4px solid #667eea;
-        }
-
-        .goal-data-entry h4 {
-          margin: 0 0 1rem 0;
-          color: #2c3e50;
-        }
-
-        .measurement-form {
-          display: grid;
-          gap: 1rem;
-        }
-
-        .measurement-form label {
-          font-weight: 600;
-          color: #2c3e50;
-          margin-bottom: 0.5rem;
-        }
-
-        .measurement-form input,
-        .measurement-form select {
-          padding: 0.75rem;
-          border: 2px solid #dee2e6;
-          border-radius: 6px;
-          font-size: 1rem;
-          transition: border-color 0.2s ease;
-        }
-
-        .measurement-form input:focus,
-        .measurement-form select:focus {
-          outline: none;
-          border-color: #667eea;
-        }
-
-        .rating-buttons {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .rating-btn {
-          width: 3rem;
-          height: 3rem;
-          border: 2px solid #dee2e6;
-          border-radius: 50%;
-          background: white;
-          cursor: pointer;
-          font-size: 1.2rem;
-          font-weight: 600;
-          transition: all 0.2s ease;
-        }
-
-        .rating-btn:hover {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        .no-session {
-          text-align: center;
-          padding: 3rem;
-          color: #7f8c8d;
-        }
-
-        .no-session button {
-          background: #667eea;
-          color: white;
-          border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 8px;
-          cursor: pointer;
-          margin-top: 1rem;
-        }
-
-        .progress-view {
-          background: #f8f9fa;
-          border-radius: 12px;
-          padding: 1.5rem;
-        }
-
-        .progress-placeholder {
-          text-align: center;
-          padding: 3rem;
-          color: #7f8c8d;
-        }
-
-        @media (max-width: 768px) {
-          .iep-data-collection {
-            padding: 1rem;
-          }
-
-          .dashboard-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .goals-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .student-cards {
-            grid-template-columns: 1fr;
-          }
-
-          .student-card {
-            flex-direction: column;
-            text-align: center;
-          }
-
-          .view-tabs {
-            overflow-x: auto;
-            flex-wrap: nowrap;
-          }
-
-          .tab-button {
-            white-space: nowrap;
-          }
-        }
-      `}</style>
+      {/* Print Data Sheets Modal */}
+      {showPrintSheets && selectedStudent && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            width: '95vw',
+            height: '95vh',
+            overflow: 'hidden',
+            position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowPrintSheets(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                zIndex: 1001,
+                background: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                cursor: 'pointer',
+                fontSize: '1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ×
+            </button>
+            <PrintDataSheetSystem
+              students={[selectedStudent]}
+              goals={selectedStudent.iepData?.goals || []}
+              onBack={() => setShowPrintSheets(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

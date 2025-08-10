@@ -1,8 +1,20 @@
-// Main view types
-export type ViewType = 'builder' | 'display' | 'students' | 'staff' | 'calendar' | 'library' | 'celebrations' | 'settings';
+// ===== VIEW TYPES =====
+// ✅ FIXED: Added 'reports' and 'iep-goals' to ViewType enum
+export type ViewType = 
+  | 'builder' 
+  | 'display' 
+  | 'students' 
+  | 'staff' 
+  | 'iep-goals'      // ✅ ADDED - IEP Goals management
+  | 'calendar' 
+  | 'library' 
+  | 'data-collection' 
+  | 'reports'        // ✅ ADDED - this was missing!
+  | 'smart-groups'  
+  | 'settings';
 
 // Schedule category type
-export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory';
+export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory' | 'system';
 
 // Staff interface
 export interface Staff {
@@ -62,6 +74,29 @@ export interface Student {
     resourceTeacher: string;
     timeframe: string;
   };
+}
+
+// Unified Student interface (extends Student with celebration features)
+export interface UnifiedStudent extends Student {
+  birthday?: string; // 'YYYY-MM-DD' format
+  allowBirthdayDisplay?: boolean; // Direct property for easier access
+  allowPhotoInCelebrations?: boolean; // Direct property for easier access
+  celebrationPreferences?: {
+    allowBirthdayDisplay: boolean;
+    customCelebrationMessage?: string;
+  };
+}
+
+// Custom Celebration interface
+export interface CustomCelebration {
+  id: string;
+  title: string;
+  message: string;
+  date: string;
+  isRecurring: boolean;
+  emoji: string;
+  enabled: boolean;
+  createdAt: string;
 }
 
 // Group interface
@@ -467,6 +502,9 @@ export interface CalendarSettings {
   temperatureUnit?: 'F' | 'C';
   behaviorCategories?: string[];
   independentChoiceCategories?: string[];
+  customCelebrations?: CustomCelebration[];
+  birthdayDisplayMode?: 'photo' | 'name' | 'both';
+  weekendBirthdayHandling?: 'friday' | 'monday' | 'exact';
   [key: string]: any;
 }
 
@@ -556,93 +594,187 @@ export interface ChoiceFilter {
   [key: string]: any;
 }
 
-// IEP Data Collection Interfaces (Re-added)
+// ===== ENHANCED IEP DATA COLLECTION TYPES =====
+// Enhanced for SMART goals and educator workflow
+
 export interface IEPGoal {
   id: string;
   studentId: string;
-  category: 'academic' | 'behavioral' | 'social-emotional' | 'physical';
-  title: string;
+  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
   description: string;
-  targetBehavior: string;
-  measurementType: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
+  measurableObjective: string;
+  measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
   targetCriteria: string;
-  currentLevel: string;
+  dataCollectionSchedule: string;
+  
+  // SMART Goal Enhancement
+  title: string;
+  shortTermObjective: string;
+  criteria: string;
+  target: number; // Annual target value
+  priority: 'high' | 'medium' | 'low';
+  dateCreated: string;
+  lastDataPoint?: string;
+  dataPoints: number;
+  currentProgress: number;
+  
+  // Nine-week milestones for progress monitoring
+  nineWeekMilestones?: {
+    quarter1: { target: number; actual?: number; notes?: string };
+    quarter2: { target: number; actual?: number; notes?: string };
+    quarter3: { target: number; actual?: number; notes?: string };
+    quarter4: { target: number; actual?: number; notes?: string };
+  };
+  
+  // Goal inheritance tracking
+  inheritedFrom?: {
+    previousGoalId: string;
+    previousYear: string;
+    carryOverReason: string;
+    modifications: string[];
+  };
+  
+  // Administrative compliance
+  iepMeetingDate?: string;
+  reviewDates?: string[];
+  complianceNotes?: string;
+  
+  baseline?: {
+    value: number;
+    date: string;
+    notes?: string;
+  };
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  targetDate?: string;
-  notes?: string;
+  createdDate: string;
+  lastUpdated: string;
+  linkedActivityIds?: string[];
 }
 
 export interface DataPoint {
   id: string;
   goalId: string;
-  sessionId: string;
-  timestamp: string;
-  value: number | string;
+  studentId: string;
+  date: string;
+  time: string;
+  value: number;
+  totalOpportunities?: number; // For trial-based data (X out of Y)
   notes?: string;
   context?: string;
+  activityId?: string;
+  collector: string;
+  photos?: string[];
+  voiceNotes?: string[];
 }
 
-export interface FrequencyDataPoint extends DataPoint {
-  value: number;
-  timeInterval: number;
-  intervalUnit: 'minutes' | 'hours' | 'session';
+// Enhanced data point for trial-based entry and administrative needs
+export interface EnhancedDataPoint extends DataPoint {
+  // Trial-based data entry
+  trialsCorrect?: number;
+  trialsTotal?: number;
+  trialDetails?: {
+    trial: number;
+    correct: boolean;
+    response?: string;
+    promptLevel?: 'independent' | 'verbal' | 'gestural' | 'physical';
+  }[];
+  
+  // Administrative documentation
+  sessionType: 'instruction' | 'practice' | 'assessment' | 'generalization';
+  environmentalFactors?: string[];
+  accommodationsUsed?: string[];
+  behaviorNotes?: string;
+  
+  // Progress monitoring
+  confidenceLevel: 'low' | 'medium' | 'high';
+  masteryIndicator?: boolean;
+  nextSteps?: string;
+  
+  // Auto-calculated fields
+  percentageCorrect?: number;
+  sessionDuration?: number;
+  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
 }
 
-export interface AccuracyDataPoint extends DataPoint {
-  correct: number;
-  total: number;
-  value: number; // percentage
+// Nine-week period calculation
+export interface SchoolYearPeriod {
+  year: string; // "2024-2025"
+  startDate: string;
+  endDate: string;
+  quarters: {
+    q1: { start: string; end: string; weekNumber: number };
+    q2: { start: string; end: string; weekNumber: number };
+    q3: { start: string; end: string; weekNumber: number };
+    q4: { start: string; end: string; weekNumber: number };
+  };
 }
 
-export interface DurationDataPoint extends DataPoint {
-  value: number; // in seconds
-  startTime?: string;
-  endTime?: string;
+// Goal inheritance tracking
+export interface GoalInheritance {
+  currentGoalId: string;
+  previousGoals: {
+    goalId: string;
+    year: string;
+    finalProgress: number;
+    carryOverReason: 'not-mastered' | 'partial-mastery' | 'new-environment' | 'skill-refinement';
+    modifications: string[];
+  }[];
+  continuityNotes: string;
 }
 
-export interface IndependenceDataPoint extends DataPoint {
-  level: 'independent' | 'minimal-prompt' | 'moderate-prompt' | 'maximum-prompt' | 'hand-over-hand';
-  value: number; // 1-5 scale
+export interface IEPProgress {
+  goalId: string;
+  studentId: string;
+  currentLevel: number;
+  targetLevel: number;
+  progressPercentage: number;
+  trend: 'improving' | 'maintaining' | 'declining';
+  lastThreeDataPoints: DataPoint[];
+  averagePerformance: number;
+  meetingCriteria: boolean;
 }
 
-export interface RatingDataPoint extends DataPoint {
-  value: number; // 1-5 scale
-  scale: string; // description of what the scale represents
+export interface IEPReport {
+  id: string;
+  studentId: string;
+  goalIds: string[];
+  reportType: 'weekly' | 'monthly' | 'quarterly' | 'annual';
+  startDate: string;
+  endDate: string;
+  generatedDate: string;
+  summary: string;
+  progressData: IEPProgress[];
+  recommendations: string[];
 }
 
 export interface DataCollectionSession {
   id: string;
   studentId: string;
-  goalIds: string[];
+  date: string;
   startTime: string;
-  endTime?: string;
-  activity?: string;
-  setting: string;
-  staffMember: string;
-  notes?: string;
+  endTime: string;
+  activityId?: string;
+  goalsAddressed: string[];
   dataPoints: DataPoint[];
-  isCompleted: boolean;
-  createdAt: string;
-  updatedAt: string;
+  sessionNotes?: string;
+  collector: string;
 }
 
-export interface ProgressSummary {
-  goalId: string;
-  totalSessions: number;
-  averageValue: number;
-  trend: 'improving' | 'declining' | 'stable' | 'insufficient-data';
-  lastUpdated: string;
-  recentValues: number[];
-  targetMet: boolean;
+export interface MeasurementConfig {
+  type: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
+  unit?: string;
+  scale?: {
+    min: number;
+    max: number;
+    labels?: string[];
+  };
+  prompt?: string;
 }
 
 export interface StudentWithIEP extends Student {
   hasIEP: true;
   iepGoals: IEPGoal[];
   dataCollectionSessions: DataCollectionSession[];
-  progressSummaries: ProgressSummary[];
+  progressSummaries: IEPProgress[];
   iepStartDate: string;
   iepEndDate: string;
   iepReviewDate?: string;
@@ -666,7 +798,7 @@ export interface ActivityPreview {
   startTime?: string;
   groupAssignments?: GroupAssignment[];
   isSpecial?: boolean;
-  status?: 'completed' | 'active' | 'upcoming';
+  status?: 'completed' | 'active' | 'upcoming' | 'current';
   [key: string]: any;
 }
 
@@ -682,4 +814,187 @@ export interface ChoiceAnalytics {
   averageRating: number;
   studentPreferences: { [studentId: string]: number };
   [key: string]: any;
+}
+
+// ===== REPORT INTERFACES =====
+// New interfaces to support the Reports component
+
+export interface ReportData {
+  id: string;
+  type: ReportType;
+  title: string;
+  generatedAt: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+  data: any; // Flexible data structure for different report types
+  metadata?: {
+    totalRecords: number;
+    filters: string[];
+    exportFormat?: 'pdf' | 'csv' | 'json';
+  };
+}
+
+export type ReportType = 
+  | 'student-progress' 
+  | 'schedule-usage' 
+  | 'activity-analytics' 
+  | 'iep-goals' 
+  | 'staff-utilization'
+  | 'weekly-summary'
+  | 'monthly-overview';
+
+export interface ReportFilter {
+  studentId?: string;
+  dateRange: 'week' | 'month' | 'quarter' | 'year';
+  includeInactive?: boolean;
+  categories?: string[];
+}
+
+export interface ProgressMetric {
+  studentId: string;
+  goalId: string;
+  currentValue: number;
+  targetValue: number;
+  progressPercentage: number;
+  lastUpdated: string;
+  trend: 'improving' | 'declining' | 'stable';
+}
+
+export interface ActivityUsageStats {
+  activityId: string;
+  activityName: string;
+  usageCount: number;
+  averageDuration: number;
+  engagementScore: number;
+  lastUsed: string;
+  popularTimeSlots: string[];
+}
+
+export interface ScheduleAnalytics {
+  scheduleId: string;
+  scheduleName: string;
+  usageFrequency: number;
+  averageCompletionTime: number;
+  successRate: number;
+  mostSkippedActivities: string[];
+  peakUsageTimes: string[];
+}
+
+// ===== DAILY CHECK-IN SETTINGS INTERFACES =====
+
+export interface BehaviorStatement {
+  id: string;
+  text: string;
+  category: 'kindness' | 'respect' | 'effort' | 'responsibility' | 'safety' | 'learning';
+  emoji: string;           // ← Add this
+  isActive: boolean;       // ← Add this  
+  isDefault: boolean;      // ← Add this (instead of isCustom)
+  createdAt: string;
+}
+
+export const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
+  {
+    id: 'default-1',
+    text: 'I will be kind to my friends',
+    category: 'kindness',
+    emoji: '🤝',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-2', 
+    text: 'I will listen carefully',
+    category: 'responsibility',
+    emoji: '👂',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-3',
+    text: 'I will try my best',
+    category: 'effort',
+    emoji: '💪',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-4',
+    text: 'I will use my words when I need help',
+    category: 'learning',
+    emoji: '💬',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-5',
+    text: 'I will keep my hands to myself',
+    category: 'safety',
+    emoji: '🙌',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'default-6',
+    text: 'I will clean up after myself',
+    category: 'responsibility',
+    emoji: '🧹',
+    isActive: true,
+    isDefault: true,
+    createdAt: new Date().toISOString()
+  }
+];
+
+export interface CheckInStep {
+  id: string;
+  name: string;
+  component: string;
+  enabled: boolean;
+  order: number;
+  settings?: any;
+}
+
+export interface BirthdaySettings {
+  enableBirthdayDisplay: boolean;
+  birthdayCountdownDays: number;
+  weekendBirthdayHandling: 'friday' | 'monday' | 'exact';
+  birthdayDisplayMode: 'photo' | 'name' | 'both';
+  showBirthdayBadges: boolean;
+}
+
+export interface BehaviorCommitmentSettings {
+  customStatements: BehaviorStatement[];
+  enableStudentCustom: boolean;
+  showPhotos: boolean;
+}
+
+export interface WelcomeSettings {
+  customWelcomeMessage: string;
+  showTeacherName: boolean;
+  substituteMode: boolean;
+  substituteMessage: string;
+  schoolName: string;
+  className: string;
+}
+
+export interface CheckInFlowSettings {
+  enableWeather: boolean;
+  enableCelebrations: boolean;
+  enableBehaviorCommitments: boolean;
+  enableChoiceActivities: boolean;
+  customSteps: CheckInStep[];
+}
+
+// Enhanced CalendarSettings interface
+export interface EnhancedCalendarSettings extends CalendarSettings {
+  birthdaySettings: BirthdaySettings;
+  behaviorCommitments: BehaviorCommitmentSettings;
+  welcomeSettings: WelcomeSettings;
+  checkInFlow: CheckInFlowSettings;
 }

@@ -1,6 +1,17 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import { Activity, ActivityLibraryItem } from '../../types';
 import { defaultTransitionActivities, addTransitionsToLibrary } from '../../data/defaultTransitionActivities';
+import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
+
+// Utility function to generate unique IDs
+let idCounter = 0;
+const generateUniqueId = (prefix: string = 'id'): string => {
+  idCounter++;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  const counter = idCounter.toString(36);
+  return `${prefix}_${timestamp}_${counter}_${random}`;
+};
 
 interface ActivityLibraryProps {
   isActive: boolean;
@@ -11,6 +22,8 @@ interface LibraryActivity extends Omit<Activity, 'duration'> {
   description: string;
   defaultDuration: number;
   tags: string[];
+  choiceEligible?: boolean;
+  isSystemActivity?: boolean;
 }
 
 interface CustomActivity extends LibraryActivity {
@@ -75,7 +88,7 @@ const ActivityModal: React.FC<{
     if (!formData.name.trim()) return;
 
     const activityData: CustomActivity = {
-      id: activity?.id || `custom_${Date.now()}`,
+      id: activity?.id || generateUniqueId('custom'),
       name: formData.name.trim(),
       icon: customIcon || formData.icon,
       category: formData.category,
@@ -297,6 +310,19 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
   // Base activities database
   const baseActivities: LibraryActivity[] = [
+    // System Activities
+    { 
+      id: 'system-choice-time', 
+      name: 'Choice Item Time', 
+      icon: '🎯', 
+      category: 'system', 
+      description: 'Student choice activities selected during Daily Check-In', 
+      defaultDuration: 20, 
+      tags: ['choice', 'student-selected', 'flexible'], 
+      isCustom: false,
+      isSystemActivity: true
+    },
+    
     // Academic Activities
     { id: '1', name: 'Morning Meeting', icon: '🌅', category: 'social', description: 'Circle time and daily greeting', defaultDuration: 15, tags: ['circle', 'greeting', 'social'], isCustom: false },
     { id: '2', name: 'Math', icon: '🔢', category: 'academic', description: 'Mathematics instruction and practice', defaultDuration: 30, tags: ['numbers', 'calculation', 'problem-solving'], isCustom: false },
@@ -338,100 +364,124 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     { id: '28', name: 'Resource Room', icon: '🎯', category: 'resource', description: 'Special education support', defaultDuration: 30, tags: ['support', 'individualized', 'academic'], isCustom: false }
   ];
 
-  // Load custom activities from localStorage
+  // Load custom activities from UnifiedDataService
   useEffect(() => {
-    const stored = localStorage.getItem('custom_activities');
-    if (stored) {
-      try {
-        setCustomActivities(JSON.parse(stored));
-      } catch (error) {
-        console.error('Error loading custom activities:', error);
-      }
-    }
+    loadCustomActivities();
   }, []);
 
-// 🎯 CRITICAL FIX: Add transition activities automatically AND include them in display
-useEffect(() => {
-  console.log('🎯 ActivityLibrary - Checking for transition activities...');
-  
-  // Get current activities from localStorage
-  const currentCustomActivities = JSON.parse(localStorage.getItem('custom_activities') || '[]');
-  
-  // Check if transitions already exist to avoid duplicates
-  const hasTransitions = currentCustomActivities.some((activity: any) => activity.isTransition);
-  
-  if (!hasTransitions) {
-    console.log('➕ Adding transition activities to library...');
-    
-    // Add transition activities to existing activities (returns ActivityLibraryItem[])
-    const activitiesWithTransitions = addTransitionsToLibrary(currentCustomActivities);
-    
-    // ✅ FIXED: Convert ActivityLibraryItem[] to CustomActivity[] by ensuring all required properties
-    const customActivitiesWithTransitions: CustomActivity[] = activitiesWithTransitions.map((activity: ActivityLibraryItem): CustomActivity => {
-      return {
-        // Required LibraryActivity properties
+  const loadCustomActivities = () => {
+    try {
+      // Get activities from UnifiedDataService
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      // Convert UnifiedActivity[] to CustomActivity[] format
+      const customActivitiesFromUnified: CustomActivity[] = unifiedActivities.map((activity: UnifiedActivity): CustomActivity => ({
         id: activity.id,
         name: activity.name,
-        emoji: activity.emoji,
-        icon: activity.icon,
-        category: activity.category,
-        defaultDuration: activity.defaultDuration,
+        icon: (activity as any).icon || '📝', // Use icon if available, fallback to default
+        category: activity.category as any,
+        defaultDuration: activity.duration || 30,
         description: activity.description || '',
-        tags: activity.tags || [],
-        
-        // Optional Activity properties that LibraryActivity inherits
+        tags: (activity as any).tags || [], // Use tags if available
         materials: activity.materials || [],
         instructions: activity.instructions || '',
         isCustom: activity.isCustom,
-        ageGroup: activity.ageGroup,
-        difficulty: activity.difficulty,
+        createdAt: activity.dateCreated,
+        updatedAt: activity.dateCreated,
+        usageCount: 0,
+        choiceEligible: (activity as any).choiceEligible || false, // Include choice eligible status
+        // Add transition properties if they exist
+        isTransition: (activity as any).isTransition || false,
+        transitionType: (activity as any).transitionType,
+        animationStyle: (activity as any).animationStyle,
+        showNextActivity: (activity as any).showNextActivity,
+        movementPrompts: (activity as any).movementPrompts,
+        autoStart: (activity as any).autoStart,
+        soundEnabled: (activity as any).soundEnabled,
+        customMessage: (activity as any).customMessage
+      }));
+
+      // If no activities exist, initialize with transition activities
+      if (customActivitiesFromUnified.length === 0) {
+        console.log('🎯 ActivityLibrary - No activities found, adding transition activities...');
         
-        // ✅ FIXED: Always include transition properties (don't use conditional spread)
-        isTransition: activity.isTransition || false,
-        transitionType: activity.transitionType,
-        animationStyle: activity.animationStyle,
-        showNextActivity: activity.showNextActivity,
-        movementPrompts: activity.movementPrompts,
-        autoStart: activity.autoStart,
-        soundEnabled: activity.soundEnabled,
-        customMessage: activity.customMessage,
+        // Add transition activities to empty array
+        const activitiesWithTransitions = addTransitionsToLibrary([]);
         
-        // Required CustomActivity properties
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        usageCount: 0
+        // Convert and save to UnifiedDataService
+        activitiesWithTransitions.forEach((activity: ActivityLibraryItem) => {
+          const unifiedActivity: Partial<UnifiedActivity> = {
+            name: activity.name,
+            category: activity.category,
+            description: activity.description || '',
+            duration: activity.defaultDuration,
+            materials: activity.materials || [],
+            instructions: activity.instructions || '',
+            isCustom: activity.isCustom,
+            // Add transition properties
+            ...(activity.isTransition && {
+              isTransition: activity.isTransition,
+              transitionType: activity.transitionType,
+              animationStyle: activity.animationStyle,
+              showNextActivity: activity.showNextActivity,
+              movementPrompts: activity.movementPrompts,
+              autoStart: activity.autoStart,
+              soundEnabled: activity.soundEnabled,
+              customMessage: activity.customMessage
+            })
+          };
+          
+          UnifiedDataService.addActivity(unifiedActivity);
+        });
+        
+        // Reload activities after adding
+        loadCustomActivities();
+      } else {
+        setCustomActivities(customActivitiesFromUnified);
+      }
+    } catch (error) {
+      console.error('Error loading custom activities:', error);
+    }
+  };
+
+  // Save custom activities via UnifiedDataService
+  const saveCustomActivities = (activities: CustomActivity[]) => {
+    // Update each activity in UnifiedDataService
+    activities.forEach(activity => {
+      const unifiedActivity: Partial<UnifiedActivity> = {
+        name: activity.name,
+        category: activity.category,
+        description: activity.description,
+        duration: activity.defaultDuration,
+        materials: activity.materials || [],
+        instructions: activity.instructions || '',
+        isCustom: activity.isCustom,
+        // Include icon, tags, and choice eligible status
+        ...(activity.icon && { icon: activity.icon }),
+        ...(activity.tags && { tags: activity.tags }),
+        ...(activity.choiceEligible !== undefined && { choiceEligible: activity.choiceEligible }),
+        // Add transition properties if they exist
+        ...(activity.isTransition && {
+          isTransition: activity.isTransition,
+          transitionType: activity.transitionType,
+          animationStyle: activity.animationStyle,
+          showNextActivity: activity.showNextActivity,
+          movementPrompts: activity.movementPrompts,
+          autoStart: activity.autoStart,
+          soundEnabled: activity.soundEnabled,
+          customMessage: activity.customMessage
+        })
       };
+      
+      // Check if activity exists, update or add
+      const existingActivity = UnifiedDataService.getActivity(activity.id);
+      if (existingActivity) {
+        UnifiedDataService.updateActivity(activity.id, unifiedActivity);
+      } else {
+        UnifiedDataService.addActivity(unifiedActivity);
+      }
     });
     
-    // Save the updated activities back to localStorage
-    localStorage.setItem('custom_activities', JSON.stringify(customActivitiesWithTransitions));
-    
-    // Update state with the new activities
-    setCustomActivities(customActivitiesWithTransitions);
-    
-    console.log('✅ Transition activities added to library!');
-  } else {
-    console.log('✅ Transition activities already exist in library');
-    // Just set the current activities - but ensure they conform to CustomActivity interface
-    const validatedActivities: CustomActivity[] = currentCustomActivities.map((activity: any): CustomActivity => ({
-      ...activity,
-      // ✅ FIXED: Ensure all required properties exist
-      description: activity.description || '',
-      tags: activity.tags || [],
-      materials: activity.materials || [],
-      instructions: activity.instructions || '',
-      createdAt: activity.createdAt || new Date().toISOString(),
-      updatedAt: activity.updatedAt || new Date().toISOString(),
-      usageCount: activity.usageCount || 0
-    }));
-    
-    setCustomActivities(validatedActivities);
-  }
-}, []); // Run once on component mount
-
-  // Save custom activities to localStorage
-  const saveCustomActivities = (activities: CustomActivity[]) => {
-    localStorage.setItem('custom_activities', JSON.stringify(activities));
     setCustomActivities(activities);
     
     // Notify Schedule Builder of changes with enhanced payload
@@ -465,6 +515,13 @@ useEffect(() => {
           color: 'white',
           boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)'
         };
+      case 'system':
+        return {
+          ...baseStyle,
+          background: 'linear-gradient(45deg, #FF9800, #FFB74D)',
+          color: 'white',
+          boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
+        };
       case 'academic':
         return { ...baseStyle, background: '#E3F2FD', color: '#1976D2' };
       case 'social':
@@ -491,8 +548,8 @@ useEffect(() => {
     return combinedActivities;
   }, [customActivities]);
 
-  // 🎯 UPDATED: Include transition in categories list
-  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition'];
+  // 🎯 UPDATED: Include transition and system in categories list
+  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition', 'system'];
 
   // Filter activities based on search and category
   const filteredActivities = useMemo(() => {
@@ -525,7 +582,7 @@ useEffect(() => {
 
     try {
       // Create unique instance ID to prevent duplicates
-      const instanceId = `${activity.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const instanceId = generateUniqueId(`${activity.id}`);
       
       // 🎯 CRITICAL FIX: Enhanced activity data mapping that preserves ALL transition properties
       const activityToAdd = {
@@ -611,7 +668,7 @@ useEffect(() => {
       // For built-in activities, create a custom version
       const customVersion: CustomActivity = {
         ...activity,
-        id: `custom_${activity.id}_${Date.now()}`,
+        id: generateUniqueId(`custom_${activity.id}`),
         isCustom: true,
         createdAt: new Date().toISOString(),
         difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
@@ -645,16 +702,54 @@ useEffect(() => {
       return;
     }
 
-    if (window.confirm(`Are you sure you want to delete "${activity.name}"?`)) {
-      const updatedActivities = customActivities.filter(a => a.id !== activity.id);
-      saveCustomActivities(updatedActivities);
+    // Create a proper delete confirmation dialog
+    const deleteConfirmed = window.confirm(
+      `🗑️ DELETE ACTIVITY\n\n` +
+      `Are you sure you want to permanently delete "${activity.name}"?\n\n` +
+      `This action cannot be undone.\n\n` +
+      `Click OK to DELETE or Cancel to keep the activity.`
+    );
+
+    if (deleteConfirmed) {
+      try {
+        // Delete from UnifiedDataService first
+        UnifiedDataService.deleteActivity(activity.id);
+        
+        // Update local state
+        const updatedActivities = customActivities.filter(a => a.id !== activity.id);
+        setCustomActivities(updatedActivities);
+        
+        // Notify Schedule Builder of changes
+        window.dispatchEvent(new CustomEvent('activitiesUpdated', {
+          detail: { 
+            activities: [...baseActivities, ...updatedActivities],
+            source: 'ActivityLibrary',
+            timestamp: Date.now(),
+            customCount: updatedActivities.length,
+            totalCount: [...baseActivities, ...updatedActivities].length,
+            action: 'delete',
+            deletedActivity: activity
+          }
+        }));
+        
+        console.log(`✅ Activity "${activity.name}" deleted successfully from UnifiedDataService`);
+        
+        // Show success message
+        setTimeout(() => {
+          alert(`✅ "${activity.name}" has been deleted successfully.`);
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ Error deleting activity:', error);
+        alert(`❌ Error deleting "${activity.name}". Please try again.`);
+      }
     }
   };
 
   const handleDuplicateActivity = (activity: LibraryActivity) => {
     const duplicate: CustomActivity = {
       ...activity,
-      id: `custom_${Date.now()}`,
+      id: generateUniqueId('custom'),
       name: `${activity.name} (Copy)`,
       isCustom: true,
       createdAt: new Date().toISOString(),
@@ -663,6 +758,30 @@ useEffect(() => {
     
     setEditingActivity(duplicate);
     setModalOpen(true);
+  };
+
+  // Handle toggling choice eligible status
+  const handleToggleChoiceEligible = (activity: LibraryActivity, isChecked: boolean) => {
+    if (activity.isCustom) {
+      // Update custom activity
+      const updatedActivities = customActivities.map(a => 
+        a.id === activity.id ? { ...a, choiceEligible: isChecked } : a
+      );
+      saveCustomActivities(updatedActivities);
+    } else {
+      // For built-in activities, create a custom version with choice eligible status
+      const customVersion: CustomActivity = {
+        ...activity,
+        id: `custom_${activity.id}_${Date.now()}`,
+        isCustom: true,
+        choiceEligible: isChecked,
+        createdAt: new Date().toISOString(),
+        difficulty: 'easy',
+      };
+      
+      const updatedActivities = [...customActivities, customVersion];
+      saveCustomActivities(updatedActivities);
+    }
   };
 
   if (!isActive) return null;
@@ -783,16 +902,13 @@ useEffect(() => {
               </div>
               <div className="activity-content">
                 <div className="activity-header">
-                  <h3 className="activity-title">
-                    {activity.name}
-                    {activity.isCustom && <span className="custom-badge">Custom</span>}
-                    {activity.isTransition && <span className="transition-badge">Transition</span>}
-                  </h3>
                   <div className="activity-meta">
                     <span style={getActivityCategoryStyle(activity.category)}>
                       {activity.category === 'transition' ? '✨ TRANSITION' : activity.category}
                     </span>
                     <span className="activity-duration">{activity.defaultDuration}min</span>
+                    {activity.isCustom && <span className="custom-badge">Custom</span>}
+                    {activity.isTransition && <span className="transition-badge">Transition</span>}
                   </div>
                 </div>
                 <p className="activity-description">{activity.description}</p>
@@ -819,41 +935,58 @@ useEffect(() => {
                 )}
               </div>
               <div className="activity-actions">
-                <button 
-                  className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
-                  title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
-                  onClick={() => handleAddActivity(activity)}
-                  disabled={addingActivities.has(activity.id)}
-                >
-                  {addingActivities.has(activity.id) ? (
-                    <>
-                      <span className="spinner">⏳</span> Adding...
-                    </>
-                  ) : (
-                    activity.category === 'transition' ? '✨ Add' : '+ Add'
+                {/* Choice Eligible Checkbox */}
+                <div className="choice-checkbox-container">
+                  <label className="choice-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={activity.choiceEligible || false}
+                      onChange={(e) => handleToggleChoiceEligible(activity, e.target.checked)}
+                      className="choice-checkbox"
+                    />
+                    <span className="choice-checkbox-text">Choice Activity</span>
+                  </label>
+                </div>
+                
+                <div className="action-buttons-row">
+                  <button 
+                    className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
+                    title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
+                    onClick={() => handleAddActivity(activity)}
+                    disabled={addingActivities.has(activity.id)}
+                  >
+                    {addingActivities.has(activity.id) ? (
+                      <>
+                        <span className="spinner">⏳</span> Adding...
+                      </>
+                    ) : (
+                      activity.category === 'transition' ? '✨ Add' : '+ Add'
+                    )}
+                  </button>
+                  <button 
+                    className="action-button secondary" 
+                    title="Edit activity"
+                    onClick={() => handleEditActivity(activity)}
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    className="action-button secondary" 
+                    title="Duplicate activity"
+                    onClick={() => handleDuplicateActivity(activity)}
+                  >
+                    📋
+                  </button>
+                  {activity.isCustom && (
+                    <button 
+                      className="action-button danger" 
+                      title="Delete activity"
+                      onClick={() => handleDeleteActivity(activity)}
+                    >
+                      🗑️
+                    </button>
                   )}
-                </button>
-                <button 
-                  className="action-button secondary" 
-                  title="Edit activity"
-                  onClick={() => handleEditActivity(activity)}
-                >
-                  ✏️
-                </button>
-                <button 
-                  className="action-button secondary" 
-                  title="More options"
-                  onClick={() => {
-                    const action = window.confirm('Choose action:\nOK = Duplicate\nCancel = Delete');
-                    if (action) {
-                      handleDuplicateActivity(activity);
-                    } else {
-                      handleDeleteActivity(activity);
-                    }
-                  }}
-                >
-                  ⋯
-                </button>
+                </div>
               </div>
             </div>
           ))
@@ -1280,6 +1413,45 @@ useEffect(() => {
 
         .activity-actions {
           display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        /* Choice Eligible Checkbox Styling */
+        .choice-checkbox-container {
+          width: 100%;
+          margin-bottom: 0.5rem;
+        }
+
+        .choice-checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          font-size: 0.9rem;
+          color: #495057;
+          justify-content: center;
+        }
+
+        .choice-checkbox {
+          width: 1.2rem;
+          height: 1.2rem;
+          cursor: pointer;
+          accent-color: #667eea;
+        }
+
+        .choice-checkbox-text {
+          font-weight: 500;
+        }
+
+        .choice-checkbox-label:hover .choice-checkbox-text {
+          color: #667eea;
+        }
+
+        /* Action buttons row */
+        .activity-actions .action-buttons-row {
+          display: flex;
           gap: 0.5rem;
           justify-content: center;
         }
@@ -1352,6 +1524,20 @@ useEffect(() => {
         .action-button.secondary:hover {
           background: #f8f9fa;
           border-color: #adb5bd;
+        }
+
+        .action-button.danger {
+          background: white;
+          color: #dc3545;
+          border-color: #dc3545;
+        }
+
+        .action-button.danger:hover {
+          background: #dc3545;
+          color: white;
+          border-color: #dc3545;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
         }
 
         .no-results {

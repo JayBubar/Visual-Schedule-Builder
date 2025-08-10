@@ -16,7 +16,10 @@
       "Bash(wc:*)",
       "Bash(rm:*)",
       "Bash(del:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(ls:*)",
+      "Bash(timeout 10 npm run dev)"
     ],
     "deny": []
   }
