@@ -12,6 +12,8 @@ import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
 import GoalManager from '../data-collection/GoalManager';
 import IEPDataCollectionInterface from '../data-collection/IEPDataCollectionInterface';
 import EnhancedResourceInput from './EnhancedResourceInput';
+import { runStudentDiagnostic } from '../../utils/studentDataDiagnostic';
+import { quickFixStudentConflicts } from '../../utils/studentDataCleanup';
 
 // Extended interface to include all original Student properties
 interface ExtendedStudent extends UnifiedStudent {
@@ -527,6 +529,74 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
           }}
         >
           ➕ Add Student
+        </button>
+
+        {/* Diagnostic Button */}
+        <button
+          onClick={() => {
+            console.log('🔍 Running Student Data Diagnostic...');
+            runStudentDiagnostic();
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(245, 158, 11, 0.3)';
+          }}
+        >
+          🔍 Diagnose Data
+        </button>
+
+        {/* Quick Fix Button */}
+        <button
+          onClick={async () => {
+            if (window.confirm('This will fix the student ID conflicts by removing duplicate students from legacy storage. A backup will be created first. Continue?')) {
+              console.log('🧹 Running Quick Fix for Student Conflicts...');
+              const result = await quickFixStudentConflicts();
+              if (result.success) {
+                alert(`✅ ${result.message}\n\nPlease refresh the page to see the changes.`);
+                window.location.reload();
+              } else {
+                alert(`❌ ${result.message}`);
+              }
+            }
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'linear-gradient(135deg, #dc2626, #b91c1c)',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(220, 38, 38, 0.3)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(220, 38, 38, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(220, 38, 38, 0.3)';
+          }}
+        >
+          🧹 Fix Conflicts
         </button>
       </div>
 
