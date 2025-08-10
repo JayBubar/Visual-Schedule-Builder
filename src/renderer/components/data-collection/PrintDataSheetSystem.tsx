@@ -370,61 +370,232 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
 
   const studentGoals = selectedStudent ? goals.filter(g => g.studentId === selectedStudent.id) : [];
 
-  if (showPreview && selectedStudent && selectedGoal) {
-    return (
-      <div style={{
-        background: 'rgba(255,255,255,0.15)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '20px',
-        padding: '2rem',
-        minHeight: '600px'
-      }}>
-        {/* Preview Controls */}
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
-            🖨️ Print Data Sheet Preview
-          </h2>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              onClick={() => setShowPreview(false)}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              ← Back to Setup
-            </button>
-            <button
-              onClick={handlePrint}
-              style={{
-                padding: '12px 24px',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              🖨️ Print Sheet
-            </button>
-          </div>
-        </div>
+  // Replace the showPreview section in PrintDataSheetSystem with this:
 
-        {/* Printable Sheet */}
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden' }}>
-          <div ref={printRef}>
-            <PrintDataSheet student={selectedStudent} goal={selectedGoal} dateRange={dateRange} />
+if (showPreview && selectedStudent && selectedGoal) {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      padding: '2rem'
+    }}>
+      {/* Preview Controls */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '1rem'
+      }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white', margin: 0 }}>
+          🖨️ Print Data Sheet Preview
+        </h2>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={() => setShowPreview(false)}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            ← Back to Setup
+          </button>
+          <button
+            onClick={handlePrint}
+            style={{
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            🖨️ Print Sheet
+          </button>
+        </div>
+      </div>
+
+      {/* Printable Sheet - COMPLETELY ISOLATED */}
+      <div style={{ 
+        flex: 1,
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        overflow: 'auto',
+        border: '3px solid #ddd',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+      }}>
+        <div 
+          ref={printRef}
+          style={{
+            backgroundColor: 'white',
+            color: 'black',
+            minHeight: '100%',
+            fontFamily: 'Arial, sans-serif'
+          }}
+        >
+          {/* INLINE PRINT COMPONENT - NO EXTERNAL DEPENDENCIES */}
+          <div style={{ 
+            padding: '20px', 
+            fontFamily: 'Arial, sans-serif', 
+            maxWidth: '8.5in', 
+            margin: '0 auto',
+            backgroundColor: 'white',
+            color: 'black',
+            minHeight: '11in'
+          }}>
+            {/* Header */}
+            <div style={{ 
+              textAlign: 'center', 
+              marginBottom: '30px', 
+              borderBottom: '3px solid #2563eb', 
+              paddingBottom: '20px' 
+            }}>
+              <h1 style={{ 
+                fontSize: '28px', 
+                fontWeight: 'bold', 
+                margin: '0', 
+                color: '#2563eb' 
+              }}>
+                IEP Data Collection Sheet
+              </h1>
+              <p style={{ 
+                fontSize: '16px', 
+                margin: '10px 0 0 0', 
+                color: '#666' 
+              }}>
+                Bloom Smart Groups Platform
+              </p>
+            </div>
+
+            {/* Student Info Grid */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1fr 1fr', 
+              gap: '20px', 
+              marginBottom: '30px' 
+            }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px', color: 'black' }}>
+                  Student Information
+                </h3>
+                <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
+                  <p style={{ margin: '0 0 8px 0', color: 'black' }}>
+                    <strong>Name:</strong> {selectedStudent.name}
+                  </p>
+                  <p style={{ margin: '0 0 8px 0', color: 'black' }}>
+                    <strong>Date Range:</strong> {new Date().toLocaleDateString()} - {new Date(Date.now() + (dateRange === 'week' ? 5 : 20) * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                  </p>
+                  <p style={{ margin: '0', color: 'black' }}>
+                    <strong>Collection Schedule:</strong> {selectedGoal.dataCollectionSchedule || 'Daily during activities'}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '10px', color: 'black' }}>
+                  Goal Information
+                </h3>
+                <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #ddd' }}>
+                  <p style={{ margin: '0 0 8px 0', color: 'black' }}>
+                    <strong>Domain:</strong> {selectedGoal.domain}
+                  </p>
+                  <p style={{ margin: '0 0 8px 0', color: 'black' }}>
+                    <strong>Measurement:</strong> {selectedGoal.measurementType}
+                  </p>
+                  <p style={{ margin: '0', color: 'black' }}>
+                    <strong>Target:</strong> {selectedGoal.targetCriteria || 'See IEP document'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Goal Description */}
+            <div style={{ backgroundColor: '#eff6ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '30px' }}>
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px', color: '#1e40af' }}>
+                Measurable Objective:
+              </h4>
+              <p style={{ margin: '0', fontSize: '14px', color: 'black' }}>
+                {selectedGoal.measurableObjective || selectedGoal.description || 'Goal details in IEP'}
+              </p>
+            </div>
+
+            {/* Data Table */}
+            <table style={{ 
+              width: '100%', 
+              borderCollapse: 'collapse', 
+              marginBottom: '30px',
+              backgroundColor: 'white'
+            }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f8f9fa' }}>
+                  <th style={{ border: '2px solid black', padding: '12px', textAlign: 'left', color: 'black', fontWeight: 'bold' }}>Date</th>
+                  <th style={{ border: '2px solid black', padding: '12px', textAlign: 'center', color: 'black', fontWeight: 'bold' }}>
+                    {selectedGoal.measurementType === 'independence' ? 'Independence (1-5)' : 'Correct'}
+                  </th>
+                  <th style={{ border: '2px solid black', padding: '12px', textAlign: 'center', color: 'black', fontWeight: 'bold' }}>
+                    {selectedGoal.measurementType === 'independence' ? 'Support Level' : 'Total Trials'}
+                  </th>
+                  <th style={{ border: '2px solid black', padding: '12px', textAlign: 'left', color: 'black', fontWeight: 'bold' }}>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: dateRange === 'week' ? 5 : 20 }, (_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() + i);
+                  return (
+                    <tr key={i}>
+                      <td style={{ border: '1px solid black', padding: '12px', color: 'black', fontWeight: 'bold', height: '50px' }}>
+                        {date.toLocaleDateString()}
+                      </td>
+                      <td style={{ border: '1px solid black', padding: '12px', color: 'black', height: '50px' }}></td>
+                      <td style={{ border: '1px solid black', padding: '12px', color: 'black', height: '50px' }}></td>
+                      <td style={{ border: '1px solid black', padding: '12px', color: 'black', height: '50px' }}></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Instructions */}
+            <div style={{ padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid black', marginBottom: '20px' }}>
+              <h4 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '10px', color: 'black' }}>
+                Data Collection Instructions:
+              </h4>
+              <ul style={{ margin: '0', paddingLeft: '20px', fontSize: '14px', color: 'black' }}>
+                <li style={{ marginBottom: '5px' }}>Fill out data immediately after each opportunity when possible</li>
+                <li style={{ marginBottom: '5px' }}>Use notes section to record context, prompts used, or environmental factors</li>
+                <li style={{ marginBottom: '5px' }}>Enter data into digital system daily for progress tracking</li>
+                <li style={{ marginBottom: '5px' }}>Contact IEP team if student consistently exceeds or falls below target criteria</li>
+              </ul>
+            </div>
+
+            {/* Signature Lines */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '14px', color: 'black' }}>
+              <div>
+                <strong>Teacher Signature:</strong> ____________________________
+              </div>
+              <div>
+                <strong>Date Completed:</strong> ____________________________
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div style={{
