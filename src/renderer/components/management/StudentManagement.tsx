@@ -392,11 +392,9 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
 
   return (
     <div style={{
-      height: '100vh',
-      overflowY: 'auto',
-      overflowX: 'hidden',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '1rem'
+      padding: '1rem',
+      minHeight: '100vh'
     }}>
       {/* Header */}
       <div style={{
@@ -1898,10 +1896,7 @@ const StudentModal: React.FC<StudentModalProps> = ({
 
         {/* Tab Content */}
         <div style={{ 
-          padding: '1.5rem',
-          maxHeight: '60vh',
-          overflowY: 'auto',
-          overflowX: 'hidden'
+          padding: '1.5rem'
         }}>
           {currentTab === 'basic' && (
             <div>

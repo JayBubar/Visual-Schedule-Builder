@@ -139,8 +139,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
   return (
     <div style={{ 
       padding: '1rem', 
-      height: '100vh', 
-      overflow: 'auto',
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
     }}>
       {/* Header */}
