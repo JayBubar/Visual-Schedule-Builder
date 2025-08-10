@@ -105,6 +105,7 @@ const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId
 // Regular Student Card for Whole Class (with Behavior Statements)
 const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements: boolean }> = ({ student, showBehaviorStatements }) => {
   const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+  const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
     // Get today's behavior commitment for this student
@@ -124,6 +125,7 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
             
             if (studentCommitment?.commitment) {
               setBehaviorCommitment(studentCommitment.commitment);
+              setIsAchieved(studentCommitment?.achieved || false);
             }
           }
         }
@@ -134,6 +136,52 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 
     getTodaysCommitment();
   }, [student.id]);
+
+  // Toggle achievement function
+  const toggleStudentAchievement = (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const savedCheckIns = localStorage.getItem('dailyCheckIns');
+      
+      if (!savedCheckIns) return;
+      
+      const checkIns = JSON.parse(savedCheckIns);
+      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
+      
+      if (todayCheckInIndex === -1) return;
+      
+      const todayCheckIn = checkIns[todayCheckInIndex];
+      
+      if (todayCheckIn.behaviorCommitments) {
+        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
+          (commitment: any) => commitment.studentId === studentId
+        );
+        
+        if (commitmentIndex !== -1) {
+          // Toggle the achieved status
+          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
+            ? new Date().toISOString() 
+            : null;
+          
+          // Update the check-in data
+          todayCheckIn.updatedAt = new Date().toISOString();
+          checkIns[todayCheckInIndex] = todayCheckIn;
+          
+          // Save back to localStorage
+          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
+          
+          // Update local state
+          setIsAchieved(newAchievedStatus);
+          
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${student.name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
+  };
 
   return (
     <div style={{
@@ -201,36 +249,103 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
         {student.name}
       </div>
 
-      {/* Behavior Commitment Statement */}
+      {/* Enhanced Behavior Commitment Statement with Toggle */}
       {showBehaviorStatements && behaviorCommitment && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '12px',
-          padding: '0.75rem',
-          border: '1px solid rgba(40, 167, 69, 0.6)',
-          backdropFilter: 'blur(5px)',
-          marginTop: '0.5rem'
-        }}>
+        <div 
+          onClick={() => toggleStudentAchievement(student.id)}
+          style={{
+            background: isAchieved 
+              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.3))' 
+              : 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '12px',
+            padding: '0.75rem',
+            border: isAchieved 
+              ? '2px solid rgba(34, 197, 94, 0.8)' 
+              : '1px solid rgba(40, 167, 69, 0.6)',
+            backdropFilter: 'blur(5px)',
+            marginTop: '0.5rem',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          {/* Achievement Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
+            fontSize: '1.2rem',
+            opacity: isAchieved ? 1 : 0.3,
+            transition: 'all 0.3s ease'
+          }}>
+            ⭐
+          </div>
+
+          {/* Goal Label */}
           <div style={{
             fontSize: '0.7rem',
             fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: isAchieved 
+              ? 'rgba(34, 197, 94, 1)' 
+              : 'rgba(255, 255, 255, 0.8)',
             marginBottom: '0.25rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px'
+            letterSpacing: '0.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
           }}>
-            Today's Goal
+            <span>{isAchieved ? '✅ Completed' : '🎯 Today\'s Goal'}</span>
           </div>
+
+          {/* Statement Text */}
           <div style={{
             fontSize: '0.85rem',
             fontWeight: '600',
             color: 'white',
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
             fontStyle: 'italic',
-            lineHeight: '1.3'
+            lineHeight: '1.3',
+            textDecoration: isAchieved ? 'line-through' : 'none',
+            opacity: isAchieved ? 0.8 : 1,
+            transition: 'all 0.3s ease'
           }}>
             "I will {behaviorCommitment}"
           </div>
+
+          {/* Tap Hint */}
+          <div style={{
+            fontSize: '0.6rem',
+            color: 'rgba(255, 255, 255, 0.6)',
+            marginTop: '0.5rem',
+            textAlign: 'center',
+            fontWeight: '500'
+          }}>
+            {isAchieved ? 'Tap to undo' : 'Tap when achieved'}
+          </div>
+
+          {/* Success Animation Effect */}
+          {isAchieved && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.2) 50%, transparent 70%)',
+              animation: 'shimmer 2s ease-in-out infinite',
+              pointerEvents: 'none'
+            }} />
+          )}
         </div>
       )}
 
@@ -243,6 +358,7 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 // Compact Student Card for Many Students
 const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements: boolean }> = ({ student, showBehaviorStatements }) => {
   const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+  const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
     // Same behavior commitment loading logic as above
@@ -262,6 +378,7 @@ const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorSta
             
             if (studentCommitment?.commitment) {
               setBehaviorCommitment(studentCommitment.commitment);
+              setIsAchieved(studentCommitment?.achieved || false);
             }
           }
         }
@@ -272,6 +389,52 @@ const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorSta
 
     getTodaysCommitment();
   }, [student.id]);
+
+  // Toggle achievement function
+  const toggleStudentAchievement = (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const savedCheckIns = localStorage.getItem('dailyCheckIns');
+      
+      if (!savedCheckIns) return;
+      
+      const checkIns = JSON.parse(savedCheckIns);
+      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
+      
+      if (todayCheckInIndex === -1) return;
+      
+      const todayCheckIn = checkIns[todayCheckInIndex];
+      
+      if (todayCheckIn.behaviorCommitments) {
+        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
+          (commitment: any) => commitment.studentId === studentId
+        );
+        
+        if (commitmentIndex !== -1) {
+          // Toggle the achieved status
+          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
+            ? new Date().toISOString() 
+            : null;
+          
+          // Update the check-in data
+          todayCheckIn.updatedAt = new Date().toISOString();
+          checkIns[todayCheckInIndex] = todayCheckIn;
+          
+          // Save back to localStorage
+          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
+          
+          // Update local state
+          setIsAchieved(newAchievedStatus);
+          
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${student.name}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
+  };
 
   return (
     <div style={{
@@ -348,24 +511,60 @@ const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorSta
         </div>
       </div>
 
-      {/* Behavior Statement */}
+      {/* Enhanced Compact Behavior Statement with Toggle */}
       {showBehaviorStatements && behaviorCommitment && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          padding: '6px 8px',
-          border: '1px solid rgba(40, 167, 69, 0.4)',
-          fontSize: '0.75rem',
-          fontWeight: '500',
-          color: 'white',
-          fontStyle: 'italic',
-          lineHeight: '1.2',
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical'
-        }}>
-          "I will {behaviorCommitment}"
+        <div 
+          onClick={() => toggleStudentAchievement(student.id)}
+          style={{
+            background: isAchieved 
+              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2))' 
+              : 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '6px 8px',
+            border: isAchieved 
+              ? '1px solid rgba(34, 197, 94, 0.6)' 
+              : '1px solid rgba(40, 167, 69, 0.4)',
+            fontSize: '0.75rem',
+            fontWeight: '500',
+            color: 'white',
+            fontStyle: 'italic',
+            lineHeight: '1.2',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            textDecoration: isAchieved ? 'line-through' : 'none',
+            opacity: isAchieved ? 0.8 : 1,
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          {/* Achievement Icon */}
+          <span style={{
+            fontSize: '0.9rem',
+            opacity: isAchieved ? 1 : 0.4,
+            transition: 'all 0.3s ease'
+          }}>
+            {isAchieved ? '✅' : '⭐'}
+          </span>
+          
+          {/* Statement Text */}
+          <span style={{ 
+            flex: 1, 
+            minWidth: 0,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}>
+            "I will {behaviorCommitment}"
+          </span>
         </div>
       )}
 
@@ -1420,6 +1619,11 @@ useEffect(() => {
         @keyframes slideIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
         }
 
         .behavior-statement {
