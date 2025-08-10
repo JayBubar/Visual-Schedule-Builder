@@ -17,10 +17,23 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
       },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          icons: ['lucide-react'],
+          animations: ['framer-motion'],
+          charts: ['recharts'],
+        },
+      },
     },
     // Optimize for Electron
     target: 'esnext',
     minify: 'esbuild',
+    // Enable source maps for debugging
+    sourcemap: false,
+    // Chunk size warnings
+    chunkSizeWarningLimit: 1000,
   },
   
   // Development server

@@ -12,6 +12,8 @@
     "build": "npm run build:vite && npm run build:electron",
     "build:vite": "vite build",
     "build:electron": "tsc -p tsconfig.main.json",
+    "analyze": "vite build --mode analyze",
+    "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "jest",
