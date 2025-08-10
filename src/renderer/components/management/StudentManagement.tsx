@@ -982,7 +982,6 @@ const ActionsDropdown: React.FC<ActionsDropdownProps> = ({ onEdit, onDelete, stu
   }, []);
 
   const handleTransferStudent = () => {
-    console.log('Transfer student feature - coming soon!');
     alert('Transfer Student feature will be available in a future update.');
     setIsOpen(false);
   };
@@ -1642,12 +1641,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
 
   useEffect(() => {
     if (student) {
-      console.log('🎂 StudentModal - Loading existing student data:', {
-        name: student.name,
-        birthday: student.birthday,
-        allowBirthdayDisplay: student.allowBirthdayDisplay,
-        allowPhotoInCelebrations: student.allowPhotoInCelebrations
-      });
       
       setFormData({
         ...student,
@@ -1711,27 +1704,6 @@ const StudentModal: React.FC<StudentModalProps> = ({
       } : undefined,
     };
     
-    console.log('🔍 DEBUGGING StudentModal - Complete form data being saved:', {
-      basic: { name: mappedFormData.name, grade: mappedFormData.grade },
-      academic: { 
-        accommodations: mappedFormData.accommodations?.length || 0,
-        accommodationsList: mappedFormData.accommodations 
-      },
-      contact: { 
-        parentName: mappedFormData.parentName, 
-        parentEmail: mappedFormData.parentEmail,
-        parentPhone: mappedFormData.parentPhone 
-      },
-      notes: { 
-        behaviorNotes: mappedFormData.behaviorNotes?.length || 0, 
-        medicalNotes: mappedFormData.medicalNotes?.length || 0,
-        behaviorNotesContent: mappedFormData.behaviorNotes,
-        medicalNotesContent: mappedFormData.medicalNotes
-      },
-      resource: mappedFormData.resourceInformation,
-      birthday: mappedFormData.birthday,
-      fullFormData: mappedFormData
-    });
     
     onSave(mappedFormData);
   };
