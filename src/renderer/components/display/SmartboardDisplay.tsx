@@ -7,6 +7,335 @@ import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
+// Utility function to get today's behavior commitments
+const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const savedCheckIns = localStorage.getItem('dailyCheckIns');
+    
+    if (savedCheckIns) {
+      const checkIns = JSON.parse(savedCheckIns);
+      const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
+      
+      if (todayCheckIn?.behaviorCommitments) {
+        const commitments: { [studentId: string]: string } = {};
+        
+        todayCheckIn.behaviorCommitments.forEach((commitment: any) => {
+          if (commitment.studentId && commitment.commitment) {
+            commitments[commitment.studentId] = commitment.commitment;
+          }
+        });
+        
+        console.log('📊 Found behavior commitments for today:', commitments);
+        return commitments;
+      }
+    }
+    
+    console.log('ℹ️ No behavior commitments found for today');
+    return {};
+  } catch (error) {
+    console.error('❌ Error loading behavior commitments:', error);
+    return {};
+  }
+};
+
+// Achievement Badge Component
+const BehaviorAchievementBadge: React.FC<{
+  studentId: string;
+  groupColor: string;
+}> = ({ studentId, groupColor }) => {
+  const [isAchieved, setIsAchieved] = useState(false);
+
+  useEffect(() => {
+    // Check if student achieved their behavior commitment today
+    const checkAchievement = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const savedCheckIns = localStorage.getItem('dailyCheckIns');
+        
+        if (savedCheckIns) {
+          const checkIns = JSON.parse(savedCheckIns);
+          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
+          
+          if (todayCheckIn?.behaviorCommitments) {
+            const studentCommitment = todayCheckIn.behaviorCommitments.find(
+              (commitment: any) => commitment.studentId === studentId
+            );
+            
+            setIsAchieved(studentCommitment?.achieved || false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking achievement:', error);
+      }
+    };
+
+    checkAchievement();
+    
+    // Set up interval to check for updates
+    const interval = setInterval(checkAchievement, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [studentId]);
+
+  if (!isAchieved) return null;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '8px',
+      right: '8px',
+      background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+      borderRadius: '50%',
+      width: '28px',
+      height: '28px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '1rem',
+      boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      animation: 'pulse 2s infinite'
+    }}>
+      ⭐
+    </div>
+  );
+};
+
+// Enhanced Student Card with Behavior Statement
+const StudentCardWithBehavior: React.FC<{ 
+  student: Student; 
+  groupColor: string;
+  showBehaviorStatement?: boolean;
+}> = ({ 
+  student, 
+  groupColor, 
+  showBehaviorStatement = true 
+}) => {
+  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+
+  useEffect(() => {
+    if (showBehaviorStatement) {
+      const todaysCommitments = getTodaysBehaviorCommitments();
+      const commitment = todaysCommitments[student.id];
+      setBehaviorCommitment(commitment || '');
+    }
+  }, [student.id, showBehaviorStatement]);
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '16px',
+      padding: '1.5rem',
+      textAlign: 'center',
+      border: `2px solid ${groupColor}40`,
+      transition: 'transform 0.2s ease',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      position: 'relative',
+      minHeight: behaviorCommitment ? '180px' : '120px'
+    }}>
+      {/* Student Photo/Avatar */}
+      <div style={{
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        margin: '0 auto 1rem auto',
+        border: `3px solid ${groupColor}`,
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+      }}>
+        {student.photo ? (
+          <img 
+            src={student.photo} 
+            alt={student.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        ) : (
+          <span style={{ 
+            color: 'white', 
+            fontWeight: '700',
+            fontSize: '1.2rem'
+          }}>
+            {student.name.charAt(0)}
+          </span>
+        )}
+      </div>
+
+      {/* Student Name */}
+      <div style={{
+        fontSize: '1.1rem',
+        fontWeight: '700',
+        color: 'white',
+        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+        marginBottom: behaviorCommitment ? '1rem' : '0'
+      }}>
+        {student.name}
+      </div>
+
+      {/* Behavior Commitment Statement */}
+      {showBehaviorStatement && behaviorCommitment && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '12px',
+          padding: '0.75rem',
+          border: `1px solid ${groupColor}60`,
+          backdropFilter: 'blur(5px)',
+          marginTop: '0.5rem',
+          animation: 'slideIn 0.3s ease-out'
+        }}>
+          <div style={{
+            fontSize: '0.7rem',
+            fontWeight: '600',
+            color: 'rgba(255, 255, 255, 0.8)',
+            marginBottom: '0.25rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            Today's Goal
+          </div>
+          <div style={{
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            color: 'white',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+            fontStyle: 'italic',
+            lineHeight: '1.3'
+          }}>
+            "I will {behaviorCommitment}"
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Badge (if completed) */}
+      {showBehaviorStatement && behaviorCommitment && (
+        <BehaviorAchievementBadge 
+          studentId={student.id} 
+          groupColor={groupColor}
+        />
+      )}
+    </div>
+  );
+};
+
+// Compact Student Card for when there are many students
+const CompactStudentCardWithBehavior: React.FC<{ 
+  student: Student; 
+  groupColor: string;
+}> = ({ student, groupColor }) => {
+  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+
+  useEffect(() => {
+    const todaysCommitments = getTodaysBehaviorCommitments();
+    const commitment = todaysCommitments[student.id];
+    setBehaviorCommitment(commitment || '');
+  }, [student.id]);
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '12px',
+      padding: '1rem',
+      border: `2px solid ${groupColor}40`,
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      position: 'relative',
+      minHeight: '100px'
+    }}>
+      {/* Header with photo and name */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: behaviorCommitment ? '8px' : '0'
+      }}>
+        {/* Student Photo */}
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: `2px solid ${groupColor}`,
+          overflow: 'hidden',
+          flexShrink: 0
+        }}>
+          {student.photo ? (
+            <img 
+              src={student.photo} 
+              alt={student.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <span style={{ 
+              color: 'white', 
+              fontWeight: '700',
+              fontSize: '1rem'
+            }}>
+              {student.name.charAt(0)}
+            </span>
+          )}
+        </div>
+
+        {/* Student Name */}
+        <div style={{
+          fontSize: '1rem',
+          fontWeight: '700',
+          color: 'white',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {student.name}
+        </div>
+      </div>
+
+      {/* Behavior Statement */}
+      {behaviorCommitment && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          padding: '6px 8px',
+          border: `1px solid ${groupColor}40`,
+          fontSize: '0.75rem',
+          fontWeight: '500',
+          color: 'white',
+          fontStyle: 'italic',
+          lineHeight: '1.2',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical'
+        }}>
+          "I will {behaviorCommitment}"
+        </div>
+      )}
+
+      {/* Achievement Badge */}
+      <BehaviorAchievementBadge 
+        studentId={student.id} 
+        groupColor={groupColor}
+      />
+    </div>
+  );
+};
+
 interface SmartboardDisplayProps {
   isActive: boolean;
   currentSchedule?: {
@@ -49,6 +378,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [fallbackSchedule, setFallbackSchedule] = useState<any>(null);
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
+  const [showBehaviorStatements, setShowBehaviorStatements] = useState(true);
   
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
@@ -515,6 +845,7 @@ useEffect(() => {
     });
 
     const groupColor = group.color || '#9C27B0';
+    const useCompactMode = groupStudents.length > 6;
 
     return (
       <div style={{
@@ -593,11 +924,27 @@ useEffect(() => {
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-              gap: '1rem'
+              gridTemplateColumns: useCompactMode 
+                ? 'repeat(auto-fit, minmax(150px, 1fr))' 
+                : 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: useCompactMode ? '1rem' : '1.5rem',
+              marginTop: '1rem'
             }}>
-              {groupStudents.map(student => (
-                <StudentCard key={student.id} student={student} groupColor={groupColor} />
+              {groupStudents.map((student, studentIndex) => (
+                useCompactMode ? (
+                  <CompactStudentCardWithBehavior
+                    key={student.id}
+                    student={student}
+                    groupColor={groupColor}
+                  />
+                ) : (
+                  <StudentCardWithBehavior
+                    key={student.id}
+                    student={student}
+                    groupColor={groupColor}
+                    showBehaviorStatement={showBehaviorStatements}
+                  />
+                )
               ))}
             </div>
           )}
@@ -626,6 +973,23 @@ useEffect(() => {
       color: 'white',
       position: 'relative'
     }}>
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4); }
+          50% { transform: scale(1.1); box-shadow: 0 4px 16px rgba(251, 191, 36, 0.6); }
+          100% { transform: scale(1); box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4); }
+        }
+
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .behavior-statement {
+          animation: slideIn 0.3s ease-out;
+        }
+      `}</style>
       {/* Absent Students Display - Top Left Corner */}
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
@@ -645,8 +1009,38 @@ useEffect(() => {
       <div style={{
         padding: '1rem',
         textAlign: 'center',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.2)'
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        position: 'relative'
       }}>
+        {/* Behavior Statements Toggle Button */}
+        <button
+          onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.2s ease',
+            backdropFilter: 'blur(5px)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
+        </button>
         <h1 style={{
           margin: '0 0 1rem 0',
           fontSize: '3rem',
