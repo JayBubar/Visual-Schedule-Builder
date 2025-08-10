@@ -1822,6 +1822,186 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
 
   const selectedActivityData = selectedActivity ? schedule.find(a => a.id === selectedActivity) : null;
 
+  // ============================================================================
+  // ADD THESE 3 COMPONENT DEFINITIONS (After the utility functions, before the main return statement)
+  // ============================================================================
+
+  // Draft Notification Banner Component
+  const DraftNotificationBanner = () => {
+    if (!showDraftNotification || !hasDraft) return null;
+
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        color: 'white',
+        padding: '1rem 1.5rem',
+        borderRadius: '12px',
+        marginBottom: '1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+        animation: 'slideInFromTop 0.5s ease-out'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '50%',
+            padding: '8px',
+            fontSize: '1.2rem'
+          }}>
+            💾
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.1rem', fontWeight: '600' }}>
+              Draft Found!
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+              You have unsaved work from {draftLastSaved}. Would you like to restore it?
+            </p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={loadDraft}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            📥 Restore Draft
+          </button>
+          <button
+            onClick={() => {
+              clearDraft();
+              setShowDraftNotification(false);
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            🗑️ Discard
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Draft Status Indicator Component
+  const DraftStatusIndicator = () => {
+    if (schedule.length === 0) return null;
+
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        background: 'rgba(255, 255, 255, 0.1)',
+        padding: '0.5rem 1rem',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        color: 'rgba(255, 255, 255, 0.8)'
+      }}>
+        <span style={{ color: '#10b981' }}>💾</span>
+        {draftLastSaved ? (
+          <span>Auto-saved at {draftLastSaved}</span>
+        ) : (
+          <span>Auto-saving...</span>
+        )}
+      </div>
+    );
+  };
+
+  // Manual Draft Controls Component
+  const ManualDraftControls = () => {
+    if (schedule.length === 0) return null;
+
+    return (
+      <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <button
+          onClick={saveDraft}
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          }}
+        >
+          💾 Save Draft
+        </button>
+        
+        {hasDraft && (
+          <button
+            onClick={loadDraft}
+            style={{
+              background: 'rgba(245, 158, 11, 0.8)',
+              border: 'none',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.8)';
+            }}
+          >
+            📥 Load Draft
+          </button>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{
       padding: '1rem',
