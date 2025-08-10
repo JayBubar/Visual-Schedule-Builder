@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
-import { DataMigrationManager } from './utils/dataMigration';
+// Remove the DataMigrationManager import - use existing UnifiedDataService instead
 import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
@@ -33,58 +33,84 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      // ADD this privacy initialization
-      DataPrivacyService.enableEducationalSharing();
+      console.log('🔄 Starting app initialization...');
       
-      // Force migration check and execution
-      console.log('🔄 Checking for migration need...');
+      // Check for legacy data that needs migration
+      const hasLegacyData = localStorage.getItem('calendarSettings') || 
+                            localStorage.getItem('students');
       
-      if (DataMigrationManager.isMigrationNeeded()) {
-        console.log('⚡ Migration needed - starting migration...');
-        const migrationResult = DataMigrationManager.migrateToUnifiedArchitecture();
-        
-        migrationResult.then(result => {
-          if (result.success) {
-            console.log('✅ Migration successful!');
-            console.log('- Migrated students:', result.migratedStudents);
-            console.log('- Preserved data points:', result.preservedDataPoints);
-          } else {
-            console.error('❌ Migration failed:', result.errors);
-            // You might want to show a user-friendly error here
-          }
-        });
-      } else {
-        console.log('ℹ️ No migration needed');
+      if (hasLegacyData) {
+        console.log('⚡ Legacy data detected, performing migration...');
+        migrateLegacyDataQuick();
       }
       
-      // 🔍 DETAILED DEBUGGING: Check what's actually in localStorage
-      console.log('🔍 DEBUGGING localStorage contents:');
-      console.log('- All localStorage keys:', Object.keys(localStorage));
+      // Load initial data from unified service
+      loadInitialData();
       
-      // Check specific keys
-      const unifiedKey = 'visual-schedule-builder-unified-data';
-      const legacyStudentKey = 'students';
-      const vsbStudentKey = 'vsb_students';
-      
-      console.log(`- ${unifiedKey}:`, localStorage.getItem(unifiedKey) ? 'EXISTS' : 'MISSING');
-      console.log(`- ${legacyStudentKey}:`, localStorage.getItem(legacyStudentKey) ? 'EXISTS' : 'MISSING');
-      console.log(`- ${vsbStudentKey}:`, localStorage.getItem(vsbStudentKey) ? 'EXISTS' : 'MISSING');
-      
-      // Check unified data structure
-      const unifiedDataRaw = localStorage.getItem(unifiedKey);
-      if (unifiedDataRaw) {
-        try {
-          const unifiedData = JSON.parse(unifiedDataRaw);
-          console.log('- Unified data structure:', {
-            hasStudents: !!unifiedData.students,
-            studentsType: Array.isArray(unifiedData.students) ? 'array' : typeof unifiedData.students,
-            studentsLength: Array.isArray(unifiedData.students) ? unifiedData.students.length : 'N/A',
-            studentsKeys: unifiedData.students ? Object.keys(unifiedData.students).slice(0, 5) : 'N/A'
+    } catch (error) {
+      console.error('❌ Error initializing app:', error);
+    }
+  }, []);
+
+  // Add this migration function
+  const migrateLegacyDataQuick = () => {
+    try {
+      // Migrate calendar settings (the main issue we're fixing)
+      const legacyCalendarSettings = localStorage.getItem('calendarSettings');
+      if (legacyCalendarSettings) {
+        const settings = JSON.parse(legacyCalendarSettings);
+        
+        // Migrate behavior statements
+        if (settings.customBehaviorCommitments) {
+          const customStatements = [];
+          Object.keys(settings.customBehaviorCommitments).forEach(category => {
+            const statements = settings.customBehaviorCommitments[category];
+            statements.forEach((statement, index) => {
+              customStatements.push({
+                id: `migrated_${category}_${index}`,
+                text: statement,
+                category: category,
+                isActive: true,
+                isDefault: false,
+                createdAt: new Date().toISOString()
+              });
+            });
           });
-        } catch (e) {
-          console.log('- Unified data parse error:', e);
+          
+          // Save to unified settings
+          const currentSettings = UnifiedDataService.getSettings();
+          const updatedSettings = {
+            ...currentSettings,
+            dailyCheckIn: {
+              ...currentSettings.dailyCheckIn,
+              behaviorCommitments: {
+                customStatements: customStatements
+              },
+              celebrations: {
+                enabled: settings.celebrationsEnabled !== false,
+                customCelebrations: settings.customCelebrations || []
+              }
+            }
+          };
+          
+          UnifiedDataService.updateSettings(updatedSettings);
+          
+          // Backup and remove legacy data
+          localStorage.setItem('calendarSettings_backup', legacyCalendarSettings);
+          localStorage.removeItem('calendarSettings');
+          
+          console.log('✅ Legacy data migrated successfully');
         }
       }
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
+    }
+  };
+
+  const loadInitialData = () => {
+    try {
+      // ADD this privacy initialization
+      DataPrivacyService.enableEducationalSharing();
       
       // Load from unified data service first
       const unifiedStudents = UnifiedDataService.getAllStudents();
@@ -154,11 +180,6 @@ const App: React.FC = () => {
         staff: legacyStaff.length,
         activities: legacyActivities.length
       });
-
-      // 🐛 App Debug to verify the providers are working:
-      console.log('🐛 App Debug:');
-      console.log('- Students being passed to providers:', legacyStudents?.length || 0);
-      console.log('- Students data:', legacyStudents?.slice(0, 2)); // First 2 students
       
     } catch (error) {
       console.error('Error loading unified data, falling back to legacy storage:', error);
@@ -178,7 +199,7 @@ const App: React.FC = () => {
         activities: savedActivities.length
       });
     }
-  }, []);
+  };
 
   const handleViewChange = (view: ViewType) => {
     setCurrentView(view);
