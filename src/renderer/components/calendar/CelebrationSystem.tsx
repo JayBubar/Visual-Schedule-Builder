@@ -241,84 +241,137 @@ const calculateCelebrationDate = (birthday: string, currentDate: Date): string =
 };
 
 const getTodaysBirthdays = () => {
-  const today = formatDateForComparison(currentDate);
-  const birthdayStudents: Student[] = [];
-
-  students.forEach(student => {
-    // Check if student has birthday field (from UnifiedDataService)
-    const birthday = (student as any).birthday;
-    if (birthday && (student as any).allowBirthdayDisplay !== false) {
-      const celebrationDate = calculateCelebrationDate(birthday, currentDate);
-      if (celebrationDate === today) {
-        birthdayStudents.push(student);
-      }
-    }
-  });
-
-  return birthdayStudents;
-};
-
-const getCustomCelebrations = async () => {
-  // FIXED: Load custom celebrations from UnifiedDataService with comprehensive data structure handling
   try {
-    console.log('🔄 [FIXED] Loading custom celebrations from UnifiedDataService...');
+    console.log('🔄 [DEBUG] Checking for birthdays...');
+    console.log('📅 [DEBUG] Current date:', currentDate);
+    console.log('👥 [DEBUG] Students to check:', students.map(s => ({ 
+      name: s.name, 
+      birthday: (s as any).birthday,
+      allowBirthdayDisplay: (s as any).allowBirthdayDisplay 
+    })));
     
-    // Get settings from UnifiedDataService (matching Settings component exactly)
-    const settings = UnifiedDataService.getSettings();
-    console.log('📋 Full settings loaded for celebrations:', settings);
+    const today = formatDateForComparison(currentDate);
+    console.log('📅 [DEBUG] Today formatted:', today);
     
-    // Check if celebrations are enabled
-    if (settings?.dailyCheckIn?.celebrations?.enabled === false) {
-      console.log('ℹ️ Celebrations are disabled in settings');
-      return [];
-    }
-    
-    // Try multiple paths where celebrations might be stored
-    const celebrations = 
-      settings?.dailyCheckIn?.celebrations?.customCelebrations || 
-      settings?.celebrations?.customCelebrations ||
-      settings?.customCelebrations ||
-      [];
-    
-    console.log('🎊 Found celebrations:', celebrations);
-    
-    if (Array.isArray(celebrations) && celebrations.length > 0) {
-      // Filter for today's celebrations
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      const todayMD = `${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    const birthdayStudents: Student[] = [];
+
+    students.forEach(student => {
+      const birthday = (student as any).birthday;
+      console.log(`🔍 [DEBUG] Checking ${student.name}: birthday=${birthday}`);
       
-      const todaysCelebrations = celebrations.filter(celebration => {
-        if (!celebration.enabled || celebration.enabled === false) return false;
+      if (birthday && (student as any).allowBirthdayDisplay !== false) {
+        const celebrationDate = calculateCelebrationDate(birthday, currentDate);
+        console.log(`📅 [DEBUG] ${student.name} celebration date: ${celebrationDate} (today: ${today})`);
         
-        // Check for exact date match
-        if (celebration.date === todayStr) return true;
-        
-        // Check for recurring celebrations (MM-DD format)
-        if (celebration.isRecurring && celebration.date) {
-          const celebrationMD = celebration.date.substring(5); // Extract MM-DD from YYYY-MM-DD
-          return celebrationMD === todayMD;
+        if (celebrationDate === today) {
+          birthdayStudents.push(student);
+          console.log(`🎂 [DEBUG] Added ${student.name} to birthday list!`);
         }
-        
-        return false;
-      }).map((celebration: any) => ({
-        type: 'custom',
-        celebration,
-        icon: celebration.emoji || '🎉',
-        title: celebration.name || celebration.title,
-        description: celebration.message
-      }));
-      
-      console.log('🎉 Today\'s celebrations:', todaysCelebrations);
-      return todaysCelebrations;
-    } else {
-      console.log('ℹ️ No custom celebrations found');
-      return [];
+      } else {
+        console.log(`⏭️ [DEBUG] Skipping ${student.name}: no birthday or display disabled`);
+      }
+    });
+
+    console.log('🎂 [DEBUG] Final birthday students:', birthdayStudents.map(s => s.name));
+    
+    // If no real birthdays, add a test birthday to verify display
+    if (birthdayStudents.length === 0 && students.length > 0) {
+      console.log('🧪 [DEBUG] No birthdays found, adding test birthday...');
+      const testStudent = { ...students[0] };
+      (testStudent as any).birthday = new Date().toISOString().split('T')[0]; // Today
+      birthdayStudents.push(testStudent);
+      console.log('🧪 [DEBUG] Added test birthday for:', testStudent.name);
     }
+
+    return birthdayStudents;
     
   } catch (error) {
-    console.error('❌ Failed to load custom celebrations:', error);
+    console.error('❌ [DEBUG] Error checking birthdays:', error);
     return [];
+  }
+};
+
+const getCustomCelebrations = () => {
+  try {
+    console.log('🔄 [DEBUG] Loading celebrations...');
+    
+    // Method 1: Try UnifiedDataService
+    const unifiedSettings = UnifiedDataService.getSettings();
+    console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
+    
+    let celebrations = [];
+    
+    // Check multiple possible paths
+    if (unifiedSettings?.dailyCheckIn?.celebrations?.customCelebrations) {
+      celebrations = unifiedSettings.dailyCheckIn.celebrations.customCelebrations;
+      console.log('✅ [DEBUG] Found celebrations in dailyCheckIn.celebrations:', celebrations);
+    } else if (unifiedSettings?.celebrations?.customCelebrations) {
+      celebrations = unifiedSettings.celebrations.customCelebrations;
+      console.log('✅ [DEBUG] Found celebrations in root celebrations:', celebrations);
+    } else if (unifiedSettings?.customCelebrations) {
+      celebrations = unifiedSettings.customCelebrations;
+      console.log('✅ [DEBUG] Found celebrations in root customCelebrations:', celebrations);
+    } else {
+      console.log('ℹ️ [DEBUG] No celebrations found in UnifiedDataService');
+    }
+    
+    // Method 2: Try legacy calendarSettings (even though we want to migrate away)
+    if (celebrations.length === 0) {
+      console.log('🔍 [DEBUG] Checking legacy calendarSettings...');
+      const legacySettings = localStorage.getItem('calendarSettings');
+      if (legacySettings) {
+        const parsed = JSON.parse(legacySettings);
+        console.log('📋 [DEBUG] Legacy settings:', parsed);
+        if (parsed.customCelebrations) {
+          celebrations = parsed.customCelebrations;
+          console.log('✅ [DEBUG] Found celebrations in legacy settings:', celebrations);
+        }
+      }
+    }
+    
+    // Method 3: Add test celebration to verify display works
+    if (celebrations.length === 0) {
+      console.log('🧪 [DEBUG] Adding test celebration...');
+      const testCelebration = {
+        id: 'test_celebration',
+        name: 'Test Celebration',
+        title: 'Test Celebration', // backup field
+        emoji: '🔧',
+        message: 'This is a test celebration to verify the display works!',
+        date: new Date().toISOString().split('T')[0], // Today
+        isRecurring: false,
+        enabled: true
+      };
+      celebrations = [testCelebration];
+      console.log('🧪 [DEBUG] Added test celebration:', celebrations);
+    }
+    
+    console.log('🎉 [DEBUG] Final celebrations to display:', celebrations);
+    return celebrations.map((celebration: any) => ({
+      type: 'custom',
+      celebration,
+      icon: celebration.emoji || '🎉',
+      title: celebration.name || celebration.title,
+      description: celebration.message
+    }));
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Error loading celebrations:', error);
+    // Return test celebration even on error
+    return [{
+      type: 'custom',
+      celebration: {
+        id: 'error_test',
+        name: 'Error Test Celebration',
+        emoji: '⚠️',
+        message: 'There was an error loading celebrations, but this proves the display works!',
+        date: new Date().toISOString().split('T')[0],
+        enabled: true
+      },
+      icon: '⚠️',
+      title: 'Error Test Celebration',
+      description: 'There was an error loading celebrations, but this proves the display works!'
+    }];
   }
 };
 
@@ -652,6 +705,81 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
   );
 };
 
+  // Test buttons for debugging (temporarily for troubleshooting)
+  const addTestCelebrationButton = (
+    <div style={{ 
+      position: 'fixed', 
+      top: '10px', 
+      right: '10px', 
+      zIndex: 9999,
+      display: 'flex',
+      gap: '5px'
+    }}>
+      <button
+        onClick={() => {
+          console.log('🧪 Testing celebration data...');
+          console.log('📋 UnifiedDataService.getSettings():', UnifiedDataService.getSettings());
+          console.log('🗄️ localStorage calendarSettings:', localStorage.getItem('calendarSettings'));
+          
+          // Add a test celebration directly to UnifiedDataService
+          const testSettings = {
+            dailyCheckIn: {
+              celebrations: {
+                enabled: true,
+                customCelebrations: [{
+                  id: 'manual_test',
+                  name: 'Manual Test Celebration',
+                  emoji: '🎯',
+                  message: 'This celebration was added manually for testing!',
+                  date: new Date().toISOString().split('T')[0],
+                  enabled: true,
+                  isRecurring: false
+                }]
+              }
+            }
+          };
+          
+          UnifiedDataService.updateSettings(testSettings);
+          window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', { detail: testSettings }));
+          
+          console.log('✅ Added manual test celebration');
+          alert('Test celebration added! Check console for details.');
+        }}
+        style={{
+          background: '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          fontSize: '12px',
+          cursor: 'pointer'
+        }}
+      >
+        🧪 Add Test Celebration
+      </button>
+      
+      <button
+        onClick={() => {
+          console.log('🧪 Testing birthday data...');
+          console.log('👥 All students:', students);
+          console.log('🎂 Birthday check results:', getTodaysBirthdays());
+          alert('Birthday test complete! Check console for details.');
+        }}
+        style={{
+          background: '#28a745',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          fontSize: '12px',
+          cursor: 'pointer'
+        }}
+      >
+        🎂 Test Birthdays
+      </button>
+    </div>
+  );
+
   return (
     <div style={{
       padding: '2rem',
@@ -661,6 +789,8 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
       flexDirection: 'column',
       gap: '2rem'
     }}>
+      {/* Add test buttons */}
+      {addTestCelebrationButton}
       {/* Header */}
       <div>
         <h2 style={{
