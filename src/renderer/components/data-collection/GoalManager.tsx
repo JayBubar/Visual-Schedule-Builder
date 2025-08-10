@@ -307,8 +307,7 @@ const GoalManager: React.FC<GoalManagerProps> = ({ preSelectedStudentId, onGoalS
 
   return (
     <div style={{
-      height: '100vh',
-      overflow: 'auto',
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       padding: '1rem'
     }}>
