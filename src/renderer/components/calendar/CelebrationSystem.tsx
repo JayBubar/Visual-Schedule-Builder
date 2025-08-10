@@ -67,44 +67,48 @@ const CelebrationSystem: React.FC<CelebrationSystemProps> = ({
   ];
 
   useEffect(() => {
-    // Check for celebrations on this date
-    const celebrations = [];
-    
-    // 🎂 NEW: Check for birthdays using enhanced birthday system
-    const todayBirthdays = getTodaysBirthdays();
-    if (todayBirthdays.length > 0) {
-      celebrations.push({
-        type: 'birthday',
-        students: todayBirthdays,
-        icon: '🎂',
-        title: todayBirthdays.length === 1 
-          ? `Happy Birthday ${formatStudentName(todayBirthdays[0].name)}!`
-          : `Happy Birthday to Our Students!`,
-        description: todayBirthdays.length === 1
-          ? `Let's celebrate ${formatStudentName(todayBirthdays[0].name)}'s special day!`
-          : `We're celebrating ${todayBirthdays.length} birthdays today!`
-      });
-    }
+    // FIXED: Handle async custom celebrations loading
+    const loadCelebrations = async () => {
+      const celebrations = [];
+      
+      // 🎂 NEW: Check for birthdays using enhanced birthday system
+      const todayBirthdays = getTodaysBirthdays();
+      if (todayBirthdays.length > 0) {
+        celebrations.push({
+          type: 'birthday',
+          students: todayBirthdays,
+          icon: '🎂',
+          title: todayBirthdays.length === 1 
+            ? `Happy Birthday ${formatStudentName(todayBirthdays[0].name)}!`
+            : `Happy Birthday to Our Students!`,
+          description: todayBirthdays.length === 1
+            ? `Let's celebrate ${formatStudentName(todayBirthdays[0].name)}'s special day!`
+            : `We're celebrating ${todayBirthdays.length} birthdays today!`
+        });
+      }
 
-    // Check for holidays (your existing code)
-    const todayHolidays = getTodaysHolidays();
-    celebrations.push(...todayHolidays.map(holiday => ({
-      type: 'holiday',
-      holiday,
-      icon: holiday.icon,
-      title: holiday.name,
-      description: holiday.description
-    })));
+      // Check for holidays (your existing code)
+      const todayHolidays = getTodaysHolidays();
+      celebrations.push(...todayHolidays.map(holiday => ({
+        type: 'holiday',
+        holiday,
+        icon: holiday.icon,
+        title: holiday.name,
+        description: holiday.description
+      })));
 
-    // Check for special school events (your existing code)
-    const specialEvents = getSpecialEvents();
-    celebrations.push(...specialEvents);
+      // Check for special school events (your existing code)
+      const specialEvents = getSpecialEvents();
+      celebrations.push(...specialEvents);
 
-    // 🎉 NEW: Check for custom celebrations
-    const customCelebrations = getCustomCelebrations();
-    celebrations.push(...customCelebrations);
+      // 🎉 NEW: Check for custom celebrations (now async)
+      const customCelebrations = await getCustomCelebrations();
+      celebrations.push(...customCelebrations);
 
-    setCelebrationItems(celebrations);
+      setCelebrationItems(celebrations);
+    };
+
+    loadCelebrations();
   }, [currentDate, students]);
 
   const getTodaysHolidays = (): Holiday[] => {
@@ -232,19 +236,34 @@ const getTodaysBirthdays = () => {
   return birthdayStudents;
 };
 
-const getCustomCelebrations = () => {
-  // Load custom celebrations from UnifiedDataService settings
+const getCustomCelebrations = async () => {
+  // FIXED: Load custom celebrations from UnifiedDataService (matching Settings component)
   try {
-    const settings = UnifiedDataService.getSettings();
+    console.log('🔄 Loading custom celebrations from UnifiedDataService...');
+    
+    // Get unified data (same method as Settings component uses)
+    const unifiedData = await UnifiedDataService.getUnifiedData();
+    const settings = unifiedData?.settings || {};
+    
+    // Check if celebrations are enabled
+    if (settings.dailyCheckIn?.celebrations?.enabled === false) {
+      console.log('ℹ️ Celebrations are disabled in settings');
+      return [];
+    }
+    
     const customCelebrations = settings.dailyCheckIn?.celebrations?.customCelebrations || [];
+    console.log('📊 Found custom celebrations in UnifiedDataService:', customCelebrations);
+    
+    if (customCelebrations.length === 0) {
+      console.log('ℹ️ No custom celebrations found');
+      return [];
+    }
+    
     const today = formatDateForComparison(currentDate);
     const todayFullDate = currentDate.toISOString().split('T')[0];
 
-    return customCelebrations
+    const todaysCelebrations = customCelebrations
       .filter((celebration: any) => {
-        // Check if celebrations are enabled in settings
-        if (settings.dailyCheckIn?.celebrations?.enabled === false) return false;
-        
         if (celebration.recurring) {
           // For recurring celebrations, compare MM-DD format
           const celebrationDate = celebration.date;
@@ -266,8 +285,11 @@ const getCustomCelebrations = () => {
         title: celebration.name || celebration.title,
         description: celebration.message
       }));
+      
+    console.log('🎉 Today\'s custom celebrations:', todaysCelebrations);
+    return todaysCelebrations;
   } catch (error) {
-    console.error('Error loading custom celebrations:', error);
+    console.error('❌ Error loading custom celebrations:', error);
     return [];
   }
 };

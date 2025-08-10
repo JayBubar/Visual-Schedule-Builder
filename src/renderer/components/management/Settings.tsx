@@ -1050,25 +1050,25 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   Current behavior statements: {settings.dailyCheckIn?.behaviorCommitments?.customStatements?.length || 0} configured
                 </p>
                 
-                <button
-                  onClick={() => setShowBehaviorManager(true)}
-                  className="action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1.5rem',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  ⚙️ Customize Behavior Statements
-                </button>
+        <button
+          onClick={() => setShowCelebrationsModal(true)}
+          className="action-button"
+          style={{
+            background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+        >
+          🎊 Manage Celebrations
+        </button>
               </div>
 
               {/* Celebration Management */}

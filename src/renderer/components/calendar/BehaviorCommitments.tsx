@@ -183,36 +183,36 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   ];
 
-  // FIXED: Load behavior statements from Settings instead of demo data
+  // FIXED: Load behavior statements from UnifiedDataService (matching BehaviorStatementManager)
   useEffect(() => {
     const loadBehaviorStatementsFromSettings = async () => {
       try {
-        console.log('🔄 Loading behavior statements from Settings...');
+        console.log('🔄 Loading behavior statements from UnifiedDataService...');
         setIsLoadingStatements(true);
         
-        // Get settings from UnifiedDataService
-        const unifiedSettings = UnifiedDataService.getSettings();
+        // Get unified data (same method as BehaviorStatementManager uses)
+        const unifiedData = await UnifiedDataService.getUnifiedData();
+        const customStatements = unifiedData?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
         
-        if (unifiedSettings.dailyCheckIn?.behaviorCommitments?.customStatements) {
-          console.log('✅ Found custom behavior statements in Settings');
+        if (customStatements && customStatements.length > 0) {
+          console.log('✅ Found custom behavior statements in UnifiedDataService:', customStatements);
           
           // Use custom statements from settings, only show active ones
-          const customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
-          const activeStatements = customStatements.filter(s => s.isActive);
+          const activeStatements = customStatements.filter((s: any) => s.isActive);
           
           if (activeStatements.length > 0) {
-            console.log('📊 Using custom behavior statements:', activeStatements);
+            console.log('📊 Using active custom behavior statements:', activeStatements);
             setBehaviorStatements(activeStatements);
           } else {
             console.log('ℹ️ No active custom statements, using defaults');
             setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
           }
         } else {
-          console.log('ℹ️ No custom statements found, using defaults');
+          console.log('ℹ️ No custom statements found in UnifiedDataService, using defaults');
           setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
         }
       } catch (error) {
-        console.error('❌ Failed to load behavior statements from Settings:', error);
+        console.error('❌ Failed to load behavior statements from UnifiedDataService:', error);
         setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
       } finally {
         setIsLoadingStatements(false);
