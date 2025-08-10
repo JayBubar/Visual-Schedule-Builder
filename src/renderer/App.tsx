@@ -329,7 +329,7 @@ const App: React.FC = () => {
       grade: student.grade || '',
       resourceInfo: student.resourceInfo || undefined
     }))}>
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="main-app-container">
         {/* Start Screen */}
         {showStartScreen && (
           <StartScreen 
@@ -445,26 +445,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
-<style>
-  {`
-    .app {
-      min-height: 100vh;
-      max-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .main-content {
-      flex: 1;
-      overflow: auto;
-      min-height: 0;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
-    }
-  `}
-</style>
