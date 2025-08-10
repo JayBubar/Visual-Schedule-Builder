@@ -7,6 +7,7 @@ import {
   BehaviorStatement
 } from '../../types';
 import UnifiedDataService from '../../services/unifiedDataService';
+import { DataMigrationUtility } from '../../utils/dataMigration';
 
 interface BehaviorCommitmentsProps {
   currentDate: Date;

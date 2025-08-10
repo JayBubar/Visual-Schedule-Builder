@@ -8,6 +8,7 @@ import {
   CalendarSettings
 } from '../../types';
 import UnifiedDataService from '../../services/unifiedDataService';
+import { DataMigrationUtility, DebugDataSources } from '../../utils/dataMigration';
 
 // Import new linear flow components
 import WelcomeScreen from './WelcomeScreen';
@@ -58,6 +59,13 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   useEffect(() => {
     try {
+      // STEP 1: Check for and migrate legacy data FIRST
+      console.log('🔄 [FIXED] DailyCheckIn initialization - checking for legacy data...');
+      if (DataMigrationUtility.hasLegacyCalendarData()) {
+        console.log('⚠️ Legacy calendar data detected, migrating...');
+        DataMigrationUtility.migrateLegacyData();
+      }
+
       // Load students from unified data service
       const unifiedStudents = UnifiedDataService.getAllStudents();
       // Convert UnifiedStudent to Student format for compatibility
