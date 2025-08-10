@@ -3,6 +3,16 @@ import { Activity, ActivityLibraryItem } from '../../types';
 import { defaultTransitionActivities, addTransitionsToLibrary } from '../../data/defaultTransitionActivities';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
 
+// Utility function to generate unique IDs
+let idCounter = 0;
+const generateUniqueId = (prefix: string = 'id'): string => {
+  idCounter++;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  const counter = idCounter.toString(36);
+  return `${prefix}_${timestamp}_${counter}_${random}`;
+};
+
 interface ActivityLibraryProps {
   isActive: boolean;
 }
@@ -78,7 +88,7 @@ const ActivityModal: React.FC<{
     if (!formData.name.trim()) return;
 
     const activityData: CustomActivity = {
-      id: activity?.id || `custom_${Date.now()}`,
+      id: activity?.id || generateUniqueId('custom'),
       name: formData.name.trim(),
       icon: customIcon || formData.icon,
       category: formData.category,
@@ -572,7 +582,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
     try {
       // Create unique instance ID to prevent duplicates
-      const instanceId = `${activity.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const instanceId = generateUniqueId(`${activity.id}`);
       
       // 🎯 CRITICAL FIX: Enhanced activity data mapping that preserves ALL transition properties
       const activityToAdd = {
@@ -658,7 +668,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       // For built-in activities, create a custom version
       const customVersion: CustomActivity = {
         ...activity,
-        id: `custom_${activity.id}_${Date.now()}`,
+        id: generateUniqueId(`custom_${activity.id}`),
         isCustom: true,
         createdAt: new Date().toISOString(),
         difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
@@ -701,7 +711,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const handleDuplicateActivity = (activity: LibraryActivity) => {
     const duplicate: CustomActivity = {
       ...activity,
-      id: `custom_${Date.now()}`,
+      id: generateUniqueId('custom'),
       name: `${activity.name} (Copy)`,
       isCustom: true,
       createdAt: new Date().toISOString(),
