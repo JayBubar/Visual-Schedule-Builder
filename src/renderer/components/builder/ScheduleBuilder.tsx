@@ -1635,6 +1635,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
       })));
     }, 100);
     
+    // ADD THIS LINE:
+    clearDraft();
+    
     console.log(`💾 Saved schedule with group assignments: ${newSchedule.name}`);
   };
 
@@ -1840,6 +1843,17 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
           0% { transform: translateY(-150px) rotate(0deg); opacity: 1; }
           100% { transform: translateY(500px) rotate(720deg); opacity: 0; }
         }
+
+        @keyframes slideInFromTop {
+          0% {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          100% {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
       `}</style>
       {/* Header */}
       <div style={{
@@ -1863,6 +1877,9 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
           Build your daily schedule and assign staff and groups
         </p>
       </div>
+
+      {/* ADD THIS: Draft Notification Banner */}
+      <DraftNotificationBanner />
 
       {/* Schedule Controls */}
       <div style={{
@@ -1939,6 +1956,12 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
             🗑️ Clear All
           </button>
         )}
+        
+        {/* ADD THIS: Draft Status and Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+          <DraftStatusIndicator />
+          <ManualDraftControls />
+        </div>
       </div>
 
       {/* Glassmorphism Tab Interface */}
