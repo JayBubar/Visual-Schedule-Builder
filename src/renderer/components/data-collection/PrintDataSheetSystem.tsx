@@ -607,10 +607,10 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'black', marginBottom: '0.5rem' }}>
           🖨️ Generate Print Data Sheets
         </h2>
-        <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.8)' }}>
+        <p style={{ fontSize: '1.2rem', color: 'black' }}>
           Create printable data collection sheets for offline use
         </p>
       </div>
@@ -635,7 +635,7 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
 
       {/* Student Selection */}
       <div style={{ marginBottom: '2rem' }}>
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'black', marginBottom: '1rem' }}>
           1. Select Student
         </h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
@@ -775,6 +775,16 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
           </button>
         </div>
       )}
+      
+      <style>{`
+        .print-data-sheet-system * {
+          color: black !important;
+        }
+        
+        .print-data-sheet-system button {
+          color: white !important;
+        }
+      `}</style>
     </div>
   );
 };
