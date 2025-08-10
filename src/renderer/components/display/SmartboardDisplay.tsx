@@ -39,6 +39,442 @@ const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
   }
 };
 
+// =============================================================================
+// WHOLE CLASS DISPLAY COMPONENTS
+// =============================================================================
+
+// Achievement Badge for Whole Class
+const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId }) => {
+  const [isAchieved, setIsAchieved] = useState(false);
+
+  useEffect(() => {
+    const checkAchievement = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const savedCheckIns = localStorage.getItem('dailyCheckIns');
+        
+        if (savedCheckIns) {
+          const checkIns = JSON.parse(savedCheckIns);
+          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
+          
+          if (todayCheckIn?.behaviorCommitments) {
+            const studentCommitment = todayCheckIn.behaviorCommitments.find(
+              (commitment: any) => commitment.studentId === studentId
+            );
+            
+            setIsAchieved(studentCommitment?.achieved || false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking achievement:', error);
+      }
+    };
+
+    checkAchievement();
+    
+    // Check for updates every 30 seconds
+    const interval = setInterval(checkAchievement, 30000);
+    
+    return () => clearInterval(interval);
+  }, [studentId]);
+
+  if (!isAchieved) return null;
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: '8px',
+      right: '8px',
+      background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+      borderRadius: '50%',
+      width: '28px',
+      height: '28px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '1rem',
+      boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)',
+      animation: 'pulse 2s infinite',
+      border: '2px solid rgba(255, 255, 255, 0.3)'
+    }}>
+      ⭐
+    </div>
+  );
+};
+
+// Regular Student Card for Whole Class (with Behavior Statements)
+const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements: boolean }> = ({ student, showBehaviorStatements }) => {
+  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+
+  useEffect(() => {
+    // Get today's behavior commitment for this student
+    const getTodaysCommitment = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const savedCheckIns = localStorage.getItem('dailyCheckIns');
+        
+        if (savedCheckIns) {
+          const checkIns = JSON.parse(savedCheckIns);
+          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
+          
+          if (todayCheckIn?.behaviorCommitments) {
+            const studentCommitment = todayCheckIn.behaviorCommitments.find(
+              (commitment: any) => commitment.studentId === student.id
+            );
+            
+            if (studentCommitment?.commitment) {
+              setBehaviorCommitment(studentCommitment.commitment);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading behavior commitment:', error);
+      }
+    };
+
+    getTodaysCommitment();
+  }, [student.id]);
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '16px',
+      padding: '1.5rem',
+      textAlign: 'center',
+      border: '2px solid rgba(40, 167, 69, 0.4)', // Green for whole class
+      transition: 'transform 0.2s ease',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      position: 'relative',
+      minHeight: (showBehaviorStatements && behaviorCommitment) ? '180px' : '120px'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'scale(1.02)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'scale(1)';
+    }}
+    >
+      {/* Student Photo/Avatar */}
+      <div style={{
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        background: student.photo ? 'transparent' : 'linear-gradient(135deg, #28a745, #20c997)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '1.5rem',
+        margin: '0 auto 1rem auto',
+        border: '3px solid #28a745',
+        overflow: 'hidden',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+      }}>
+        {student.photo ? (
+          <img 
+            src={student.photo} 
+            alt={student.name}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover'
+            }}
+          />
+        ) : (
+          <span style={{ 
+            color: 'white', 
+            fontWeight: '700',
+            fontSize: '1.2rem'
+          }}>
+            {student.name.charAt(0)}
+          </span>
+        )}
+      </div>
+
+      {/* Student Name */}
+      <div style={{
+        fontSize: '1.1rem',
+        fontWeight: '700',
+        color: 'white',
+        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+        marginBottom: (showBehaviorStatements && behaviorCommitment) ? '1rem' : '0'
+      }}>
+        {student.name}
+      </div>
+
+      {/* Behavior Commitment Statement */}
+      {showBehaviorStatements && behaviorCommitment && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '12px',
+          padding: '0.75rem',
+          border: '1px solid rgba(40, 167, 69, 0.6)',
+          backdropFilter: 'blur(5px)',
+          marginTop: '0.5rem'
+        }}>
+          <div style={{
+            fontSize: '0.7rem',
+            fontWeight: '600',
+            color: 'rgba(255, 255, 255, 0.8)',
+            marginBottom: '0.25rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
+            Today's Goal
+          </div>
+          <div style={{
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            color: 'white',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+            fontStyle: 'italic',
+            lineHeight: '1.3'
+          }}>
+            "I will {behaviorCommitment}"
+          </div>
+        </div>
+      )}
+
+      {/* Achievement Badge */}
+      <WholeClassAchievementBadge studentId={student.id} />
+    </div>
+  );
+};
+
+// Compact Student Card for Many Students
+const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements: boolean }> = ({ student, showBehaviorStatements }) => {
+  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
+
+  useEffect(() => {
+    // Same behavior commitment loading logic as above
+    const getTodaysCommitment = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const savedCheckIns = localStorage.getItem('dailyCheckIns');
+        
+        if (savedCheckIns) {
+          const checkIns = JSON.parse(savedCheckIns);
+          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
+          
+          if (todayCheckIn?.behaviorCommitments) {
+            const studentCommitment = todayCheckIn.behaviorCommitments.find(
+              (commitment: any) => commitment.studentId === student.id
+            );
+            
+            if (studentCommitment?.commitment) {
+              setBehaviorCommitment(studentCommitment.commitment);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading behavior commitment:', error);
+      }
+    };
+
+    getTodaysCommitment();
+  }, [student.id]);
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: '12px',
+      padding: '1rem',
+      border: '2px solid rgba(40, 167, 69, 0.4)',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      position: 'relative',
+      minHeight: '100px',
+      transition: 'transform 0.2s ease'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'scale(1.02)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'scale(1)';
+    }}
+    >
+      {/* Header with photo and name */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: (showBehaviorStatements && behaviorCommitment) ? '8px' : '0'
+      }}>
+        {/* Student Photo */}
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: student.photo ? 'transparent' : 'linear-gradient(135deg, #28a745, #20c997)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px solid #28a745',
+          overflow: 'hidden',
+          flexShrink: 0
+        }}>
+          {student.photo ? (
+            <img 
+              src={student.photo} 
+              alt={student.name}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <span style={{ 
+              color: 'white', 
+              fontWeight: '700',
+              fontSize: '1rem'
+            }}>
+              {student.name.charAt(0)}
+            </span>
+          )}
+        </div>
+
+        {/* Student Name */}
+        <div style={{
+          fontSize: '1rem',
+          fontWeight: '700',
+          color: 'white',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {student.name}
+        </div>
+      </div>
+
+      {/* Behavior Statement */}
+      {showBehaviorStatements && behaviorCommitment && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          padding: '6px 8px',
+          border: '1px solid rgba(40, 167, 69, 0.4)',
+          fontSize: '0.75rem',
+          fontWeight: '500',
+          color: 'white',
+          fontStyle: 'italic',
+          lineHeight: '1.2',
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical'
+        }}>
+          "I will {behaviorCommitment}"
+        </div>
+      )}
+
+      {/* Achievement Badge */}
+      <WholeClassAchievementBadge studentId={student.id} />
+    </div>
+  );
+};
+
+// Main Whole Class Display Component
+const WholeClassDisplay: React.FC<{
+  students: Student[];
+  activityName: string;
+  showBehaviorStatements: boolean;
+}> = ({ students, activityName, showBehaviorStatements }) => {
+  // Filter out absent students
+  const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
+  const presentStudents = students.filter(student => !absentStudentIds.includes(student.id));
+  
+  // Determine if we should use compact mode (more than 8 students)
+  const useCompactMode = presentStudents.length > 8;
+
+  return (
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.15)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '20px',
+      padding: '2rem',
+      border: '4px solid #28a745',
+      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+      marginBottom: '2rem'
+    }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
+        <h3 style={{
+          margin: '0 0 1rem 0',
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          color: 'white',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+        }}>
+          Whole Class Activity
+        </h3>
+        <p style={{
+          margin: '0 0 1.5rem 0',
+          fontSize: '1.3rem',
+          color: 'rgba(255, 255, 255, 0.9)',
+          fontWeight: '500'
+        }}>
+          All {presentStudents.length} students participate together
+        </p>
+        
+        {/* Show absent count if any */}
+        {absentStudentIds.length > 0 && (
+          <p style={{
+            margin: '0',
+            fontSize: '1rem',
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontStyle: 'italic'
+          }}>
+            ({absentStudentIds.length} student{absentStudentIds.length !== 1 ? 's' : ''} absent today)
+          </p>
+        )}
+      </div>
+
+      {/* Student Grid */}
+      {presentStudents.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: useCompactMode 
+            ? 'repeat(auto-fit, minmax(140px, 1fr))' 
+            : 'repeat(auto-fit, minmax(180px, 1fr))',
+          gap: useCompactMode ? '1rem' : '1.5rem',
+          marginTop: '1rem'
+        }}>
+          {presentStudents.map((student) => (
+            useCompactMode ? (
+              <CompactWholeClassStudentCard
+                key={student.id}
+                student={student}
+                showBehaviorStatements={showBehaviorStatements}
+              />
+            ) : (
+              <WholeClassStudentCard
+                key={student.id}
+                student={student}
+                showBehaviorStatements={showBehaviorStatements}
+              />
+            )
+          ))}
+        </div>
+      )}
+      
+      {/* No students message */}
+      {presentStudents.length === 0 && (
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem',
+          color: 'rgba(255, 255, 255, 0.7)',
+          fontSize: '1.1rem'
+        }}>
+          No students present for this activity
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Achievement Badge Component
 const BehaviorAchievementBadge: React.FC<{
   studentId: string;
@@ -1231,35 +1667,11 @@ useEffect(() => {
             ))}
           </>
         ) : (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '20px',
-            padding: '2rem',
-            border: '4px solid #28a745',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            textAlign: 'center',
-            marginBottom: '2rem'
-          }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
-            <h3 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '2.5rem',
-              fontWeight: '700',
-              color: 'white',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-            }}>
-              Whole Class Activity
-            </h3>
-            <p style={{
-              margin: '0',
-              fontSize: '1.3rem',
-              color: 'rgba(255, 255, 255, 0.9)',
-              fontWeight: '500'
-            }}>
-              All {realStudents.length} students participate together
-            </p>
-          </div>
+          <WholeClassDisplay 
+            students={realStudents}
+            activityName={currentActivity.name}
+            showBehaviorStatements={showBehaviorStatements}
+          />
         )}
       </div>
 
