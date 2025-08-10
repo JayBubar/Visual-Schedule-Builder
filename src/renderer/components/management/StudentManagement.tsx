@@ -108,14 +108,12 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       });
     });
     
-    // Force re-render by updating the students state
-    // This will trigger the useRobustDataLoading hook to refresh
+    // Force immediate re-render by dispatching multiple events
     window.dispatchEvent(new CustomEvent('studentDataUpdated'));
+    window.dispatchEvent(new CustomEvent('dataRefresh'));
     
-    // Small delay to ensure data is updated before re-filtering
-    setTimeout(() => {
-      filterStudents();
-    }, 100);
+    // Force immediate state update - no delay
+    filterStudents();
   };
 
   const saveStudentData = (studentData: ExtendedStudent[]) => {
@@ -131,10 +129,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       }));
       onDataChange?.();
       
-      // Refresh data after save
-      setTimeout(() => {
-        refreshData();
-      }, 100);
+      // Immediate refresh - no delay
+      refreshData();
     } catch (error) {
       console.error('Error saving student data:', error);
     }
@@ -283,10 +279,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
       setShowModal(false);
       setEditingStudent(null);
       
-      // Refresh data after save
-      setTimeout(() => {
-        refreshData();
-      }, 100);
+      // Immediate refresh - no delay
+      refreshData();
     } catch (error) {
       console.error('Error saving student:', error);
       alert('Error saving student. Please try again.');
@@ -352,15 +346,22 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   };
 
   const handlePrintSheets = (student: ExtendedStudent) => {
+    console.log('🖨️ Print Sheets clicked for student:', student.name);
+    console.log('🎯 Student IEP goals:', student.iepData?.goals);
+    
     // Check if student has IEP goals
     const studentGoals = student.iepData?.goals || [];
+    const activeGoals = studentGoals.filter(goal => goal.isActive !== false);
 
-    if (studentGoals.length === 0) {
-      alert(`${student.name} doesn't have any IEP goals set up yet. Please add goals first in the unified data system.`);
+    console.log('📊 Active goals found:', activeGoals.length);
+
+    if (activeGoals.length === 0) {
+      alert(`${student.name} doesn't have any active IEP goals set up yet. Please add goals first in Goal Management.`);
       return;
     }
 
-    // Set up for print sheets modal
+    // Set up for print sheets modal with active goals
+    console.log('✅ Opening Print Sheets modal for:', student.name);
     setSelectedStudentForIntegration(student);
     setShowPrintSheetsModal(true);
   };
@@ -392,7 +393,8 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
   return (
     <div style={{
       height: '100vh',
-      overflow: 'auto',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       padding: '1rem'
     }}>
@@ -1898,7 +1900,8 @@ const StudentModal: React.FC<StudentModalProps> = ({
         <div style={{ 
           padding: '1.5rem',
           maxHeight: '60vh',
-          overflow: 'auto'
+          overflowY: 'auto',
+          overflowX: 'hidden'
         }}>
           {currentTab === 'basic' && (
             <div>
