@@ -18,14 +18,14 @@ const Navigation: React.FC<NavigationProps> = ({
   isInDailyCheckIn
 }) => {
   const navItems = [
-    { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+1' },
-    { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+2' },
-    { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+3' },
-    { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+4' },
-    { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+5' },
-    { id: 'calendar', icon: '📅', label: 'Daily Check-In', shortcut: 'Ctrl+6' },
-    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+7' },
-    { id: 'smart-groups', icon: Brain, label: 'Smart Groups AI', shortcut: 'Ctrl+8', description: 'AI-powered curriculum alignment and small group recommendations', color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', isNew: true },
+    { id: 'smart-groups', icon: Brain, label: 'Bloom Smart Groups', shortcut: 'Ctrl+1', description: 'AI-powered curriculum alignment and small group recommendations', color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', isNew: true },
+    { id: 'library', icon: '📚', label: 'Library', shortcut: 'Ctrl+2' },
+    { id: 'builder', icon: '🛠️', label: 'Builder', shortcut: 'Ctrl+3' },
+    { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+4' },
+    { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+5' },
+    { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+6' },
+    { id: 'calendar', icon: '📅', label: 'Daily Check In', shortcut: 'Ctrl+7' },
+    { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+8' },
     { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+9' },
     { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+0' }
   ] as const;

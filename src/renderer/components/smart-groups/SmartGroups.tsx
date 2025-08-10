@@ -23,17 +23,28 @@ interface SmartGroupRecommendation {
   confidence: number;
   studentIds: string[];
   studentCount: number;
-  standardsAddressed: {
+  studentList?: Array<{
+    studentId: string;
+    studentName: string;
+    currentLevel: string;
+    specificNeeds: string[];
+  }>;
+  standardsAddressed: Array<{
     standardId: string;
     standard: StateStandard;
     coverageReason: string;
-  }[];
-  iepGoalsAddressed: {
+  }>;
+  standardsAlignment?: Array<{
+    standardId: string;
+    standard: StateStandard;
+    coverageReason: string;
+  }>;
+  iepGoalsAddressed: Array<{
     goalId: string;
     studentId: string;
     goal: IEPGoal;
     alignmentReason: string;
-  }[];
+  }>;
   recommendedActivity: {
     activityId: string;
     activity: UnifiedActivity;
@@ -64,6 +75,13 @@ interface SmartGroupRecommendation {
   generatedAt: string;
   teacherApproved?: boolean;
   implementationDate?: string;
+  aiMetadata?: {
+    analysisSource: string;
+    originalAIResponse: any;
+    processingDate: string;
+    confidence: number;
+    analysisNotes: any;
+  };
 }
 
 interface StateStandard {

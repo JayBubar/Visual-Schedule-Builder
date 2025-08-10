@@ -2,6 +2,9 @@
    PROFESSIONAL VISUAL SCHEDULE BUILDER STYLES
    ============================================ */
 
+/* Import Smart Groups Enhanced UI Animations */
+@import './smart-groups-animations.css';
+
 /* Global Styles */
 * {
   box-sizing: border-box;
@@ -4606,6 +4609,3 @@ input[type="checkbox"]:hover {
 /* ============================================
    SMART GROUPS ENHANCED UI ANIMATIONS
    ============================================ */
-
-/* Import Smart Groups Enhanced UI Animations */
-@import './smart-groups-animations.css';

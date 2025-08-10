@@ -4,11 +4,92 @@
 import { UnifiedStudent, UnifiedActivity, IEPGoal } from '../../services/unifiedDataService';
 import UnifiedDataService from '../../services/unifiedDataService';
 
+// Type definitions for Smart Groups
+interface StateStandard {
+  id: string;
+  code: string;
+  state: string;
+  grade: string;
+  subject: 'ELA' | 'Math' | 'Science' | 'Social Studies' | 'Art' | 'PE';
+  domain: string;
+  title: string;
+  description: string;
+  subSkills: string[];
+  complexity: 1 | 2 | 3 | 4 | 5;
+}
+
+interface SmartGroupRecommendation {
+  id: string;
+  groupName: string;
+  confidence: number;
+  studentIds: string[];
+  studentCount: number;
+  studentList?: Array<{
+    studentId: string;
+    studentName: string;
+    currentLevel: string;
+    specificNeeds: string[];
+  }>;
+  standardsAlignment?: Array<{
+    standardId: string;
+    standard: StateStandard;
+    coverageReason: string;
+  }>;
+  standardsAddressed: Array<{
+    standardId: string;
+    standard: StateStandard;
+    coverageReason: string;
+  }>;
+  iepGoalsAddressed: Array<{
+    goalId: string;
+    studentId: string;
+    goal: IEPGoal;
+    alignmentReason: string;
+  }>;
+  recommendedActivity: {
+    activityId: string;
+    activity: UnifiedActivity;
+    adaptations: string[];
+    duration: number;
+    materials: string[];
+    setup: string;
+    implementation: string;
+  };
+  themeConnection?: {
+    themeId: string;
+    relevance: string;
+    thematicElements: string[];
+  };
+  benefits: string[];
+  rationale: string;
+  suggestedScheduling: {
+    frequency: 'daily' | 'weekly' | 'bi-weekly';
+    duration: number;
+    preferredTimes: string[];
+  };
+  dataCollectionPlan: {
+    goalIds: string[];
+    measurementMoments: string[];
+    collectionMethod: string;
+    successCriteria: string[];
+  };
+  generatedAt: string;
+  teacherApproved?: boolean;
+  implementationDate?: string;
+  aiMetadata?: {
+    analysisSource: string;
+    originalAIResponse: any;
+    processingDate: string;
+    confidence: number;
+    analysisNotes: any;
+  };
+}
+
 // =============================================================================
 // REAL CLAUDE AI ANALYSIS ENGINE
 // =============================================================================
 
-export class RealSmartGroupsAI {
+class RealSmartGroupsAI {
   
   // Main function to generate real AI recommendations
   static async generateRecommendations(
@@ -22,8 +103,8 @@ export class RealSmartGroupsAI {
       console.log('🧠 Starting REAL Claude AI analysis for Smart Groups...');
       
       // Get real data from UnifiedDataService
-      const realStudents = UnifiedDataService.getStudents();
-      const realActivities = UnifiedDataService.getActivities();
+      const realStudents = UnifiedDataService.getAllStudents();
+      const realActivities = UnifiedDataService.getAllActivities();
       
       if (realStudents.length === 0) {
         throw new Error('No students found. Please add students to generate recommendations.');
@@ -89,7 +170,7 @@ export class RealSmartGroupsAI {
         description: goal.description,
         measurementType: goal.measurementType,
         targetCriteria: goal.targetCriteria,
-        currentLevel: goal.currentLevel
+        currentLevel: goal.targetCriteria || 'Working on goal'
       })) || [],
       preferredPartners: [], // Don't share actual names
       needsSupport: student.accommodations ? student.accommodations.length > 0 : false
@@ -104,7 +185,7 @@ export class RealSmartGroupsAI {
       category: activity.category,
       materials: activity.materials,
       instructions: activity.instructions,
-      metadata: activity.metadata
+      metadata: (activity as any).metadata || {}
     }));
     
     // Standards data
@@ -308,7 +389,7 @@ CRITICAL:
             };
           }),
           
-          standardsAlignment: realStandards,
+          standardsAddressed: realStandards,
           iepGoalsAddressed: realIEPGoals,
           
           recommendedActivity: {
@@ -456,8 +537,8 @@ CRITICAL:
   ): SmartGroupRecommendation[] {
     console.log('🔄 Using enhanced mock recommendations as fallback...');
     
-    const realStudents = UnifiedDataService.getStudents();
-    const realActivities = UnifiedDataService.getActivities();
+    const realStudents = UnifiedDataService.getAllStudents();
+    const realActivities = UnifiedDataService.getAllActivities();
     
     if (realStudents.length === 0) {
       return [];
@@ -546,7 +627,8 @@ CRITICAL:
         specificNeeds: student.accommodations || []
       })),
       standardsAlignment: [],
-      iepGoalsAddressed: students.flatMap(student => 
+      standardsAddressed: [],
+      iepGoalsAddressed: students.flatMap(student =>
         student.iepData?.goals?.slice(0, 1).map(goal => ({
           goalId: goal.id,
           studentId: student.id,
@@ -563,7 +645,9 @@ CRITICAL:
           duration: 25,
           category: config.category as any,
           isCustom: false,
-          materials: [`${theme} themed materials`, 'Visual supports', 'Activity sheets']
+          materials: [`${theme} themed materials`, 'Visual supports', 'Activity sheets'],
+          instructions: `Implement ${config.focus} using ${theme} themed approach`,
+          dateCreated: new Date().toISOString()
         },
         adaptations: [
           `Incorporate ${theme} themed elements`,
