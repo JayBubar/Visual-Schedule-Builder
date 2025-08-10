@@ -603,7 +603,8 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
       backdropFilter: 'blur(20px)',
       borderRadius: '20px',
       padding: '2rem',
-      minHeight: '600px'
+      maxHeight: 'calc(100vh - 40px)',
+      overflowY: 'auto'
     }}>
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
