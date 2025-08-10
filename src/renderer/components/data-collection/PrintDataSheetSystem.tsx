@@ -605,7 +605,6 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
       padding: '2rem',
       minHeight: '600px'
     }}>
-      {/* Rest of your existing setup interface code stays the same */}
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'white', marginBottom: '0.5rem' }}>
@@ -779,3 +778,6 @@ const PrintDataSheetSystem: React.FC<PrintDataSheetSystemProps> = ({ students, g
     </div>
   );
 };
+
+// CRITICAL: Default export
+export default PrintDataSheetSystem;
