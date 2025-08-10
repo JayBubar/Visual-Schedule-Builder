@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import GroupCreator from './GroupCreator';
 import AttendanceManager from '../management/AttendanceManager';
 import ScheduleConflictDetector from './ScheduleConflictDetector';
@@ -857,6 +857,13 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
   const [students, setStudents] = useState<BuilderStudent[]>([]);
   const [groups, setGroups] = useState<StudentGroup[]>([]);
 
+  // Add these new state variables
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftLastSaved, setDraftLastSaved] = useState<string | null>(null);
+  const [showDraftNotification, setShowDraftNotification] = useState(false);
+
+  const DRAFT_STORAGE_KEY = 'schedule_builder_draft';
+
   // Update local state when robust data loading completes
   useEffect(() => {
     if (loadedStudents.length > 0) {
@@ -1287,6 +1294,111 @@ const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleU
     // Initialize with empty groups (real groups will be created via UI)
     setGroups([]);
   }, []);
+
+  // ============================================================================
+  // STEP 3: ADD THESE UTILITY FUNCTIONS (After existing functions)
+  // ============================================================================
+
+  const saveDraft = useCallback(() => {
+    if (schedule.length > 0 || startTime !== '09:00') {
+      const draft = {
+        schedule,
+        startTime,
+        savedAt: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setDraftLastSaved(new Date().toLocaleTimeString());
+        console.log('📝 Draft saved automatically');
+      } catch (error) {
+        console.error('Error saving draft:', error);
+      }
+    }
+  }, [schedule, startTime]);
+
+  const loadDraft = useCallback(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        setSchedule(draft.schedule || []);
+        setStartTime(draft.startTime || '09:00');
+        setDraftLastSaved(new Date(draft.savedAt).toLocaleTimeString());
+        setHasDraft(false);
+        setShowDraftNotification(false);
+        console.log('📥 Draft loaded successfully');
+        
+        // Show success message briefly
+        setTimeout(() => {
+          alert('Draft restored successfully!');
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error loading draft:', error);
+    }
+  }, []);
+
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasDraft(false);
+      setDraftLastSaved(null);
+      setShowDraftNotification(false);
+      console.log('🗑️ Draft cleared');
+    } catch (error) {
+      console.error('Error clearing draft:', error);
+    }
+  }, []);
+
+  const checkForExistingDraft = useCallback(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        const draft = JSON.parse(savedDraft);
+        // Only show notification if current schedule is empty and draft has content
+        if ((schedule.length === 0) && (draft.schedule?.length > 0)) {
+          setHasDraft(true);
+          setDraftLastSaved(new Date(draft.savedAt).toLocaleTimeString());
+          setShowDraftNotification(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for draft:', error);
+    }
+  }, [schedule.length]);
+
+  // ============================================================================
+  // STEP 4: ADD THESE useEffect HOOKS (After existing useEffect hooks)
+  // ============================================================================
+
+  // Auto-save draft every 30 seconds if there's content
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (schedule.length > 0) {
+        saveDraft();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [schedule, saveDraft]);
+
+  // Auto-save when schedule or startTime changes (debounced)
+  useEffect(() => {
+    const saveTimeout = setTimeout(() => {
+      if (schedule.length > 0) {
+        saveDraft();
+      }
+    }, 2000); // 2 second delay after changes
+
+    return () => clearTimeout(saveTimeout);
+  }, [schedule, startTime, saveDraft]);
+
+  // Check for existing draft when component mounts
+  useEffect(() => {
+    checkForExistingDraft();
+  }, [checkForExistingDraft]);
 
   // Default activity library removed - using only Activity Library activities
 
