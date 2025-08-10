@@ -841,78 +841,14 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
         {/* Step 6: "I Will" Choices - Behavior Commitments */}
         {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableBehaviorCommitments !== false && (
-          <div style={{ padding: '2rem', minHeight: '600px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                ⭐ "I Will" Behavior Goals
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Let's set our positive behavior goals for today!
-              </p>
-            </div>
-
-            <BehaviorCommitments
-              currentDate={currentDate}
-              students={presentStudents}
-              todayCheckIn={todayCheckIn}
-              onUpdateCheckIn={saveTodayCheckIn}
-              onNext={handleNext}
-              onBack={handleBack}
-            />
-            
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1rem',
-              marginTop: '2rem'
-            }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ← Back to Celebrations
-              </button>
-              
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 3rem',
-                  fontSize: '1.1rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Continue to Choice Activities →
-              </button>
-            </div>
-          </div>
+          <BehaviorCommitments
+            currentDate={currentDate}
+            students={presentStudents}
+            todayCheckIn={todayCheckIn}
+            onUpdateCheckIn={saveTodayCheckIn}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
         )}
 
         {/* Step 7: Choice Activities - Independent Choices */}
