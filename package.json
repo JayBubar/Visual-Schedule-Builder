@@ -9,7 +9,8 @@
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
-    "build": "npm run build:vite && npm run build:electron",
+    "build": "vite build",
+    "build:full": "npm run build:vite && npm run build:electron",
     "build:vite": "vite build",
     "build:electron": "tsc -p tsconfig.main.json",
     "analyze": "vite build --mode analyze",
@@ -17,10 +18,10 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "jest",
-    "package": "npm run build && electron-builder",
-    "package:win": "npm run build && electron-builder --win",
-    "package:mac": "npm run build && electron-builder --mac",
-    "package:linux": "npm run build && electron-builder --linux"
+    "package": "npm run build:full && electron-builder",
+    "package:win": "npm run build:full && electron-builder --win",
+    "package:mac": "npm run build:full && electron-builder --mac",
+    "package:linux": "npm run build:full && electron-builder --linux"
   },
   "dependencies": {
     "electron-reload": "^2.0.0-alpha.1",
