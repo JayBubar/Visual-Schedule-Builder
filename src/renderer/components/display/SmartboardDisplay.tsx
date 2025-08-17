@@ -12,25 +12,25 @@ const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const savedCheckIns = localStorage.getItem('dailyCheckIns');
-    
+
     if (savedCheckIns) {
       const checkIns = JSON.parse(savedCheckIns);
       const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-      
+
       if (todayCheckIn?.behaviorCommitments) {
         const commitments: { [studentId: string]: string } = {};
-        
+
         todayCheckIn.behaviorCommitments.forEach((commitment: any) => {
           if (commitment.studentId && commitment.commitment) {
             commitments[commitment.studentId] = commitment.commitment;
           }
         });
-        
+
         console.log('📊 Found behavior commitments for today:', commitments);
         return commitments;
       }
     }
-    
+
     console.log('ℹ️ No behavior commitments found for today');
     return {};
   } catch (error) {
@@ -52,16 +52,16 @@ const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId
       try {
         const today = new Date().toISOString().split('T')[0];
         const savedCheckIns = localStorage.getItem('dailyCheckIns');
-        
+
         if (savedCheckIns) {
           const checkIns = JSON.parse(savedCheckIns);
           const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-          
+
           if (todayCheckIn?.behaviorCommitments) {
             const studentCommitment = todayCheckIn.behaviorCommitments.find(
               (commitment: any) => commitment.studentId === studentId
             );
-            
+
             setIsAchieved(studentCommitment?.achieved || false);
           }
         }
@@ -71,10 +71,10 @@ const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId
     };
 
     checkAchievement();
-    
+
     // Check for updates every 30 seconds
     const interval = setInterval(checkAchievement, 30000);
-    
+
     return () => clearInterval(interval);
   }, [studentId]);
 
@@ -113,16 +113,16 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
       try {
         const today = new Date().toISOString().split('T')[0];
         const savedCheckIns = localStorage.getItem('dailyCheckIns');
-        
+
         if (savedCheckIns) {
           const checkIns = JSON.parse(savedCheckIns);
           const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-          
+
           if (todayCheckIn?.behaviorCommitments) {
             const studentCommitment = todayCheckIn.behaviorCommitments.find(
               (commitment: any) => commitment.studentId === student.id
             );
-            
+
             if (studentCommitment?.commitment) {
               setBehaviorCommitment(studentCommitment.commitment);
               setIsAchieved(studentCommitment?.achieved || false);
@@ -142,39 +142,39 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
     try {
       const today = new Date().toISOString().split('T')[0];
       const savedCheckIns = localStorage.getItem('dailyCheckIns');
-      
+
       if (!savedCheckIns) return;
-      
+
       const checkIns = JSON.parse(savedCheckIns);
       const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-      
+
       if (todayCheckInIndex === -1) return;
-      
+
       const todayCheckIn = checkIns[todayCheckInIndex];
-      
+
       if (todayCheckIn.behaviorCommitments) {
         const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
           (commitment: any) => commitment.studentId === studentId
         );
-        
+
         if (commitmentIndex !== -1) {
           // Toggle the achieved status
           const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
           todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
-            ? new Date().toISOString() 
+          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus
+            ? new Date().toISOString()
             : null;
-          
+
           // Update the check-in data
           todayCheckIn.updatedAt = new Date().toISOString();
           checkIns[todayCheckInIndex] = todayCheckIn;
-          
+
           // Save back to localStorage
           localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-          
+
           // Update local state
           setIsAchieved(newAchievedStatus);
-          
+
           console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${student.name}`);
         }
       }
@@ -222,8 +222,8 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
         flexShrink: 0
       }}>
         {student.photo ? (
-          <img 
-            src={student.photo} 
+          <img
+            src={student.photo}
             alt={student.name}
             style={{
               width: '100%',
@@ -232,8 +232,8 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
             }}
           />
         ) : (
-          <span style={{ 
-            color: 'white', 
+          <span style={{
+            color: 'white',
             fontWeight: '700',
             fontSize: '1rem'
           }}>
@@ -256,16 +256,16 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 
       {/* Enhanced Behavior Commitment Statement with Toggle */}
       {showBehaviorStatements && behaviorCommitment && (
-        <div 
+        <div
           onClick={() => toggleStudentAchievement(student.id)}
           style={{
-            background: isAchieved 
-              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.3))' 
+            background: isAchieved
+              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.3))'
               : 'rgba(255, 255, 255, 0.15)',
             borderRadius: '8px',
             padding: '0.5rem',
-            border: isAchieved 
-              ? '2px solid rgba(34, 197, 94, 0.8)' 
+            border: isAchieved
+              ? '2px solid rgba(34, 197, 94, 0.8)'
               : '1px solid rgba(40, 167, 69, 0.6)',
             backdropFilter: 'blur(5px)',
             cursor: 'pointer',
@@ -303,8 +303,8 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
           <div style={{
             fontSize: '0.6rem',
             fontWeight: '600',
-            color: isAchieved 
-              ? 'rgba(34, 197, 94, 1)' 
+            color: isAchieved
+              ? 'rgba(34, 197, 94, 1)'
               : 'rgba(255, 255, 255, 0.8)',
             marginBottom: '0.25rem',
             textTransform: 'uppercase',
@@ -367,7 +367,7 @@ const WholeClassDisplay: React.FC<{
   // Filter out absent students
   const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
   const presentStudents = students.filter(student => !absentStudentIds.includes(student.id));
-  
+
   // Calculate card size based on available height and number of students
   const headerHeight = 120; // Approximate height of header section
   const gridHeight = availableHeight - headerHeight;
@@ -408,7 +408,7 @@ const WholeClassDisplay: React.FC<{
         }}>
           All {presentStudents.length} students participate together
         </p>
-        
+
         {/* Show absent count if any */}
         {absentStudentIds.length > 0 && (
           <p style={{
@@ -442,7 +442,7 @@ const WholeClassDisplay: React.FC<{
           ))}
         </div>
       )}
-      
+
       {/* No students message */}
       {presentStudents.length === 0 && (
         <div style={{
@@ -475,16 +475,16 @@ const BehaviorAchievementBadge: React.FC<{
       try {
         const today = new Date().toISOString().split('T')[0];
         const savedCheckIns = localStorage.getItem('dailyCheckIns');
-        
+
         if (savedCheckIns) {
           const checkIns = JSON.parse(savedCheckIns);
           const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-          
+
           if (todayCheckIn?.behaviorCommitments) {
             const studentCommitment = todayCheckIn.behaviorCommitments.find(
               (commitment: any) => commitment.studentId === studentId
             );
-            
+
             setIsAchieved(studentCommitment?.achieved || false);
           }
         }
@@ -494,10 +494,10 @@ const BehaviorAchievementBadge: React.FC<{
     };
 
     checkAchievement();
-    
+
     // Set up interval to check for updates
     const interval = setInterval(checkAchievement, 30000); // Check every 30 seconds
-    
+
     return () => clearInterval(interval);
   }, [studentId]);
 
@@ -526,16 +526,16 @@ const BehaviorAchievementBadge: React.FC<{
 };
 
 // Enhanced Student Card with Behavior Statement
-const StudentCardWithBehavior: React.FC<{ 
-  student: Student; 
+const StudentCardWithBehavior: React.FC<{
+  student: Student;
   groupColor: string;
   showBehaviorStatement?: boolean;
   cardHeight: number;
-}> = ({ 
-  student, 
-  groupColor, 
+}> = ({
+  student,
+  groupColor,
   showBehaviorStatement = true,
-  cardHeight 
+  cardHeight
 }) => {
   const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
 
@@ -580,8 +580,8 @@ const StudentCardWithBehavior: React.FC<{
         flexShrink: 0
       }}>
         {student.photo ? (
-          <img 
-            src={student.photo} 
+          <img
+            src={student.photo}
             alt={student.name}
             style={{
               width: '100%',
@@ -590,8 +590,8 @@ const StudentCardWithBehavior: React.FC<{
             }}
           />
         ) : (
-          <span style={{ 
-            color: 'white', 
+          <span style={{
+            color: 'white',
             fontWeight: '700',
             fontSize: '1rem'
           }}>
@@ -644,6 +644,9 @@ const StudentCardWithBehavior: React.FC<{
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
             fontStyle: 'italic',
             lineHeight: '1.2',
+            textDecoration: isAchieved ? 'line-through' : 'none',
+            opacity: isAchieved ? 0.8 : 1,
+            transition: 'all 0.3s ease',
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: 2,
@@ -656,8 +659,8 @@ const StudentCardWithBehavior: React.FC<{
 
       {/* Achievement Badge (if completed) */}
       {showBehaviorStatement && behaviorCommitment && (
-        <BehaviorAchievementBadge 
-          studentId={student.id} 
+        <BehaviorAchievementBadge
+          studentId={student.id}
           groupColor={groupColor}
         />
       )}
@@ -674,13 +677,17 @@ interface SmartboardDisplayProps {
   };
   staff?: StaffMember[];
   students?: Student[];
+  onNavigateHome?: () => void;
+  onNavigateToBuilder?: () => void;
 }
 
 const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   isActive,
   currentSchedule,
   staff = [],
-  students = []
+  students = [],
+  onNavigateHome,
+  onNavigateToBuilder
 }) => {
   // 🎯 CRITICAL: ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   // State management - MUST be at the top, always called
@@ -708,55 +715,55 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
   const [showBehaviorStatements, setShowBehaviorStatements] = useState(true);
-  
+
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
   const currentPullOuts = getCurrentPullOuts();
 
   // Dynamic screen sizing - calculate available heights
-  const headerHeight = 100; // Fixed header height
-  const controlsHeight = 80; // Timer controls height
-  const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 40; // 40px for padding
+  const headerHeight = 70; // Reduced from 80px - more compact header
+  const controlsHeight = 60; // Reduced from 70px - more compact controls
+  const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 20; // Less padding
 
   // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
   useEffect(() => {
     console.log('🖥️ SmartboardDisplay - Loading schedule data...');
-    
+
     if (!currentSchedule) {
       console.log('📋 No currentSchedule provided, loading from localStorage...');
-      
+
       // Try multiple possible localStorage keys
       const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
-      
+
       for (const key of possibleKeys) {
         try {
           const saved = localStorage.getItem(key);
           if (saved) {
             const schedules = JSON.parse(saved);
             console.log(`📋 Found ${schedules.length} schedules in '${key}'`);
-            
+
             if (schedules.length > 0) {
               // Use the most recent schedule
               const mostRecent = schedules
                 .filter((s: any) => s.lastUsed)
                 .sort((a: any, b: any) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())[0];
-              
+
               const scheduleToUse = mostRecent || schedules[0];
               console.log('🎯 Using schedule:', scheduleToUse.name);
-              
+
               // 🎯 CRITICAL: Preserve groupAssignments when loading
               const loadedActivities = (scheduleToUse.activities || []).map((activity: any) => ({
                 ...activity,
                 // Ensure groupAssignments are preserved
                 groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
               }));
-              
+
               console.log('📄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
                 name: a.name,
                 groupCount: a.groupAssignments?.length || 0,
                 groups: a.groupAssignments
               })));
-              
+
               setFallbackSchedule({
                 activities: loadedActivities,
                 startTime: scheduleToUse.startTime || '09:00',
@@ -776,7 +783,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
         ...activity,
         groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
       }));
-      
+
       console.log('📄 Preserved activities from props:', preservedActivities.map((a: any) => ({
         name: a.name,
         groupCount: a.groupAssignments?.length || 0
@@ -787,7 +794,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   // Replace the existing useEffect around line 117-208 with this:
 useEffect(() => {
   console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
-  
+
   const loadStudentData = async () => {
     let studentsToUse: any[] = [];
     let staffToUse: any[] = [];
@@ -796,10 +803,10 @@ useEffect(() => {
       // Primary: Load from UnifiedDataService
       const unifiedStudents = UnifiedDataService.getAllStudents();
       const unifiedStaff = UnifiedDataService.getAllStaff();
-      
+
       console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
       console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
-      
+
       if (unifiedStudents.length > 0) {
         studentsToUse = unifiedStudents;
       }
@@ -815,7 +822,7 @@ useEffect(() => {
       console.log('📚 Fallback: Using students from props:', students.length);
       studentsToUse = students;
     }
-    
+
     if (staffToUse.length === 0 && staff && staff.length > 0) {
       console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
       staffToUse = staff;
@@ -840,7 +847,7 @@ useEffect(() => {
 
     // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
     console.log('📄 Setting student state:', studentsToUse.length, 'students');
-    
+
     setTimeout(() => {
       setRealStudents(studentsToUse);
       setRealStaff(staffToUse);
@@ -855,7 +862,7 @@ useEffect(() => {
   // Timer countdown effect (moved after hooks)
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isRunning && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining(prev => {
@@ -867,7 +874,7 @@ useEffect(() => {
         });
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -950,18 +957,18 @@ useEffect(() => {
   });
 
   // 🎯 ENHANCED TRANSITION DETECTION (moved after hooks)
-  const isTransitionActivity = 
+  const isTransitionActivity =
     currentActivity?.isTransition === true ||  // Primary check
-    (currentActivity?.category === 'transition' && 
+    (currentActivity?.category === 'transition' &&
      currentActivity?.transitionType) ||       // Fallback: category + transitionType
-    (currentActivity?.category === 'transition' && 
+    (currentActivity?.category === 'transition' &&
      currentActivity?.animationStyle) ||       // Fallback: category + animationStyle
-    (currentActivity?.name && 
+    (currentActivity?.name &&
      ['Movement Break', 'Brain Break', 'Transition Time', 'Get Ready', 'Clean Up Time']
      .includes(currentActivity.name));         // Fallback: known transition activity names
 
   // 🎯 CHOICE ITEM TIME DETECTION
-  const isChoiceItemTime = currentActivity?.name === 'Choice Item Time' || 
+  const isChoiceItemTime = currentActivity?.name === 'Choice Item Time' ||
                           (currentActivity?.category === 'system' && currentActivity?.name?.includes('Choice'));
 
   // Load today's choice assignments when Choice Item Time is active
@@ -984,12 +991,12 @@ useEffect(() => {
   // 🔧 ISOLATION FIX: Render transition in isolated container
   if (isTransitionActivity && currentActivity) {
     console.log('🎯 SmartboardDisplay - Rendering transition activity:', currentActivity.name);
-    
+
     // Get next activity for preview
     const nextActivity = activeSchedule?.activities[currentActivityIndex + 1];
-    
+
     return (
-      <div style={{ 
+      <div style={{
         height: '100vh',
         width: '100vw',
         overflow: 'hidden',
@@ -1047,6 +1054,71 @@ useEffect(() => {
         <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
           Please create a schedule in the Schedule Builder first.
         </p>
+
+        {/* Home Button for No Schedule State */}
+        {onNavigateHome && (
+          <button
+            onClick={onNavigateHome}
+            style={{
+              marginTop: '2rem',
+              padding: '1rem 2rem',
+              fontSize: '1.2rem',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '600',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            🏠 Back to Home
+          </button>
+        )}
+
+        {onNavigateToBuilder && (
+          <button
+            onClick={onNavigateToBuilder}
+            style={{
+              marginTop: '1rem',
+              padding: '1rem 2rem',
+              fontSize: '1.2rem',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              cursor: 'pointer',
+              fontWeight: '600',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            🛠️ Go to Builder
+          </button>
+        )}
       </div>
     );
   }
@@ -1112,15 +1184,15 @@ useEffect(() => {
   // 🎯 Enhanced Group display component with better error handling and dynamic sizing
   const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number; availableHeight: number }> = ({ group, groupIndex, availableHeight }) => {
     console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
-    
+
     // Filter out absent students from group display using UnifiedDataService
     const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
-    const activeStudentIds = (group.studentIds || []).filter((id: string) => 
+    const activeStudentIds = (group.studentIds || []).filter((id: string) =>
       !absentStudentIds.includes(id)
     );
-    
+
     const groupStudents = activeStudentIds.map(id => getStudentById(id)).filter(Boolean) as Student[];
-    
+
     // Try multiple ways to get staff
     let staffMember = null;
     if (group.staffId) {
@@ -1128,7 +1200,7 @@ useEffect(() => {
     } else if (group.staffMember?.id) {
       staffMember = getStaffById(group.staffMember.id) || group.staffMember;
     }
-    
+
     console.log(`👥 Group ${groupIndex + 1} data:`, {
       name: group.groupName,
       color: group.color,
@@ -1137,13 +1209,13 @@ useEffect(() => {
     });
 
     const groupColor = group.color || '#9C27B0';
-    
+
     // Calculate dynamic card heights based on available space and number of students
     const groupHeaderHeight = 80;
     const staffSectionHeight = staffMember ? 80 : 0;
     const studentsHeaderHeight = 30;
     const padding = 32;
-    
+
     const availableStudentArea = availableHeight - groupHeaderHeight - staffSectionHeight - studentsHeaderHeight - padding;
     const rows = Math.ceil(Math.sqrt(groupStudents.length));
     const cardHeight = Math.max(100, (availableStudentArea - (rows - 1) * 12) / rows);
@@ -1289,70 +1361,145 @@ useEffect(() => {
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
         return absentStudentIds.length > 0 && (
-          <EnhancedAbsentStudentsDisplay 
+          <EnhancedAbsentStudentsDisplay
             absentStudents={absentStudentIds}
             position="top-left"
             compact={true}
           />
         );
       })()}
-      
+
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
-      
-      {/* Header - Fixed Height */}
+
+      {/* Header - Fixed Height with Navigation */}
       <div style={{
         padding: '0.75rem 1rem',
-        textAlign: 'center',
         borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
         position: 'relative',
         flexShrink: 0,
         height: `${headerHeight}px`,
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
         justifyContent: 'center'
       }}>
-        {/* Behavior Statements Toggle Button */}
-        <button
-          onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
-          style={{
-            position: 'absolute',
-            top: '0.5rem',
-            right: '1rem',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            padding: '0.4rem 0.8rem',
-            fontSize: '0.8rem',
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 0.2s ease',
-            backdropFilter: 'blur(5px)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
-        </button>
-        
-        <h1 style={{
-          margin: '0 0 0.5rem 0',
-          fontSize: '2rem',
-          fontWeight: '700',
-          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+        {/* LEFT: Home Button */}
+        {onNavigateHome && (
+          <button
+            onClick={onNavigateHome}
+            style={{
+              position: 'absolute',
+              left: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '0.75rem 1rem',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+            }}
+          >
+            🏠 Home
+          </button>
+        )}
+
+        {/* CENTER: Activity Title */}
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{
+            margin: '0 0 0.25rem 0',
+            fontSize: '1.8rem',
+            fontWeight: '700',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>
+            {currentActivity.icon} {currentActivity.name}
+          </h1>
+          
+          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+            Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
+          </div>
+        </div>
+
+        {/* RIGHT: Builder Button & Behavior Statements Toggle */}
+        <div style={{
+          position: 'absolute',
+          right: '1rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem' // Add a gap between the buttons
         }}>
-          {currentActivity.icon} {currentActivity.name}
-        </h1>
-        
-        <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-          Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
+          {onNavigateToBuilder && (
+            <button
+              onClick={onNavigateToBuilder}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                padding: '0.75rem 1rem',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+                backdropFilter: 'blur(10px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              🛠️ Builder
+            </button>
+          )}
+
+          {/* Behavior Statements Toggle */}
+          <button
+            onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: 'none',
+              borderRadius: '6px',
+              color: 'white',
+              padding: '0.3rem 0.6rem',
+              fontSize: '0.7rem',
+              cursor: 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'blur(5px)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+            }}
+          >
+            {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
+          </button>
         </div>
       </div>
 
@@ -1397,7 +1544,7 @@ useEffect(() => {
         >
           ⏮️ Prev
         </button>
-        
+
         <button
           onClick={() => onTimerControl(isRunning ? 'pause' : 'play')}
           style={{
@@ -1413,7 +1560,7 @@ useEffect(() => {
         >
           {isRunning ? '⏸️ Pause' : '▶️ Play'}
         </button>
-        
+
         <button
           onClick={() => onTimerControl('reset')}
           style={{
@@ -1429,7 +1576,7 @@ useEffect(() => {
         >
           🔄 Reset
         </button>
-        
+
         <button
           onClick={() => onTimerControl('next')}
           disabled={currentActivityIndex === (activeSchedule?.activities.length || 0) - 1}
@@ -1450,9 +1597,9 @@ useEffect(() => {
       </div>
 
       {/* Content - Dynamic Height */}
-      <div style={{ 
-        flex: 1, 
-        padding: '1rem', 
+      <div style={{
+        flex: 1,
+        padding: '1rem',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column'
@@ -1483,7 +1630,7 @@ useEffect(() => {
             }}>
               Choice Item Time
             </h3>
-            
+
             {todayChoices.length > 0 ? (
               <>
                 <p style={{
@@ -1492,9 +1639,9 @@ useEffect(() => {
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: '500'
                 }}>
-                  {todayChoices.length} students assigned to choice activities
+                  {todayChoices.length} student{todayChoices.length !== 1 ? 's' : ''} assigned to choice activities
                 </p>
-                
+
                 <button
                   onClick={() => setShowChoiceModal(true)}
                   style={{
@@ -1540,7 +1687,7 @@ useEffect(() => {
             </h2>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: groupAssignments.length === 1 ? '1fr' : 
+              gridTemplateColumns: groupAssignments.length === 1 ? '1fr' :
                                   groupAssignments.length === 2 ? 'repeat(2, 1fr)' :
                                   'repeat(auto-fit, minmax(300px, 1fr))',
               gap: '1rem',
@@ -1549,9 +1696,9 @@ useEffect(() => {
               overflow: 'hidden'
             }}>
               {groupAssignments.map((group, index) => (
-                <GroupDisplay 
-                  key={group.id || index} 
-                  group={group} 
+                <GroupDisplay
+                  key={group.id || index}
+                  group={group}
                   groupIndex={index}
                   availableHeight={availableContentHeight / Math.ceil(groupAssignments.length / (groupAssignments.length > 2 ? 2 : 1))}
                 />
@@ -1559,7 +1706,7 @@ useEffect(() => {
             </div>
           </>
         ) : (
-          <WholeClassDisplay 
+          <WholeClassDisplay
             students={realStudents}
             activityName={currentActivity.name}
             showBehaviorStatements={showBehaviorStatements}
