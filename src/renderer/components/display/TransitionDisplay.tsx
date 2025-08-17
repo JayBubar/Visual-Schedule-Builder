@@ -33,8 +33,8 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
             justifyContent: 'space-around',
             alignItems: 'center',
             animation: 'runningKids 3s infinite linear',
-            fontSize: '3rem',
-            margin: '2rem 0',
+            fontSize: 'clamp(2rem, 4vw, 4rem)',
+            margin: '1rem 0',
             overflow: 'hidden'
           }}>
             <span style={{ animation: 'bounce 1s infinite' }}>🏃‍♀️</span>
@@ -50,14 +50,14 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
           <div style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: '2rem',
-            margin: '2rem 0'
+            gap: 'clamp(1rem, 3vw, 2rem)',
+            margin: '1rem 0'
           }}>
             {['🔵', '🔶', '🟢', '🔴', '⭐', '💙', '🌟'].map((shape, i) => (
               <span
                 key={i}
                 style={{
-                  fontSize: '2.5rem',
+                  fontSize: 'clamp(1.5rem, 3vw, 3rem)',
                   animation: `float 2s infinite ease-in-out ${i * 0.3}s`,
                   display: 'inline-block'
                 }}
@@ -73,14 +73,14 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
           <div style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: '1rem',
-            margin: '2rem 0'
+            gap: 'clamp(0.5rem, 2vw, 1rem)',
+            margin: '1rem 0'
           }}>
             {['🏀', '⚽', '🏈', '🎾', '🏐', '⚾', '🎱'].map((ball, i) => (
               <span
                 key={i}
                 style={{
-                  fontSize: '2.5rem',
+                  fontSize: 'clamp(1.5rem, 3vw, 3rem)',
                   animation: `bounce 0.8s infinite ${i * 0.1}s`,
                   display: 'inline-block'
                 }}
@@ -96,14 +96,14 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
           <div style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: '1.5rem',
-            margin: '2rem 0'
+            gap: 'clamp(0.75rem, 2.5vw, 1.5rem)',
+            margin: '1rem 0'
           }}>
             {['💃', '🕺', '💃', '🕺', '💃', '🕺'].map((dancer, i) => (
               <span
                 key={i}
                 style={{
-                  fontSize: '2.5rem',
+                  fontSize: 'clamp(1.5rem, 3vw, 3rem)',
                   animation: `dance 1.5s infinite ${i * 0.2}s`,
                   display: 'inline-block'
                 }}
@@ -119,14 +119,14 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
           <div style={{
             display: 'flex',
             justifyContent: 'center',
-            gap: '1.5rem',
-            margin: '2rem 0'
+            gap: 'clamp(0.75rem, 2.5vw, 1.5rem)',
+            margin: '1rem 0'
           }}>
-            {['📚', '✏️', '📝', '🗂️', '📋', '🎨'].map((item, i) => (
+            {['📚', '✏️', '📐', '🗂️', '📋', '🎨'].map((item, i) => (
               <span
                 key={i}
                 style={{
-                  fontSize: '2.5rem',
+                  fontSize: 'clamp(1.5rem, 3vw, 3rem)',
                   animation: `organize 2s infinite ${i * 0.3}s`,
                   display: 'inline-block'
                 }}
@@ -141,8 +141,8 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
         return (
           <div style={{
             textAlign: 'center',
-            fontSize: '4rem',
-            margin: '2rem 0',
+            fontSize: 'clamp(3rem, 8vw, 6rem)',
+            margin: '1rem 0',
             animation: 'pulse 2s infinite'
           }}>
             {activity.icon}
@@ -194,117 +194,163 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
     <div style={{
       background: getBackgroundGradient(),
       color: 'white',
-      borderRadius: '24px',
-      padding: '2rem',
-      textAlign: 'center',
-      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
-      minHeight: '70vh',
+      height: '100vh',
+      width: '100vw',
+      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
+      alignItems: 'center',
       position: 'relative',
-      overflow: 'hidden'
+      padding: 'clamp(1rem, 3vw, 2rem)'
     }}>
       
       {/* 🎯 Enhanced Progress Indicator */}
       <div style={{
         position: 'absolute',
-        top: '1rem',
+        top: 'clamp(1rem, 3vh, 2rem)',
         left: '50%',
         transform: 'translateX(-50%)',
         background: 'rgba(255, 255, 255, 0.2)',
         borderRadius: '20px',
-        padding: '0.5rem 1rem',
-        fontSize: '0.9rem',
-        fontWeight: '600'
+        padding: 'clamp(0.5rem, 1.5vw, 1rem)',
+        fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
+        fontWeight: '600',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.3)'
       }}>
         Transition {activityIndex + 1} of {totalActivities}
       </div>
 
-      {/* Transition Header */}
-      <h1 style={{
-        fontSize: '2.5rem',
-        margin: '0 0 1rem 0',
-        fontWeight: '700',
-        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-      }}>
-        {activity.name}
-      </h1>
-      
-      {/* Custom Message */}
-      {activity.customMessage && (
-        <p style={{
-          fontSize: '1.3rem',
-          margin: '0 0 2rem 0',
-          opacity: 0.9,
-          fontStyle: 'italic'
-        }}>
-          {activity.customMessage}
-        </p>
-      )}
-      
-      {/* Large Timer Display */}
+      {/* Main Content Container - Centered and Responsive */}
       <div style={{
-        fontSize: timeRemaining > 60 ? '4rem' : '5rem',
-        fontWeight: '700',
-        margin: '1rem 0',
-        color: timeRemaining < 30 ? '#FFE082' : 'white',
-        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-        animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none'
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        flex: 1,
+        width: '100%',
+        maxWidth: '90vw',
+        gap: 'clamp(1rem, 3vh, 2rem)'
       }}>
-        {formatTransitionTime(timeRemaining)}
-      </div>
-      
-      <p style={{ 
-        fontSize: '1.2rem', 
-        margin: '0 0 2rem 0', 
-        opacity: 0.9 
-      }}>
-        {timeRemaining > 60 ? 'minutes remaining' : 'seconds remaining'}
-      </p>
 
-      {/* Animation */}
-      {getTransitionAnimation()}
-
-      {/* Movement Prompt */}
-      {getCurrentMovementPrompt() && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          margin: '2rem auto',
-          fontSize: '1.4rem',
-          fontWeight: '600',
-          maxWidth: '500px',
-          animation: 'fadeInScale 0.5s ease-out'
+        {/* Transition Header */}
+        <h1 style={{
+          fontSize: 'clamp(1.8rem, 4vw, 3rem)',
+          margin: '0',
+          fontWeight: '700',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          lineHeight: '1.2'
         }}>
-          {getCurrentMovementPrompt()}
+          {activity.name}
+        </h1>
+        
+        {/* Custom Message */}
+        {activity.customMessage && (
+          <p style={{
+            fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+            margin: '0',
+            opacity: 0.9,
+            fontStyle: 'italic',
+            maxWidth: '80%',
+            lineHeight: '1.4'
+          }}>
+            {activity.customMessage}
+          </p>
+        )}
+        
+        {/* Large Timer Display */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 'clamp(0.5rem, 2vh, 1rem)'
+        }}>
+          <div style={{
+            fontSize: timeRemaining > 60 ? 'clamp(3rem, 8vw, 6rem)' : 'clamp(3.5rem, 10vw, 7rem)',
+            fontWeight: '700',
+            color: timeRemaining < 30 ? '#FFE082' : 'white',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+            animation: timeRemaining < 10 ? 'pulse 1s infinite' : 'none',
+            fontFamily: '"Courier New", monospace',
+            letterSpacing: '0.1em',
+            lineHeight: '1'
+          }}>
+            {formatTransitionTime(timeRemaining)}
+          </div>
+          
+          <p style={{ 
+            fontSize: 'clamp(0.9rem, 2vw, 1.2rem)', 
+            margin: '0', 
+            opacity: 0.9,
+            fontWeight: '500'
+          }}>
+            {timeRemaining > 60 ? 'minutes remaining' : 'seconds remaining'}
+          </p>
         </div>
-      )}
+
+        {/* Animation */}
+        <div style={{
+          width: '100%',
+          maxWidth: '600px',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          {getTransitionAnimation()}
+        </div>
+
+        {/* Movement Prompt */}
+        {getCurrentMovementPrompt() && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '16px',
+            padding: 'clamp(1rem, 2.5vw, 1.5rem)',
+            fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',
+            fontWeight: '600',
+            maxWidth: '80%',
+            animation: 'fadeInScale 0.5s ease-out',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            lineHeight: '1.3',
+            textAlign: 'center'
+          }}>
+            {getCurrentMovementPrompt()}
+          </div>
+        )}
+      </div>
 
       {/* Previous Activity Preview */}
       {previousActivity && activityIndex > 0 && (
         <div style={{
           position: 'absolute',
-          top: '1rem',
-          left: '1rem',
+          top: 'clamp(1rem, 3vh, 2rem)',
+          left: 'clamp(1rem, 3vw, 2rem)',
           background: 'rgba(255, 255, 255, 0.15)',
           borderRadius: '12px',
-          padding: '0.75rem 1rem',
-          fontSize: '0.85rem',
-          maxWidth: '200px'
+          padding: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+          fontSize: 'clamp(0.7rem, 1.2vw, 0.85rem)',
+          maxWidth: 'clamp(150px, 25vw, 200px)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)'
         }}>
-          <p style={{ margin: '0 0 0.25rem 0', opacity: 0.8 }}>Previous:</p>
-          <p style={{ 
-            margin: '0', 
-            fontWeight: '600',
+          <p style={{ margin: '0 0 0.25rem 0', opacity: 0.8, fontSize: '0.9em' }}>Previous:</p>
+          <div style={{ 
             display: 'flex',
             alignItems: 'center',
-            gap: '0.25rem'
+            gap: '0.25rem',
+            fontWeight: '600'
           }}>
-            <span>{previousActivity.icon}</span>
-            <span style={{ fontSize: '0.8rem' }}>{previousActivity.name}</span>
-          </p>
+            <span style={{ fontSize: '1.2em' }}>{previousActivity.icon}</span>
+            <span style={{ 
+              fontSize: '0.8em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {previousActivity.name}
+            </span>
+          </div>
         </div>
       )}
 
@@ -312,75 +358,105 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
       {activity.showNextActivity && nextActivity && (
         <div style={{
           position: 'absolute',
-          top: '1rem',
-          right: '1rem',
+          top: 'clamp(1rem, 3vh, 2rem)',
+          right: 'clamp(1rem, 3vw, 2rem)',
           background: 'rgba(255, 255, 255, 0.15)',
           borderRadius: '12px',
-          padding: '0.75rem 1rem',
-          fontSize: '0.85rem',
-          maxWidth: '200px'
+          padding: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+          fontSize: 'clamp(0.7rem, 1.2vw, 0.85rem)',
+          maxWidth: 'clamp(150px, 25vw, 200px)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)'
         }}>
-          <p style={{ margin: '0 0 0.25rem 0', opacity: 0.8 }}>Coming up:</p>
-          <p style={{ 
-            margin: '0', 
-            fontWeight: '600',
+          <p style={{ margin: '0 0 0.25rem 0', opacity: 0.8, fontSize: '0.9em' }}>Coming up:</p>
+          <div style={{ 
             display: 'flex',
             alignItems: 'center',
-            gap: '0.25rem'
+            gap: '0.25rem',
+            fontWeight: '600'
           }}>
-            <span>{nextActivity.icon}</span>
-            <span style={{ fontSize: '0.8rem' }}>{nextActivity.name}</span>
-          </p>
+            <span style={{ fontSize: '1.2em' }}>{nextActivity.icon}</span>
+            <span style={{ 
+              fontSize: '0.8em',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {nextActivity.name}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Main Next Activity Preview (Center) */}
+      {/* Main Next Activity Preview (Center Bottom) */}
       {activity.showNextActivity && nextActivity && (
         <div style={{
           background: 'rgba(255, 255, 255, 0.15)',
           borderRadius: '16px',
-          padding: '1.5rem',
-          margin: '2rem auto',
-          maxWidth: '400px'
+          padding: 'clamp(1rem, 2.5vw, 1.5rem)',
+          maxWidth: 'clamp(300px, 60vw, 400px)',
+          width: '100%',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          textAlign: 'center',
+          position: 'absolute',
+          bottom: 'clamp(7rem, 15vh, 10rem)',
+          left: '50%',
+          transform: 'translateX(-50%)'
         }}>
-          <p style={{ margin: '0 0 0.5rem 0', fontSize: '1rem', opacity: 0.8 }}>
+          <p style={{ 
+            margin: '0 0 0.5rem 0', 
+            fontSize: 'clamp(0.8rem, 1.5vw, 1rem)', 
+            opacity: 0.8 
+          }}>
             Coming up next:
           </p>
-          <p style={{ 
-            margin: '0', 
-            fontSize: '1.5rem', 
-            fontWeight: '600',
+          <div style={{ 
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem'
+            gap: 'clamp(0.5rem, 2vw, 1rem)',
+            fontWeight: '600',
+            fontSize: 'clamp(1rem, 2.5vw, 1.5rem)'
           }}>
-            <span style={{ fontSize: '2rem' }}>{nextActivity.icon}</span>
-            {nextActivity.name}
-          </p>
+            <span style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>{nextActivity.icon}</span>
+            <span style={{ 
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1
+            }}>
+              {nextActivity.name}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* 🎯 Enhanced Timer Controls with Previous Button */}
+      {/* Timer Controls - Fixed Bottom Position */}
       <div style={{
+        position: 'absolute',
+        bottom: 'clamp(1rem, 3vh, 2rem)',
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex',
-        gap: '1rem',
-        justifyContent: 'center',
-        marginTop: '2rem',
+        gap: 'clamp(0.5rem, 2vw, 1rem)',
         flexWrap: 'wrap',
-        alignItems: 'center'
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: '90vw'
       }}>
         {/* Previous Button */}
         <button
           onClick={() => onTimerControl('previous')}
           disabled={activityIndex === 0}
           style={{
-            padding: '12px 20px',
+            padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.5rem)',
             border: 'none',
             borderRadius: '12px',
             fontWeight: '600',
             cursor: activityIndex === 0 ? 'not-allowed' : 'pointer',
-            fontSize: '1.1rem',
+            fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
             background: activityIndex === 0 
               ? 'rgba(255, 255, 255, 0.2)' 
               : 'linear-gradient(135deg, #6c757d 0%, #495057 100%)',
@@ -392,7 +468,9 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
             transition: 'all 0.3s ease',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)',
+            minHeight: '44px' // Touch-friendly
           }}
         >
           ⬅️ Previous
@@ -402,12 +480,12 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
         <button
           onClick={() => onTimerControl(isRunning ? 'pause' : 'play')}
           style={{
-            padding: '12px 24px',
+            padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
             border: 'none',
             borderRadius: '12px',
-            fontWeight: '600',
+            fontWeight: '700',
             cursor: 'pointer',
-            fontSize: '1.1rem',
+            fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
             background: isRunning 
               ? 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)' 
               : 'linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)',
@@ -417,7 +495,9 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
             transform: 'scale(1)',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)',
+            minHeight: '48px' // Larger for primary action
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.05)';
@@ -433,19 +513,21 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
         <button
           onClick={() => onTimerControl('reset')}
           style={{
-            padding: '12px 20px',
+            padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.5rem)',
             border: 'none',
             borderRadius: '12px',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: '1.1rem',
+            fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
             background: 'linear-gradient(135deg, #6c757d 0%, #495057 100%)',
             color: 'white',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             transition: 'all 0.3s ease',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)',
+            minHeight: '44px'
           }}
         >
           🔄 Reset
@@ -455,19 +537,21 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
         <button
           onClick={() => onTimerControl('next')}
           style={{
-            padding: '12px 24px',
+            padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
             border: 'none',
             borderRadius: '12px',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: '1.1rem',
+            fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
             background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)',
             color: 'white',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
             transition: 'all 0.3s ease',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)',
+            minHeight: '44px'
           }}
         >
           {activityIndex === totalActivities - 1 ? '🎉 Complete' : '⏭️ Next'}
@@ -567,6 +651,21 @@ const TransitionDisplay: React.FC<TransitionDisplayProps> = ({
         button:active:not(:disabled) {
           transform: translateY(0) !important;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        /* Responsive font scaling for very small screens */
+        @media (max-height: 600px) {
+          div[style*="fontSize: 'clamp(3rem"] {
+            font-size: clamp(2rem, 6vw, 4rem) !important;
+          }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+          button {
+            min-height: 48px !important;
+            padding: 1rem 1.5rem !important;
+          }
         }
       `}</style>
     </div>

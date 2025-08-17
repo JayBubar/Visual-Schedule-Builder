@@ -187,13 +187,16 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
     <div style={{
       background: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '16px',
-      padding: '1.5rem',
+      padding: '1rem',
       textAlign: 'center',
       border: '2px solid rgba(40, 167, 69, 0.4)', // Green for whole class
       transition: 'transform 0.2s ease',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       position: 'relative',
-      minHeight: (showBehaviorStatements && behaviorCommitment) ? '180px' : '120px'
+      height: '100%', // Use full available height
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between'
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.transform = 'scale(1.02)';
@@ -204,18 +207,19 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
     >
       {/* Student Photo/Avatar */}
       <div style={{
-        width: '60px',
-        height: '60px',
+        width: '50px',
+        height: '50px',
         borderRadius: '50%',
         background: student.photo ? 'transparent' : 'linear-gradient(135deg, #28a745, #20c997)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.5rem',
-        margin: '0 auto 1rem auto',
+        fontSize: '1.2rem',
+        margin: '0 auto 0.5rem auto',
         border: '3px solid #28a745',
         overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+        flexShrink: 0
       }}>
         {student.photo ? (
           <img 
@@ -231,7 +235,7 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
           <span style={{ 
             color: 'white', 
             fontWeight: '700',
-            fontSize: '1.2rem'
+            fontSize: '1rem'
           }}>
             {student.name.charAt(0)}
           </span>
@@ -240,11 +244,12 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 
       {/* Student Name */}
       <div style={{
-        fontSize: '1.1rem',
+        fontSize: '0.9rem',
         fontWeight: '700',
         color: 'white',
         textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-        marginBottom: (showBehaviorStatements && behaviorCommitment) ? '1rem' : '0'
+        marginBottom: '0.5rem',
+        flexShrink: 0
       }}>
         {student.name}
       </div>
@@ -257,17 +262,21 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
             background: isAchieved 
               ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.3))' 
               : 'rgba(255, 255, 255, 0.15)',
-            borderRadius: '12px',
-            padding: '0.75rem',
+            borderRadius: '8px',
+            padding: '0.5rem',
             border: isAchieved 
               ? '2px solid rgba(34, 197, 94, 0.8)' 
               : '1px solid rgba(40, 167, 69, 0.6)',
             backdropFilter: 'blur(5px)',
-            marginTop: '0.5rem',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: '60px'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.02)';
@@ -281,9 +290,9 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
           {/* Achievement Indicator */}
           <div style={{
             position: 'absolute',
-            top: '8px',
-            right: '8px',
-            fontSize: '1.2rem',
+            top: '4px',
+            right: '4px',
+            fontSize: '1rem',
             opacity: isAchieved ? 1 : 0.3,
             transition: 'all 0.3s ease'
           }}>
@@ -292,7 +301,7 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 
           {/* Goal Label */}
           <div style={{
-            fontSize: '0.7rem',
+            fontSize: '0.6rem',
             fontWeight: '600',
             color: isAchieved 
               ? 'rgba(34, 197, 94, 1)' 
@@ -309,28 +318,21 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
 
           {/* Statement Text */}
           <div style={{
-            fontSize: '0.85rem',
+            fontSize: '0.7rem',
             fontWeight: '600',
             color: 'white',
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
             fontStyle: 'italic',
-            lineHeight: '1.3',
+            lineHeight: '1.2',
             textDecoration: isAchieved ? 'line-through' : 'none',
             opacity: isAchieved ? 0.8 : 1,
-            transition: 'all 0.3s ease'
+            transition: 'all 0.3s ease',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
           }}>
             "I will {behaviorCommitment}"
-          </div>
-
-          {/* Tap Hint */}
-          <div style={{
-            fontSize: '0.6rem',
-            color: 'rgba(255, 255, 255, 0.6)',
-            marginTop: '0.5rem',
-            textAlign: 'center',
-            fontWeight: '500'
-          }}>
-            {isAchieved ? 'Tap to undo' : 'Tap when achieved'}
           </div>
 
           {/* Success Animation Effect */}
@@ -355,254 +357,43 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
   );
 };
 
-// Compact Student Card for Many Students
-const CompactWholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements: boolean }> = ({ student, showBehaviorStatements }) => {
-  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
-  const [isAchieved, setIsAchieved] = useState(false);
-
-  useEffect(() => {
-    // Same behavior commitment loading logic as above
-    const getTodaysCommitment = () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const savedCheckIns = localStorage.getItem('dailyCheckIns');
-        
-        if (savedCheckIns) {
-          const checkIns = JSON.parse(savedCheckIns);
-          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-          
-          if (todayCheckIn?.behaviorCommitments) {
-            const studentCommitment = todayCheckIn.behaviorCommitments.find(
-              (commitment: any) => commitment.studentId === student.id
-            );
-            
-            if (studentCommitment?.commitment) {
-              setBehaviorCommitment(studentCommitment.commitment);
-              setIsAchieved(studentCommitment?.achieved || false);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading behavior commitment:', error);
-      }
-    };
-
-    getTodaysCommitment();
-  }, [student.id]);
-
-  // Toggle achievement function
-  const toggleStudentAchievement = (studentId: string) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const savedCheckIns = localStorage.getItem('dailyCheckIns');
-      
-      if (!savedCheckIns) return;
-      
-      const checkIns = JSON.parse(savedCheckIns);
-      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-      
-      if (todayCheckInIndex === -1) return;
-      
-      const todayCheckIn = checkIns[todayCheckInIndex];
-      
-      if (todayCheckIn.behaviorCommitments) {
-        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
-          (commitment: any) => commitment.studentId === studentId
-        );
-        
-        if (commitmentIndex !== -1) {
-          // Toggle the achieved status
-          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
-            ? new Date().toISOString() 
-            : null;
-          
-          // Update the check-in data
-          todayCheckIn.updatedAt = new Date().toISOString();
-          checkIns[todayCheckInIndex] = todayCheckIn;
-          
-          // Save back to localStorage
-          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-          
-          // Update local state
-          setIsAchieved(newAchievedStatus);
-          
-          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${student.name}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling achievement:', error);
-    }
-  };
-
-  return (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
-      padding: '1rem',
-      border: '2px solid rgba(40, 167, 69, 0.4)',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      position: 'relative',
-      minHeight: '100px',
-      transition: 'transform 0.2s ease'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = 'scale(1.02)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = 'scale(1)';
-    }}
-    >
-      {/* Header with photo and name */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: (showBehaviorStatements && behaviorCommitment) ? '8px' : '0'
-      }}>
-        {/* Student Photo */}
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          background: student.photo ? 'transparent' : 'linear-gradient(135deg, #28a745, #20c997)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '2px solid #28a745',
-          overflow: 'hidden',
-          flexShrink: 0
-        }}>
-          {student.photo ? (
-            <img 
-              src={student.photo} 
-              alt={student.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <span style={{ 
-              color: 'white', 
-              fontWeight: '700',
-              fontSize: '1rem'
-            }}>
-              {student.name.charAt(0)}
-            </span>
-          )}
-        </div>
-
-        {/* Student Name */}
-        <div style={{
-          fontSize: '1rem',
-          fontWeight: '700',
-          color: 'white',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-          flex: 1,
-          minWidth: 0,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          {student.name}
-        </div>
-      </div>
-
-      {/* Enhanced Compact Behavior Statement with Toggle */}
-      {showBehaviorStatements && behaviorCommitment && (
-        <div 
-          onClick={() => toggleStudentAchievement(student.id)}
-          style={{
-            background: isAchieved 
-              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.2))' 
-              : 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            padding: '6px 8px',
-            border: isAchieved 
-              ? '1px solid rgba(34, 197, 94, 0.6)' 
-              : '1px solid rgba(40, 167, 69, 0.4)',
-            fontSize: '0.75rem',
-            fontWeight: '500',
-            color: 'white',
-            fontStyle: 'italic',
-            lineHeight: '1.2',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            textDecoration: isAchieved ? 'line-through' : 'none',
-            opacity: isAchieved ? 0.8 : 1,
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.02)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          {/* Achievement Icon */}
-          <span style={{
-            fontSize: '0.9rem',
-            opacity: isAchieved ? 1 : 0.4,
-            transition: 'all 0.3s ease'
-          }}>
-            {isAchieved ? '✅' : '⭐'}
-          </span>
-          
-          {/* Statement Text */}
-          <span style={{ 
-            flex: 1, 
-            minWidth: 0,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical'
-          }}>
-            "I will {behaviorCommitment}"
-          </span>
-        </div>
-      )}
-
-      {/* Achievement Badge */}
-      <WholeClassAchievementBadge studentId={student.id} />
-    </div>
-  );
-};
-
 // Main Whole Class Display Component
 const WholeClassDisplay: React.FC<{
   students: Student[];
   activityName: string;
   showBehaviorStatements: boolean;
-}> = ({ students, activityName, showBehaviorStatements }) => {
+  availableHeight: number;
+}> = ({ students, activityName, showBehaviorStatements, availableHeight }) => {
   // Filter out absent students
   const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
   const presentStudents = students.filter(student => !absentStudentIds.includes(student.id));
   
-  // Determine if we should use compact mode (more than 8 students)
-  const useCompactMode = presentStudents.length > 8;
+  // Calculate card size based on available height and number of students
+  const headerHeight = 120; // Approximate height of header section
+  const gridHeight = availableHeight - headerHeight;
+  const rows = Math.ceil(Math.sqrt(presentStudents.length));
+  const cols = Math.ceil(presentStudents.length / rows);
+  const cardHeight = Math.max(120, (gridHeight - (rows - 1) * 16) / rows); // 16px gap between rows
 
   return (
     <div style={{
       background: 'rgba(255, 255, 255, 0.15)',
       backdropFilter: 'blur(10px)',
       borderRadius: '20px',
-      padding: '2rem',
+      padding: '1rem',
       border: '4px solid #28a745',
       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-      marginBottom: '2rem'
+      height: `${availableHeight}px`,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden'
     }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>👥</div>
+      <div style={{ textAlign: 'center', marginBottom: '1rem', flexShrink: 0 }}>
+        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👥</div>
         <h3 style={{
-          margin: '0 0 1rem 0',
-          fontSize: '2.5rem',
+          margin: '0 0 0.5rem 0',
+          fontSize: '1.8rem',
           fontWeight: '700',
           color: 'white',
           textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
@@ -610,8 +401,8 @@ const WholeClassDisplay: React.FC<{
           Whole Class Activity
         </h3>
         <p style={{
-          margin: '0 0 1.5rem 0',
-          fontSize: '1.3rem',
+          margin: '0 0 0.5rem 0',
+          fontSize: '1rem',
           color: 'rgba(255, 255, 255, 0.9)',
           fontWeight: '500'
         }}>
@@ -622,7 +413,7 @@ const WholeClassDisplay: React.FC<{
         {absentStudentIds.length > 0 && (
           <p style={{
             margin: '0',
-            fontSize: '1rem',
+            fontSize: '0.8rem',
             color: 'rgba(255, 255, 255, 0.7)',
             fontStyle: 'italic'
           }}>
@@ -635,26 +426,19 @@ const WholeClassDisplay: React.FC<{
       {presentStudents.length > 0 && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: useCompactMode 
-            ? 'repeat(auto-fit, minmax(140px, 1fr))' 
-            : 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: useCompactMode ? '1rem' : '1.5rem',
-          marginTop: '1rem'
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, ${cardHeight}px)`,
+          gap: '0.75rem',
+          flex: 1,
+          alignContent: 'start',
+          overflow: 'hidden'
         }}>
           {presentStudents.map((student) => (
-            useCompactMode ? (
-              <CompactWholeClassStudentCard
-                key={student.id}
-                student={student}
-                showBehaviorStatements={showBehaviorStatements}
-              />
-            ) : (
-              <WholeClassStudentCard
-                key={student.id}
-                student={student}
-                showBehaviorStatements={showBehaviorStatements}
-              />
-            )
+            <WholeClassStudentCard
+              key={student.id}
+              student={student}
+              showBehaviorStatements={showBehaviorStatements}
+            />
           ))}
         </div>
       )}
@@ -665,7 +449,11 @@ const WholeClassDisplay: React.FC<{
           textAlign: 'center',
           padding: '2rem',
           color: 'rgba(255, 255, 255, 0.7)',
-          fontSize: '1.1rem'
+          fontSize: '1.1rem',
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           No students present for this activity
         </div>
@@ -742,10 +530,12 @@ const StudentCardWithBehavior: React.FC<{
   student: Student; 
   groupColor: string;
   showBehaviorStatement?: boolean;
+  cardHeight: number;
 }> = ({ 
   student, 
   groupColor, 
-  showBehaviorStatement = true 
+  showBehaviorStatement = true,
+  cardHeight 
 }) => {
   const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
 
@@ -761,28 +551,33 @@ const StudentCardWithBehavior: React.FC<{
     <div style={{
       background: 'rgba(255, 255, 255, 0.1)',
       borderRadius: '16px',
-      padding: '1.5rem',
+      padding: '0.75rem',
       textAlign: 'center',
       border: `2px solid ${groupColor}40`,
       transition: 'transform 0.2s ease',
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
       position: 'relative',
-      minHeight: behaviorCommitment ? '180px' : '120px'
+      height: `${cardHeight}px`,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      overflow: 'hidden'
     }}>
       {/* Student Photo/Avatar */}
       <div style={{
-        width: '60px',
-        height: '60px',
+        width: '40px',
+        height: '40px',
         borderRadius: '50%',
         background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.5rem',
-        margin: '0 auto 1rem auto',
+        fontSize: '1.2rem',
+        margin: '0 auto 0.5rem auto',
         border: `3px solid ${groupColor}`,
         overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+        flexShrink: 0
       }}>
         {student.photo ? (
           <img 
@@ -798,7 +593,7 @@ const StudentCardWithBehavior: React.FC<{
           <span style={{ 
             color: 'white', 
             fontWeight: '700',
-            fontSize: '1.2rem'
+            fontSize: '1rem'
           }}>
             {student.name.charAt(0)}
           </span>
@@ -807,11 +602,12 @@ const StudentCardWithBehavior: React.FC<{
 
       {/* Student Name */}
       <div style={{
-        fontSize: '1.1rem',
+        fontSize: '0.8rem',
         fontWeight: '700',
         color: 'white',
         textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-        marginBottom: behaviorCommitment ? '1rem' : '0'
+        marginBottom: '0.5rem',
+        flexShrink: 0
       }}>
         {student.name}
       </div>
@@ -820,15 +616,19 @@ const StudentCardWithBehavior: React.FC<{
       {showBehaviorStatement && behaviorCommitment && (
         <div style={{
           background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '12px',
-          padding: '0.75rem',
+          borderRadius: '8px',
+          padding: '0.5rem',
           border: `1px solid ${groupColor}60`,
           backdropFilter: 'blur(5px)',
-          marginTop: '0.5rem',
-          animation: 'slideIn 0.3s ease-out'
+          animation: 'slideIn 0.3s ease-out',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          overflow: 'hidden'
         }}>
           <div style={{
-            fontSize: '0.7rem',
+            fontSize: '0.6rem',
             fontWeight: '600',
             color: 'rgba(255, 255, 255, 0.8)',
             marginBottom: '0.25rem',
@@ -838,12 +638,16 @@ const StudentCardWithBehavior: React.FC<{
             Today's Goal
           </div>
           <div style={{
-            fontSize: '0.85rem',
+            fontSize: '0.65rem',
             fontWeight: '600',
             color: 'white',
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
             fontStyle: 'italic',
-            lineHeight: '1.3'
+            lineHeight: '1.2',
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
           }}>
             "I will {behaviorCommitment}"
           </div>
@@ -857,116 +661,6 @@ const StudentCardWithBehavior: React.FC<{
           groupColor={groupColor}
         />
       )}
-    </div>
-  );
-};
-
-// Compact Student Card for when there are many students
-const CompactStudentCardWithBehavior: React.FC<{ 
-  student: Student; 
-  groupColor: string;
-}> = ({ student, groupColor }) => {
-  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
-
-  useEffect(() => {
-    const todaysCommitments = getTodaysBehaviorCommitments();
-    const commitment = todaysCommitments[student.id];
-    setBehaviorCommitment(commitment || '');
-  }, [student.id]);
-
-  return (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
-      padding: '1rem',
-      border: `2px solid ${groupColor}40`,
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-      position: 'relative',
-      minHeight: '100px'
-    }}>
-      {/* Header with photo and name */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: behaviorCommitment ? '8px' : '0'
-      }}>
-        {/* Student Photo */}
-        <div style={{
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: `2px solid ${groupColor}`,
-          overflow: 'hidden',
-          flexShrink: 0
-        }}>
-          {student.photo ? (
-            <img 
-              src={student.photo} 
-              alt={student.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <span style={{ 
-              color: 'white', 
-              fontWeight: '700',
-              fontSize: '1rem'
-            }}>
-              {student.name.charAt(0)}
-            </span>
-          )}
-        </div>
-
-        {/* Student Name */}
-        <div style={{
-          fontSize: '1rem',
-          fontWeight: '700',
-          color: 'white',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-          flex: 1,
-          minWidth: 0,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          {student.name}
-        </div>
-      </div>
-
-      {/* Behavior Statement */}
-      {behaviorCommitment && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          padding: '6px 8px',
-          border: `1px solid ${groupColor}40`,
-          fontSize: '0.75rem',
-          fontWeight: '500',
-          color: 'white',
-          fontStyle: 'italic',
-          lineHeight: '1.2',
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical'
-        }}>
-          "I will {behaviorCommitment}"
-        </div>
-      )}
-
-      {/* Achievement Badge */}
-      <BehaviorAchievementBadge 
-        studentId={student.id} 
-        groupColor={groupColor}
-      />
     </div>
   );
 };
@@ -1019,12 +713,17 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const { getCurrentPullOuts } = useResourceSchedule();
   const currentPullOuts = getCurrentPullOuts();
 
+  // Dynamic screen sizing - calculate available heights
+  const headerHeight = 100; // Fixed header height
+  const controlsHeight = 80; // Timer controls height
+  const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 40; // 40px for padding
+
   // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
   useEffect(() => {
     console.log('🖥️ SmartboardDisplay - Loading schedule data...');
     
     if (!currentSchedule) {
-      console.log('🔍 No currentSchedule provided, loading from localStorage...');
+      console.log('📋 No currentSchedule provided, loading from localStorage...');
       
       // Try multiple possible localStorage keys
       const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
@@ -1052,7 +751,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
                 groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
               }));
               
-              console.log('🔄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
+              console.log('📄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
                 name: a.name,
                 groupCount: a.groupAssignments?.length || 0,
                 groups: a.groupAssignments
@@ -1072,13 +771,13 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       }
     } else {
       // 🎯 CRITICAL: Also preserve groupAssignments from currentSchedule prop
-      console.log('📥 Using provided currentSchedule, preserving groups...');
+      console.log('🔥 Using provided currentSchedule, preserving groups...');
       const preservedActivities = (currentSchedule.activities || []).map((activity: any) => ({
         ...activity,
         groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
       }));
       
-      console.log('🔄 Preserved activities from props:', preservedActivities.map((a: any) => ({
+      console.log('📄 Preserved activities from props:', preservedActivities.map((a: any) => ({
         name: a.name,
         groupCount: a.groupAssignments?.length || 0
       })));
@@ -1140,7 +839,7 @@ useEffect(() => {
     }
 
     // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
-    console.log('🔄 Setting student state:', studentsToUse.length, 'students');
+    console.log('📄 Setting student state:', studentsToUse.length, 'students');
     
     setTimeout(() => {
       setRealStudents(studentsToUse);
@@ -1240,8 +939,8 @@ useEffect(() => {
     return '#f44336';
   };
 
-  // 🔍 DEBUG LOGGING (moved after hooks)
-  console.log('🔍 DIRECT Activity Property Check:', {
+  // 📋 DEBUG LOGGING (moved after hooks)
+  console.log('📋 DIRECT Activity Property Check:', {
     activityName: currentActivity?.name,
     hasIsTransition: currentActivity?.hasOwnProperty('isTransition'),
     isTransitionValue: currentActivity?.isTransition,
@@ -1290,13 +989,16 @@ useEffect(() => {
     const nextActivity = activeSchedule?.activities[currentActivityIndex + 1];
     
     return (
-      <div className="smartboard-display-container" style={{ 
+      <div style={{ 
         height: '100vh',
-        overflow: 'auto',
+        width: '100vw',
+        overflow: 'hidden',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         padding: '1rem',
         position: 'relative',
-        zIndex: 1
+        zIndex: 1,
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         <TransitionDisplay
           activity={{
@@ -1333,7 +1035,8 @@ useEffect(() => {
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        overflow: 'auto',
+        width: '100vw',
+        overflow: 'hidden',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         textAlign: 'center',
@@ -1348,53 +1051,6 @@ useEffect(() => {
     );
   }
 
-  // Student card component
-  const StudentCard: React.FC<{ student: Student; groupColor: string }> = ({ student, groupColor }) => (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: '12px',
-      padding: '1rem',
-      textAlign: 'center',
-      border: `2px solid ${groupColor}40`,
-      transition: 'transform 0.2s ease',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
-    }}>
-      <div style={{
-        width: '50px',
-        height: '50px',
-        borderRadius: '50%',
-        background: student.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}80, ${groupColor})`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '1.2rem',
-        margin: '0 auto 0.5rem auto',
-        border: `2px solid ${groupColor}`,
-        overflow: 'hidden',
-        boxShadow: '0 3px 10px rgba(0, 0, 0, 0.2)'
-      }}>
-        {student.photo ? (
-          <img src={student.photo} alt={student.name} style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }} />
-        ) : (
-          <span style={{ color: 'white', fontWeight: '700' }}>👤</span>
-        )}
-      </div>
-      <h6 style={{
-        margin: '0',
-        fontSize: '0.9rem',
-        fontWeight: '600',
-        color: 'white',
-        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-      }}>
-        {student.name}
-      </h6>
-    </div>
-  );
-
   // Staff card component
   const StaffCard: React.FC<{ staffMember: StaffMember; groupColor: string }> = ({ staffMember, groupColor }) => (
     <div style={{
@@ -1403,19 +1059,20 @@ useEffect(() => {
       gap: '1rem',
       background: `linear-gradient(135deg, ${groupColor}15, ${groupColor}25)`,
       borderRadius: '16px',
-      padding: '1.25rem',
+      padding: '1rem',
       border: `2px solid ${groupColor}40`,
-      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+      marginBottom: '1rem'
     }}>
       <div style={{
-        width: '60px',
-        height: '60px',
+        width: '50px',
+        height: '50px',
         borderRadius: '50%',
         background: staffMember.photo ? 'transparent' : `linear-gradient(135deg, ${groupColor}, ${groupColor}CC)`,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: '1.5rem',
+        fontSize: '1.3rem',
         border: `3px solid ${groupColor}`,
         overflow: 'hidden',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
@@ -1433,7 +1090,7 @@ useEffect(() => {
       <div>
         <h5 style={{
           margin: '0 0 0.25rem 0',
-          fontSize: '1.2rem',
+          fontSize: '1rem',
           fontWeight: '700',
           color: 'white',
           textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
@@ -1442,7 +1099,7 @@ useEffect(() => {
         </h5>
         <p style={{
           margin: '0',
-          fontSize: '1rem',
+          fontSize: '0.8rem',
           color: 'rgba(255, 255, 255, 0.9)',
           fontWeight: '600'
         }}>
@@ -1452,8 +1109,8 @@ useEffect(() => {
     </div>
   );
 
-  // 🎯 Enhanced Group display component with better error handling
-  const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number }> = ({ group, groupIndex }) => {
+  // 🎯 Enhanced Group display component with better error handling and dynamic sizing
+  const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number; availableHeight: number }> = ({ group, groupIndex, availableHeight }) => {
     console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
     
     // Filter out absent students from group display using UnifiedDataService
@@ -1480,26 +1137,40 @@ useEffect(() => {
     });
 
     const groupColor = group.color || '#9C27B0';
-    const useCompactMode = groupStudents.length > 6;
+    
+    // Calculate dynamic card heights based on available space and number of students
+    const groupHeaderHeight = 80;
+    const staffSectionHeight = staffMember ? 80 : 0;
+    const studentsHeaderHeight = 30;
+    const padding = 32;
+    
+    const availableStudentArea = availableHeight - groupHeaderHeight - staffSectionHeight - studentsHeaderHeight - padding;
+    const rows = Math.ceil(Math.sqrt(groupStudents.length));
+    const cardHeight = Math.max(100, (availableStudentArea - (rows - 1) * 12) / rows);
 
     return (
       <div style={{
         background: `linear-gradient(135deg, ${groupColor}20, ${groupColor}10)`,
         borderRadius: '20px',
-        padding: '2rem',
+        padding: '1rem',
         border: `4px solid ${groupColor}`,
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        marginBottom: '2rem'
+        height: `${availableHeight}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
       }}>
+        {/* Group Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '2rem'
+          marginBottom: '1rem',
+          flexShrink: 0
         }}>
           <h3 style={{
             margin: '0',
-            fontSize: '2.5rem',
+            fontSize: '1.5rem',
             fontWeight: '700',
             color: 'white',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
@@ -1512,7 +1183,7 @@ useEffect(() => {
             padding: '0.5rem 1rem',
             color: 'white',
             fontWeight: '600',
-            fontSize: '1.1rem',
+            fontSize: '0.9rem',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
           }}>
             {groupStudents.length} Student{groupStudents.length !== 1 ? 's' : ''}
@@ -1521,65 +1192,54 @@ useEffect(() => {
 
         {/* Staff Member */}
         {staffMember && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h4 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              color: 'white',
-              textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-            }}>
-              Staff Member
-            </h4>
+          <div style={{ flexShrink: 0 }}>
             <StaffCard staffMember={staffMember} groupColor={groupColor} />
           </div>
         )}
 
-        {/* Students */}
-        <div>
+        {/* Students Section */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <h4 style={{
-            margin: '0 0 1.5rem 0',
-            fontSize: '1.5rem',
+            margin: '0 0 0.75rem 0',
+            fontSize: '1.1rem',
             fontWeight: '600',
             color: 'white',
-            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+            textShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+            flexShrink: 0
           }}>
             Students
           </h4>
           {groupStudents.length === 0 ? (
             <div style={{
               textAlign: 'center',
-              padding: '2rem',
+              padding: '1rem',
               color: 'rgba(255, 255, 255, 0.7)',
-              fontSize: '1.1rem',
-              fontStyle: 'italic'
+              fontSize: '1rem',
+              fontStyle: 'italic',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
               No students assigned to this group
             </div>
           ) : (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: useCompactMode 
-                ? 'repeat(auto-fit, minmax(150px, 1fr))' 
-                : 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: useCompactMode ? '1rem' : '1.5rem',
-              marginTop: '1rem'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+              gap: '0.75rem',
+              flex: 1,
+              alignContent: 'start',
+              overflow: 'hidden'
             }}>
-              {groupStudents.map((student, studentIndex) => (
-                useCompactMode ? (
-                  <CompactStudentCardWithBehavior
-                    key={student.id}
-                    student={student}
-                    groupColor={groupColor}
-                  />
-                ) : (
-                  <StudentCardWithBehavior
-                    key={student.id}
-                    student={student}
-                    groupColor={groupColor}
-                    showBehaviorStatement={showBehaviorStatements}
-                  />
-                )
+              {groupStudents.map((student) => (
+                <StudentCardWithBehavior
+                  key={student.id}
+                  student={student}
+                  groupColor={groupColor}
+                  showBehaviorStatement={showBehaviorStatements}
+                  cardHeight={cardHeight}
+                />
               ))}
             </div>
           )}
@@ -1588,25 +1248,19 @@ useEffect(() => {
     );
   };
 
-  // Debug info for troubleshooting
-  const debugInfo = {
-    hasAssignment: !!currentActivity?.assignment,
-    assignmentType: typeof currentActivity?.assignment,
-    assignmentData: currentActivity?.assignment,
-    hasDirectGroups: !!(currentActivity?.groupAssignments?.length),
-    hasAssignmentGroups: !!(currentActivity?.assignment?.groupAssignments?.length)
-  };
-
   // Get group assignments
   const groupAssignments = currentActivity.groupAssignments || currentActivity.assignment?.groupAssignments || [];
 
   return (
     <div style={{
       height: '100vh',
-      overflow: 'auto',
+      width: '100vw',
+      overflow: 'hidden',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      position: 'relative'
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column'
     }}>
       {/* CSS Animations */}
       <style>{`
@@ -1630,6 +1284,7 @@ useEffect(() => {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
+      
       {/* Absent Students Display - Top Left Corner */}
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
@@ -1645,26 +1300,31 @@ useEffect(() => {
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
       
-      {/* Header */}
+      {/* Header - Fixed Height */}
       <div style={{
-        padding: '1rem',
+        padding: '0.75rem 1rem',
         textAlign: 'center',
         borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-        position: 'relative'
+        position: 'relative',
+        flexShrink: 0,
+        height: `${headerHeight}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}>
         {/* Behavior Statements Toggle Button */}
         <button
           onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
           style={{
             position: 'absolute',
-            top: '1rem',
+            top: '0.5rem',
             right: '1rem',
             background: 'rgba(255, 255, 255, 0.2)',
             border: 'none',
             borderRadius: '8px',
             color: 'white',
-            padding: '0.5rem 1rem',
-            fontSize: '0.9rem',
+            padding: '0.4rem 0.8rem',
+            fontSize: '0.8rem',
             cursor: 'pointer',
             fontWeight: '600',
             transition: 'all 0.2s ease',
@@ -1681,107 +1341,122 @@ useEffect(() => {
         >
           {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
         </button>
+        
         <h1 style={{
-          margin: '0 0 1rem 0',
-          fontSize: '3rem',
+          margin: '0 0 0.5rem 0',
+          fontSize: '2rem',
           fontWeight: '700',
           textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
         }}>
           {currentActivity.icon} {currentActivity.name}
         </h1>
         
-        {/* Timer */}
+        <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+          Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
+        </div>
+      </div>
+
+      {/* Timer Controls - Fixed Height */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '1rem',
+        padding: '0.75rem',
+        flexShrink: 0,
+        height: `${controlsHeight}px`,
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        {/* Timer Display */}
         <div style={{
-          fontSize: '4rem',
+          fontSize: '2.5rem',
           fontWeight: '700',
           color: getTimerColor(),
           textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-          marginBottom: '1rem'
+          minWidth: '120px',
+          textAlign: 'center'
         }}>
           {formatTime(timeRemaining)}
         </div>
 
         {/* Timer Controls */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '1rem',
-          marginBottom: '2rem'
-        }}>
-          <button
-            onClick={() => onTimerControl('previous')}
-            disabled={currentActivityIndex === 0}
-            style={{
-              padding: '1rem 1.5rem',
-              fontSize: '1.2rem',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            ⏮️ Previous
-          </button>
-          
-          <button
-            onClick={() => onTimerControl(isRunning ? 'pause' : 'play')}
-            style={{
-              padding: '1rem 2rem',
-              fontSize: '1.2rem',
-              background: isRunning ? '#ff6b6b' : '#51cf66',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            {isRunning ? '⏸️ Pause' : '▶️ Play'}
-          </button>
-          
-          <button
-            onClick={() => onTimerControl('reset')}
-            style={{
-              padding: '1rem 1.5rem',
-              fontSize: '1.2rem',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            🔄 Reset
-          </button>
-          
-          <button
-            onClick={() => onTimerControl('next')}
-            disabled={currentActivityIndex === (activeSchedule?.activities.length || 0) - 1}
-            style={{
-              padding: '1rem 1.5rem',
-              fontSize: '1.2rem',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
-            Next ⏭️
-          </button>
-        </div>
-
-        <div style={{ fontSize: '1.2rem', opacity: 0.8 }}>
-          Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
-        </div>
+        <button
+          onClick={() => onTimerControl('previous')}
+          disabled={currentActivityIndex === 0}
+          style={{
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600',
+            opacity: currentActivityIndex === 0 ? 0.5 : 1
+          }}
+        >
+          ⏮️ Prev
+        </button>
+        
+        <button
+          onClick={() => onTimerControl(isRunning ? 'pause' : 'play')}
+          style={{
+            padding: '0.5rem 1.5rem',
+            fontSize: '0.9rem',
+            background: isRunning ? '#ff6b6b' : '#51cf66',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          {isRunning ? '⏸️ Pause' : '▶️ Play'}
+        </button>
+        
+        <button
+          onClick={() => onTimerControl('reset')}
+          style={{
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          🔄 Reset
+        </button>
+        
+        <button
+          onClick={() => onTimerControl('next')}
+          disabled={currentActivityIndex === (activeSchedule?.activities.length || 0) - 1}
+          style={{
+            padding: '0.5rem 1rem',
+            fontSize: '0.9rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: '600',
+            opacity: currentActivityIndex === (activeSchedule?.activities.length || 0) - 1 ? 0.5 : 1
+          }}
+        >
+          Next ⏭️
+        </button>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '1rem' }}>
+      {/* Content - Dynamic Height */}
+      <div style={{ 
+        flex: 1, 
+        padding: '1rem', 
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
         {/* 🎯 CHOICE ITEM TIME SPECIAL DISPLAY */}
         {isChoiceItemTime ? (
           <div style={{
@@ -1792,7 +1467,11 @@ useEffect(() => {
             border: '4px solid #f59e0b',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
             textAlign: 'center',
-            marginBottom: '2rem'
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            overflow: 'hidden'
           }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
             <h3 style={{
@@ -1830,14 +1509,6 @@ useEffect(() => {
                     boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                     transition: 'all 0.3s ease'
                   }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.background = '#d97706';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.background = '#f59e0b';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
                 >
                   📋 View Choice Assignments
                 </button>
@@ -1859,22 +1530,40 @@ useEffect(() => {
           <>
             <h2 style={{
               textAlign: 'center',
-              fontSize: '2.5rem',
-              marginBottom: '3rem',
+              fontSize: '1.8rem',
+              marginBottom: '1rem',
               fontWeight: '600',
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+              flexShrink: 0
             }}>
               Group Assignments
             </h2>
-            {groupAssignments.map((group, index) => (
-              <GroupDisplay key={group.id || index} group={group} groupIndex={index} />
-            ))}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: groupAssignments.length === 1 ? '1fr' : 
+                                  groupAssignments.length === 2 ? 'repeat(2, 1fr)' :
+                                  'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1rem',
+              flex: 1,
+              alignItems: 'stretch',
+              overflow: 'hidden'
+            }}>
+              {groupAssignments.map((group, index) => (
+                <GroupDisplay 
+                  key={group.id || index} 
+                  group={group} 
+                  groupIndex={index}
+                  availableHeight={availableContentHeight / Math.ceil(groupAssignments.length / (groupAssignments.length > 2 ? 2 : 1))}
+                />
+              ))}
+            </div>
           </>
         ) : (
           <WholeClassDisplay 
             students={realStudents}
             activityName={currentActivity.name}
             showBehaviorStatements={showBehaviorStatements}
+            availableHeight={availableContentHeight}
           />
         )}
       </div>
