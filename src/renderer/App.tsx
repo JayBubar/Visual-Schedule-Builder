@@ -286,6 +286,13 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const getContainerClassName = () => {
+    if (currentView === 'display') {
+      return 'main-app-container display-mode';
+    }
+    return 'main-app-container';
+  };
+
   return (
     <ResourceScheduleProvider allStudents={students.map(student => ({
       ...student,
@@ -293,7 +300,7 @@ const App: React.FC = () => {
       grade: student.grade || '',
       resourceInfo: student.resourceInfo || undefined
     }))}>
-      <div className="main-app-container">
+      <div className={getContainerClassName()}>
         {showStartScreen && (
           <StartScreen
             onStartMyDay={handleStartMyDay}
