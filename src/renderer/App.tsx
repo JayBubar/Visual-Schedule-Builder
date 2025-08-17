@@ -1,11 +1,7 @@
-// 🚀 Visual Schedule Builder - Main Application Component
-// File: src/renderer/App.tsx - FIXED TO MATCH ACTUAL COMPONENT INTERFACES
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
-// Remove the DataMigrationManager import - use existing UnifiedDataService instead
 import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
@@ -33,31 +29,26 @@ const App: React.FC = () => {
 
   useEffect(() => {
     try {
-      // Check for legacy data that needs migration
-      const hasLegacyData = localStorage.getItem('calendarSettings') || 
+      const hasLegacyData = localStorage.getItem('calendarSettings') ||
                             localStorage.getItem('students');
-      
+
       if (hasLegacyData) {
         migrateLegacyDataQuick();
       }
-      
-      // Load initial data from unified service
+
       loadInitialData();
-      
+
     } catch (error) {
       console.error('❌ Error initializing app:', error);
     }
   }, []);
 
-  // Add this migration function
   const migrateLegacyDataQuick = () => {
     try {
-      // Migrate calendar settings (the main issue we're fixing)
       const legacyCalendarSettings = localStorage.getItem('calendarSettings');
       if (legacyCalendarSettings) {
         const settings = JSON.parse(legacyCalendarSettings);
-        
-        // Migrate behavior statements
+
         if (settings.customBehaviorCommitments) {
           const customStatements = [];
           Object.keys(settings.customBehaviorCommitments).forEach(category => {
@@ -73,8 +64,7 @@ const App: React.FC = () => {
               });
             });
           });
-          
-          // Save to unified settings
+
           const currentSettings = UnifiedDataService.getSettings();
           const updatedSettings = {
             ...currentSettings,
@@ -89,10 +79,9 @@ const App: React.FC = () => {
               }
             }
           };
-          
+
           UnifiedDataService.updateSettings(updatedSettings);
-          
-          // Backup and remove legacy data
+
           localStorage.setItem('calendarSettings_backup', legacyCalendarSettings);
           localStorage.removeItem('calendarSettings');
         }
@@ -104,15 +93,12 @@ const App: React.FC = () => {
 
   const loadInitialData = () => {
     try {
-      // ADD this privacy initialization
       DataPrivacyService.enableEducationalSharing();
-      
-      // Load from unified data service first
+
       const unifiedStudents = UnifiedDataService.getAllStudents();
       const unifiedStaff = UnifiedDataService.getAllStaff();
       const unifiedActivities = UnifiedDataService.getAllActivities();
-      
-      // Convert unified data to legacy format for components that still expect it
+
       const legacyStudents: Student[] = unifiedStudents.map(student => ({
         id: student.id,
         name: student.name,
@@ -149,7 +135,7 @@ const App: React.FC = () => {
       const legacyActivities: ActivityLibraryItem[] = unifiedActivities.map(activity => ({
         id: activity.id,
         name: activity.name,
-        category: activity.category as any, // Cast to match ScheduleCategory
+        category: activity.category as any,
         description: activity.description || '',
         duration: activity.duration || 30,
         defaultDuration: activity.duration || 30,
@@ -158,21 +144,20 @@ const App: React.FC = () => {
         adaptations: activity.adaptations || [],
         isCustom: activity.isCustom,
         dateCreated: activity.dateCreated,
-        emoji: '📚' // Default emoji for activities
+        emoji: '📚'
       }));
-      
+
       setStudents(legacyStudents);
       setStaff(legacyStaff);
       setActivities(legacyActivities);
-      
+
     } catch (error) {
       console.error('Error loading unified data, falling back to legacy storage:', error);
-      
-      // Fallback to legacy storage if unified data fails
+
       const savedStudents = loadFromStorage<Student[]>('vsb_students', []);
       const savedStaff = loadFromStorage<Staff[]>('vsb_staff', []);
       const savedActivities = loadFromStorage<ActivityLibraryItem[]>('vsb_activities', []);
-      
+
       setStudents(savedStudents);
       setStaff(savedStaff);
       setActivities(savedActivities);
@@ -202,15 +187,14 @@ const App: React.FC = () => {
     saveToStorage('vsb_activities', updatedActivities);
   };
 
-  // StartScreen handlers
   const handleStartMyDay = () => {
     setShowStartScreen(false);
-    setCurrentView('calendar'); // Goes to Daily Check-In
+    setCurrentView('calendar');
   };
 
   const handleManageClassroom = () => {
     setShowStartScreen(false);
-    setCurrentView('builder'); // Always go to Schedule Builder (main management interface)
+    setCurrentView('builder');
   };
 
   const handleBackToStart = () => {
@@ -219,26 +203,22 @@ const App: React.FC = () => {
 
   const handleSmartGroupImplementation = (recommendation: any) => {
     // Handle the implementation of smart group recommendations
-    // This could involve updating student assignments, schedules, etc.
-    // The recommendation contains groupName, studentIds, recommendedActivity, etc.
   };
 
-  // Convert Staff[] to StaffMember[] for components that expect StaffMember
   const staffMembers = useMemo(() => {
     return staff.map(member => ({
       ...member,
-      email: member.email || '', // Ensure required email field
-      phone: member.phone || '', // Ensure required phone field
-      specialties: member.specialties || [], // Ensure required specialties field
-      photo: member.photo || null, // Ensure required photo field (can be null)
-      isActive: member.isActive ?? true, // Ensure required isActive field
-      startDate: member.startDate || new Date().toISOString(), // Ensure required startDate field
-      isResourceTeacher: member.isResourceTeacher ?? false, // Ensure required field
-      isRelatedArtsTeacher: member.isRelatedArtsTeacher ?? false // Ensure required field
+      email: member.email || '',
+      phone: member.phone || '',
+      specialties: member.specialties || [],
+      photo: member.photo || null,
+      isActive: member.isActive ?? true,
+      startDate: member.startDate || new Date().toISOString(),
+      isResourceTeacher: member.isResourceTeacher ?? false,
+      isRelatedArtsTeacher: member.isRelatedArtsTeacher ?? false
     }));
   }, [staff]);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey) {
@@ -291,20 +271,16 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Handle "Use Built Schedule" event from Schedule Builder
   useEffect(() => {
     const handleUseBuiltSchedule = (event: CustomEvent) => {
       const { schedule } = event.detail;
-      
-      // Set the temporary schedule as selected
+
       setSelectedSchedule(schedule);
-      
-      // Switch to Display mode immediately
       setCurrentView('display');
     };
 
     window.addEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
-    
+
     return () => {
       window.removeEventListener('useBuiltSchedule', handleUseBuiltSchedule as EventListener);
     };
@@ -313,121 +289,107 @@ const App: React.FC = () => {
   return (
     <ResourceScheduleProvider allStudents={students.map(student => ({
       ...student,
-      dateCreated: new Date().toISOString(), // Add required dateCreated field
+      dateCreated: new Date().toISOString(),
       grade: student.grade || '',
       resourceInfo: student.resourceInfo || undefined
     }))}>
       <div className="main-app-container">
-        {/* Start Screen */}
         {showStartScreen && (
-          <StartScreen 
+          <StartScreen
             onStartMyDay={handleStartMyDay}
             onManageClassroom={handleManageClassroom}
           />
         )}
 
-        {/* App Content - Only show when not on start screen */}
         {!showStartScreen && (
           <>
-            {/* Navigation */}
-            <Navigation 
-              currentView={currentView} 
+            <Navigation
+              currentView={currentView}
               onViewChange={handleViewChange}
               selectedSchedule={selectedSchedule}
               onBackToStart={handleBackToStart}
               isInDailyCheckIn={currentView === 'calendar'}
             />
 
-            {/* Main Content */}
+            {/* This new div with className="main-content" now handles the flex layout */}
             <div className="main-content">
-            {/* Schedule Builder */}
-            {currentView === 'builder' && (
-              <ScheduleBuilder 
-                isActive={true}
-              />
-            )}
+              {currentView === 'builder' && (
+                <ScheduleBuilder
+                  isActive={true}
+                />
+              )}
 
-            {/* Smartboard Display */}
-            {currentView === 'display' && (
-              <SmartboardDisplay
-                isActive={true}
-                students={students}
-                staff={staffMembers}
-                currentSchedule={selectedSchedule ? {
-                  activities: selectedSchedule.activities,
-                  startTime: selectedSchedule.startTime,
-                  name: selectedSchedule.name
-                } : undefined}
-              />
-            )}
+              {currentView === 'display' && (
+                <SmartboardDisplay
+                  isActive={true}
+                  students={students}
+                  staff={staffMembers}
+                  currentSchedule={selectedSchedule ? {
+                    activities: selectedSchedule.activities,
+                    startTime: selectedSchedule.startTime,
+                    name: selectedSchedule.name
+                  } : undefined}
+                />
+              )}
 
-            {/* Student Management */}
-            {currentView === 'students' && (
-              <StudentManagement 
-                isActive={true}
-              />
-            )}
+              {currentView === 'students' && (
+                <StudentManagement
+                  isActive={true}
+                />
+              )}
 
-            {/* Staff Management */}
-            {currentView === 'staff' && (
-              <StaffManagement 
-                isActive={true}
-              />
-            )}
+              {currentView === 'staff' && (
+                <StaffManagement
+                  isActive={true}
+                />
+              )}
 
-            {/* IEP Goals Management */}
-            {currentView === 'iep-goals' && (
-              <GoalManager />
-            )}
+              {currentView === 'iep-goals' && (
+                <GoalManager />
+              )}
 
-            {/* Daily Check-In Calendar */}
-            {currentView === 'calendar' && (
-              <DailyCheckIn 
-                isActive={true}
-                students={students}
-                staff={staffMembers}
-                selectedSchedule={selectedSchedule}
-                onSwitchToScheduleBuilder={() => handleViewChange('builder')}
-                onSwitchToDisplay={() => handleViewChange('display')}
-              />
-            )}
+              {currentView === 'calendar' && (
+                <DailyCheckIn
+                  isActive={true}
+                  students={students}
+                  staff={staffMembers}
+                  selectedSchedule={selectedSchedule}
+                  onSwitchToScheduleBuilder={() => handleViewChange('builder')}
+                  onSwitchToDisplay={() => handleViewChange('display')}
+                />
+              )}
 
-            {/* Activity Library */}
-            {currentView === 'library' && (
-              <ActivityLibrary 
-                isActive={true}
-              />
-            )}
+              {currentView === 'library' && (
+                <ActivityLibrary
+                  isActive={true}
+                />
+              )}
 
+              {currentView === 'reports' && (
+                <Reports
+                  isActive={true}
+                  students={students}
+                  staff={staffMembers}
+                  activities={activities}
+                />
+              )}
 
-            {/* Reports */}
-            {currentView === 'reports' && (
-              <Reports 
-                isActive={true}
-                students={students}
-                staff={staffMembers}
-                activities={activities}
-              />
-            )}
+              {currentView === 'settings' && (
+                <Settings
+                  isActive={true}
+                />
+              )}
 
-            {/* Settings */}
-            {currentView === 'settings' && (
-              <Settings 
-                isActive={true}
-              />
-            )}
-
-            {/* Smart Groups */}
-            {currentView === 'smart-groups' && (
-              <SmartGroups 
-                isActive={true} 
-                onRecommendationImplemented={handleSmartGroupImplementation}
-              />
-            )}
+              {currentView === 'smart-groups' && (
+                <SmartGroups
+                  isActive={true}
+                  onRecommendationImplemented={handleSmartGroupImplementation}
+                />
+              )}
             </div>
           </>
         )}
-        </div>
+      </div>
     </ResourceScheduleProvider>
   );
 };
