@@ -308,7 +308,8 @@ const App: React.FC = () => {
           />
         )}
 
-        {!showStartScreen && (
+        {/* Only show navigation and main content if not on the start screen or display mode */}
+        {!showStartScreen && currentView !== 'display' && (
           <>
             <Navigation
               currentView={currentView}
@@ -318,24 +319,10 @@ const App: React.FC = () => {
               isInDailyCheckIn={currentView === 'calendar'}
             />
 
-            {/* This new div with className="main-content" now handles the flex layout */}
             <div className="main-content">
               {currentView === 'builder' && (
                 <ScheduleBuilder
                   isActive={true}
-                />
-              )}
-
-              {currentView === 'display' && (
-                <SmartboardDisplay
-                  isActive={true}
-                  students={students}
-                  staff={staffMembers}
-                  currentSchedule={selectedSchedule ? {
-                    activities: selectedSchedule.activities,
-                    startTime: selectedSchedule.startTime,
-                    name: selectedSchedule.name
-                  } : undefined}
                 />
               )}
 
@@ -395,6 +382,22 @@ const App: React.FC = () => {
               )}
             </div>
           </>
+        )}
+
+        {/* Only render SmartboardDisplay when the view is 'display' */}
+        {!showStartScreen && currentView === 'display' && (
+          <SmartboardDisplay
+            isActive={true}
+            students={students}
+            staff={staffMembers}
+            currentSchedule={selectedSchedule ? {
+              activities: selectedSchedule.activities,
+              startTime: selectedSchedule.startTime,
+              name: selectedSchedule.name
+            } : undefined}
+            onNavigateHome={() => handleViewChange('builder')} // Navigate back to the builder
+            onNavigateToBuilder={() => handleViewChange('builder')} // Navigate to the builder view
+          />
         )}
       </div>
     </ResourceScheduleProvider>
