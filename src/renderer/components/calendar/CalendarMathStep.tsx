@@ -28,6 +28,13 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
     };
   };
 
+  // Convert number to ordinal (1st, 2nd, 3rd, etc.)
+  const getOrdinalNumber = (num: number): string => {
+    const suffix = ['th', 'st', 'nd', 'rd'];
+    const value = num % 100;
+    return num + (suffix[(value - 20) % 10] || suffix[value] || suffix[0]);
+  };
+
   const getYesterday = () => {
     const yesterday = new Date(currentDate);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -138,8 +145,11 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
         }}>
           <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🗓️</div>
           <h4 style={{ fontSize: '1.2rem', margin: '0 0 0.5rem 0' }}>Month Number</h4>
-          <p style={{ fontSize: '2rem', margin: 0, fontWeight: 'bold' }}>
-            {today.monthNumber}
+          <p style={{ fontSize: '2rem', margin: '0 0 0.5rem 0', fontWeight: 'bold' }}>
+            {getOrdinalNumber(today.monthNumber)}
+          </p>
+          <p style={{ fontSize: '1rem', margin: 0, opacity: 0.8 }}>
+            {today.month} is the {getOrdinalNumber(today.monthNumber)} month
           </p>
         </div>
 
@@ -282,7 +292,7 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
             {yesterday.weekday}
           </p>
           <p style={{ fontSize: '1rem', margin: 0, opacity: 0.6 }}>
-            {yesterday.month} {yesterday.day}
+            {yesterday.month} {getOrdinalNumber(yesterday.day)}
           </p>
           <div style={{ 
             marginTop: '1rem', 
@@ -312,7 +322,7 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
             {today.weekday}
           </p>
           <p style={{ fontSize: '1rem', margin: 0 }}>
-            {today.month} {today.day}
+            {today.month} {getOrdinalNumber(today.day)}
           </p>
           <div style={{ 
             marginTop: '1rem', 
@@ -343,7 +353,7 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
             {tomorrow.weekday}
           </p>
           <p style={{ fontSize: '1rem', margin: 0, opacity: 0.6 }}>
-            {tomorrow.month} {tomorrow.day}
+            {tomorrow.month} {getOrdinalNumber(tomorrow.day)}
           </p>
           <div style={{ 
             marginTop: '1rem', 
@@ -368,7 +378,7 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
           🗣️ Vocabulary Words
         </h4>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-          {['yesterday', 'today', 'tomorrow', 'before', 'after', 'now'].map(word => (
+          {['yesterday', 'today', 'tomorrow', 'before', 'after', 'now', '1st', '2nd', '3rd', 'ordinal'].map(word => (
             <span 
               key={word}
               style={{
