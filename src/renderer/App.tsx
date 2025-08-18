@@ -364,6 +364,7 @@ const App: React.FC = () => {
                     selectedSchedule={selectedSchedule}
                     onSwitchToScheduleBuilder={() => handleViewChange('builder')}
                     onSwitchToDisplay={() => handleViewChange('display')}
+                    isFullScreen={currentView === 'calendar'}
                   />
                 )}
 
