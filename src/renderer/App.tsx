@@ -308,96 +308,95 @@ const App: React.FC = () => {
           />
         )}
 
-        {/* Only show navigation and main content if not on the start screen or display mode */}
-        {!showStartScreen && currentView !== 'display' && (
-          <>
-            <Navigation
-              currentView={currentView}
-              onViewChange={handleViewChange}
-              selectedSchedule={selectedSchedule}
-              onBackToStart={handleBackToStart}
-              isInDailyCheckIn={currentView === 'calendar'}
+        {/* This conditional logic is key. Render the navigation and content or the display mode */}
+        {!showStartScreen && (
+          currentView === 'display' ? (
+            <SmartboardDisplay
+              isActive={true}
+              students={students}
+              staff={staffMembers}
+              currentSchedule={selectedSchedule ? {
+                activities: selectedSchedule.activities,
+                startTime: selectedSchedule.startTime,
+                name: selectedSchedule.name
+              } : undefined}
+              onNavigateHome={handleBackToStart}
+              onNavigateToBuilder={() => handleViewChange('builder')}
             />
+          ) : (
+            <>
+              <Navigation
+                currentView={currentView}
+                onViewChange={handleViewChange}
+                selectedSchedule={selectedSchedule}
+                onBackToStart={handleBackToStart}
+                isInDailyCheckIn={currentView === 'calendar'}
+              />
 
-            <div className="main-content">
-              {currentView === 'builder' && (
-                <ScheduleBuilder
-                  isActive={true}
-                />
-              )}
+              <div className="main-content">
+                {currentView === 'builder' && (
+                  <ScheduleBuilder
+                    isActive={true}
+                  />
+                )}
 
-              {currentView === 'students' && (
-                <StudentManagement
-                  isActive={true}
-                />
-              )}
+                {currentView === 'students' && (
+                  <StudentManagement
+                    isActive={true}
+                  />
+                )}
 
-              {currentView === 'staff' && (
-                <StaffManagement
-                  isActive={true}
-                />
-              )}
+                {currentView === 'staff' && (
+                  <StaffManagement
+                    isActive={true}
+                  />
+                )}
 
-              {currentView === 'iep-goals' && (
-                <GoalManager />
-              )}
+                {currentView === 'iep-goals' && (
+                  <GoalManager />
+                )}
 
-              {currentView === 'calendar' && (
-                <DailyCheckIn
-                  isActive={true}
-                  students={students}
-                  staff={staffMembers}
-                  selectedSchedule={selectedSchedule}
-                  onSwitchToScheduleBuilder={() => handleViewChange('builder')}
-                  onSwitchToDisplay={() => handleViewChange('display')}
-                />
-              )}
+                {currentView === 'calendar' && (
+                  <DailyCheckIn
+                    isActive={true}
+                    students={students}
+                    staff={staffMembers}
+                    selectedSchedule={selectedSchedule}
+                    onSwitchToScheduleBuilder={() => handleViewChange('builder')}
+                    onSwitchToDisplay={() => handleViewChange('display')}
+                  />
+                )}
 
-              {currentView === 'library' && (
-                <ActivityLibrary
-                  isActive={true}
-                />
-              )}
+                {currentView === 'library' && (
+                  <ActivityLibrary
+                    isActive={true}
+                  />
+                )}
 
-              {currentView === 'reports' && (
-                <Reports
-                  isActive={true}
-                  students={students}
-                  staff={staffMembers}
-                  activities={activities}
-                />
-              )}
+                {currentView === 'reports' && (
+                  <Reports
+                    isActive={true}
+                    students={students}
+                    staff={staffMembers}
+                    activities={activities}
+                  />
+                )}
 
-              {currentView === 'settings' && (
-                <Settings
-                  isActive={true}
-                />
-              )}
+                {currentView === 'settings' && (
+                  <Settings
+                    isActive={true}
+                  />
+                )}
 
-              {currentView === 'smart-groups' && (
-                <SmartGroups
-                  isActive={true}
-                  onRecommendationImplemented={handleSmartGroupImplementation}
-                />
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Only render SmartboardDisplay when the view is 'display' */}
-        {!showStartScreen && currentView === 'display' && (
-          <SmartboardDisplay
-            isActive={true}
-            students={students}
-            staff={staffMembers}
-            currentSchedule={selectedSchedule ? {
-              activities: selectedSchedule.activities,
-              startTime: selectedSchedule.startTime,
-              name: selectedSchedule.name
-            } : undefined}
-            onNavigateHome={() => handleViewChange('builder')} // Navigate back to the builder
-            onNavigateToBuilder={() => handleViewChange('builder')} // Navigate to the builder view
-          />
+                {currentView === 'smart-groups' && (
+                  <SmartGroups
+                    isActive={true}
+                    onRecommendationImplemented={handleSmartGroupImplementation}
+                  />
+                )}
+              </div>
+            </>
+          )
         )}
       </div>
     </ResourceScheduleProvider>
