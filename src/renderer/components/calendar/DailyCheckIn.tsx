@@ -22,6 +22,7 @@ import CalendarWidget from './CalendarWidget';
 import CalendarSettingsComponent from './CalendarSettings';
 import BehaviorCommitments from './BehaviorCommitments';
 import IndependentChoices from './IndependentChoices';
+import CalendarMathStep from './CalendarMathStep';
 
 interface DailyCheckInProps {
   isActive: boolean;
@@ -511,96 +512,14 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 4: Calendar Math Talk - ENHANCED CALENDAR TALK */}
+        {/* Step 4: Calendar Math Talk - ENHANCED CALENDAR MATH */}
         {currentStep === 4 && (
-          <div style={{ 
-            padding: '2rem', 
-            minHeight: '600px',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                📅 Calendar Math Time
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '0'
-              }}>
-                Let's explore today's date: Month → Week → Day!
-              </p>
-            </div>
-
-            {/* PLACEHOLDER: This will be enhanced in Step 2 */}
-            <div style={{
-              background: 'rgba(255,255,255,0.15)',
-              borderRadius: '20px',
-              padding: '2rem',
-              backdropFilter: 'blur(20px)',
-              border: '2px solid rgba(255,255,255,0.2)',
-              textAlign: 'center',
-              flex: 1
-            }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
-              <h3 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Calendar Learning Coming Soon!</h3>
-              <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
-                Month → Week → Day progression with vocabulary building
-              </p>
-            </div>
-
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1rem',
-              marginTop: '2rem'
-            }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ← Back to Behavior Expectations
-              </button>
-              
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 3rem',
-                  fontSize: '1.1rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Continue to Weather & Clothing →
-              </button>
-            </div>
-          </div>
+          <CalendarMathStep
+            currentDate={currentDate}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
         )}
-
         {/* Step 5: Weather & Clothing Discussion - ENHANCED WEATHER */}
         {currentStep === 5 && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
