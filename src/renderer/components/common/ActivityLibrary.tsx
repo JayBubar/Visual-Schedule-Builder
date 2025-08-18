@@ -1,6 +1,4 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
-import { Activity, ActivityLibraryItem } from '../../types';
-import { defaultTransitionActivities, addTransitionsToLibrary } from '../../data/defaultTransitionActivities';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
 
 // Utility function to generate unique IDs
@@ -17,97 +15,160 @@ interface ActivityLibraryProps {
   isActive: boolean;
 }
 
-// Extended Activity interface for library display
-interface LibraryActivity extends Omit<Activity, 'duration'> {
-  description: string;
+// Simplified content structure
+interface LibraryContent {
+  id: string;
+  name: string;
+  icon: string;
+  category: 'academic' | 'break' | 'other';
+  contentType: 'activity' | 'video';
   defaultDuration: number;
+  description: string;
   tags: string[];
-  choiceEligible?: boolean;
-  isSystemActivity?: boolean;
-}
-
-interface CustomActivity extends LibraryActivity {
+  isDeletable: boolean;
+  isCustom: boolean;
+  
+  // Video-specific data
+  videoData?: {
+    videoUrl: string;
+    notes?: string;
+  };
+  
+  // Activity-specific data
+  materials?: string[];
+  instructions?: string;
+  
+  // Metadata
   createdAt: string;
   updatedAt?: string;
-  usageCount?: number;
-  ageGroup?: 'elementary' | 'middle' | 'high' | 'adult' | 'all';
-  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
-// Activity creation/edit modal component
-const ActivityModal: React.FC<{
-  activity?: CustomActivity;
-  onSave: (activity: CustomActivity) => void;
+// Content creation/edit modal component
+const ContentModal: React.FC<{
+  content?: LibraryContent;
+  onSave: (content: LibraryContent) => void;
   onCancel: () => void;
   isOpen: boolean;
-}> = ({ activity, onSave, onCancel, isOpen }) => {
-  const [formData, setFormData] = useState({
+}> = ({ content, onSave, onCancel, isOpen }) => {
+  const [formData, setFormData] = useState<{
+    name: string;
+    icon: string;
+    category: 'academic' | 'break' | 'other';
+    contentType: 'activity' | 'video';
+    defaultDuration: number;
+    description: string;
+    tags: string[];
+    videoUrl: string;
+    notes: string;
+    materials: string[];
+    instructions: string;
+  }>({
     name: '',
     icon: '📝',
-    category: 'academic' as const,
+    category: 'academic',
+    contentType: 'activity',
     defaultDuration: 30,
     description: '',
-    tags: [] as string[],
+    tags: [],
+    videoUrl: '',
+    notes: '',
+    materials: [],
+    instructions: '',
   });
   const [newTag, setNewTag] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [customIcon, setCustomIcon] = useState<string>('');
 
-  // Common emojis for education
-  const commonEmojis = [
-    '📚', '✏️', '🔢', '🎨', '🎵', '⚽', '🧪', '🗺️', '💻', '🎭',
-    '🍎', '🌅', '🤝', '🧘', '🔬', '📖', '✋', '🗣️', '💭', '🎯',
-    '🏃', '🤲', '🍽️', '🚻', '🤫', '👷', '💃', '🏥', '📝', '🎉',
-    // 🎯 ADD TRANSITION EMOJIS
-    '🔄', '🧠', '🧹', '💃', '🔵', '⭐', '✨', '🌟', '⚡', '🎪'
-  ];
+  // Available icons organized by purpose
+  const iconLibrary = {
+    academic: ['📚', '✏️', '🔢', '🧪', '🗺️', '💻', '📖', '📝', '🎓', '🔬'],
+    break: ['🍽️', '🍎', '🚻', '😴', '🔄', '⏰', '🛡️', '🚨', '⚠️', '🔔'],
+    other: ['🗣️', '✋', '💭', '🎯', '🎨', '🎵', '⚽', '🤝', '🧘', '🎮'],
+    general: ['📋', '⭐', '🎉', '💡', '🔗', '📹', '🎬', '📺', '🌟', '✨']
+  };
+
+  // Common tags for different content types
+  const tagSuggestions = {
+    academic: ['math', 'reading', 'science', 'social-studies', 'morning-meeting'],
+    break: ['nutrition', 'rest', 'hygiene', 'safety', 'routine'],
+    other: ['therapy', 'support', 'choice', 'transition', 'resource'],
+    video: ['seasonal', 'weather', 'educational', 'calming', 'motivational'],
+    activity: ['hands-on', 'group', 'individual', 'discussion', 'practice']
+  };
 
   useEffect(() => {
-    if (activity) {
+    if (content) {
       setFormData({
-        name: activity.name,
-        icon: activity.icon,
-        category: activity.category as any,
-        defaultDuration: activity.defaultDuration,
-        description: activity.description,
-        tags: [...activity.tags],
+        name: content.name,
+        icon: content.icon,
+        category: content.category,
+        contentType: content.contentType,
+        defaultDuration: content.defaultDuration,
+        description: content.description,
+        tags: [...content.tags],
+        videoUrl: content.videoData?.videoUrl || '',
+        notes: content.videoData?.notes || '',
+        materials: content.materials || [],
+        instructions: content.instructions || '',
       });
     } else {
       setFormData({
         name: '',
         icon: '📝',
         category: 'academic',
+        contentType: 'activity',
         defaultDuration: 30,
         description: '',
         tags: [],
+        videoUrl: '',
+        notes: '',
+        materials: [],
+        instructions: '',
       });
     }
-  }, [activity, isOpen]);
+  }, [content, isOpen]);
 
   const handleSave = () => {
     if (!formData.name.trim()) return;
+    if (formData.contentType === 'video' && !formData.videoUrl.trim()) return;
 
-    const activityData: CustomActivity = {
-      id: activity?.id || generateUniqueId('custom'),
+    const contentData: LibraryContent = {
+      id: content?.id || generateUniqueId('content'),
       name: formData.name.trim(),
-      icon: customIcon || formData.icon,
+      icon: formData.icon,
       category: formData.category,
+      contentType: formData.contentType,
       defaultDuration: formData.defaultDuration,
       description: formData.description.trim(),
       tags: formData.tags,
+      isDeletable: true, // Custom content is always deletable
       isCustom: true,
-      createdAt: activity?.createdAt || new Date().toISOString(),
+      createdAt: content?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      
+      // Video-specific data
+      ...(formData.contentType === 'video' && {
+        videoData: {
+          videoUrl: formData.videoUrl.trim(),
+          notes: formData.notes.trim() || undefined,
+        }
+      }),
+      
+      // Activity-specific data  
+      ...(formData.contentType === 'activity' && {
+        materials: formData.materials.filter(m => m.trim()),
+        instructions: formData.instructions.trim() || undefined,
+      })
     };
 
-    onSave(activityData);
+    onSave(contentData);
   };
 
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+  const addTag = (tag?: string) => {
+    const tagToAdd = tag || newTag.trim();
+    if (tagToAdd && !formData.tags.includes(tagToAdd)) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
+        tags: [...prev.tags, tagToAdd]
       }));
       setNewTag('');
     }
@@ -120,97 +181,163 @@ const ActivityModal: React.FC<{
     }));
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setCustomIcon(result);
-        setFormData(prev => ({ ...prev, icon: result }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const addMaterial = () => {
+    setFormData(prev => ({
+      ...prev,
+      materials: [...prev.materials, '']
+    }));
+  };
+
+  const updateMaterial = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.map((m, i) => i === index ? value : m)
+    }));
+  };
+
+  const removeMaterial = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: prev.materials.filter((_, i) => i !== index)
+    }));
   };
 
   if (!isOpen) return null;
 
+  const availableTags = [
+    ...tagSuggestions[formData.category],
+    ...tagSuggestions[formData.contentType]
+  ];
+
   return (
     <div className="modal-overlay">
-      <div className="modal-content activity-modal">
+      <div className="modal-content content-modal">
         <div className="modal-header">
-          <h3>{activity ? 'Edit Activity' : 'Create Custom Activity'}</h3>
+          <h3>{content ? 'Edit Content' : `Create ${formData.contentType === 'video' ? 'Video' : 'Activity'}`}</h3>
           <button className="close-button" onClick={onCancel}>×</button>
         </div>
 
         <div className="modal-body">
-          {/* Activity Name */}
+          {/* Content Type Selection */}
           <div className="form-group">
-            <label>Activity Name *</label>
+            <label>Content Type *</label>
+            <div className="content-type-selector">
+              <label className={`content-type-option ${formData.contentType === 'activity' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="contentType"
+                  value="activity"
+                  checked={formData.contentType === 'activity'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
+                />
+                <div className="content-type-card">
+                  <div className="content-type-icon">📚</div>
+                  <div className="content-type-label">Activity</div>
+                  <div className="content-type-desc">Classroom activity or lesson</div>
+                </div>
+              </label>
+              <label className={`content-type-option ${formData.contentType === 'video' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="contentType"
+                  value="video"
+                  checked={formData.contentType === 'video'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
+                />
+                <div className="content-type-card">
+                  <div className="content-type-icon">🎬</div>
+                  <div className="content-type-label">Video</div>
+                  <div className="content-type-desc">Educational video content</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div className="form-group">
+            <label>{formData.contentType === 'video' ? 'Video Title' : 'Activity Name'} *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="e.g., Morning Reading Circle"
+              placeholder={formData.contentType === 'video' ? "e.g., Weather Song for Kids" : "e.g., Morning Reading Circle"}
               required
             />
           </div>
 
-          {/* Icon Selection */}
-          <div className="form-group">
-            <label>Icon</label>
-            <div className="icon-selection">
-              <div className="current-icon">
-                {customIcon ? (
-                  <img src={customIcon} alt="Custom icon" className="custom-icon-preview" />
-                ) : (
+          {/* Video URL (for videos only) */}
+          {formData.contentType === 'video' && (
+            <div className="form-group">
+              <label>Video URL *</label>
+              <input
+                type="url"
+                value={formData.videoUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                placeholder="https://www.youtube.com/watch?v=..."
+                required
+              />
+              <small className="form-help">YouTube, Vimeo, or other video platform links</small>
+            </div>
+          )}
+
+          {/* Icon and Category Row */}
+          <div className="form-row">
+            <div className="form-group">
+              <label>Icon</label>
+              <div className="icon-selection">
+                <div className="current-icon">
                   <span className="emoji-preview">{formData.icon}</span>
-                )}
-              </div>
-              
-              <div className="icon-buttons">
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="icon-button"
                 >
-                  😊 Choose Emoji
+                  Choose Icon
                 </button>
-                
-                <label className="icon-button file-upload-button">
-                  📁 Upload Image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+                {showEmojiPicker && (
+                  <div className="emoji-picker">
+                    <div className="emoji-category">
+                      <h4>For {formData.category}</h4>
+                      <div className="emoji-grid">
+                        {iconLibrary[formData.category].map(emoji => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className="emoji-option"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, icon: emoji }));
+                              setShowEmojiPicker(false);
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="emoji-category">
+                      <h4>General</h4>
+                      <div className="emoji-grid">
+                        {iconLibrary.general.map(emoji => (
+                          <button
+                            key={emoji}
+                            type="button"
+                            className="emoji-option"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, icon: emoji }));
+                              setShowEmojiPicker(false);
+                            }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {showEmojiPicker && (
-                <div className="emoji-picker">
-                  {commonEmojis.map(emoji => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      className="emoji-option"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, icon: emoji }));
-                        setCustomIcon('');
-                        setShowEmojiPicker(false);
-                      }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          </div>
 
-          {/* Category and Duration */}
-          <div className="form-row">
             <div className="form-group">
               <label>Category</label>
               <select
@@ -218,17 +345,13 @@ const ActivityModal: React.FC<{
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
               >
                 <option value="academic">Academic</option>
-                <option value="creative">Creative</option>
-                <option value="movement">Movement</option>
                 <option value="break">Break</option>
-                <option value="social">Social</option>
-                <option value="resource">Resource</option>
-                <option value="transition">Transition</option>
+                <option value="other">Other</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label>Default Duration (minutes)</label>
+              <label>Duration (minutes)</label>
               <input
                 type="number"
                 value={formData.defaultDuration}
@@ -245,40 +368,118 @@ const ActivityModal: React.FC<{
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Brief description of the activity..."
+              placeholder={formData.contentType === 'video' ? 
+                "Brief description of the video content..." : 
+                "Brief description of the activity..."}
               rows={3}
             />
           </div>
 
-          {/* Tags */}
-          <div className="form-group">
-            <label>Tags</label>
-            <div className="tags-input">
-              <div className="tag-list">
-                {formData.tags.map(tag => (
-                  <span key={tag} className="tag-chip">
-                    #{tag}
+          {/* Video Notes (for videos only) */}
+          {formData.contentType === 'video' && (
+            <div className="form-group">
+              <label>Teacher Notes</label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Optional notes about when/how to use this video..."
+                rows={2}
+              />
+            </div>
+          )}
+
+          {/* Materials (for activities only) */}
+          {formData.contentType === 'activity' && (
+            <div className="form-group">
+              <label>Materials</label>
+              <div className="materials-list">
+                {formData.materials.map((material, index) => (
+                  <div key={index} className="material-input">
+                    <input
+                      type="text"
+                      value={material}
+                      onChange={(e) => updateMaterial(index, e.target.value)}
+                      placeholder="e.g., pencils, worksheets, timer"
+                    />
                     <button
                       type="button"
-                      onClick={() => removeTag(tag)}
-                      className="tag-remove"
+                      onClick={() => removeMaterial(index)}
+                      className="remove-material"
                     >
                       ×
                     </button>
-                  </span>
+                  </div>
                 ))}
-              </div>
-              <div className="add-tag-input">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  placeholder="Add tag..."
-                />
-                <button type="button" onClick={addTag} disabled={!newTag.trim()}>
-                  Add
+                <button type="button" onClick={addMaterial} className="add-material">
+                  + Add Material
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Instructions (for activities only) */}
+          {formData.contentType === 'activity' && (
+            <div className="form-group">
+              <label>Instructions</label>
+              <textarea
+                value={formData.instructions}
+                onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
+                placeholder="Step-by-step instructions for the activity..."
+                rows={4}
+              />
+            </div>
+          )}
+
+          {/* Tags */}
+          <div className="form-group">
+            <label>Tags</label>
+            <div className="tags-section">
+              {availableTags.length > 0 && (
+                <div className="suggested-tags">
+                  <small>Suggested tags:</small>
+                  <div className="tag-suggestions">
+                    {availableTags.map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => addTag(tag)}
+                        className={`tag-suggestion ${formData.tags.includes(tag) ? 'added' : ''}`}
+                        disabled={formData.tags.includes(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="tags-input">
+                <div className="tag-list">
+                  {formData.tags.map(tag => (
+                    <span key={tag} className="tag-chip">
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => removeTag(tag)}
+                        className="tag-remove"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="add-tag-input">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    placeholder="Add custom tag..."
+                  />
+                  <button type="button" onClick={() => addTag()} disabled={!newTag.trim()}>
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -289,9 +490,9 @@ const ActivityModal: React.FC<{
           <button 
             className="save-btn" 
             onClick={handleSave}
-            disabled={!formData.name.trim()}
+            disabled={!formData.name.trim() || (formData.contentType === 'video' && !formData.videoUrl.trim())}
           >
-            {activity ? 'Save Changes' : 'Create Activity'}
+            {content ? 'Save Changes' : `Create ${formData.contentType === 'video' ? 'Video' : 'Activity'}`}
           </button>
         </div>
       </div>
@@ -299,506 +500,284 @@ const ActivityModal: React.FC<{
   );
 };
 
-const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
+const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [customActivities, setCustomActivities] = useState<CustomActivity[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
+  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video'>('all');
+  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingActivity, setEditingActivity] = useState<CustomActivity | undefined>();
-  const [addingActivities, setAddingActivities] = useState<Set<string>>(new Set());
+  const [editingContent, setEditingContent] = useState<LibraryContent | undefined>();
+  const [addingContent, setAddingContent] = useState<Set<string>>(new Set());
 
-  // Base activities database
-  const baseActivities: LibraryActivity[] = [
-    // System Activities
-    { 
-      id: 'system-choice-time', 
-      name: 'Choice Item Time', 
-      icon: '🎯', 
-      category: 'system', 
-      description: 'Student choice activities selected during Daily Check-In', 
-      defaultDuration: 20, 
-      tags: ['choice', 'student-selected', 'flexible'], 
-      isCustom: false,
-      isSystemActivity: true
-    },
+  // Base content library (built-in, non-deletable items)
+  const baseContent: LibraryContent[] = [
+    // Academic
+    { id: 'base-ela', name: 'ELA', icon: '📚', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'English Language Arts instruction', tags: ['reading', 'writing', 'language'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-science', name: 'Science', icon: '🔬', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Science exploration and experiments', tags: ['experiments', 'discovery', 'STEM'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-math', name: 'Math', icon: '🔢', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Mathematics instruction and practice', tags: ['numbers', 'calculation', 'problem-solving'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-social-studies', name: 'Social Studies', icon: '🗺️', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Geography, history, and social concepts', tags: ['geography', 'history', 'community'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
     
-    // Academic Activities
-    { id: '1', name: 'Morning Meeting', icon: '🌅', category: 'social', description: 'Circle time and daily greeting', defaultDuration: 15, tags: ['circle', 'greeting', 'social'], isCustom: false },
-    { id: '2', name: 'Math', icon: '🔢', category: 'academic', description: 'Mathematics instruction and practice', defaultDuration: 30, tags: ['numbers', 'calculation', 'problem-solving'], isCustom: false },
-    { id: '3', name: 'Reading', icon: '📖', category: 'academic', description: 'Literacy and reading activities', defaultDuration: 30, tags: ['books', 'literacy', 'comprehension'], isCustom: false },
-    { id: '4', name: 'Writing', icon: '✏️', category: 'academic', description: 'Writing practice and composition', defaultDuration: 25, tags: ['writing', 'composition', 'handwriting'], isCustom: false },
-    { id: '5', name: 'Science', icon: '🔬', category: 'academic', description: 'Science exploration and experiments', defaultDuration: 25, tags: ['experiments', 'discovery', 'STEM'], isCustom: false },
-    { id: '6', name: 'Social Studies', icon: '🗺️', category: 'academic', description: 'Geography, history, and social concepts', defaultDuration: 30, tags: ['geography', 'history', 'community'], isCustom: false },
-    { id: '7', name: 'Computer Lab', icon: '💻', category: 'academic', description: 'Technology and computer skills', defaultDuration: 25, tags: ['technology', 'computers', 'digital'], isCustom: false },
-    { id: '8', name: 'Library', icon: '📚', category: 'academic', description: 'Library visit and book selection', defaultDuration: 20, tags: ['books', 'research', 'quiet'], isCustom: false },
-
-    // Creative & Arts
-    { id: '9', name: 'Art', icon: '🎨', category: 'creative', description: 'Creative arts and crafts', defaultDuration: 30, tags: ['creativity', 'painting', 'crafts'], isCustom: false },
-    { id: '10', name: 'Music', icon: '🎵', category: 'creative', description: 'Music and rhythm activities', defaultDuration: 25, tags: ['music', 'rhythm', 'singing'], isCustom: false },
-    { id: '11', name: 'Drama', icon: '🎭', category: 'creative', description: 'Theater and dramatic play', defaultDuration: 30, tags: ['theater', 'acting', 'expression'], isCustom: false },
-    { id: '12', name: 'Dance', icon: '💃', category: 'creative', description: 'Movement and dance activities', defaultDuration: 20, tags: ['movement', 'rhythm', 'exercise'], isCustom: false },
-
-    // Physical & Movement
-    { id: '13', name: 'PE', icon: '⚽', category: 'movement', description: 'Physical education and sports', defaultDuration: 30, tags: ['sports', 'exercise', 'teamwork'], isCustom: false },
-    { id: '14', name: 'Recess', icon: '🏃', category: 'movement', description: 'Outdoor play and free time', defaultDuration: 20, tags: ['playground', 'outdoor', 'free-play'], isCustom: false },
-    { id: '15', name: 'Yoga', icon: '🧘', category: 'movement', description: 'Mindfulness and gentle movement', defaultDuration: 15, tags: ['mindfulness', 'stretching', 'calm'], isCustom: false },
-    { id: '16', name: 'Sensory Break', icon: '🤲', category: 'movement', description: 'Sensory integration activities', defaultDuration: 10, tags: ['sensory', 'regulation', 'break'], isCustom: false },
-
-    // Breaks & Transitions
-    { id: '17', name: 'Lunch', icon: '🍽️', category: 'break', description: 'Lunch break and social time', defaultDuration: 30, tags: ['food', 'social', 'nutrition'], isCustom: false },
-    { id: '18', name: 'Snack', icon: '🍎', category: 'break', description: 'Snack time and nutrition break', defaultDuration: 10, tags: ['food', 'nutrition', 'energy'], isCustom: false },
-    { id: '19', name: 'Bathroom', icon: '🚻', category: 'break', description: 'Bathroom and hygiene break', defaultDuration: 5, tags: ['hygiene', 'self-care', 'routine'], isCustom: false },
-    { id: '20', name: 'Quiet Time', icon: '🤫', category: 'break', description: 'Rest and quiet activities', defaultDuration: 15, tags: ['rest', 'calm', 'quiet'], isCustom: false },
-
-    // Social & Life Skills
-    { id: '21', name: 'Social Skills', icon: '🤝', category: 'social', description: 'Social interaction practice', defaultDuration: 20, tags: ['friendship', 'communication', 'social'], isCustom: false },
-    { id: '22', name: 'Life Skills', icon: '🧹', category: 'social', description: 'Daily living and independence skills', defaultDuration: 25, tags: ['independence', 'daily-living', 'practical'], isCustom: false },
-    { id: '23', name: 'Community Helper', icon: '👷', category: 'social', description: 'Classroom jobs and responsibilities', defaultDuration: 10, tags: ['responsibility', 'helper', 'community'], isCustom: false },
-    { id: '24', name: 'Show and Tell', icon: '🗣️', category: 'social', description: 'Presentation and sharing time', defaultDuration: 15, tags: ['presentation', 'sharing', 'confidence'], isCustom: false },
-
-    // Therapy & Support
-    { id: '25', name: 'Speech Therapy', icon: '🗣️', category: 'resource', description: 'Speech and language therapy', defaultDuration: 30, tags: ['speech', 'language', 'communication'], isCustom: false },
-    { id: '26', name: 'OT', icon: '✋', category: 'resource', description: 'Occupational therapy session', defaultDuration: 30, tags: ['fine-motor', 'coordination', 'therapy'], isCustom: false },
-    { id: '27', name: 'Counseling', icon: '💭', category: 'resource', description: 'Counseling and emotional support', defaultDuration: 30, tags: ['emotions', 'support', 'counseling'], isCustom: false },
-    { id: '28', name: 'Resource Room', icon: '🎯', category: 'resource', description: 'Special education support', defaultDuration: 30, tags: ['support', 'individualized', 'academic'], isCustom: false }
+    // Break
+    { id: 'base-lunch', name: 'Lunch', icon: '🍽️', category: 'break', contentType: 'activity', defaultDuration: 30, description: 'Lunch break and social time', tags: ['food', 'social', 'nutrition'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-bathroom', name: 'Bathroom Break', icon: '🚻', category: 'break', contentType: 'activity', defaultDuration: 5, description: 'Bathroom and hygiene break', tags: ['hygiene', 'self-care', 'routine'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-snack', name: 'Snack Time', icon: '🍎', category: 'break', contentType: 'activity', defaultDuration: 10, description: 'Snack time and nutrition break', tags: ['food', 'nutrition', 'energy'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    
+    // Other
+    { id: 'base-transition', name: 'Transition', icon: '🔄', category: 'other', contentType: 'activity', defaultDuration: 5, description: 'Movement between activities', tags: ['transition', 'routine', 'movement'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-safety', name: 'Safety Drill', icon: '🛡️', category: 'other', contentType: 'activity', defaultDuration: 10, description: 'Emergency preparedness and safety practice', tags: ['safety', 'drill', 'emergency'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
   ];
 
-  // Load custom activities from UnifiedDataService
+  // Load custom content from UnifiedDataService
   useEffect(() => {
-    loadCustomActivities();
+    loadCustomContent();
   }, []);
 
-  const loadCustomActivities = () => {
+  const loadCustomContent = () => {
     try {
-      // Get activities from UnifiedDataService
       const unifiedActivities = UnifiedDataService.getAllActivities();
       
-      // Convert UnifiedActivity[] to CustomActivity[] format
-      const customActivitiesFromUnified: CustomActivity[] = unifiedActivities.map((activity: UnifiedActivity): CustomActivity => ({
-        id: activity.id,
-        name: activity.name,
-        icon: (activity as any).icon || '📝', // Use icon if available, fallback to default
-        category: activity.category as any,
-        defaultDuration: activity.duration || 30,
-        description: activity.description || '',
-        tags: (activity as any).tags || [], // Use tags if available
-        materials: activity.materials || [],
-        instructions: activity.instructions || '',
-        isCustom: activity.isCustom,
-        createdAt: activity.dateCreated,
-        updatedAt: activity.dateCreated,
-        usageCount: 0,
-        choiceEligible: (activity as any).choiceEligible || false, // Include choice eligible status
-        // Add transition properties if they exist
-        isTransition: (activity as any).isTransition || false,
-        transitionType: (activity as any).transitionType,
-        animationStyle: (activity as any).animationStyle,
-        showNextActivity: (activity as any).showNextActivity,
-        movementPrompts: (activity as any).movementPrompts,
-        autoStart: (activity as any).autoStart,
-        soundEnabled: (activity as any).soundEnabled,
-        customMessage: (activity as any).customMessage
-      }));
+      const customContentFromUnified: LibraryContent[] = unifiedActivities
+        .filter(activity => activity.isCustom)
+        .map((activity: UnifiedActivity): LibraryContent => ({
+          id: activity.id,
+          name: activity.name,
+          icon: (activity as any).icon || '📝',
+          category: (activity as any).category || 'academic',
+          contentType: (activity as any).contentType || 'activity',
+          defaultDuration: activity.duration || 30,
+          description: activity.description || '',
+          tags: (activity as any).tags || [],
+          isDeletable: true,
+          isCustom: true,
+          videoData: (activity as any).videoData,
+          materials: activity.materials,
+          instructions: activity.instructions,
+          createdAt: activity.dateCreated,
+          updatedAt: activity.dateCreated,
+        }));
 
-      // If no activities exist, initialize with transition activities
-      if (customActivitiesFromUnified.length === 0) {
-        console.log('🎯 ActivityLibrary - No activities found, adding transition activities...');
-        
-        // Add transition activities to empty array
-        const activitiesWithTransitions = addTransitionsToLibrary([]);
-        
-        // Convert and save to UnifiedDataService
-        activitiesWithTransitions.forEach((activity: ActivityLibraryItem) => {
-          const unifiedActivity: Partial<UnifiedActivity> = {
-            name: activity.name,
-            category: activity.category,
-            description: activity.description || '',
-            duration: activity.defaultDuration,
-            materials: activity.materials || [],
-            instructions: activity.instructions || '',
-            isCustom: activity.isCustom,
-            // Add transition properties
-            ...(activity.isTransition && {
-              isTransition: activity.isTransition,
-              transitionType: activity.transitionType,
-              animationStyle: activity.animationStyle,
-              showNextActivity: activity.showNextActivity,
-              movementPrompts: activity.movementPrompts,
-              autoStart: activity.autoStart,
-              soundEnabled: activity.soundEnabled,
-              customMessage: activity.customMessage
-            })
-          };
-          
-          UnifiedDataService.addActivity(unifiedActivity);
-        });
-        
-        // Reload activities after adding
-        loadCustomActivities();
-      } else {
-        setCustomActivities(customActivitiesFromUnified);
-      }
+      setCustomContent(customContentFromUnified);
     } catch (error) {
-      console.error('Error loading custom activities:', error);
+      console.error('Error loading custom content:', error);
     }
   };
 
-  // Save custom activities via UnifiedDataService
-  const saveCustomActivities = (activities: CustomActivity[]) => {
-    // Update each activity in UnifiedDataService
-    activities.forEach(activity => {
+  // Save custom content to UnifiedDataService
+  const saveCustomContent = (contentList: LibraryContent[]) => {
+    contentList.forEach(content => {
+      // Create the base UnifiedActivity object with only properties that exist in the interface
       const unifiedActivity: Partial<UnifiedActivity> = {
-        name: activity.name,
-        category: activity.category,
-        description: activity.description,
-        duration: activity.defaultDuration,
-        materials: activity.materials || [],
-        instructions: activity.instructions || '',
-        isCustom: activity.isCustom,
-        // Include icon, tags, and choice eligible status
-        ...(activity.icon && { icon: activity.icon }),
-        ...(activity.tags && { tags: activity.tags }),
-        ...(activity.choiceEligible !== undefined && { choiceEligible: activity.choiceEligible }),
-        // Add transition properties if they exist
-        ...(activity.isTransition && {
-          isTransition: activity.isTransition,
-          transitionType: activity.transitionType,
-          animationStyle: activity.animationStyle,
-          showNextActivity: activity.showNextActivity,
-          movementPrompts: activity.movementPrompts,
-          autoStart: activity.autoStart,
-          soundEnabled: activity.soundEnabled,
-          customMessage: activity.customMessage
-        })
+        name: content.name,
+        category: content.category,
+        description: content.description,
+        duration: content.defaultDuration,
+        materials: content.materials || [],
+        instructions: content.instructions || '',
+        isCustom: content.isCustom,
       };
       
-      // Check if activity exists, update or add
-      const existingActivity = UnifiedDataService.getActivity(activity.id);
+      // Add extra properties that don't exist in UnifiedActivity interface
+      // These will be stored but TypeScript won't complain
+      const activityWithExtras = {
+        ...unifiedActivity,
+        icon: content.icon,
+        tags: content.tags,
+        contentType: content.contentType,
+        videoData: content.videoData,
+      };
+      
+      const existingActivity = UnifiedDataService.getActivity(content.id);
       if (existingActivity) {
-        UnifiedDataService.updateActivity(activity.id, unifiedActivity);
+        UnifiedDataService.updateActivity(content.id, activityWithExtras as any);
       } else {
-        UnifiedDataService.addActivity(unifiedActivity);
+        UnifiedDataService.addActivity(activityWithExtras as any);
       }
     });
     
-    setCustomActivities(activities);
+    setCustomContent(contentList);
     
-    // Notify Schedule Builder of changes with enhanced payload
+    // Notify Schedule Builder of changes
     window.dispatchEvent(new CustomEvent('activitiesUpdated', {
       detail: { 
-        activities: [...baseActivities, ...activities],
+        activities: [...baseContent, ...contentList],
         source: 'ActivityLibrary',
         timestamp: Date.now(),
-        customCount: activities.length,
-        totalCount: [...baseActivities, ...activities].length
       }
     }));
   };
 
-  // Special styling for activity categories
-  const getActivityCategoryStyle = (category: string) => {
-    const baseStyle = {
-      padding: '4px 8px',
-      borderRadius: '12px',
-      fontSize: '0.8rem',
-      fontWeight: '600',
-      textTransform: 'uppercase' as const,
-      letterSpacing: '0.5px'
-    };
+  // All content (base + custom)
+  const allContent = useMemo(() => {
+    return [...baseContent, ...customContent];
+  }, [customContent]);
 
-    switch (category) {
-      case 'transition':
-        return {
-          ...baseStyle,
-          background: 'linear-gradient(45deg, #9C27B0, #E1BEE7)',
-          color: 'white',
-          boxShadow: '0 2px 8px rgba(156, 39, 176, 0.3)'
-        };
-      case 'system':
-        return {
-          ...baseStyle,
-          background: 'linear-gradient(45deg, #FF9800, #FFB74D)',
-          color: 'white',
-          boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
-        };
-      case 'academic':
-        return { ...baseStyle, background: '#E3F2FD', color: '#1976D2' };
-      case 'social':
-        return { ...baseStyle, background: '#E8F5E8', color: '#388E3C' };
-      case 'creative':
-        return { ...baseStyle, background: '#FFF3E0', color: '#F57C00' };
-      case 'movement':
-        return { ...baseStyle, background: '#E0F2F1', color: '#00695C' };
-      case 'break':
-        return { ...baseStyle, background: '#FFEBEE', color: '#C62828' };
-      case 'resource':
-        return { ...baseStyle, background: '#F3E5F5', color: '#7B1FA2' };
-      default:
-        return { ...baseStyle, background: '#F5F5F5', color: '#757575' };
-    }
-  };
-
-  // 🎯 CRITICAL FIX: Show ALL activities including transitions
-  const allActivities = useMemo(() => {
-    const combinedActivities = [...baseActivities, ...customActivities];
-    console.log('🔍 All activities including transitions:', combinedActivities.length);
-    console.log('🔍 Transition activities found:', combinedActivities.filter(a => a.category === 'transition').length);
-    // ✅ REMOVED THE FILTER THAT WAS HIDING TRANSITIONS
-    return combinedActivities;
-  }, [customActivities]);
-
-  // 🎯 UPDATED: Include transition and system in categories list
-  const categories = ['All', 'academic', 'creative', 'movement', 'break', 'social', 'resource', 'transition', 'system'];
-
-  // Filter activities based on search and category
-  const filteredActivities = useMemo(() => {
-    return allActivities.filter(activity => {
-      const matchesSearch = activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           activity.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filter content based on search, category, and content type
+  const filteredContent = useMemo(() => {
+    return allContent.filter(content => {
+      const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesCategory = selectedCategory === 'All' || activity.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || content.category === selectedCategory;
+      const matchesContentType = selectedContentType === 'all' || content.contentType === selectedContentType;
       
-      return matchesSearch && matchesCategory;
+      return matchesSearch && matchesCategory && matchesContentType;
     });
-  }, [searchTerm, selectedCategory, allActivities]);
+  }, [searchTerm, selectedCategory, selectedContentType, allContent]);
 
-  // Get category counts
+  // Get counts for filters
   const getCategoryCount = (category: string) => {
-    if (category === 'All') return allActivities.length;
-    return allActivities.filter(activity => activity.category === category).length;
+    if (category === 'all') return allContent.length;
+    return allContent.filter(content => content.category === category).length;
   };
 
-  // Handle activity actions
-  const handleAddActivity = async (activity: LibraryActivity) => {
-    // Prevent duplicate adds while processing
-    if (addingActivities.has(activity.id)) {
-      return;
-    }
+  const getContentTypeCount = (type: string) => {
+    if (type === 'all') return allContent.length;
+    return allContent.filter(content => content.contentType === type).length;
+  };
 
-    // Set loading state
-    setAddingActivities(prev => new Set([...prev, activity.id]));
+  // Handle adding content to schedule
+  const handleAddToSchedule = async (content: LibraryContent) => {
+    if (addingContent.has(content.id)) return;
+
+    setAddingContent(prev => new Set([...prev, content.id]));
 
     try {
-      // Create unique instance ID to prevent duplicates
-      const instanceId = generateUniqueId(`${activity.id}`);
+      const instanceId = generateUniqueId(`${content.id}`);
       
-      // 🎯 CRITICAL FIX: Enhanced activity data mapping that preserves ALL transition properties
-      const activityToAdd = {
+      const contentToAdd = {
         id: instanceId,
-        originalId: activity.id,
-        name: activity.name,
-        icon: activity.icon,
-        emoji: activity.icon,
-        duration: activity.defaultDuration,
-        category: activity.category,
-        description: activity.description || '',
-        materials: [],
-        instructions: activity.description || '',
-        isCustom: activity.isCustom || false,
-        tags: activity.tags || [],
+        originalId: content.id,
+        name: content.name,
+        icon: content.icon,
+        emoji: content.icon,
+        duration: content.defaultDuration,
+        category: content.category,
+        contentType: content.contentType,
+        description: content.description || '',
+        materials: content.materials || [],
+        instructions: content.instructions || '',
+        isCustom: content.isCustom,
+        tags: content.tags || [],
         createdAt: new Date().toISOString(),
         addedFromLibrary: true,
-        
-        // 🔥 CRITICAL FIX: Preserve ALL transition properties
-        ...(activity.isTransition && {
-          isTransition: activity.isTransition,
-          transitionType: activity.transitionType,
-          animationStyle: activity.animationStyle,
-          showNextActivity: activity.showNextActivity,
-          movementPrompts: activity.movementPrompts,
-          autoStart: activity.autoStart,
-          soundEnabled: activity.soundEnabled,
-          customMessage: activity.customMessage
-        })
+        videoData: content.videoData,
       };
 
-      // Get existing activities and check for duplicates
       const existingActivities = JSON.parse(localStorage.getItem('available_activities') || '[]');
-      
-      // Check if this exact activity (by originalId) was recently added (within last 5 seconds)
-      const recentDuplicates = existingActivities.filter((existing: any) => 
-        existing.originalId === activity.id && 
-        existing.addedFromLibrary &&
-        (Date.now() - new Date(existing.createdAt).getTime()) < 5000
-      );
-
-      if (recentDuplicates.length > 0) {
-        // Show warning but don't prevent adding
-        console.warn(`Activity "${activity.name}" was recently added. Adding another instance.`);
-      }
-
-      // Add to available activities in Schedule Builder
-      const updatedActivities = [...existingActivities, activityToAdd];
+      const updatedActivities = [...existingActivities, contentToAdd];
       localStorage.setItem('available_activities', JSON.stringify(updatedActivities));
 
-      // Notify Schedule Builder with enhanced payload
       window.dispatchEvent(new CustomEvent('activityAdded', {
         detail: { 
-          activity: activityToAdd,
+          activity: contentToAdd,
           source: 'ActivityLibrary',
           timestamp: Date.now()
         }
       }));
 
-      // Brief success animation delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log(`Activity "${activity.name}" added to Schedule Builder with ID: ${instanceId}`);
+      console.log(`Content "${content.name}" added to Schedule Builder`);
       
     } catch (error) {
-      console.error('Error adding activity:', error);
-      alert(`Error adding "${activity.name}". Please try again.`);
+      console.error('Error adding content:', error);
+      alert(`Error adding "${content.name}". Please try again.`);
     } finally {
-      // Remove loading state
-      setAddingActivities(prev => {
+      setAddingContent(prev => {
         const newSet = new Set(prev);
-        newSet.delete(activity.id);
+        newSet.delete(content.id);
         return newSet;
       });
     }
   };
 
-  const handleEditActivity = (activity: LibraryActivity) => {
-    if (activity.isCustom) {
-      setEditingActivity(activity as CustomActivity);
-      setModalOpen(true);
-    } else {
-      // For built-in activities, create a custom version
-      const customVersion: CustomActivity = {
-        ...activity,
-        id: generateUniqueId(`custom_${activity.id}`),
-        isCustom: true,
-        createdAt: new Date().toISOString(),
-        difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
-      };
-      setEditingActivity(customVersion);
-      setModalOpen(true);
+  // Handle content editing
+  const handleEditContent = (content: LibraryContent) => {
+    if (!content.isDeletable) {
+      alert('Built-in content cannot be edited. You can create a custom version instead.');
+      return;
     }
+    setEditingContent(content);
+    setModalOpen(true);
   };
 
-  const handleSaveActivity = (activity: CustomActivity) => {
-    let updatedActivities;
+  // Handle content saving
+  const handleSaveContent = (content: LibraryContent) => {
+    let updatedContent;
     
-    if (editingActivity && customActivities.find(a => a.id === editingActivity.id)) {
-      // Update existing custom activity
-      updatedActivities = customActivities.map(a => 
-        a.id === editingActivity.id ? activity : a
+    if (editingContent && customContent.find(c => c.id === editingContent.id)) {
+      updatedContent = customContent.map(c => 
+        c.id === editingContent.id ? content : c
       );
     } else {
-      // Add new custom activity
-      updatedActivities = [...customActivities, activity];
+      updatedContent = [...customContent, content];
     }
 
-    saveCustomActivities(updatedActivities);
+    saveCustomContent(updatedContent);
     setModalOpen(false);
-    setEditingActivity(undefined);
+    setEditingContent(undefined);
   };
 
-  const handleDeleteActivity = (activity: LibraryActivity) => {
-    if (!activity.isCustom) {
-      alert('Built-in activities cannot be deleted. You can edit them to create custom versions.');
+  // Handle content deletion
+  const handleDeleteContent = (content: LibraryContent) => {
+    if (!content.isDeletable) {
+      alert('Built-in content cannot be deleted.');
       return;
     }
 
-    // Create a proper delete confirmation dialog
     const deleteConfirmed = window.confirm(
-      `🗑️ DELETE ACTIVITY\n\n` +
-      `Are you sure you want to permanently delete "${activity.name}"?\n\n` +
-      `This action cannot be undone.\n\n` +
-      `Click OK to DELETE or Cancel to keep the activity.`
+      `Are you sure you want to delete "${content.name}"?\n\nThis action cannot be undone.`
     );
 
     if (deleteConfirmed) {
       try {
-        // Delete from UnifiedDataService first
-        UnifiedDataService.deleteActivity(activity.id);
+        UnifiedDataService.deleteActivity(content.id);
+        const updatedContent = customContent.filter(c => c.id !== content.id);
+        setCustomContent(updatedContent);
         
-        // Update local state
-        const updatedActivities = customActivities.filter(a => a.id !== activity.id);
-        setCustomActivities(updatedActivities);
-        
-        // Notify Schedule Builder of changes
         window.dispatchEvent(new CustomEvent('activitiesUpdated', {
           detail: { 
-            activities: [...baseActivities, ...updatedActivities],
+            activities: [...baseContent, ...updatedContent],
             source: 'ActivityLibrary',
             timestamp: Date.now(),
-            customCount: updatedActivities.length,
-            totalCount: [...baseActivities, ...updatedActivities].length,
             action: 'delete',
-            deletedActivity: activity
+            deletedActivity: content
           }
         }));
         
-        console.log(`✅ Activity "${activity.name}" deleted successfully from UnifiedDataService`);
-        
-        // Show success message
-        setTimeout(() => {
-          alert(`✅ "${activity.name}" has been deleted successfully.`);
-        }, 100);
-        
       } catch (error) {
-        console.error('❌ Error deleting activity:', error);
-        alert(`❌ Error deleting "${activity.name}". Please try again.`);
+        console.error('Error deleting content:', error);
+        alert(`Error deleting "${content.name}". Please try again.`);
       }
     }
   };
 
-  const handleDuplicateActivity = (activity: LibraryActivity) => {
-    const duplicate: CustomActivity = {
-      ...activity,
-      id: generateUniqueId('custom'),
-      name: `${activity.name} (Copy)`,
+  // Handle content duplication
+  const handleDuplicateContent = (content: LibraryContent) => {
+    const duplicate: LibraryContent = {
+      ...content,
+      id: generateUniqueId('content'),
+      name: `${content.name} (Copy)`,
+      isDeletable: true,
       isCustom: true,
       createdAt: new Date().toISOString(),
-      difficulty: (activity.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
     };
     
-    setEditingActivity(duplicate);
+    setEditingContent(duplicate);
     setModalOpen(true);
-  };
-
-  // Handle toggling choice eligible status
-  const handleToggleChoiceEligible = (activity: LibraryActivity, isChecked: boolean) => {
-    if (activity.isCustom) {
-      // Update custom activity
-      const updatedActivities = customActivities.map(a => 
-        a.id === activity.id ? { ...a, choiceEligible: isChecked } : a
-      );
-      saveCustomActivities(updatedActivities);
-    } else {
-      // For built-in activities, create a custom version with choice eligible status
-      const customVersion: CustomActivity = {
-        ...activity,
-        id: `custom_${activity.id}_${Date.now()}`,
-        isCustom: true,
-        choiceEligible: isChecked,
-        createdAt: new Date().toISOString(),
-        difficulty: 'easy',
-      };
-      
-      const updatedActivities = [...customActivities, customVersion];
-      saveCustomActivities(updatedActivities);
-    }
   };
 
   if (!isActive) return null;
 
   return (
-    <div className="activity-library-page">
+    <div className="simplified-activity-library">
       <div className="library-header">
-        <h2 className="component-title">📚 Activity Library</h2>
+        <h2 className="component-title">📚 Activity & Video Library</h2>
         <p className="component-subtitle">
-          Browse and manage your collection of educational activities
+          Manage your classroom activities and educational videos
         </p>
-        
-        {/* 🎯 NEW: Show transition activities notice */}
-        <div className="transition-notice">
-          <span className="transition-badge">✨ NEW</span>
-          <span>Transition activities are now available! Look for the purple "TRANSITION" badge.</span>
-        </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -808,7 +787,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
             <span className="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Search activities, descriptions, or tags..."
+              placeholder="Search activities, videos, descriptions, or tags..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
@@ -817,7 +796,6 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
               <button
                 onClick={() => setSearchTerm('')}
                 className="clear-search"
-                aria-label="Clear search"
               >
                 ✕
               </button>
@@ -826,60 +804,79 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         </div>
 
         <div className="filter-section">
-          <div className="category-filters">
-            {categories.map(category => (
+          {/* Category Filters */}
+          <div className="filter-group">
+            <label>Category:</label>
+            <div className="category-filters">
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`category-button ${selectedCategory === category ? 'active' : ''} ${category === 'transition' ? 'transition-button' : ''}`}
+                onClick={() => setSelectedCategory('all')}
+                className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
               >
-                {category === 'transition' ? '✨ transition' : category}
-                <span className="category-count">({getCategoryCount(category)})</span>
+                All ({getCategoryCount('all')})
               </button>
-            ))}
+              <button
+                onClick={() => setSelectedCategory('academic')}
+                className={`category-button ${selectedCategory === 'academic' ? 'active' : ''}`}
+              >
+                📚 Academic ({getCategoryCount('academic')})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('break')}
+                className={`category-button ${selectedCategory === 'break' ? 'active' : ''}`}
+              >
+                🍽️ Break ({getCategoryCount('break')})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('other')}
+                className={`category-button ${selectedCategory === 'other' ? 'active' : ''}`}
+              >
+                🎯 Other ({getCategoryCount('other')})
+              </button>
+            </div>
           </div>
 
-          <div className="view-controls">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`view-button ${viewMode === 'grid' ? 'active' : ''}`}
-              title="Grid view"
-            >
-              ⊞
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`view-button ${viewMode === 'list' ? 'active' : ''}`}
-              title="List view"
-            >
-              ☰
-            </button>
+          {/* Content Type Filters */}
+          <div className="filter-group">
+            <label>Type:</label>
+            <div className="content-type-filters">
+              <button
+                onClick={() => setSelectedContentType('all')}
+                className={`content-type-button ${selectedContentType === 'all' ? 'active' : ''}`}
+              >
+                All ({getContentTypeCount('all')})
+              </button>
+              <button
+                onClick={() => setSelectedContentType('activity')}
+                className={`content-type-button ${selectedContentType === 'activity' ? 'active' : ''}`}
+              >
+                📚 Activities ({getContentTypeCount('activity')})
+              </button>
+              <button
+                onClick={() => setSelectedContentType('video')}
+                className={`content-type-button ${selectedContentType === 'video' ? 'active' : ''}`}
+              >
+                🎬 Videos ({getContentTypeCount('video')})
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Results Summary */}
       <div className="results-summary">
-        Showing {filteredActivities.length} of {allActivities.length} activities
-        {searchTerm && (
-          <span className="search-summary"> for "{searchTerm}"</span>
-        )}
-        {selectedCategory !== 'All' && (
-          <span className="filter-summary"> in {selectedCategory}</span>
-        )}
-        {/* 🎯 Show transition count */}
-        <span className="transition-count">
-          • {allActivities.filter(a => a.category === 'transition').length} transition activities
-        </span>
+        Showing {filteredContent.length} of {allContent.length} items
+        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
+        {selectedCategory !== 'all' && <span className="filter-summary"> in {selectedCategory}</span>}
+        {selectedContentType !== 'all' && <span className="filter-summary"> • {selectedContentType}s only</span>}
       </div>
 
-      {/* Activity Display */}
-      <div className={`activities-container ${viewMode}`}>
-        {filteredActivities.length === 0 ? (
+      {/* Content Grid */}
+      <div className="content-grid">
+        {filteredContent.length === 0 ? (
           <div className="no-results">
             <div className="no-results-icon">🔍</div>
-            <h3>No activities found</h3>
-            <p>Try adjusting your search terms or category filter</p>
+            <h3>No content found</h3>
+            <p>Try adjusting your search terms or filters</p>
             {searchTerm && (
               <button onClick={() => setSearchTerm('')} className="reset-search">
                 Clear search
@@ -887,101 +884,109 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
             )}
           </div>
         ) : (
-          filteredActivities.map(activity => (
-            <div key={activity.id} className="activity-item" data-category={activity.category}>
-              <div className="activity-icon-large">
-                {activity.icon.startsWith('data:') ? (
-                  <img src={activity.icon} alt={activity.name} className="custom-activity-icon" />
-                ) : (
-                  activity.icon
-                )}
-                {/* 🎯 Special transition indicator */}
-                {activity.category === 'transition' && (
-                  <div className="transition-indicator">✨</div>
-                )}
-              </div>
-              <div className="activity-content">
-                <div className="activity-header">
-                  <div className="activity-meta">
-                    <span style={getActivityCategoryStyle(activity.category)}>
-                      {activity.category === 'transition' ? '✨ TRANSITION' : activity.category}
+          filteredContent.map(content => (
+            <div key={content.id} className={`content-item ${content.contentType}`} data-category={content.category}>
+              <div className="content-header">
+                <div className="content-icon">
+                  {content.icon}
+                  {content.contentType === 'video' && (
+                    <div className="video-indicator">🎬</div>
+                  )}
+                </div>
+                <div className="content-meta">
+                  <div className="content-badges">
+                    <span className={`category-badge ${content.category}`}>
+                      {content.category}
                     </span>
-                    <span className="activity-duration">{activity.defaultDuration}min</span>
-                    {activity.isCustom && <span className="custom-badge">Custom</span>}
-                    {activity.isTransition && <span className="transition-badge">Transition</span>}
+                    <span className={`type-badge ${content.contentType}`}>
+                      {content.contentType}
+                    </span>
+                    {!content.isDeletable && (
+                      <span className="built-in-badge">Built-in</span>
+                    )}
+                    {content.isCustom && (
+                      <span className="custom-badge">Custom</span>
+                    )}
                   </div>
+                  <div className="content-duration">{content.defaultDuration}min</div>
                 </div>
-                <p className="activity-description">{activity.description}</p>
-                <div className="activity-tags">
-                  {activity.tags.map(tag => (
-                    <span key={tag} className="activity-tag">#{tag}</span>
-                  ))}
-                </div>
+              </div>
+
+              <div className="content-body">
+                <h3 className="content-title">{content.name}</h3>
+                <p className="content-description">{content.description}</p>
                 
-                {/* 🎯 Show transition properties if it's a transition */}
-                {activity.isTransition && (
-                  <div className="transition-details">
-                    <div className="transition-info">
-                      <span className="transition-type">Type: {activity.transitionType}</span>
-                      <span className="transition-animation">Animation: {activity.animationStyle}</span>
+                {/* Video-specific display */}
+                {content.contentType === 'video' && content.videoData && (
+                  <div className="video-details">
+                    <div className="video-url">
+                      <span className="video-label">🔗</span>
+                      <a href={content.videoData.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
+                        View Video
+                      </a>
                     </div>
-                    {activity.movementPrompts && activity.movementPrompts.length > 0 && (
-                      <div className="movement-prompts-preview">
-                        <strong>Movement prompts:</strong> {activity.movementPrompts[0]}
-                        {activity.movementPrompts.length > 1 && <span> (+{activity.movementPrompts.length - 1} more)</span>}
+                    {content.videoData.notes && (
+                      <div className="video-notes">
+                        <strong>Notes:</strong> {content.videoData.notes}
                       </div>
                     )}
                   </div>
                 )}
+
+                {/* Activity-specific display */}
+                {content.contentType === 'activity' && content.materials && content.materials.length > 0 && (
+                  <div className="activity-materials">
+                    <strong>Materials:</strong> {content.materials.join(', ')}
+                  </div>
+                )}
+
+                {/* Tags */}
+                {content.tags.length > 0 && (
+                  <div className="content-tags">
+                    {content.tags.map(tag => (
+                      <span key={tag} className="content-tag">#{tag}</span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="activity-actions">
-                {/* Choice Eligible Checkbox */}
-                <div className="choice-checkbox-container">
-                  <label className="choice-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={activity.choiceEligible || false}
-                      onChange={(e) => handleToggleChoiceEligible(activity, e.target.checked)}
-                      className="choice-checkbox"
-                    />
-                    <span className="choice-checkbox-text">Choice Activity</span>
-                  </label>
-                </div>
+
+              <div className="content-actions">
+                <button 
+                  className={`action-button primary ${addingContent.has(content.id) ? 'adding' : ''}`}
+                  title="Add to schedule"
+                  onClick={() => handleAddToSchedule(content)}
+                  disabled={addingContent.has(content.id)}
+                >
+                  {addingContent.has(content.id) ? (
+                    <>
+                      <span className="spinner">⏳</span> Adding...
+                    </>
+                  ) : (
+                    '+ Add to Schedule'
+                  )}
+                </button>
                 
-                <div className="action-buttons-row">
-                  <button 
-                    className={`action-button primary ${addingActivities.has(activity.id) ? 'adding' : ''} ${activity.category === 'transition' ? 'transition-add' : ''}`}
-                    title={addingActivities.has(activity.id) ? 'Adding to schedule...' : 'Add to schedule'}
-                    onClick={() => handleAddActivity(activity)}
-                    disabled={addingActivities.has(activity.id)}
-                  >
-                    {addingActivities.has(activity.id) ? (
-                      <>
-                        <span className="spinner">⏳</span> Adding...
-                      </>
-                    ) : (
-                      activity.category === 'transition' ? '✨ Add' : '+ Add'
-                    )}
-                  </button>
+                <div className="secondary-actions">
                   <button 
                     className="action-button secondary" 
-                    title="Edit activity"
-                    onClick={() => handleEditActivity(activity)}
+                    title="Edit content"
+                    onClick={() => handleEditContent(content)}
+                    disabled={!content.isDeletable}
                   >
                     ✏️
                   </button>
                   <button 
                     className="action-button secondary" 
-                    title="Duplicate activity"
-                    onClick={() => handleDuplicateActivity(activity)}
+                    title="Duplicate content"
+                    onClick={() => handleDuplicateContent(content)}
                   >
                     📋
                   </button>
-                  {activity.isCustom && (
+                  {content.isDeletable && (
                     <button 
                       className="action-button danger" 
-                      title="Delete activity"
-                      onClick={() => handleDeleteActivity(activity)}
+                      title="Delete content"
+                      onClick={() => handleDeleteContent(content)}
                     >
                       🗑️
                     </button>
@@ -993,33 +998,45 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         )}
       </div>
 
-      {/* Add Custom Activity Button */}
-      <div className="add-custom-section">
-        <button 
-          className="add-custom-button"
-          onClick={() => {
-            setEditingActivity(undefined);
-            setModalOpen(true);
-          }}
-        >
-          <span className="add-icon">➕</span>
-          Create Custom Activity
-        </button>
+      {/* Add Custom Content Buttons */}
+      <div className="add-content-section">
+        <div className="add-content-buttons">
+          <button 
+            className="add-content-button activity"
+            onClick={() => {
+              setEditingContent(undefined);
+              setModalOpen(true);
+            }}
+          >
+            <span className="add-icon">📚</span>
+            Create Custom Activity
+          </button>
+          <button 
+            className="add-content-button video"
+            onClick={() => {
+              setEditingContent(undefined);
+              setModalOpen(true);
+            }}
+          >
+            <span className="add-icon">🎬</span>
+            Add Educational Video
+          </button>
+        </div>
       </div>
 
-      {/* Activity Modal */}
-      <ActivityModal
-        activity={editingActivity}
-        onSave={handleSaveActivity}
+      {/* Content Modal */}
+      <ContentModal
+        content={editingContent}
+        onSave={handleSaveContent}
         onCancel={() => {
           setModalOpen(false);
-          setEditingActivity(undefined);
+          setEditingContent(undefined);
         }}
         isOpen={modalOpen}
       />
 
       <style>{`
-        .activity-library-page {
+        .simplified-activity-library {
           padding: 1.5rem;
           background: white;
           min-height: calc(100vh - 80px);
@@ -1030,39 +1047,29 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           margin-bottom: 2rem;
         }
 
-        /* 🎯 NEW: Transition notice styling */
-        .transition-notice {
-          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
-          color: white;
-          padding: 0.75rem 1.5rem;
-          border-radius: 8px;
-          margin: 1rem auto;
-          max-width: 500px;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-          box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+        .component-title {
+          font-size: 2rem;
+          font-weight: 700;
+          color: #2d3748;
+          margin: 0 0 0.5rem 0;
         }
 
-        .transition-badge {
-          background: rgba(255, 255, 255, 0.2);
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-          font-weight: 600;
-          font-size: 0.75rem;
+        .component-subtitle {
+          color: #718096;
+          font-size: 1.1rem;
+          margin: 0;
         }
 
         .library-controls {
-          background: #f8f9fa;
+          background: #f7fafc;
           padding: 1.5rem;
           border-radius: 12px;
           margin-bottom: 1.5rem;
-          border: 1px solid #e9ecef;
+          border: 1px solid #e2e8f0;
         }
 
         .search-section {
-          margin-bottom: 1rem;
+          margin-bottom: 1.5rem;
         }
 
         .search-input-container {
@@ -1076,14 +1083,14 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           left: 1rem;
           top: 50%;
           transform: translateY(-50%);
-          color: #6c757d;
+          color: #a0aec0;
           font-size: 1rem;
         }
 
         .search-input {
           width: 100%;
           padding: 0.75rem 1rem 0.75rem 3rem;
-          border: 2px solid #dee2e6;
+          border: 2px solid #e2e8f0;
           border-radius: 8px;
           font-size: 1rem;
           transition: border-color 0.2s ease;
@@ -1102,7 +1109,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           transform: translateY(-50%);
           background: none;
           border: none;
-          color: #6c757d;
+          color: #a0aec0;
           cursor: pointer;
           font-size: 1rem;
           padding: 0.25rem;
@@ -1110,98 +1117,58 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
         .filter-section {
           display: flex;
-          justify-content: space-between;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .filter-group {
+          display: flex;
           align-items: center;
           gap: 1rem;
           flex-wrap: wrap;
         }
 
-        .category-filters {
+        .filter-group label {
+          font-weight: 600;
+          color: #4a5568;
+          min-width: 80px;
+        }
+
+        .category-filters,
+        .content-type-filters {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
 
-        .category-button {
+        .category-button,
+        .content-type-button {
           padding: 0.5rem 1rem;
-          border: 2px solid #dee2e6;
+          border: 2px solid #e2e8f0;
           background: white;
-          border-radius: 20px;
+          border-radius: 8px;
           cursor: pointer;
           transition: all 0.2s ease;
           font-weight: 500;
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
+          font-size: 0.9rem;
         }
 
-        .category-button:hover {
+        .category-button:hover,
+        .content-type-button:hover {
           border-color: #667eea;
           background: rgba(102, 126, 234, 0.05);
         }
 
-        .category-button.active {
+        .category-button.active,
+        .content-type-button.active {
           background: #667eea;
           color: white;
           border-color: #667eea;
         }
 
-        /* 🎯 Special transition button styling */
-        .category-button.transition-button {
-          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
-          color: white;
-          border-color: #9C27B0;
-        }
-
-        .category-button.transition-button:hover {
-          background: linear-gradient(45deg, #8E24AA, #CE93D8);
-          border-color: #8E24AA;
-        }
-
-        .category-button.transition-button.active {
-          background: linear-gradient(45deg, #7B1FA2, #BA68C8);
-          border-color: #7B1FA2;
-        }
-
-        .category-count {
-          font-size: 0.8rem;
-          opacity: 0.8;
-        }
-
-        .view-controls {
-          display: flex;
-          gap: 0.25rem;
-          border: 2px solid #dee2e6;
-          border-radius: 6px;
-          overflow: hidden;
-        }
-
-        .view-button {
-          padding: 0.5rem;
-          border: none;
-          background: white;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          font-size: 1rem;
-          width: 2.5rem;
-          height: 2.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .view-button:hover {
-          background: #f8f9fa;
-        }
-
-        .view-button.active {
-          background: #667eea;
-          color: white;
-        }
-
         .results-summary {
           margin-bottom: 1rem;
-          color: #6c757d;
+          color: #718096;
           font-size: 0.9rem;
           text-align: center;
         }
@@ -1209,248 +1176,216 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .search-summary,
         .filter-summary {
           font-weight: 500;
-          color: #495057;
+          color: #4a5568;
         }
 
-        /* 🎯 Transition count styling */
-        .transition-count {
-          color: #9C27B0;
-          font-weight: 600;
-        }
-
-        .activities-container {
+        .content-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+          gap: 1.5rem;
           margin-bottom: 2rem;
         }
 
-        .activities-container.grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1rem;
-        }
-
-        .activities-container.list .activity-item {
-          display: flex;
-          padding: 1rem;
-        }
-
-        .activities-container.list .activity-icon-large {
-          font-size: 2rem;
-          margin-right: 1rem;
-          flex-shrink: 0;
-        }
-
-        .activity-item {
+        .content-item {
           background: white;
-          border: 2px solid #e9ecef;
+          border: 2px solid #e2e8f0;
           border-radius: 12px;
           padding: 1.5rem;
           transition: all 0.2s ease;
           display: flex;
           flex-direction: column;
           gap: 1rem;
-          position: relative;
         }
 
-        .activity-item:hover {
+        .content-item:hover {
           border-color: #667eea;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
           transform: translateY(-2px);
         }
 
-        /* 🎯 Special transition activity styling */
-        .activity-item[data-category="transition"] {
-          border-color: #9C27B0;
-          background: linear-gradient(135deg, rgba(156, 39, 176, 0.02), rgba(225, 190, 231, 0.05));
+        .content-item.video {
+          border-left: 4px solid #e53e3e;
         }
 
-        .activity-item[data-category="transition"]:hover {
-          border-color: #9C27B0;
-          box-shadow: 0 4px 12px rgba(156, 39, 176, 0.25);
-          background: linear-gradient(135deg, rgba(156, 39, 176, 0.05), rgba(225, 190, 231, 0.1));
+        .content-item.activity {
+          border-left: 4px solid #38a169;
         }
 
-        .activity-icon-large {
-          font-size: 3rem;
-          text-align: center;
-          margin-bottom: 0.5rem;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 3rem;
-          position: relative;
-        }
-
-        /* 🎯 Transition indicator */
-        .transition-indicator {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          font-size: 1rem;
-          animation: sparkle 2s infinite;
-        }
-
-        @keyframes sparkle {
-          0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-          50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
-        }
-
-        .custom-activity-icon {
-          width: 3rem;
-          height: 3rem;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-
-        .activity-content {
-          flex: 1;
-        }
-
-        .activity-header {
+        .content-header {
           display: flex;
           justify-content: space-between;
-          align-items: start;
-          margin-bottom: 0.5rem;
-          gap: 1rem;
+          align-items: flex-start;
         }
 
-        .activity-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin: 0;
-          color: #495057;
+        .content-icon {
+          font-size: 3rem;
+          position: relative;
+          width: 4rem;
+          height: 4rem;
           display: flex;
           align-items: center;
+          justify-content: center;
+        }
+
+        .video-indicator {
+          position: absolute;
+          bottom: -5px;
+          right: -5px;
+          font-size: 1rem;
+          background: white;
+          border-radius: 50%;
+          padding: 2px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .content-meta {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
           gap: 0.5rem;
-          flex-wrap: wrap;
+        }
+
+        .content-badges {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          align-items: flex-end;
+        }
+
+        .category-badge,
+        .type-badge,
+        .built-in-badge,
+        .custom-badge {
+          padding: 0.25rem 0.5rem;
+          border-radius: 6px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .category-badge.academic {
+          background: #bee3f8;
+          color: #2b6cb0;
+        }
+
+        .category-badge.break {
+          background: #fed7d7;
+          color: #c53030;
+        }
+
+        .category-badge.other {
+          background: #e6fffa;
+          color: #2c7a7b;
+        }
+
+        .type-badge.activity {
+          background: #c6f6d5;
+          color: #276749;
+        }
+
+        .type-badge.video {
+          background: #fbb6ce;
+          color: #97266d;
+        }
+
+        .built-in-badge {
+          background: #edf2f7;
+          color: #4a5568;
         }
 
         .custom-badge {
-          background: #28a745;
-          color: white;
-          padding: 0.125rem 0.5rem;
-          border-radius: 10px;
-          font-size: 0.7rem;
-          font-weight: 500;
+          background: #d6f5d6;
+          color: #22543d;
         }
 
-        /* 🎯 Transition badge styling */
-        .transition-badge {
-          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
-          color: white;
-          padding: 0.125rem 0.5rem;
-          border-radius: 10px;
-          font-size: 0.7rem;
-          font-weight: 500;
-          box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
-        }
-
-        .activity-meta {
-          display: flex;
-          flex-direction: column;
-          align-items: end;
-          gap: 0.25rem;
-          flex-shrink: 0;
-        }
-
-        .activity-duration {
+        .content-duration {
           font-size: 0.875rem;
-          color: #6c757d;
+          color: #718096;
           font-weight: 500;
         }
 
-        .activity-description {
-          color: #6c757d;
-          margin: 0.5rem 0;
+        .content-body {
+          flex: 1;
+        }
+
+        .content-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin: 0 0 0.5rem 0;
+          color: #2d3748;
+        }
+
+        .content-description {
+          color: #718096;
+          margin: 0 0 1rem 0;
           line-height: 1.5;
         }
 
-        .activity-tags {
+        .video-details {
+          background: rgba(229, 62, 62, 0.05);
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+          border-left: 3px solid #e53e3e;
+        }
+
+        .video-url {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .video-link {
+          color: #667eea;
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .video-link:hover {
+          text-decoration: underline;
+        }
+
+        .video-notes {
+          font-size: 0.9rem;
+          color: #4a5568;
+          font-style: italic;
+        }
+
+        .activity-materials {
+          background: rgba(56, 161, 105, 0.05);
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+          border-left: 3px solid #38a169;
+          font-size: 0.9rem;
+          color: #4a5568;
+        }
+
+        .content-tags {
           display: flex;
           flex-wrap: wrap;
           gap: 0.25rem;
-          margin-bottom: 1rem;
+          margin-top: 0.5rem;
         }
 
-        .activity-tag {
+        .content-tag {
           background: rgba(102, 126, 234, 0.1);
           color: #667eea;
           padding: 0.125rem 0.5rem;
-          border-radius: 8px;
+          border-radius: 6px;
           font-size: 0.75rem;
           font-weight: 500;
         }
 
-        /* 🎯 Transition details section */
-        .transition-details {
-          background: rgba(156, 39, 176, 0.1);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.5rem 0;
-          border-left: 3px solid #9C27B0;
-        }
-
-        .transition-info {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 0.5rem;
-          font-size: 0.8rem;
-          color: #7B1FA2;
-          font-weight: 500;
-        }
-
-        .transition-type,
-        .transition-animation {
-          background: rgba(255, 255, 255, 0.7);
-          padding: 0.25rem 0.5rem;
-          border-radius: 4px;
-        }
-
-        .movement-prompts-preview {
-          font-size: 0.8rem;
-          color: #6c757d;
-          font-style: italic;
-        }
-
-        .activity-actions {
+        .content-actions {
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
-          align-items: center;
         }
 
-        /* Choice Eligible Checkbox Styling */
-        .choice-checkbox-container {
-          width: 100%;
-          margin-bottom: 0.5rem;
-        }
-
-        .choice-checkbox-label {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-          font-size: 0.9rem;
-          color: #495057;
-          justify-content: center;
-        }
-
-        .choice-checkbox {
-          width: 1.2rem;
-          height: 1.2rem;
-          cursor: pointer;
-          accent-color: #667eea;
-        }
-
-        .choice-checkbox-text {
-          font-weight: 500;
-        }
-
-        .choice-checkbox-label:hover .choice-checkbox-text {
-          color: #667eea;
-        }
-
-        /* Action buttons row */
-        .activity-actions .action-buttons-row {
+        .secondary-actions {
           display: flex;
           gap: 0.5rem;
           justify-content: center;
@@ -1458,13 +1393,14 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
         .action-button {
           padding: 0.5rem 1rem;
-          border: 1px solid #dee2e6;
+          border: 1px solid #e2e8f0;
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s ease;
           font-weight: 500;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 0.25rem;
         }
 
@@ -1472,6 +1408,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           background: #667eea;
           color: white;
           border-color: #667eea;
+          width: 100%;
         }
 
         .action-button.primary:hover:not(:disabled) {
@@ -1481,22 +1418,9 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
 
-        /* 🎯 Special transition add button */
-        .action-button.primary.transition-add {
-          background: linear-gradient(45deg, #9C27B0, #E1BEE7);
-          border-color: #9C27B0;
-          box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
-        }
-
-        .action-button.primary.transition-add:hover:not(:disabled) {
-          background: linear-gradient(45deg, #8E24AA, #CE93D8);
-          border-color: #8E24AA;
-          box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
-        }
-
         .action-button.primary.adding {
-          background: #28a745;
-          border-color: #28a745;
+          background: #38a169;
+          border-color: #38a169;
           cursor: not-allowed;
         }
 
@@ -1518,32 +1442,39 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
         .action-button.secondary {
           background: white;
-          color: #6c757d;
+          color: #718096;
+          flex: 1;
         }
 
-        .action-button.secondary:hover {
-          background: #f8f9fa;
-          border-color: #adb5bd;
+        .action-button.secondary:hover:not(:disabled) {
+          background: #f7fafc;
+          border-color: #cbd5e0;
+        }
+
+        .action-button.secondary:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .action-button.danger {
           background: white;
-          color: #dc3545;
-          border-color: #dc3545;
+          color: #e53e3e;
+          border-color: #e53e3e;
+          flex: 1;
         }
 
         .action-button.danger:hover {
-          background: #dc3545;
+          background: #e53e3e;
           color: white;
-          border-color: #dc3545;
           transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+          box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
         }
 
         .no-results {
+          grid-column: 1 / -1;
           text-align: center;
           padding: 3rem 1rem;
-          color: #6c757d;
+          color: #718096;
         }
 
         .no-results-icon {
@@ -1555,7 +1486,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .no-results h3 {
           font-size: 1.5rem;
           margin-bottom: 0.5rem;
-          color: #495057;
+          color: #4a5568;
         }
 
         .no-results p {
@@ -1577,32 +1508,47 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           background: #5a67d8;
         }
 
-        .add-custom-section {
+        .add-content-section {
           text-align: center;
           margin-top: 2rem;
           padding-top: 2rem;
-          border-top: 2px solid #e9ecef;
+          border-top: 2px solid #e2e8f0;
         }
 
-        .add-custom-button {
+        .add-content-buttons {
+          display: flex;
+          justify-content: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+
+        .add-content-button {
           display: inline-flex;
           align-items: center;
           gap: 0.75rem;
           padding: 1rem 2rem;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
           border: none;
           border-radius: 12px;
           font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
-          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .add-custom-button:hover {
+        .add-content-button.activity {
+          background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+          color: white;
+        }
+
+        .add-content-button.video {
+          background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+          color: white;
+        }
+
+        .add-content-button:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
         }
 
         .add-icon {
@@ -1627,15 +1573,15 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .modal-content {
           background: white;
           border-radius: 12px;
-          max-width: 600px;
+          max-width: 700px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        .activity-modal {
-          max-width: 700px;
+        .content-modal {
+          max-width: 800px;
         }
 
         .modal-header {
@@ -1643,13 +1589,13 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           justify-content: space-between;
           align-items: center;
           padding: 1.5rem;
-          border-bottom: 1px solid #e9ecef;
+          border-bottom: 1px solid #e2e8f0;
         }
 
         .modal-header h3 {
           margin: 0;
           font-size: 1.5rem;
-          color: #495057;
+          color: #2d3748;
         }
 
         .close-button {
@@ -1657,7 +1603,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           border: none;
           font-size: 1.5rem;
           cursor: pointer;
-          color: #6c757d;
+          color: #718096;
           width: 2rem;
           height: 2rem;
           display: flex;
@@ -1668,7 +1614,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         }
 
         .close-button:hover {
-          background: #f8f9fa;
+          background: #f7fafc;
         }
 
         .modal-body {
@@ -1681,7 +1627,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
 
         .form-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 1rem;
         }
 
@@ -1689,7 +1635,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           display: block;
           margin-bottom: 0.5rem;
           font-weight: 600;
-          color: #495057;
+          color: #2d3748;
         }
 
         .form-group input,
@@ -1697,7 +1643,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         .form-group textarea {
           width: 100%;
           padding: 0.75rem;
-          border: 2px solid #dee2e6;
+          border: 2px solid #e2e8f0;
           border-radius: 8px;
           font-size: 1rem;
           transition: border-color 0.2s ease;
@@ -1711,44 +1657,83 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .form-help {
+          color: #718096;
+          font-size: 0.8rem;
+          margin-top: 0.25rem;
+        }
+
+        .content-type-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .content-type-option {
+          cursor: pointer;
+        }
+
+        .content-type-option input {
+          display: none;
+        }
+
+        .content-type-card {
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 1rem;
+          text-align: center;
+          transition: all 0.2s ease;
+        }
+
+        .content-type-option.selected .content-type-card {
+          border-color: #667eea;
+          background: rgba(102, 126, 234, 0.05);
+        }
+
+        .content-type-card:hover {
+          border-color: #cbd5e0;
+        }
+
+        .content-type-icon {
+          font-size: 2rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .content-type-label {
+          font-weight: 600;
+          color: #2d3748;
+          margin-bottom: 0.25rem;
+        }
+
+        .content-type-desc {
+          font-size: 0.8rem;
+          color: #718096;
+        }
+
         .icon-selection {
           display: flex;
-          flex-direction: column;
+          align-items: center;
           gap: 1rem;
         }
 
         .current-icon {
+          width: 3rem;
+          height: 3rem;
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 4rem;
-          height: 4rem;
-          border: 2px solid #dee2e6;
-          border-radius: 12px;
-          background: #f8f9fa;
+          background: #f7fafc;
         }
 
         .emoji-preview {
           font-size: 2rem;
         }
 
-        .custom-icon-preview {
-          width: 3rem;
-          height: 3rem;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-
-        .icon-buttons {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .icon-button,
-        .file-upload-button {
+        .icon-button {
           padding: 0.5rem 1rem;
-          border: 2px solid #dee2e6;
+          border: 2px solid #e2e8f0;
           background: white;
           border-radius: 8px;
           cursor: pointer;
@@ -1757,30 +1742,46 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           font-weight: 500;
         }
 
-        .icon-button:hover,
-        .file-upload-button:hover {
+        .icon-button:hover {
           border-color: #667eea;
           background: rgba(102, 126, 234, 0.05);
         }
 
         .emoji-picker {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
-          gap: 0.5rem;
-          padding: 1rem;
-          background: #f8f9fa;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          border: 2px solid #e2e8f0;
           border-radius: 8px;
-          max-height: 200px;
+          padding: 1rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 10;
+          max-height: 300px;
           overflow-y: auto;
+        }
+
+        .emoji-category h4 {
+          margin: 0 0 0.5rem 0;
+          color: #4a5568;
+          font-size: 0.9rem;
+        }
+
+        .emoji-grid {
+          display: grid;
+          grid-template-columns: repeat(8, 1fr);
+          gap: 0.25rem;
+          margin-bottom: 1rem;
         }
 
         .emoji-option {
           padding: 0.5rem;
-          border: 1px solid #dee2e6;
+          border: 1px solid #e2e8f0;
           background: white;
           border-radius: 6px;
           cursor: pointer;
-          font-size: 1.5rem;
+          font-size: 1.2rem;
           transition: all 0.2s ease;
           aspect-ratio: 1;
           display: flex;
@@ -1794,8 +1795,107 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           transform: scale(1.1);
         }
 
+        .materials-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .material-input {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+        }
+
+        .material-input input {
+          flex: 1;
+        }
+
+        .remove-material {
+          background: #e53e3e;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 2rem;
+          height: 2rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1rem;
+          transition: background-color 0.2s ease;
+        }
+
+        .remove-material:hover {
+          background: #c53030;
+        }
+
+        .add-material {
+          padding: 0.5rem 1rem;
+          background: #667eea;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 500;
+          transition: background-color 0.2s ease;
+        }
+
+        .add-material:hover {
+          background: #5a67d8;
+        }
+
+        .tags-section {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .suggested-tags {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .suggested-tags small {
+          color: #718096;
+          font-weight: 500;
+        }
+
+        .tag-suggestions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+        }
+
+        .tag-suggestion {
+          padding: 0.25rem 0.5rem;
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s ease;
+        }
+
+        .tag-suggestion:hover:not(:disabled) {
+          border-color: #667eea;
+          background: rgba(102, 126, 234, 0.05);
+        }
+
+        .tag-suggestion.added {
+          background: #667eea;
+          color: white;
+          border-color: #667eea;
+        }
+
+        .tag-suggestion:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         .tags-input {
-          border: 2px solid #dee2e6;
+          border: 2px solid #e2e8f0;
           border-radius: 8px;
           padding: 0.5rem;
           background: white;
@@ -1869,8 +1969,8 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         }
 
         .add-tag-input button:disabled {
-          background: #dee2e6;
-          color: #6c757d;
+          background: #e2e8f0;
+          color: #a0aec0;
           cursor: not-allowed;
         }
 
@@ -1879,7 +1979,7 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           justify-content: flex-end;
           gap: 1rem;
           padding: 1.5rem;
-          border-top: 1px solid #e9ecef;
+          border-top: 1px solid #e2e8f0;
         }
 
         .cancel-btn,
@@ -1893,12 +1993,12 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         }
 
         .cancel-btn {
-          background: #f8f9fa;
-          color: #6c757d;
+          background: #f7fafc;
+          color: #718096;
         }
 
         .cancel-btn:hover {
-          background: #e9ecef;
+          background: #edf2f7;
         }
 
         .save-btn {
@@ -1911,50 +2011,14 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         }
 
         .save-btn:disabled {
-          background: #dee2e6;
-          color: #6c757d;
+          background: #e2e8f0;
+          color: #a0aec0;
           cursor: not-allowed;
-        }
-
-        /* Category-specific styling */
-        .activity-item[data-category="academic"] .activity-category-badge {
-          background: rgba(52, 152, 219, 0.1);
-          color: #3498db;
-        }
-
-        .activity-item[data-category="creative"] .activity-category-badge {
-          background: rgba(155, 89, 182, 0.1);
-          color: #9b59b6;
-        }
-
-        .activity-item[data-category="movement"] .activity-category-badge {
-          background: rgba(46, 204, 113, 0.1);
-          color: #2ecc71;
-        }
-
-        .activity-item[data-category="break"] .activity-category-badge {
-          background: rgba(241, 196, 15, 0.1);
-          color: #f1c40f;
-        }
-
-        .activity-item[data-category="social"] .activity-category-badge {
-          background: rgba(230, 126, 34, 0.1);
-          color: #e67e22;
-        }
-
-        .activity-item[data-category="resource"] .activity-category-badge {
-          background: rgba(231, 76, 60, 0.1);
-          color: #e74c3c;
-        }
-
-        .activity-item[data-category="transition"] .activity-category-badge {
-          background: rgba(142, 68, 173, 0.1);
-          color: #8e44ad;
         }
 
         /* Responsive Design */
         @media (max-width: 768px) {
-          .activity-library-page {
+          .simplified-activity-library {
             padding: 1rem;
           }
 
@@ -1963,60 +2027,57 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           }
 
           .filter-section {
-            flex-direction: column;
-            align-items: stretch;
             gap: 1rem;
           }
 
-          .category-filters {
-            justify-content: center;
-          }
-
-          .view-controls {
-            align-self: center;
-          }
-
-          .activities-container.grid {
-            grid-template-columns: 1fr;
-          }
-
-          .activities-container.list .activity-item {
+          .filter-group {
             flex-direction: column;
-            text-align: center;
-          }
-
-          .activities-container.list .activity-icon-large {
-            margin-right: 0;
-            margin-bottom: 1rem;
-          }
-
-          .activity-header {
-            flex-direction: column;
-            text-align: center;
+            align-items: stretch;
             gap: 0.5rem;
           }
 
-          .activity-meta {
+          .filter-group label {
+            min-width: auto;
+          }
+
+          .category-filters,
+          .content-type-filters {
+            justify-content: center;
+          }
+
+          .content-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .content-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+
+          .content-meta {
             align-items: center;
           }
 
-          .activity-actions {
+          .secondary-actions {
             flex-wrap: wrap;
-            justify-content: center;
           }
 
-          .action-button {
-            flex: 1;
-            min-width: 80px;
-            justify-content: center;
+          .add-content-buttons {
+            flex-direction: column;
+            align-items: center;
           }
 
           .form-row {
             grid-template-columns: 1fr;
           }
 
-          .icon-buttons {
-            justify-content: center;
+          .content-type-selector {
+            grid-template-columns: 1fr;
+          }
+
+          .emoji-grid {
+            grid-template-columns: repeat(6, 1fr);
           }
 
           .modal-content {
@@ -2024,24 +2085,19 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
             max-width: calc(100vw - 1rem);
           }
 
-          .transition-notice {
-            flex-direction: column;
-            text-align: center;
-            gap: 0.25rem;
-          }
-
-          .transition-info {
-            flex-direction: column;
-            gap: 0.5rem;
+          .tag-suggestions {
+            justify-content: center;
           }
         }
 
         @media (max-width: 480px) {
-          .category-filters {
+          .category-filters,
+          .content-type-filters {
             flex-direction: column;
           }
 
-          .category-button {
+          .category-button,
+          .content-type-button {
             justify-content: center;
           }
 
@@ -2049,16 +2105,107 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
             font-size: 16px; /* Prevents zoom on iOS */
           }
 
-          .emoji-picker {
-            grid-template-columns: repeat(6, 1fr);
-          }
-
-          .activity-title {
+          .content-title {
             font-size: 1.1rem;
           }
 
-          .transition-details {
-            padding: 0.5rem;
+          .content-badges {
+            align-items: center;
+          }
+
+          .emoji-grid {
+            grid-template-columns: repeat(5, 1fr);
+          }
+
+          .material-input {
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+
+          .remove-material {
+            align-self: flex-end;
+          }
+        }
+
+        /* Special category highlighting */
+        .content-item[data-category="academic"] {
+          border-left-color: #2b6cb0;
+        }
+
+        .content-item[data-category="break"] {
+          border-left-color: #c53030;
+        }
+
+        .content-item[data-category="other"] {
+          border-left-color: #2c7a7b;
+        }
+
+        /* Video-specific animations */
+        .content-item.video .video-indicator {
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        /* Loading states */
+        .content-item .action-button.adding {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .content-item .action-button.adding::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+          animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+
+        /* Focus styles for accessibility */
+        .category-button:focus,
+        .content-type-button:focus,
+        .action-button:focus,
+        .emoji-option:focus,
+        .tag-suggestion:focus {
+          outline: 2px solid #667eea;
+          outline-offset: 2px;
+        }
+
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+          .content-item {
+            border-width: 3px;
+          }
+          
+          .content-badges > * {
+            border: 1px solid currentColor;
+          }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          .content-item,
+          .action-button,
+          .emoji-option,
+          .category-button,
+          .content-type-button {
+            transition: none;
+          }
+          
+          .video-indicator,
+          .spinner {
+            animation: none;
           }
         }
       `}</style>
@@ -2066,4 +2213,4 @@ const ActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   );
 };
 
-export default ActivityLibrary;
+export default SimplifiedActivityLibrary;

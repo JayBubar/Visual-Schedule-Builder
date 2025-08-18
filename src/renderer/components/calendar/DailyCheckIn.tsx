@@ -21,7 +21,6 @@ import WeatherWidget from './WeatherWidget';
 import CalendarWidget from './CalendarWidget';
 import CalendarSettingsComponent from './CalendarSettings';
 import BehaviorCommitments from './BehaviorCommitments';
-import IndependentChoices from './IndependentChoices';
 import CalendarMathStep from './CalendarMathStep';
 import WeatherClothingStep from './WeatherClothingStep';
 import SeasonalLearningStep from './SeasonalLearningStep';
@@ -62,7 +61,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showCelebrationAnimation, setShowCelebrationAnimation] = useState(false);
-  const [showChoiceInterface, setShowChoiceInterface] = useState(false);
 
   useEffect(() => {
     try {
@@ -555,8 +553,10 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 8: Choice Activities - Independent Choices */}
-        {currentStep === 8 && dailyCheckInSettings?.checkInFlow?.enableChoiceActivities !== false && (
+        {/* Step 8: Choice Activities - REMOVED */}
+
+        {/* Step 8: Skip Choice Activities - Auto-advance to next step */}
+        {currentStep === 8 && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{
@@ -566,145 +566,15 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                 marginBottom: '1rem',
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
               }}>
-                🎯 Choice Activities
+                ⏭️ Skipping Choice Activities
               </h2>
               <p style={{
                 fontSize: '1.3rem',
                 color: 'rgba(255,255,255,0.9)',
                 marginBottom: '2rem'
               }}>
-                Let's assign students to their choice activities!
+                Choice activities have been disabled. Moving to schedule review...
               </p>
-            </div>
-
-            {/* Custom Choice Assignment Interface - Skip intermediate screen */}
-            <div style={{
-              background: 'rgba(255,255,255,0.15)',
-              borderRadius: '20px',
-              padding: '2rem',
-              backdropFilter: 'blur(20px)',
-              border: '2px solid rgba(255,255,255,0.2)',
-              textAlign: 'center',
-              marginBottom: '2rem'
-            }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
-              <h3 style={{
-                fontSize: '2rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                Ready for Choice Time!
-              </h3>
-              <p style={{
-                fontSize: '1.2rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Students will now be assigned to their independent choice activities.
-              </p>
-              
-              {/* Quick Stats */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                gap: '1rem',
-                marginBottom: '2rem'
-              }}>
-                <div style={{
-                  background: 'rgba(34, 197, 94, 0.2)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  border: '2px solid rgba(34, 197, 94, 0.4)'
-                }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👥</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-                    {presentStudents.length}
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                    Present Students
-                  </div>
-                </div>
-                
-                <div style={{
-                  background: 'rgba(59, 130, 246, 0.2)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  border: '2px solid rgba(59, 130, 246, 0.4)'
-                }}>
-                  <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📚</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white' }}>
-                    6+
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
-                    Activities Ready
-                  </div>
-                </div>
-                
-                <button
-                  onClick={() => {
-                    // Show the IndependentChoices interface
-                    setShowChoiceInterface(true);
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.4))',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    textAlign: 'center',
-                    border: '2px solid rgba(34, 197, 94, 0.6)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    color: 'white',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 15px rgba(34, 197, 94, 0.3)',
-                    minHeight: '120px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(34, 197, 94, 0.5)';
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.4), rgba(16, 185, 129, 0.5))';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(34, 197, 94, 0.3)';
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(16, 185, 129, 0.4))';
-                  }}
-                >
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🚀</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'white', marginBottom: '0.25rem' }}>
-                    Start
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)' }}>
-                    Choice Selection
-                  </div>
-                </button>
-              </div>
-
-              <div style={{
-                background: 'rgba(16, 185, 129, 0.2)',
-                borderRadius: '16px',
-                padding: '1.5rem',
-                border: '2px solid rgba(16, 185, 129, 0.4)',
-                marginBottom: '2rem'
-              }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>✨</div>
-                <p style={{
-                  fontSize: '1.1rem',
-                  color: 'white',
-                  margin: 0,
-                  fontWeight: '600'
-                }}>
-                  Choice assignments will be saved and available in the Visual Schedule Builder
-                  as "Choice Item Time" activities for each student!
-                </p>
-              </div>
             </div>
             
             <div style={{
@@ -728,7 +598,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   transition: 'all 0.3s ease'
                 }}
               >
-                ← Back to Behavior Goals
+                ← Back to Celebrations
               </button>
               
               <button
@@ -946,63 +816,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         </button>
       </div>
 
-      {/* Choice Interface Modal */}
-      {showChoiceInterface && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backdropFilter: 'blur(5px)'
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            borderRadius: '20px',
-            padding: '2rem',
-            maxWidth: '95vw',
-            maxHeight: '95vh',
-            overflow: 'auto',
-            position: 'relative'
-          }}>
-            <button
-              onClick={() => {
-                // Save assignments and close
-                setShowChoiceInterface(false);
-              }}
-              style={{
-                position: 'absolute',
-                top: '1rem',
-                right: '1rem',
-                background: 'rgba(34, 197, 94, 0.8)',
-                border: '2px solid rgba(34, 197, 94, 1)',
-                borderRadius: '12px',
-                padding: '0.75rem 1.5rem',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ✅ Save & Complete
-            </button>
-            
-            <IndependentChoices
-              selectedDate={currentDate.toISOString().split('T')[0]}
-              onClose={() => setShowChoiceInterface(false)}
-              mode="assignment-only"
-            />
-          </div>
-        </div>
-      )}
+      {/* Choice Interface Modal - REMOVED */}
 
       {/* Settings Modal */}
       {calendarSettings && (
