@@ -803,17 +803,10 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           </div>
         </div>
 
-        <div className="filter-section">
-          {/* Category Filters */}
-          <div className="filter-group">
-            <label>Category:</label>
-            <div className="category-filters">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
-              >
-                All ({getCategoryCount('all')})
-              </button>
+        <div className="filters-and-actions">
+          <div className="filter-section">
+            {/* Category Filters - Top Row */}
+            <div className="filter-row">
               <button
                 onClick={() => setSelectedCategory('academic')}
                 className={`category-button ${selectedCategory === 'academic' ? 'active' : ''}`}
@@ -833,12 +826,9 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                 🎯 Other ({getCategoryCount('other')})
               </button>
             </div>
-          </div>
 
-          {/* Content Type Filters */}
-          <div className="filter-group">
-            <label>Type:</label>
-            <div className="content-type-filters">
+            {/* Content Type Filters - Bottom Row */}
+            <div className="filter-row">
               <button
                 onClick={() => setSelectedContentType('all')}
                 className={`content-type-button ${selectedContentType === 'all' ? 'active' : ''}`}
@@ -846,18 +836,42 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                 All ({getContentTypeCount('all')})
               </button>
               <button
-                onClick={() => setSelectedContentType('activity')}
-                className={`content-type-button ${selectedContentType === 'activity' ? 'active' : ''}`}
-              >
-                📚 Activities ({getContentTypeCount('activity')})
-              </button>
-              <button
                 onClick={() => setSelectedContentType('video')}
                 className={`content-type-button ${selectedContentType === 'video' ? 'active' : ''}`}
               >
-                🎬 Videos ({getContentTypeCount('video')})
+                🎬 Video ({getContentTypeCount('video')})
+              </button>
+              <button
+                onClick={() => setSelectedContentType('activity')}
+                className={`content-type-button ${selectedContentType === 'activity' ? 'active' : ''}`}
+              >
+                📄 Documents ({getContentTypeCount('activity')})
               </button>
             </div>
+          </div>
+
+          {/* Create Buttons - Right Side */}
+          <div className="create-actions">
+            <button 
+              className="create-button activity"
+              onClick={() => {
+                setEditingContent(undefined);
+                setModalOpen(true);
+              }}
+            >
+              <span className="create-icon">📚</span>
+              Create Custom Activity
+            </button>
+            <button 
+              className="create-button video"
+              onClick={() => {
+                setEditingContent(undefined);
+                setModalOpen(true);
+              }}
+            >
+              <span className="create-icon">📥</span>
+              Download Video/Docs
+            </button>
           </div>
         </div>
       </div>
@@ -998,31 +1012,6 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
         )}
       </div>
 
-      {/* Add Custom Content Buttons */}
-      <div className="add-content-section">
-        <div className="add-content-buttons">
-          <button 
-            className="add-content-button activity"
-            onClick={() => {
-              setEditingContent(undefined);
-              setModalOpen(true);
-            }}
-          >
-            <span className="add-icon">📚</span>
-            Create Custom Activity
-          </button>
-          <button 
-            className="add-content-button video"
-            onClick={() => {
-              setEditingContent(undefined);
-              setModalOpen(true);
-            }}
-          >
-            <span className="add-icon">🎬</span>
-            Add Educational Video
-          </button>
-        </div>
-      </div>
 
       {/* Content Modal */}
       <ContentModal
@@ -1115,30 +1104,64 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           padding: 0.25rem;
         }
 
+        .filters-and-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 2rem;
+        }
+
         .filter-section {
           display: flex;
           flex-direction: column;
-          gap: 1rem;
+          gap: 0.75rem;
+          flex: 1;
         }
 
-        .filter-group {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .filter-group label {
-          font-weight: 600;
-          color: #4a5568;
-          min-width: 80px;
-        }
-
-        .category-filters,
-        .content-type-filters {
+        .filter-row {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
+        }
+
+        .create-actions {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          min-width: 200px;
+        }
+
+        .create-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .create-button.activity {
+          background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+          color: white;
+        }
+
+        .create-button.video {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+        }
+
+        .create-button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .create-icon {
+          font-size: 1rem;
         }
 
         .category-button,
@@ -2026,22 +2049,18 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
             padding: 1rem;
           }
 
-          .filter-section {
+          .filters-and-actions {
+            flex-direction: column;
             gap: 1rem;
           }
 
-          .filter-group {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 0.5rem;
-          }
-
-          .filter-group label {
+          .create-actions {
             min-width: auto;
+            flex-direction: row;
+            justify-content: center;
           }
 
-          .category-filters,
-          .content-type-filters {
+          .filter-row {
             justify-content: center;
           }
 
@@ -2061,11 +2080,6 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
 
           .secondary-actions {
             flex-wrap: wrap;
-          }
-
-          .add-content-buttons {
-            flex-direction: column;
-            align-items: center;
           }
 
           .form-row {
@@ -2091,8 +2105,11 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
         }
 
         @media (max-width: 480px) {
-          .category-filters,
-          .content-type-filters {
+          .filter-row {
+            flex-direction: column;
+          }
+
+          .create-actions {
             flex-direction: column;
           }
 
