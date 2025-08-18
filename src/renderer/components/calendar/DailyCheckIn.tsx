@@ -30,6 +30,8 @@ interface DailyCheckInProps {
   students?: Student[];
   onSwitchToScheduleBuilder?: () => void;
   onSwitchToDisplay?: () => void;
+  // NEW: Add a prop to toggle full screen mode
+  isFullScreen?: boolean;
 }
 
 const DailyCheckIn: React.FC<DailyCheckInProps> = ({
@@ -38,7 +40,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   staff = [],
   students = [],
   onSwitchToScheduleBuilder,
-  onSwitchToDisplay
+  onSwitchToDisplay,
+  isFullScreen = false,
 }) => {
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -369,21 +372,26 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   if (!isActive) {
     return null;
   }
+  
+  // Conditionally apply a CSS class for full screen mode
+  const containerClassName = isFullScreen ? 'daily-check-in full-screen-mode' : 'daily-check-in';
 
   if (isLoading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        overflow: 'auto',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
-          <h2>Loading Daily Check-In...</h2>
+      <div className={containerClassName}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
+            <h2>Loading Daily Check-In...</h2>
+          </div>
         </div>
       </div>
     );
@@ -392,70 +400,67 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   // Show celebration animation before transitioning
   if (showCelebrationAnimation) {
     return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #fd79a8)',
-        backgroundSize: '400% 400%',
-        animation: 'celebrationColors 2s ease-in-out infinite',
-        color: 'white',
-        textAlign: 'center'
-      }}>
+      <div className={containerClassName}>
         <div style={{
-          fontSize: '8rem',
-          marginBottom: '2rem',
-          animation: 'bounce 1s ease-in-out infinite'
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #fd79a8)',
+          backgroundSize: '400% 400%',
+          animation: 'celebrationColors 2s ease-in-out infinite',
+          color: 'white',
+          textAlign: 'center'
         }}>
-          🎉🚀🎉
+          <div style={{
+            fontSize: '8rem',
+            marginBottom: '2rem',
+            animation: 'bounce 1s ease-in-out infinite'
+          }}>
+            🎉🚀🎉
+          </div>
+          <h1 style={{
+            fontSize: '4rem',
+            fontWeight: '700',
+            marginBottom: '1rem',
+            textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+            animation: 'pulse 1s ease-in-out infinite'
+          }}>
+            Ready to Learn!
+          </h1>
+          <p style={{
+            fontSize: '1.5rem',
+            opacity: 0.9,
+            marginBottom: '2rem'
+          }}>
+            Transitioning to Visual Schedule Display...
+          </p>
+          
+          <style>{`
+            @keyframes celebrationColors {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+            
+            @keyframes bounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-20px); }
+            }
+            
+            @keyframes pulse {
+              0%, 100% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+            }
+          `}</style>
         </div>
-        <h1 style={{
-          fontSize: '4rem',
-          fontWeight: '700',
-          marginBottom: '1rem',
-          textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-          animation: 'pulse 1s ease-in-out infinite'
-        }}>
-          Ready to Learn!
-        </h1>
-        <p style={{
-          fontSize: '1.5rem',
-          opacity: 0.9,
-          marginBottom: '2rem'
-        }}>
-          Transitioning to Visual Schedule Display...
-        </p>
-        
-        <style>{`
-          @keyframes celebrationColors {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-          }
-          
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      position: 'relative'
-    }}>
+    <div className={containerClassName}>
       {/* Progress Indicator */}
       <div style={{
         position: 'fixed',
@@ -491,7 +496,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       </div>
 
       {/* Step Content */}
-      <div style={{ paddingTop: '4rem' }}>
+      <div className="step-content-container">
         {/* Step 1: Welcome Screen */}
         {currentStep === 1 && (
           <WelcomeScreen
@@ -1069,11 +1074,6 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               @keyframes pulse {
                 0%, 100% { transform: scale(1); }
                 50% { transform: scale(1.05); }
-              }
-              
-              @keyframes glow {
-                from { box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-                to { box-shadow: 0 0 30px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.3); }
               }
             `}</style>
           </div>
