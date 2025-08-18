@@ -23,6 +23,7 @@ import CalendarSettingsComponent from './CalendarSettings';
 import BehaviorCommitments from './BehaviorCommitments';
 import IndependentChoices from './IndependentChoices';
 import CalendarMathStep from './CalendarMathStep';
+import WeatherClothingStep from './WeatherClothingStep';
 
 interface DailyCheckInProps {
   isActive: boolean;
@@ -522,90 +523,13 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         )}
         {/* Step 5: Weather & Clothing Discussion - ENHANCED WEATHER */}
         {currentStep === 5 && (
-          <div style={{ padding: '2rem', minHeight: '600px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                🌤️ Weather & What We Wear
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Let's check the weather and talk about what to wear today!
-              </p>
-            </div>
-
-            <WeatherWidget
-              settings={calendarSettings}
-              onWeatherUpdate={handleWeatherUpdate}
-              showDiscussionPrompts={true}
-              size="large"
-            />
-            
-            {/* PLACEHOLDER: Clothing discussion will be added in Step 2 */}
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: '1.5rem',
-              marginTop: '2rem',
-              textAlign: 'center'
-            }}>
-              <h4 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>👕 Clothing Discussion Coming Soon!</h4>
-              <p style={{ opacity: 0.8 }}>
-                "What should we wear today?" prompts and seasonal connections
-              </p>
-            </div>
-            
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1rem',
-              marginTop: '2rem'
-            }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ← Back to Calendar Math
-              </button>
-              
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 3rem',
-                  fontSize: '1.1rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Continue to Celebrations →
-              </button>
-            </div>
-          </div>
+          <WeatherClothingStep
+            currentDate={currentDate}
+            calendarSettings={calendarSettings}
+            onWeatherUpdate={handleWeatherUpdate}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
         )}
 
         {/* Step 6: Celebration System - KEEP AS-IS */}
