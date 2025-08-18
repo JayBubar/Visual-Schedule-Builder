@@ -512,8 +512,20 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 3: Enhanced Calendar Talk with Split-Screen Layout */}
-        {currentStep === 3 && (
+        {/* Step 3: Behavior Expectations - MOVED FROM STEP 6 */}
+        {currentStep === 3 && dailyCheckInSettings?.checkInFlow?.enableBehaviorCommitments !== false && (
+          <BehaviorCommitments
+            students={presentStudents}  // 🎯 KEY: Now uses presentStudents after attendance
+            currentDate={currentDate}
+            todayCheckIn={todayCheckIn}
+            onUpdateCheckIn={saveTodayCheckIn}
+            onNext={handleNext}
+            onBack={handleBack}
+          />
+        )}
+
+        {/* Step 4: Calendar Math Talk - ENHANCED CALENDAR TALK */}
+        {currentStep === 4 && (
           <div style={{ 
             padding: '2rem', 
             minHeight: '600px',
@@ -529,204 +541,39 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                 marginBottom: '1rem',
                 textShadow: '0 2px 4px rgba(0,0,0,0.3)'
               }}>
-                📅 Calendar Talk
+                📅 Calendar Math Time
               </h2>
               <p style={{
                 fontSize: '1.3rem',
                 color: 'rgba(255,255,255,0.9)',
                 marginBottom: '0'
               }}>
-                Let's explore today's date and discover what's happening!
+                Let's explore today's date: Month → Week → Day!
               </p>
             </div>
 
-            {/* Split-Screen Layout */}
+            {/* PLACEHOLDER: This will be enhanced in Step 2 */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '2rem',
-              flex: 1,
-              minHeight: '500px',
-              marginBottom: '2rem'
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '20px',
+              padding: '2rem',
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(255,255,255,0.2)',
+              textAlign: 'center',
+              flex: 1
             }}>
-              
-              {/* LEFT PANEL - Calendar */}
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '20px',
-                padding: '2rem',
-                backdropFilter: 'blur(20px)',
-                border: '2px solid rgba(255,255,255,0.2)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <div style={{
-                  fontSize: '3rem',
-                  marginBottom: '1rem'
-                }}>
-                  📅
-                </div>
-                <h3 style={{
-                  fontSize: '1.8rem',
-                  fontWeight: '700',
-                  color: 'white',
-                  marginBottom: '1.5rem',
-                  textAlign: 'center'
-                }}>
-                  Interactive Calendar
-                </h3>
-                
-                <CalendarWidget
-                  selectedDate={currentDate}
-                  onDateSelect={setCurrentDate}
-                  size="large"
-                  savedDates={[]}
-                />
-                
-                {/* Date Display */}
-                <div style={{
-                  marginTop: '1.5rem',
-                  padding: '1rem',
-                  background: 'rgba(255,255,255,0.1)',
-                  borderRadius: '12px',
-                  textAlign: 'center',
-                  width: '100%'
-                }}>
-                  <div style={{
-                    fontSize: '1.2rem',
-                    fontWeight: '600',
-                    color: 'white'
-                  }}>
-                    {formatDate(currentDate)}
-                  </div>
-                  <div style={{
-                    fontSize: '0.9rem',
-                    color: 'rgba(255,255,255,0.8)',
-                    marginTop: '0.5rem'
-                  }}>
-                    Day {Math.floor((currentDate.getTime() - new Date(currentDate.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))} of {currentDate.getFullYear()}
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT PANEL - Large Date Display */}
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '20px',
-                padding: '2rem',
-                backdropFilter: 'blur(20px)',
-                border: '2px solid rgba(255,255,255,0.2)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                height: '100%'
-              }}>
-                <div style={{
-                  fontSize: '4rem',
-                  marginBottom: '2rem'
-                }}>
-                  📅
-                </div>
-                
-                <div style={{
-                  fontSize: '3.5rem',
-                  fontWeight: '700',
-                  color: 'white',
-                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                  lineHeight: '1.2',
-                  marginBottom: '1rem'
-                }}>
-                  Today is{' '}
-                  <span style={{
-                    color: '#FFD700',
-                    textShadow: '0 4px 8px rgba(255,215,0,0.4)'
-                  }}>
-                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
-                  </span>
-                </div>
-                
-                <div style={{
-                  fontSize: '3rem',
-                  fontWeight: '700',
-                  color: 'white',
-                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                  lineHeight: '1.2',
-                  marginBottom: '1rem'
-                }}>
-                  It is{' '}
-                  <span style={{
-                    color: '#4ECDC4',
-                    textShadow: '0 4px 8px rgba(78,205,196,0.4)'
-                  }}>
-                    {currentDate.toLocaleDateString('en-US', { month: 'long' })}
-                  </span>
-                </div>
-                
-                <div style={{
-                  fontSize: '3rem',
-                  fontWeight: '700',
-                  color: 'white',
-                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                  lineHeight: '1.2'
-                }}>
-                  in{' '}
-                  <span style={{
-                    color: '#FF6B6B',
-                    textShadow: '0 4px 8px rgba(255,107,107,0.4)'
-                  }}>
-                    {currentDate.getFullYear()}
-                  </span>
-                </div>
-                
-                {/* Decorative elements */}
-                <div style={{
-                  marginTop: '2rem',
-                  display: 'flex',
-                  gap: '1rem',
-                  fontSize: '2rem'
-                }}>
-                  <span style={{ animation: 'bounce 2s infinite' }}>⭐</span>
-                  <span style={{ animation: 'bounce 2s infinite 0.5s' }}>🌟</span>
-                  <span style={{ animation: 'bounce 2s infinite 1s' }}>✨</span>
-                </div>
-                
-                <style>{`
-                  @keyframes bounce {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-10px); }
-                  }
-                `}</style>
-              </div>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
+              <h3 style={{ fontSize: '2rem', marginBottom: '1rem' }}>Calendar Learning Coming Soon!</h3>
+              <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>
+                Month → Week → Day progression with vocabulary building
+              </p>
             </div>
 
-            {/* Responsive Mobile Layout */}
-            <style>{`
-              @media (max-width: 768px) {
-                .calendar-split-layout {
-                  grid-template-columns: 1fr !important;
-                  gap: 1rem !important;
-                }
-                
-                .calendar-left-panel {
-                  order: 1;
-                }
-                
-                .calendar-right-panel {
-                  order: 2;
-                }
-              }
-            `}</style>
-
-            {/* Navigation Buttons */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '1rem',
-              marginTop: 'auto'
+              marginTop: '2rem'
             }}>
               <button
                 onClick={handleBack}
@@ -743,7 +590,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   transition: 'all 0.3s ease'
                 }}
               >
-                ← Back to Attendance
+                ← Back to Behavior Expectations
               </button>
               
               <button
@@ -758,35 +605,36 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   fontWeight: '700',
                   cursor: 'pointer',
                   backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)'
+                  transition: 'all 0.3s ease'
                 }}
               >
-                Continue to Weather →
+                Continue to Weather & Clothing →
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 4: Weather Discussion */}
-        {currentStep === 4 && calendarSettings && dailyCheckInSettings?.checkInFlow?.enableWeather !== false && (
-          <div style={{ padding: '2rem', textAlign: 'center', minHeight: '600px' }}>
-            <h2 style={{
-              fontSize: '2.5rem',
-              fontWeight: '700',
-              color: 'white',
-              marginBottom: '1rem',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-            }}>
-              🌤️ Weather Discussion
-            </h2>
-            <p style={{
-              fontSize: '1.3rem',
-              color: 'rgba(255,255,255,0.9)',
-              marginBottom: '2rem'
-            }}>
-              Let's check today's weather and talk about what we observe!
-            </p>
+        {/* Step 5: Weather & Clothing Discussion - ENHANCED WEATHER */}
+        {currentStep === 5 && (
+          <div style={{ padding: '2rem', minHeight: '600px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <h2 style={{
+                fontSize: '2.5rem',
+                fontWeight: '700',
+                color: 'white',
+                marginBottom: '1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}>
+                🌤️ Weather & What We Wear
+              </h2>
+              <p style={{
+                fontSize: '1.3rem',
+                color: 'rgba(255,255,255,0.9)',
+                marginBottom: '2rem'
+              }}>
+                Let's check the weather and talk about what to wear today!
+              </p>
+            </div>
 
             <WeatherWidget
               settings={calendarSettings}
@@ -794,6 +642,20 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               showDiscussionPrompts={true}
               size="large"
             />
+            
+            {/* PLACEHOLDER: Clothing discussion will be added in Step 2 */}
+            <div style={{
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              marginTop: '2rem',
+              textAlign: 'center'
+            }}>
+              <h4 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>👕 Clothing Discussion Coming Soon!</h4>
+              <p style={{ opacity: 0.8 }}>
+                "What should we wear today?" prompts and seasonal connections
+              </p>
+            </div>
             
             <div style={{
               display: 'flex',
@@ -816,7 +678,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   transition: 'all 0.3s ease'
                 }}
               >
-                ← Back to Calendar
+                ← Back to Calendar Math
               </button>
               
               <button
@@ -840,26 +702,14 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           </div>
         )}
 
-        {/* Step 5: Celebration System */}
-        {currentStep === 5 && dailyCheckInSettings?.checkInFlow?.enableCelebrations !== false && (
+        {/* Step 6: Celebration System - KEEP AS-IS */}
+        {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableCelebrations !== false && (
           <CelebrationSystem
             currentDate={currentDate}
             students={presentStudents}
             onNext={handleNext}
             onBack={handleBack}
             birthdaySettings={dailyCheckInSettings?.birthdaySettings}
-          />
-        )}
-
-        {/* Step 6: Behavior Commitments */}
-        {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableBehaviorCommitments !== false && (
-          <BehaviorCommitments
-            students={presentStudents}
-            currentDate={currentDate}
-            todayCheckIn={todayCheckIn}
-            onUpdateCheckIn={saveTodayCheckIn}
-            onNext={handleNext}
-            onBack={handleBack}
           />
         )}
 
