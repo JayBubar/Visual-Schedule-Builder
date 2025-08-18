@@ -12,18 +12,25 @@
   padding: 0;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
-  overflow: hidden; /* Prevent double scrolling */
+  overflow: auto; /* Allow scrolling on the main page */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.6;
   color: #2c3e50;
   background: #f8f9fa;
 }
 
+#root {
+  height: 100%;
+  overflow: visible; /* Let content flow into the body */
+  display: flex;
+  flex-direction: column;
+}
+
 /* Main app container - ONLY scrollable element */
 .main-app-container {
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -33,14 +40,14 @@ html, body, #root {
 /* All child containers should NOT create their own scroll */
 .main-content {
   flex: 1;
-  overflow: hidden; /* Prevents inner scrolling here */
+  overflow: visible; /* Prevents inner scrolling here */
   min-height: 0;
 }
 
 /* Component containers should not create their own scroll */
 .component-container,
 .view-container {
-  overflow: hidden;
+  overflow: visible;
   flex: 1; /* Allows them to fill available space */
   display: flex;
   flex-direction: column;
@@ -1048,17 +1055,19 @@ html, body, #root {
 
 /* ... (the rest of the CSS file remains the same) ... */
 /* ============================================
-   MAIN CONTENT LAYOUT
+   SMARTBOARD DISPLAY MODE
    ============================================ */
-.schedule-content {
-  display: flex;
-  flex: 1; /* This makes it fill the remaining vertical space */
-  gap: 24px;
-  padding: 24px 32px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
+/* NEW RULE: Hides navigation and ensures display fills screen when in display mode */
+.main-app-container.display-mode {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Force no scrolling for this specific mode */
 }
+
+.main-app-container.display-mode .navigation-bar {
+  display: none !important;
+}
+
 
 /* ============================================
    ACTIVITY LIBRARY PANEL
