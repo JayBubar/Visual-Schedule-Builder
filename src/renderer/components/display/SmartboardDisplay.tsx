@@ -8,7 +8,7 @@ import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
 // Utility function to get today's behavior commitments
-const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
+const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const savedCheckIns = localStorage.getItem('dailyCheckIns');
@@ -18,14 +18,13 @@ const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
       const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
 
       if (todayCheckIn?.behaviorCommitments) {
-        const commitments: { [studentId: string]: string } = {};
-
+        // Return the full commitments object, keyed by studentId
+        const commitments: { [studentId: string]: any } = {};
         todayCheckIn.behaviorCommitments.forEach((commitment: any) => {
-          if (commitment.studentId && commitment.commitment) {
-            commitments[commitment.studentId] = commitment.commitment;
+          if (commitment.studentId) {
+            commitments[commitment.studentId] = commitment;
           }
         });
-
         console.log('📊 Found behavior commitments for today:', commitments);
         return commitments;
       }
@@ -38,6 +37,7 @@ const getTodaysBehaviorCommitments = (): { [studentId: string]: string } => {
     return {};
   }
 };
+
 
 // =============================================================================
 // WHOLE CLASS DISPLAY COMPONENTS
@@ -375,6 +375,61 @@ const WholeClassDisplay: React.FC<{
   const cols = Math.ceil(presentStudents.length / rows);
   const cardHeight = Math.max(120, (gridHeight - (rows - 1) * 16) / rows); // 16px gap between rows
 
+  const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
+  
+  // Load commitments once
+  useEffect(() => {
+    setBehaviorCommitments(getTodaysBehaviorCommitments());
+  }, []);
+
+  const toggleStudentAchievement = (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const savedCheckIns = localStorage.getItem('dailyCheckIns');
+      
+      if (!savedCheckIns) return;
+      
+      const checkIns = JSON.parse(savedCheckIns);
+      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
+      
+      if (todayCheckInIndex === -1) return;
+      
+      const todayCheckIn = checkIns[todayCheckInIndex];
+      
+      if (todayCheckIn.behaviorCommitments) {
+        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
+          (commitment: any) => commitment.studentId === studentId
+        );
+        
+        if (commitmentIndex !== -1) {
+          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
+            ? new Date().toISOString() 
+            : null;
+          
+          todayCheckIn.updatedAt = new Date().toISOString();
+          checkIns[todayCheckInIndex] = todayCheckIn;
+          
+          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
+          
+          // Update the local state
+          setBehaviorCommitments((prev: any) => ({
+            ...prev,
+            [studentId]: {
+              ...prev[studentId],
+              achieved: newAchievedStatus
+            }
+          }));
+          
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
+  };
+
   return (
     <div style={{
       background: 'rgba(255, 255, 255, 0.15)',
@@ -433,13 +488,20 @@ const WholeClassDisplay: React.FC<{
           alignContent: 'start',
           overflow: 'hidden'
         }}>
-          {presentStudents.map((student) => (
-            <WholeClassStudentCard
+          {presentStudents.map((student) => {
+            const studentCommitment = behaviorCommitments[student.id];
+            return (
+            <StudentCardWithBehavior
               key={student.id}
               student={student}
-              showBehaviorStatements={showBehaviorStatements}
+              groupColor={'#28a745'} // A default color for the WholeClassDisplay context
+              showBehaviorStatement={showBehaviorStatements}
+              cardHeight={cardHeight}
+              isAchieved={studentCommitment?.achieved || false}
+              toggleStudentAchievement={toggleStudentAchievement}
+              behaviorCommitmentText={studentCommitment?.commitment || ''}
             />
-          ))}
+            )})}
         </div>
       )}
 
@@ -466,41 +528,8 @@ const WholeClassDisplay: React.FC<{
 const BehaviorAchievementBadge: React.FC<{
   studentId: string;
   groupColor: string;
-}> = ({ studentId, groupColor }) => {
-  const [isAchieved, setIsAchieved] = useState(false);
-
-  useEffect(() => {
-    // Check if student achieved their behavior commitment today
-    const checkAchievement = () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const savedCheckIns = localStorage.getItem('dailyCheckIns');
-
-        if (savedCheckIns) {
-          const checkIns = JSON.parse(savedCheckIns);
-          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-
-          if (todayCheckIn?.behaviorCommitments) {
-            const studentCommitment = todayCheckIn.behaviorCommitments.find(
-              (commitment: any) => commitment.studentId === studentId
-            );
-
-            setIsAchieved(studentCommitment?.achieved || false);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking achievement:', error);
-      }
-    };
-
-    checkAchievement();
-
-    // Set up interval to check for updates
-    const interval = setInterval(checkAchievement, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [studentId]);
-
+  isAchieved: boolean;
+}> = ({ studentId, groupColor, isAchieved }) => {
   if (!isAchieved) return null;
 
   return (
@@ -531,22 +560,18 @@ const StudentCardWithBehavior: React.FC<{
   groupColor: string;
   showBehaviorStatement?: boolean;
   cardHeight: number;
+  isAchieved: boolean;
+  toggleStudentAchievement: (studentId: string) => void;
+  behaviorCommitmentText: string;
 }> = ({
   student,
   groupColor,
   showBehaviorStatement = true,
-  cardHeight
+  cardHeight,
+  isAchieved,
+  toggleStudentAchievement,
+  behaviorCommitmentText
 }) => {
-  const [behaviorCommitment, setBehaviorCommitment] = useState<string>('');
-
-  useEffect(() => {
-    if (showBehaviorStatement) {
-      const todaysCommitments = getTodaysBehaviorCommitments();
-      const commitment = todaysCommitments[student.id];
-      setBehaviorCommitment(commitment || '');
-    }
-  }, [student.id, showBehaviorStatement]);
-
   return (
     <div style={{
       background: 'rgba(255, 255, 255, 0.1)',
@@ -613,32 +638,70 @@ const StudentCardWithBehavior: React.FC<{
       </div>
 
       {/* Behavior Commitment Statement */}
-      {showBehaviorStatement && behaviorCommitment && (
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          borderRadius: '8px',
-          padding: '0.5rem',
-          border: `1px solid ${groupColor}60`,
-          backdropFilter: 'blur(5px)',
-          animation: 'slideIn 0.3s ease-out',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          overflow: 'hidden'
-        }}>
+      {showBehaviorStatement && behaviorCommitmentText && (
+        <div
+          onClick={() => toggleStudentAchievement(student.id)}
+          style={{
+            background: isAchieved
+              ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.3))'
+              : 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '8px',
+            padding: '0.5rem',
+            border: isAchieved
+              ? '2px solid rgba(34, 197, 94, 0.8)'
+              : '1px solid rgba(40, 167, 69, 0.6)',
+            backdropFilter: 'blur(5px)',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            position: 'relative',
+            overflow: 'hidden',
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: '60px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          {/* Achievement Indicator */}
+          <div style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            fontSize: '1rem',
+            opacity: isAchieved ? 1 : 0.3,
+            transition: 'all 0.3s ease'
+          }}>
+            ⭐
+          </div>
+
+          {/* Goal Label */}
           <div style={{
             fontSize: '0.6rem',
             fontWeight: '600',
-            color: 'rgba(255, 255, 255, 0.8)',
+            color: isAchieved
+              ? 'rgba(34, 197, 94, 1)'
+              : 'rgba(255, 255, 255, 0.8)',
             marginBottom: '0.25rem',
             textTransform: 'uppercase',
-            letterSpacing: '0.5px'
+            letterSpacing: '0.5px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
           }}>
-            Today's Goal
+            <span>{isAchieved ? '✅ Completed' : '🎯 Today\'s Goal'}</span>
           </div>
+
+          {/* Statement Text */}
           <div style={{
-            fontSize: '0.65rem',
+            fontSize: '0.7rem',
             fontWeight: '600',
             color: 'white',
             textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
@@ -652,18 +715,27 @@ const StudentCardWithBehavior: React.FC<{
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical'
           }}>
-            "I will {behaviorCommitment}"
+            "I will {behaviorCommitmentText}"
           </div>
+
+          {/* Success Animation Effect */}
+          {isAchieved && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.2) 50%, transparent 70%)',
+              animation: 'shimmer 2s ease-in-out infinite',
+              pointerEvents: 'none'
+            }} />
+          )}
         </div>
       )}
 
-      {/* Achievement Badge (if completed) */}
-      {showBehaviorStatement && behaviorCommitment && (
-        <BehaviorAchievementBadge
-          studentId={student.id}
-          groupColor={groupColor}
-        />
-      )}
+      {/* Achievement Badge */}
+      <BehaviorAchievementBadge studentId={student.id} groupColor={groupColor} isAchieved={isAchieved} />
     </div>
   );
 };
@@ -981,8 +1053,6 @@ useEffect(() => {
     }
   }, [isChoiceItemTime, currentActivityIndex]);
 
-
-
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
     return null;
@@ -1209,6 +1279,62 @@ useEffect(() => {
     });
 
     const groupColor = group.color || '#9C27B0';
+    
+    const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
+    
+    // Load commitments once
+    useEffect(() => {
+      setBehaviorCommitments(getTodaysBehaviorCommitments());
+    }, []);
+
+    const toggleStudentAchievement = (studentId: string) => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const savedCheckIns = localStorage.getItem('dailyCheckIns');
+        
+        if (!savedCheckIns) return;
+        
+        const checkIns = JSON.parse(savedCheckIns);
+        const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
+        
+        if (todayCheckInIndex === -1) return;
+        
+        const todayCheckIn = checkIns[todayCheckInIndex];
+        
+        if (todayCheckIn.behaviorCommitments) {
+          const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
+            (commitment: any) => commitment.studentId === studentId
+          );
+          
+          if (commitmentIndex !== -1) {
+            const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
+            todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
+            todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
+              ? new Date().toISOString() 
+              : null;
+            
+            todayCheckIn.updatedAt = new Date().toISOString();
+            checkIns[todayCheckInIndex] = todayCheckIn;
+            
+            localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
+            
+            // Update the local state
+            setBehaviorCommitments((prev: any) => ({
+              ...prev,
+              [studentId]: {
+                ...prev[studentId],
+                achieved: newAchievedStatus
+              }
+            }));
+            
+            console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error toggling achievement:', error);
+      }
+    };
+
 
     // Calculate dynamic card heights based on available space and number of students
     const groupHeaderHeight = 80;
@@ -1304,15 +1430,20 @@ useEffect(() => {
               alignContent: 'start',
               overflow: 'hidden'
             }}>
-              {groupStudents.map((student) => (
+              {groupStudents.map((student) => {
+                const studentCommitment = behaviorCommitments[student.id];
+                return (
                 <StudentCardWithBehavior
                   key={student.id}
                   student={student}
                   groupColor={groupColor}
                   showBehaviorStatement={showBehaviorStatements}
                   cardHeight={cardHeight}
+                  isAchieved={studentCommitment?.achieved || false}
+                  toggleStudentAchievement={toggleStudentAchievement}
+                  behaviorCommitmentText={studentCommitment?.commitment || ''}
                 />
-              ))}
+                )})}
             </div>
           )}
         </div>
@@ -1321,7 +1452,7 @@ useEffect(() => {
   };
 
   // Get group assignments
-  const groupAssignments = currentActivity.groupAssignments || currentActivity.assignment?.groupAssignments || [];
+  const groupAssignments = currentActivity?.groupAssignments || currentActivity?.assignment?.groupAssignments || [];
 
   return (
     <div style={{
@@ -1356,7 +1487,7 @@ useEffect(() => {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
-      
+
       {/* Absent Students Display - Top Left Corner */}
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
@@ -1427,9 +1558,9 @@ useEffect(() => {
             fontWeight: '700',
             textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
           }}>
-            {currentActivity.icon} {currentActivity.name}
+            {currentActivity?.icon} {currentActivity?.name}
           </h1>
-          
+
           <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
             Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
           </div>
@@ -1708,7 +1839,7 @@ useEffect(() => {
         ) : (
           <WholeClassDisplay
             students={realStudents}
-            activityName={currentActivity.name}
+            activityName={currentActivity?.name}
             showBehaviorStatements={showBehaviorStatements}
             availableHeight={availableContentHeight}
           />
