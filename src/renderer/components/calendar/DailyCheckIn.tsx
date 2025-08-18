@@ -24,6 +24,8 @@ import BehaviorCommitments from './BehaviorCommitments';
 import IndependentChoices from './IndependentChoices';
 import CalendarMathStep from './CalendarMathStep';
 import WeatherClothingStep from './WeatherClothingStep';
+import SeasonalLearningStep from './SeasonalLearningStep';
+
 
 interface DailyCheckInProps {
   isActive: boolean;
@@ -281,7 +283,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const handleNext = () => {
     let nextStep = currentStep + 1;
     
-    if (nextStep <= 10) {
+    if (nextStep <= 11) {
       setCurrentStep(nextStep);
     }
   };
@@ -532,8 +534,18 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 6: Celebration System - KEEP AS-IS */}
-        {currentStep === 6 && dailyCheckInSettings?.checkInFlow?.enableCelebrations !== false && (
+        {/* Step :6 Seasonal Learning */}
+        {currentStep === 6 && (
+          <SeasonalLearningStep
+            onNext={handleNext}
+            onBack={handleBack}
+            currentDate={currentDate}
+            weather={todayCheckIn?.weather}
+          />
+        )}
+
+        {/* Step 7: Celebration System - KEEP AS-IS */}
+        {currentStep === 7 && dailyCheckInSettings?.checkInFlow?.enableCelebrations !== false && (
           <CelebrationSystem
             currentDate={currentDate}
             students={presentStudents}
@@ -543,8 +555,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 7: Choice Activities - Independent Choices */}
-        {currentStep === 7 && dailyCheckInSettings?.checkInFlow?.enableChoiceActivities !== false && (
+        {/* Step 8: Choice Activities - Independent Choices */}
+        {currentStep === 8 && dailyCheckInSettings?.checkInFlow?.enableChoiceActivities !== false && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{
@@ -740,8 +752,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           </div>
         )}
 
-        {/* Step 8: Schedule Review - NEW STEP ADDED */}
-        {currentStep === 8 && (
+        {/* Step 9: Schedule Review - NEW STEP ADDED */}
+        {currentStep === 9 && (
           <div style={{ padding: '2rem', minHeight: '600px' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <h2 style={{
@@ -825,8 +837,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           </div>
         )}
 
-        {/* Steps 9-10: COMBINED - Single Smooth Transition */}
-        {(currentStep === 9 || currentStep === 10) && (
+        {/* Steps 10-11: COMBINED - Single Smooth Transition */}
+        {(currentStep === 10 || currentStep === 11) && (
           <div style={{
             padding: '2rem',
             textAlign: 'center',
