@@ -252,6 +252,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     } catch (error) {
       console.error('Error saving check-in:', error);
     }
+    window.dispatchEvent(new CustomEvent('dailyCheckInUpdated', { detail: updatedCheckIn }));
   };
 
   const saveCalendarSettings = (newSettings: CalendarSettings) => {
@@ -379,15 +380,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   if (isLoading) {
     return (
       <div className={containerClassName}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%',
-          // REMOVED INLINE BACKGROUND STYLE
-          color: 'white'
-        }}>
+        <div className="full-screen-content-wrapper">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
             <h2>Loading Daily Check-In...</h2>
@@ -401,18 +394,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   if (showCelebrationAnimation) {
     return (
       <div className={containerClassName}>
-        <div style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          // REMOVED INLINE BACKGROUND STYLE
-          backgroundSize: '400% 400%',
-          animation: 'celebrationColors 2s ease-in-out infinite',
-          color: 'white',
-          textAlign: 'center'
-        }}>
+        <div className="full-screen-content-wrapper celebration-animation-bg">
           <div style={{
             fontSize: '8rem',
             marginBottom: '2rem',

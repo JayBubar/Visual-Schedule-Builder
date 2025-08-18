@@ -359,7 +359,6 @@ html, body {
 
   .nav-icon {
     font-size: 1.6rem;
-    margin-bottom: 4px;
   }
 
   .nav-label {
@@ -1070,15 +1069,28 @@ html, body {
 }
 
 /* NEW RULE: Ensures Daily Check-in fits screen without scrolling */
+.daily-check-in {
+  min-height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
 .daily-check-in.full-screen-mode {
   min-height: 100vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
-.daily-check-in.full-screen-mode .step-content-container {
+.daily-check-in .step-content-container {
   flex: 1;
   overflow-y: auto;
 }
-
