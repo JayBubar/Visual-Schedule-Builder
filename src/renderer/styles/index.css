@@ -12,18 +12,25 @@
   padding: 0;
 }
 
-html, body, #root {
+html, body {
   height: 100%;
-  overflow: hidden; /* Prevent double scrolling */
+  overflow: auto; /* Allow scrolling on the main page */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.6;
   color: #2c3e50;
   background: #f8f9fa;
 }
 
+#root {
+  height: 100%;
+  overflow: visible; /* Let content flow into the body */
+  display: flex;
+  flex-direction: column;
+}
+
 /* Main app container - ONLY scrollable element */
 .main-app-container {
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -33,14 +40,14 @@ html, body, #root {
 /* All child containers should NOT create their own scroll */
 .main-content {
   flex: 1;
-  overflow: hidden; /* Prevents inner scrolling here */
+  overflow: visible; /* Prevents inner scrolling here */
   min-height: 0;
 }
 
 /* Component containers should not create their own scroll */
 .component-container,
 .view-container {
-  overflow: hidden;
+  overflow: visible;
   flex: 1; /* Allows them to fill available space */
   display: flex;
   flex-direction: column;
@@ -413,10 +420,6 @@ html, body, #root {
 
   .nav-shortcut {
     display: none;
-  }
-
-  .brand-text h1 {
-    font-size: 1.1rem;
   }
 }
 
@@ -1048,498 +1051,6 @@ html, body, #root {
 
 /* ... (the rest of the CSS file remains the same) ... */
 /* ============================================
-   MAIN CONTENT LAYOUT
-   ============================================ */
-.schedule-content {
-  display: flex;
-  flex: 1; /* This makes it fill the remaining vertical space */
-  gap: 24px;
-  padding: 24px 32px;
-  overflow: hidden;
-  position: relative;
-  z-index: 1;
-}
-
-/* ============================================
-   ACTIVITY LIBRARY PANEL
-   ============================================ */
-.activity-library {
-  width: 420px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border-radius: 20px;
-  padding: 28px;
-  color: #2c3e50;
-  display: flex;
-  flex-direction: column;
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.15),
-    0 8px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  position: relative;
-  overflow: hidden;
-}
-
-.activity-library::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px 20px 0 0;
-}
-
-.activity-library h3 {
-  margin: 0 0 24px 0;
-  color: #2c3e50;
-  font-size: 1.6rem;
-  font-weight: 700;
-  text-align: center;
-  position: relative;
-  padding-bottom: 16px;
-}
-
-.activity-library h3::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 2px;
-}
-
-/* ============================================
-   LIBRARY FILTERS
-   ============================================ */
-/* ... (existing filter styles) ... */
-.library-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.search-input, .category-select {
-  padding: 14px 16px;
-  border: 2px solid #e1e8ed;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.search-input:focus, .category-select:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow:
-    0 0 0 4px rgba(102, 126, 234, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  background: #ffffff;
-  transform: translateY(-1px);
-}
-
-.search-input::placeholder {
-  color: #95a5a6;
-  font-weight: 400;
-}
-
-/* ============================================
-   CUSTOM ACTIVITY CREATOR
-   ============================================ */
-/* ... (existing creator styles) ... */
-.custom-activity-creator {
-  margin-bottom: 24px;
-  text-align: center;
-}
-
-.create-activity-button {
-  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-  color: white;
-  border: none;
-  padding: 14px 28px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px;
-  transition: all 0.4s ease;
-  box-shadow:
-    0 6px 20px rgba(40, 167, 69, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.create-activity-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s ease;
-}
-
-.create-activity-button:hover::before {
-  left: 100%;
-}
-
-.create-activity-button:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow:
-    0 10px 30px rgba(40, 167, 69, 0.5),
-    0 4px 16px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
-}
-
-/* ============================================
-   ACTIVITIES GRID
-   ============================================ */
-/* This container is now a flex item, and it's the only one that scrolls */
-.activities-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  flex: 1; /* This allows it to grow and fill remaining vertical space */
-  overflow-y: auto;
-  padding-right: 8px;
-  /* Removed fixed max-height and min-height */
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: #667eea #f1f1f1;
-}
-
-.activities-grid::-webkit-scrollbar {
-  width: 10px;
-}
-
-.activities-grid::-webkit-scrollbar-track {
-  background: rgba(241, 241, 241, 0.8);
-  border-radius: 4px;
-}
-
-.activities-grid::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
-  transition: background 0.3s ease;
-}
-
-.activities-grid::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-}
-
-/* ============================================
-   ACTIVITY CARDS
-   ============================================ */
-/* ... (existing activity card styles) ... */
-.activity-card {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  min-height: 80px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-  border: 2px solid #e1e8ed;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  user-select: none;
-  position: relative;
-  overflow: hidden;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.activity-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  transform: scaleX(0);
-  transition: transform 0.4s ease;
-  border-radius: 16px 16px 0 0;
-}
-
-.activity-card:hover::before {
-  transform: scaleX(1);
-}
-
-.activity-card:hover {
-  border-color: #667eea;
-  transform: translateY(-4px) scale(1.02);
-  box-shadow:
-    0 12px 30px rgba(102, 126, 234, 0.25),
-    0 6px 16px rgba(0, 0, 0, 0.1);
-  background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%);
-}
-
-.activity-icon {
-  font-size: 2.2rem;
-  margin-right: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: rgba(102, 126, 234, 0.1);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.activity-card:hover .activity-icon {
-  background: rgba(102, 126, 234, 0.2);
-  transform: scale(1.1);
-}
-
-.activity-photo {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 2px solid #e1e8ed;
-  transition: all 0.3s ease;
-}
-
-.activity-card:hover .activity-photo {
-  border-color: #667eea;
-  transform: scale(1.05);
-}
-
-.activity-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.activity-info h4 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: #2c3e50;
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.activity-duration {
-  display: inline-block;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-right: 8px;
-  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
-  align-self: flex-start;
-}
-
-.activity-category {
-  display: inline-block;
-  font-size: 11px;
-  color: #7f8c8d;
-  background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%);
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 500;
-  align-self: flex-start;
-  border: 1px solid rgba(127, 140, 141, 0.2);
-}
-
-.activity-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-/* ============================================
-   ACTIVITY ACTIONS
-   ============================================ */
-/* ... (existing action styles) ... */
-.activity-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-  margin-left: 12px;
-}
-
-.add-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 12px;
-  transition: all 0.3s ease;
-  box-shadow:
-    0 4px 12px rgba(102, 126, 234, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.add-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s ease;
-}
-
-.add-button:hover::before {
-  left: 100%;
-}
-
-.add-button:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow:
-    0 8px 25px rgba(102, 126, 234, 0.5),
-    0 4px 12px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-}
-
-.add-button:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.delete-custom-button {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-}
-
-.delete-custom-button:hover {
-  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-  transform: scale(1.15);
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-}
-
-/* ============================================
-   SCHEDULE CANVAS PANEL
-   ============================================ */
-.schedule-canvas {
-  flex: 1;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
-  border-radius: 20px;
-  padding: 28px;
-  color: #2c3e50;
-  display: flex;
-  flex-direction: column;
-  box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.15),
-    0 8px 16px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  position: relative;
-  overflow: hidden;
-}
-
-.schedule-canvas::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 20px 20px 0 0;
-}
-
-.schedule-canvas h3 {
-  margin: 0 0 24px 0;
-  color: #2c3e50;
-  font-size: 1.6rem;
-  font-weight: 700;
-  text-align: center;
-  position: relative;
-  padding-bottom: 16px;
-}
-
-.schedule-canvas h3::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 2px;
-}
-
-/* ============================================
-   SCHEDULE LIST
-   ============================================ */
-/* This container is now a flex item, and it's the only one that scrolls */
-.schedule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1; /* This allows it to grow and fill remaining vertical space */
-  overflow-y: auto;
-  padding-right: 8px;
-  /* Removed fixed max-height and min-height */
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: #667eea #f1f1f1;
-}
-
-.schedule-list::-webkit-scrollbar {
-  width: 10px;
-}
-
-.schedule-list::-webkit-scrollbar-track {
-  background: rgba(241, 241, 241, 0.8);
-  border-radius: 4px;
-}
-
-.schedule-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
-  transition: background 0.3s ease;
-}
-
-.schedule-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-}
-
-/* ============================================
    SMARTBOARD DISPLAY MODE
    ============================================ */
 /* NEW RULE: Hides navigation and ensures display fills screen when in display mode */
@@ -1552,3 +1063,22 @@ html, body, #root {
 .main-app-container.display-mode .navigation-bar {
   display: none !important;
 }
+
+/* NEW RULE: Hides the settings button in display mode */
+.main-app-container.display-mode .daily-check-in-settings-button {
+  display: none !important;
+}
+
+/* NEW RULE: Ensures Daily Check-in fits screen without scrolling */
+.daily-check-in.full-screen-mode {
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.daily-check-in.full-screen-mode .step-content-container {
+  flex: 1;
+  overflow-y: auto;
+}
+

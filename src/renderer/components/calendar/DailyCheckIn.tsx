@@ -384,8 +384,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          height: '100vh',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          height: '100%',
+          // REMOVED INLINE BACKGROUND STYLE
           color: 'white'
         }}>
           <div style={{ textAlign: 'center' }}>
@@ -402,12 +402,12 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     return (
       <div className={containerClassName}>
         <div style={{
-          height: '100vh',
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          background: 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #fd79a8)',
+          // REMOVED INLINE BACKGROUND STYLE
           backgroundSize: '400% 400%',
           animation: 'celebrationColors 2s ease-in-out infinite',
           color: 'white',
