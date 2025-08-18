@@ -1,1000 +1,1556 @@
-// ===== VIEW TYPES =====
-// ✅ FIXED: Added 'reports' and 'iep-goals' to ViewType enum
-export type ViewType = 
-  | 'builder' 
-  | 'display' 
-  | 'students' 
-  | 'staff' 
-  | 'iep-goals'      // ✅ ADDED - IEP Goals management
-  | 'calendar' 
-  | 'library' 
-  | 'data-collection' 
-  | 'reports'        // ✅ ADDED - this was missing!
-  | 'smart-groups'  
-  | 'settings';
+/* ============================================
+   PROFESSIONAL VISUAL SCHEDULE BUILDER STYLES
+   ============================================ */
 
-// Schedule category type
-export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory' | 'system';
+/* Import Smart Groups Enhanced UI Animations */
+@import './smart-groups-animations.css';
 
-// Staff interface
-export interface Staff {
-  id: string;
-  name: string;
-  role: string;
-  photo?: string;
-  email?: string;
-  phone?: string;
-  specialties?: string[];
-  notes?: string;
-  isActive?: boolean;
-  startDate?: string;
-  status?: 'active' | 'inactive' | 'substitute' | 'absent';
-  isMainTeacher?: boolean;
-  isResourceTeacher?: boolean;      // NEW: For pull-out services
-  isRelatedArtsTeacher?: boolean;   // NEW: For teachers who come to classroom
-  emergencyContact?: string;
-  certifications?: string[];
-  photoFileName?: string;
-  schedule?: any;
-  createdAt?: string;
-  updatedAt?: string;
+/* Global Styles - FIXED SCROLL HIERARCHY */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-// Student interface
-export interface Student {
-  id: string;
-  name: string;
-  photo?: string;
-  avatar?: string;  // Add avatar support
-  grade?: string;
-  readingLevel?: 'emerging' | 'developing' | 'proficient' | 'advanced';
-  accommodations?: string[];
-  notes?: string;
-  parentContact?: string;
-  emergencyContact?: string;
-  allergies?: string[];
-  isActive?: boolean;
-  skillLevel?: 'low' | 'medium' | 'high' | 'emerging' | 'developing' | 'proficient' | 'advanced';
-  workingStyle?: 'independent' | 'collaborative' | 'guided' | 'needs-support';
-  preferredPartners?: string[];
-  avoidPartners?: string[];
-  iep?: boolean;
-  behaviorNotes?: string;
-  parentName?: string;
-  parentEmail?: string;
-  parentPhone?: string;
-  medicalNotes?: string;
-  photoFileName?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  goals?: string[];
-  resourceInfo?: {
-    attendsResource: boolean;
-    resourceType: string;
-    resourceTeacher: string;
-    timeframe: string;
-  };
+html, body, #root {
+  height: 100%;
+  overflow: hidden; /* Prevent double scrolling */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: #2c3e50;
+  background: #f8f9fa;
 }
 
-// Unified Student interface (extends Student with celebration features)
-export interface UnifiedStudent extends Student {
-  birthday?: string; // 'YYYY-MM-DD' format
-  allowBirthdayDisplay?: boolean; // Direct property for easier access
-  allowPhotoInCelebrations?: boolean; // Direct property for easier access
-  celebrationPreferences?: {
-    allowBirthdayDisplay: boolean;
-    customCelebrationMessage?: string;
-  };
+/* Main app container - ONLY scrollable element */
+.main-app-container {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-// Custom Celebration interface
-export interface CustomCelebration {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  isRecurring: boolean;
-  emoji: string;
-  enabled: boolean;
-  createdAt: string;
+/* All child containers should NOT create their own scroll */
+.main-content {
+  flex: 1;
+  overflow: hidden; /* Prevents inner scrolling here */
+  min-height: 0;
 }
 
-// Group interface
-export interface Group {
-  id: string;
-  name: string;
-  staffId: string;
-  students: string[];
-  color: string;
-  description?: string;
+/* Component containers should not create their own scroll */
+.component-container,
+.view-container {
+  overflow: hidden;
+  flex: 1; /* Allows them to fill available space */
+  display: flex;
+  flex-direction: column;
 }
 
-// Student Group interface (extends Group with additional properties)
-export interface StudentGroup extends Group {
-  label?: string;
-  studentIds?: string[];
-  groupType?: 'academic' | 'social' | 'therapy' | 'behavior' | 'mixed';
-  maxSize?: number;
-  minSize?: number;
-  targetSkills?: string[];
-  isTemplate?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+/* ============================================
+   PROFESSIONAL NAVIGATION BAR
+   ============================================ */
+/* ... (existing navigation styles) ... */
+.navigation-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: linear-gradient(145deg, #667eea 0%, #764ba2 100%);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-// 🔧 NEW: Group Assignment interface for SmartboardDisplay
-export interface GroupAssignment {
-  id: string;
-  groupName: string;
-  color: 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'yellow' | string;
-  staffMember?: {
-    id: string;
-    name: string;
-    role: string;
-    avatar?: string;
-    photo?: string;
-  } | null;
-  studentIds: string[];
-  staffId?: string;
-  location?: string;
-  activityVariation?: string;
-  notes?: string;
-  isIndependent?: boolean;
-  groupType?: string;
-  targetSkills?: string[];
+.navigation-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  pointer-events: none;
 }
 
-// 🔧 ENHANCED: Assignment interface with groupAssignments
-export interface Assignment {
-  isWholeClass: boolean;
-  groups?: Group[];
-  groupIds?: string[];
-  staffIds?: string[];
-  notes?: string;
-  groupingType?: 'whole-class' | 'small-groups' | 'individual' | 'flexible';
-  // 🎯 CRITICAL: Add groupAssignments to Assignment interface
-  groupAssignments?: GroupAssignment[];
+/* Brand Section */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
 }
 
-// Activity Assignment interface
-export interface ActivityAssignment extends Assignment {}
-
-// Activity interface
-export interface Activity {
-  id: string;
-  name: string;
-  emoji?: string;
-  icon?: string;
-  duration: number;
-  category: ScheduleCategory;
-  description?: string;
-  materials?: string[];
-  instructions?: string;
-  staff?: Staff[];
-  students?: Student[];
-  assignment?: Assignment;
-  isCustom?: boolean;
-  tags?: string[];
-  difficulty?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  // New group assignment properties
-  groupingType?: 'whole-class' | 'small-groups' | 'individual' | 'flexible';
-  groupAssignments?: GroupAssignment[];
-  accommodations?: string[];
-  adaptations?: string[];
-  
-  // 🎯 NEW: Transition properties (optional for all activities)
-  isTransition?: boolean;
-  transitionType?: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
-  animationStyle?: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
-  showNextActivity?: boolean;
-  movementPrompts?: string[];
-  autoStart?: boolean;
-  soundEnabled?: boolean;
-  customMessage?: string;
+.brand-icon {
+  font-size: 2.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
 }
 
-// 🎯 NEW: Transition-specific interface
-export interface TransitionActivity extends Activity {
-  isTransition: true;
-  transitionType: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
-  animationStyle: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
-  showNextActivity: boolean;
-  movementPrompts: string[];
-  autoStart?: boolean;
-  soundEnabled?: boolean;
-  customMessage?: string;
+.brand-icon:hover {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
-// Saved Activity interface (extends Activity)
-export interface SavedActivity extends Activity {}
-
-// Schedule Activity interface (alias for Activity)
-export interface ScheduleActivity extends Activity {}
-
-// Schedule Item interface (alias for Activity)
-export interface ScheduleItem extends Activity {}
-
-// Schedule variation types
-export type ScheduleType = 'daily' | 'special-event' | 'time-variation' | 'emergency';
-
-// Schedule variation interface
-export interface ScheduleVariation {
-  id: string;
-  name: string;
-  type: ScheduleType;
-  category?: ScheduleCategory;
-  activities: SavedActivity[];
-  startTime: string;
-  endTime?: string;
-  totalDuration?: number;
-  color?: string;
-  icon?: string;
-  createdAt: string;
-  lastUsed?: string;
-  usageCount?: number;
-  description?: string;
-  tags?: string[];
-  applicableDays?: string[];
-  isDefault?: boolean;
+.brand-text h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: -0.5px;
 }
 
-// Schedule interface
-export interface Schedule {
-  id: string;
-  name: string;
-  date?: string;
-  startTime: string;
-  endTime?: string;
-  activities: SavedActivity[];
-  templateId?: string;
-  notes?: string;
-  status: 'draft' | 'active' | 'completed' | 'archived';
-  createdAt: string;
-  updatedAt: string;
-  description?: string;
-  tags?: string[];
-  totalDuration?: number;
-  activityCount?: number;
-  isTemplate?: boolean;
-  templateType?: 'academic' | 'therapy' | 'holiday' | 'custom' | 'half-day';
-  version?: string;
+.version {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-top: 2px;
+  display: inline-block;
 }
 
-// Saved schedule interface (for persistence)
-export interface SavedSchedule {
-  id: string;
-  name: string;
-  date?: string;
-  startTime: string;
-  activities: SavedActivity[];
-  templateId?: string;
-  notes?: string;
-  status?: 'draft' | 'active' | 'completed' | 'archived';
-  createdAt: string;
-  updatedAt?: string;
-  description?: string;
-  tags?: string[];
-  totalDuration?: number;
-  activityCount?: number;
-  isTemplate?: boolean;
-  templateType?: 'academic' | 'therapy' | 'holiday' | 'custom' | 'half-day';
-  version?: string;
+/* Navigation Buttons Container */
+.nav-buttons {
+  display: flex;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-// Schedule template interface
-export interface ScheduleTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  category?: ScheduleCategory;
-  activities: SavedActivity[];
-  startTime: string;
-  totalDuration?: number;
-  isTemplate: true;
-  templateType?: 'academic' | 'therapy' | 'holiday' | 'custom' | 'half-day';
-  tags?: string[];
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  isPublic?: boolean;
-  usageCount?: number;
-  activityCount?: number;
-  createdAt: string;
-  updatedAt?: string;
-  version?: string;
-  date?: string;
-  status?: 'draft' | 'active' | 'completed' | 'archived';
-  notes?: string;
-  targetGrade?: string;
-  targetSkills?: string[];
+/* Individual Navigation Buttons */
+.nav-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  min-width: 100px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  color: white;
+  text-decoration: none;
+  font-family: inherit;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-// Activity library item
-export interface ActivityLibraryItem {
-  id: string;
-  name: string;
-  emoji: string;
-  icon?: string;
-  category: ScheduleCategory;
-  defaultDuration: number;
-  description?: string;
-  materials?: string[];
-  instructions?: string;
-  isCustom: boolean;
-  tags?: string[];
-  ageGroup?: 'elementary' | 'middle' | 'high' | 'adult' | 'all';
-  difficulty?: 'easy' | 'medium' | 'hard';
-  
-  // 🎯 NEW: Transition properties for library items
-  isTransition?: boolean;
-  transitionType?: 'animated-countdown' | 'brain-break' | 'cleanup-prep' | 'movement-break';
-  animationStyle?: 'running-kids' | 'floating-shapes' | 'bouncing-balls' | 'organizing-items' | 'dancing-emojis';
-  showNextActivity?: boolean;
-  movementPrompts?: string[];
-  autoStart?: boolean;
-  soundEnabled?: boolean;
-  customMessage?: string;
-  
-  // Calendar/Choice-related properties
-  isChoiceEligible?: boolean;
-  choiceProperties?: {
-    maxStudents: number;
-    minAge?: number;
-    maxAge?: number;
-    requiresSupervision: boolean;
-    isIndoor: boolean;
-    setupTime: number;
-    cleanupTime: number;
-    skillLevel?: string;
-    staffSupervision?: string;
-    socialInteraction?: string;
-    quietActivity?: boolean;
-    messyActivity?: boolean;
-    preparationTime?: number;
-    [key: string]: any;
-  };
-  usageStats?: {
-    timesChosen: number;
-    lastUsed?: string;
-    averageRating?: number;
-    [key: string]: any;
-  };
-  recommendationTags?: {
-    energyLevel: 'low' | 'medium' | 'high';
-    groupSize: 'individual' | 'small' | 'large';
-    noiseLevel: 'quiet' | 'moderate' | 'loud';
-    messiness: 'clean' | 'moderate' | 'messy';
-    timeOfDay?: string;
-    academicConnection?: string[];
-    sensoryInput?: string;
-    [key: string]: any;
-  };
+.nav-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
 }
 
-// Photo upload result interface
-export interface PhotoUploadResult {
-  success: boolean;
-  url?: string;
-  error?: string;
-  file?: File;
-  dataUrl?: string;
-  fileName?: string;
+.nav-button:hover::before {
+  left: 100%;
 }
 
-// Celebration animation types
-export type CelebrationStyle = 'gentle' | 'excited';
-
-export interface CelebrationSettings {
-  style: CelebrationStyle;
-  duration: number;
-  sound: boolean;
-  volume: number;
+.nav-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-// Settings interfaces
-export interface AppSettings {
-  theme: 'light' | 'dark' | 'high-contrast';
-  fontSize: 'small' | 'medium' | 'large' | 'extra-large';
-  animations: boolean;
-  soundEffects: boolean;
-  volume: number;
-  autoSave: boolean;
-  celebrationSettings: CelebrationSettings;
+.nav-button:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
-// Data export/import interfaces
-export interface ExportData {
-  schedules: SavedSchedule[];
-  templates: ScheduleTemplate[];
-  activities: ActivityLibraryItem[];
-  students: Student[];
-  staff: Staff[];
-  settings: AppSettings;
-  exportDate: string;
-  version: string;
+/* Active Navigation Button */
+.nav-button.active {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 6px 25px rgba(0, 0, 0, 0.15),
+    0 3px 12px rgba(0, 0, 0, 0.1),
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
-// Component prop interfaces
-export interface ComponentProps {
-  isActive: boolean;
+.nav-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 3px;
+  background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.8) 100%);
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 -2px 8px rgba(255, 255, 255, 0.3);
 }
 
-export interface NavigationProps {
-  currentView: ViewType;
-  onViewChange: (view: ViewType) => void;
-  selectedSchedule?: ScheduleVariation | null;
+/* Navigation Button Elements */
+.nav-icon {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+  display: block;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-// Error handling
-export interface AppError {
-  id: string;
-  message: string;
-  type: 'warning' | 'error' | 'info';
-  timestamp: string;
-  resolved?: boolean;
+.nav-button:hover .nav-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
 }
 
-// Group Management Types
-export interface StaffMember {
-  id: string;
-  name: string;
-  role: string;
-  email: string;
-  phone: string;        // Added required property
-  specialties: string[]; // Added required property (renamed from specializations)
-  photo: string | null;
-  isActive: boolean;    // Added required property
-  startDate: string;    // Added required property
-  notes?: string;       // Added optional property
-  isResourceTeacher: boolean;      // NEW: For pull-out services (Speech, OT, PT, etc.)
-  isRelatedArtsTeacher: boolean;   // NEW: For teachers who come to classroom (Art, Music, PE, etc.)
-  avatar?: string;      // Keep existing optional property
-  color?: string;       // Keep existing optional property
-  schedule?: string[];  // Keep existing optional property (Available time slots)
+.nav-button.active .nav-icon {
+  transform: scale(1.05);
+  filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.3));
 }
 
-export type GroupingType = 'whole-class' | 'small-groups' | 'individual' | 'flexible';
-
-// Enhanced Activity Interface
-export interface EnhancedActivity extends Activity {
-  groupingType: GroupingType;
-  groupAssignments: GroupAssignment[];
-  accommodations?: string[];
-  adaptations?: string[];
+.nav-label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
-export interface GroupTemplate {
-  id: string;
-  name: string;
-  description: string;
-  groupCount: number;
-  suggestedColors: string[];
-  typicalUse: string;
+.nav-button.active .nav-label {
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-// Calendar and Daily Check-In Interfaces
-export interface WeatherData {
-  temperature: number;
-  condition: string;
-  icon: string;
-  description: string;
-  humidity?: number;
-  windSpeed?: number;
-  location: string;
-  lastUpdated?: string;
-  temperatureUnit?: 'F' | 'C';
-  apiSource?: string;
-  timestamp?: string;
-  [key: string]: any;
+.nav-shortcut {
+  font-size: 10px;
+  opacity: 0.7;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  transition: all 0.3s ease;
 }
 
-export interface CalendarSettings {
-  showWeather: boolean;
-  weatherLocation: string;
-  showBehaviorCommitments: boolean;
-  showIndependentChoices: boolean;
-  showDailyHighlights: boolean;
-  enableSoundEffects: boolean;
-  autoSaveInterval: number;
-  defaultView: 'dashboard' | 'commitments' | 'choices' | 'highlights' | 'day';
-  weatherUpdateInterval?: number;
-  weatherApiKey?: string;
-  temperatureUnit?: 'F' | 'C';
-  behaviorCategories?: string[];
-  independentChoiceCategories?: string[];
-  customCelebrations?: CustomCelebration[];
-  birthdayDisplayMode?: 'photo' | 'name' | 'both';
-  weekendBirthdayHandling?: 'friday' | 'monday' | 'exact';
-  [key: string]: any;
+.nav-button:hover .nav-shortcut {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.15);
+  color: white;
 }
 
-export interface StudentBehaviorChoice {
-  id?: string;
-  studentId: string;
-  behaviorGoal?: string;
-  commitment: string;
-  isCompleted?: boolean;
-  completed?: boolean;
-  completedAt?: string;
-  notes?: string;
-  achieved?: boolean;
-  category?: string;
-  selectedAt?: string;
-  commitmentId?: string;
-  timestamp?: string;
-  studentName?: string;
-  studentPhoto?: string;
-  date?: string;
-  [key: string]: any;
+.nav-button.active .nav-shortcut {
+  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.2);
+  color: white;
 }
 
-export interface ActivityHighlight {
-  id: string;
-  activityId: string;
-  activityName: string;
-  studentId?: string;
-  studentName?: string;
-  achievement?: string;
-  description?: string;
-  timestamp: string;
-  category?: 'academic' | 'behavioral' | 'social' | 'creative' | 'physical';
-  staffMember?: string;
-  photo?: string;
-  emoji?: string;
-  studentIds?: string[];
-  studentReactions?: any[];
-  highlight?: string;
-  [key: string]: any;
+/* Status Section */
+.nav-status {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 2;
 }
 
-export interface Achievement {
-  id: string;
-  studentId: string;
-  title: string;
-  description: string;
-  category: 'academic' | 'behavioral' | 'social' | 'creative' | 'physical';
-  timestamp: string;
-  staffMember?: string;
-  photo?: string;
-  isShared: boolean;
-  icon?: string;
-  date?: string;
-  [key: string]: any;
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-export interface DailyCheckIn {
-  id: string;
-  date: string;
-  weatherData?: WeatherData;
-  weather?: WeatherData;
-  behaviorCommitments?: StudentBehaviorChoice[];
-  independentChoices?: string[];
-  dailyHighlights?: ActivityHighlight[];
-  achievements?: Achievement[];
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  yesterdayHighlights?: ActivityHighlight[];
-  studentChoices?: any[];
-  independentActivitiesSelected?: any[];
-  behaviorCommitmentsSelected?: any[];
-  dailyHighlightsSelected?: any[];
-  [key: string]: any;
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #2ecc71;
+  border-radius: 50%;
+  box-shadow:
+    0 0 8px rgba(46, 204, 113, 0.5),
+    0 0 16px rgba(46, 204, 113, 0.3);
+  animation: statusPulse 2s ease infinite;
 }
 
-export interface ChoiceFilter {
-  category?: ScheduleCategory;
-  difficulty?: 'easy' | 'medium' | 'hard';
-  maxDuration?: number;
-  requiresSupervision?: boolean;
-  isIndoor?: boolean;
-  maxStudents?: number;
-  quietActivity?: boolean;
-  skillLevel?: string;
-  [key: string]: any;
-}
-
-// ===== ENHANCED IEP DATA COLLECTION TYPES =====
-// Enhanced for SMART goals and educator workflow
-
-export interface IEPGoal {
-  id: string;
-  studentId: string;
-  domain: 'academic' | 'behavioral' | 'social-emotional' | 'physical' | 'communication' | 'adaptive';
-  description: string;
-  measurableObjective: string;
-  measurementType: 'percentage' | 'frequency' | 'duration' | 'rating' | 'yes-no' | 'independence';
-  targetCriteria: string;
-  dataCollectionSchedule: string;
-  
-  // SMART Goal Enhancement
-  title: string;
-  shortTermObjective: string;
-  criteria: string;
-  target: number; // Annual target value
-  priority: 'high' | 'medium' | 'low';
-  dateCreated: string;
-  lastDataPoint?: string;
-  dataPoints: number;
-  currentProgress: number;
-  
-  // Nine-week milestones for progress monitoring
-  nineWeekMilestones?: {
-    quarter1: { target: number; actual?: number; notes?: string };
-    quarter2: { target: number; actual?: number; notes?: string };
-    quarter3: { target: number; actual?: number; notes?: string };
-    quarter4: { target: number; actual?: number; notes?: string };
-  };
-  
-  // Goal inheritance tracking
-  inheritedFrom?: {
-    previousGoalId: string;
-    previousYear: string;
-    carryOverReason: string;
-    modifications: string[];
-  };
-  
-  // Administrative compliance
-  iepMeetingDate?: string;
-  reviewDates?: string[];
-  complianceNotes?: string;
-  
-  baseline?: {
-    value: number;
-    date: string;
-    notes?: string;
-  };
-  isActive: boolean;
-  createdDate: string;
-  lastUpdated: string;
-  linkedActivityIds?: string[];
-}
-
-export interface DataPoint {
-  id: string;
-  goalId: string;
-  studentId: string;
-  date: string;
-  time: string;
-  value: number;
-  totalOpportunities?: number; // For trial-based data (X out of Y)
-  notes?: string;
-  context?: string;
-  activityId?: string;
-  collector: string;
-  photos?: string[];
-  voiceNotes?: string[];
-}
-
-// Enhanced data point for trial-based entry and administrative needs
-export interface EnhancedDataPoint extends DataPoint {
-  // Trial-based data entry
-  trialsCorrect?: number;
-  trialsTotal?: number;
-  trialDetails?: {
-    trial: number;
-    correct: boolean;
-    response?: string;
-    promptLevel?: 'independent' | 'verbal' | 'gestural' | 'physical';
-  }[];
-  
-  // Administrative documentation
-  sessionType: 'instruction' | 'practice' | 'assessment' | 'generalization';
-  environmentalFactors?: string[];
-  accommodationsUsed?: string[];
-  behaviorNotes?: string;
-  
-  // Progress monitoring
-  confidenceLevel: 'low' | 'medium' | 'high';
-  masteryIndicator?: boolean;
-  nextSteps?: string;
-  
-  // Auto-calculated fields
-  percentageCorrect?: number;
-  sessionDuration?: number;
-  dataQuality: 'excellent' | 'good' | 'fair' | 'poor';
-}
-
-// Nine-week period calculation
-export interface SchoolYearPeriod {
-  year: string; // "2024-2025"
-  startDate: string;
-  endDate: string;
-  quarters: {
-    q1: { start: string; end: string; weekNumber: number };
-    q2: { start: string; end: string; weekNumber: number };
-    q3: { start: string; end: string; weekNumber: number };
-    q4: { start: string; end: string; weekNumber: number };
-  };
-}
-
-// Goal inheritance tracking
-export interface GoalInheritance {
-  currentGoalId: string;
-  previousGoals: {
-    goalId: string;
-    year: string;
-    finalProgress: number;
-    carryOverReason: 'not-mastered' | 'partial-mastery' | 'new-environment' | 'skill-refinement';
-    modifications: string[];
-  }[];
-  continuityNotes: string;
-}
-
-export interface IEPProgress {
-  goalId: string;
-  studentId: string;
-  currentLevel: number;
-  targetLevel: number;
-  progressPercentage: number;
-  trend: 'improving' | 'maintaining' | 'declining';
-  lastThreeDataPoints: DataPoint[];
-  averagePerformance: number;
-  meetingCriteria: boolean;
-}
-
-export interface IEPReport {
-  id: string;
-  studentId: string;
-  goalIds: string[];
-  reportType: 'weekly' | 'monthly' | 'quarterly' | 'annual';
-  startDate: string;
-  endDate: string;
-  generatedDate: string;
-  summary: string;
-  progressData: IEPProgress[];
-  recommendations: string[];
-}
-
-export interface DataCollectionSession {
-  id: string;
-  studentId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  activityId?: string;
-  goalsAddressed: string[];
-  dataPoints: DataPoint[];
-  sessionNotes?: string;
-  collector: string;
-}
-
-export interface MeasurementConfig {
-  type: 'frequency' | 'accuracy' | 'duration' | 'independence' | 'rating';
-  unit?: string;
-  scale?: {
-    min: number;
-    max: number;
-    labels?: string[];
-  };
-  prompt?: string;
-}
-
-export interface StudentWithIEP extends Student {
-  hasIEP: true;
-  iepGoals: IEPGoal[];
-  dataCollectionSessions: DataCollectionSession[];
-  progressSummaries: IEPProgress[];
-  iepStartDate: string;
-  iepEndDate: string;
-  iepReviewDate?: string;
-  caseManager?: string;
-  relatedServices?: string[];
-}
-
-// Additional calendar types
-export interface ActivityPreview {
-  id: string;
-  name: string;
-  emoji: string;
-  duration: number;
-  category: ScheduleCategory;
-  description?: string;
-  isScheduled?: boolean;
-  scheduledTime?: string;
-  activityId?: string;
-  activityName?: string;
-  icon?: string;
-  startTime?: string;
-  groupAssignments?: GroupAssignment[];
-  isSpecial?: boolean;
-  status?: 'completed' | 'active' | 'upcoming' | 'current';
-  [key: string]: any;
-}
-
-export interface ChoiceRecommendation {
-  activityId: string;
-  score: number;
-  reasons: string[];
-  [key: string]: any;
-}
-
-export interface ChoiceAnalytics {
-  timesUsed: number;
-  averageRating: number;
-  studentPreferences: { [studentId: string]: number };
-  [key: string]: any;
-}
-
-// ===== REPORT INTERFACES =====
-// New interfaces to support the Reports component
-
-export interface ReportData {
-  id: string;
-  type: ReportType;
-  title: string;
-  generatedAt: string;
-  dateRange: {
-    start: string;
-    end: string;
-  };
-  data: any; // Flexible data structure for different report types
-  metadata?: {
-    totalRecords: number;
-    filters: string[];
-    exportFormat?: 'pdf' | 'csv' | 'json';
-  };
-}
-
-export type ReportType = 
-  | 'student-progress' 
-  | 'schedule-usage' 
-  | 'activity-analytics' 
-  | 'iep-goals' 
-  | 'staff-utilization'
-  | 'weekly-summary'
-  | 'monthly-overview';
-
-export interface ReportFilter {
-  studentId?: string;
-  dateRange: 'week' | 'month' | 'quarter' | 'year';
-  includeInactive?: boolean;
-  categories?: string[];
-}
-
-export interface ProgressMetric {
-  studentId: string;
-  goalId: string;
-  currentValue: number;
-  targetValue: number;
-  progressPercentage: number;
-  lastUpdated: string;
-  trend: 'improving' | 'declining' | 'stable';
-}
-
-export interface ActivityUsageStats {
-  activityId: string;
-  activityName: string;
-  usageCount: number;
-  averageDuration: number;
-  engagementScore: number;
-  lastUsed: string;
-  popularTimeSlots: string[];
-}
-
-export interface ScheduleAnalytics {
-  scheduleId: string;
-  scheduleName: string;
-  usageFrequency: number;
-  averageCompletionTime: number;
-  successRate: number;
-  mostSkippedActivities: string[];
-  peakUsageTimes: string[];
-}
-
-// ===== DAILY CHECK-IN SETTINGS INTERFACES =====
-
-export interface BehaviorStatement {
-  id: string;
-  text: string;
-  category: 'kindness' | 'respect' | 'effort' | 'responsibility' | 'safety' | 'learning';
-  emoji: string;           // ← Add this
-  isActive: boolean;       // ← Add this  
-  isDefault: boolean;      // ← Add this (instead of isCustom)
-  createdAt: string;
-}
-
-export const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
-  {
-    id: 'default-1',
-    text: 'I will be kind to my friends',
-    category: 'kindness',
-    emoji: '🤝',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'default-2', 
-    text: 'I will listen carefully',
-    category: 'responsibility',
-    emoji: '👂',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'default-3',
-    text: 'I will try my best',
-    category: 'effort',
-    emoji: '💪',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'default-4',
-    text: 'I will use my words when I need help',
-    category: 'learning',
-    emoji: '💬',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'default-5',
-    text: 'I will keep my hands to myself',
-    category: 'safety',
-    emoji: '🙌',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'default-6',
-    text: 'I will clean up after myself',
-    category: 'responsibility',
-    emoji: '🧹',
-    isActive: true,
-    isDefault: true,
-    createdAt: new Date().toISOString()
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
   }
-];
-
-export interface CheckInStep {
-  id: string;
-  name: string;
-  component: string;
-  enabled: boolean;
-  order: number;
-  settings?: any;
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
 }
 
-export interface BirthdaySettings {
-  enableBirthdayDisplay: boolean;
-  birthdayCountdownDays: number;
-  weekendBirthdayHandling: 'friday' | 'monday' | 'exact';
-  birthdayDisplayMode: 'photo' | 'name' | 'both';
-  showBirthdayBadges: boolean;
+.status-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-export interface BehaviorCommitmentSettings {
-  customStatements: BehaviorStatement[];
-  enableStudentCustom: boolean;
-  showPhotos: boolean;
+/* Focus States for Accessibility */
+.nav-button:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.2),
+    0 8px 30px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-export interface WelcomeSettings {
-  customWelcomeMessage: string;
-  showTeacherName: boolean;
-  substituteMode: boolean;
-  substituteMessage: string;
-  schoolName: string;
-  className: string;
+/* Responsive Design for Navigation */
+@media (max-width: 1024px) {
+  .navigation-bar {
+    padding: 12px 20px;
+  }
+
+  .nav-buttons {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .nav-button {
+    padding: 12px 16px;
+    min-width: 85px;
+  }
+
+  .nav-icon {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+
+  .nav-label {
+    font-size: 12px;
+  }
+
+  .nav-shortcut {
+    font-size: 9px;
+  }
 }
 
-export interface CheckInFlowSettings {
-  enableWeather: boolean;
-  enableCelebrations: boolean;
-  enableBehaviorCommitments: boolean;
-  enableChoiceActivities: boolean;
-  customSteps: CheckInStep[];
+@media (max-width: 768px) {
+  .navigation-bar {
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .nav-buttons {
+    order: 2;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+
+  .nav-brand {
+    order: 1;
+  }
+
+  .nav-status {
+    order: 3;
+  }
+
+  .nav-button {
+    flex: 1;
+    min-width: 70px;
+    max-width: 90px;
+  }
+
+  .brand-text h1 {
+    font-size: 1.3rem;
+  }
 }
 
-// Enhanced CalendarSettings interface
-export interface EnhancedCalendarSettings extends CalendarSettings {
-  birthdaySettings: BirthdaySettings;
-  behaviorCommitments: BehaviorCommitmentSettings;
-  welcomeSettings: WelcomeSettings;
-  checkInFlow: CheckInFlowSettings;
+@media (max-width: 480px) {
+  .nav-button {
+    padding: 10px 12px;
+    min-width: 60px;
+  }
+
+  .nav-icon {
+    font-size: 1.4rem;
+  }
+
+  .nav-label {
+    font-size: 11px;
+  }
+
+  .nav-shortcut {
+    display: none;
+  }
+
+  .brand-text h1 {
+    font-size: 1.1rem;
+  }
 }
+
+/* ============================================
+   SCHEDULE BUILDER MAIN CONTAINER
+   ============================================ */
+.schedule-builder {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  overflow: hidden;
+  position: relative;
+}
+
+.schedule-builder::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ============================================
+   SCHEDULE HEADER
+   ============================================ */
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-header h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.5px;
+}
+
+.schedule-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.time-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12px 16px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.time-control label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.time-control input[type="time"] {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.time-control input[type="time"]:focus {
+  outline: none;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.total-time {
+  font-weight: 700;
+  font-size: 1.2rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 12px 20px;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.clear-button {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.clear-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s ease;
+}
+
+.clear-button:hover::before {
+  left: 100%;
+}
+
+.clear-button:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(231, 76, 60, 0.5);
+}
+
+/* ============================================
+   MAIN CONTENT LAYOUT
+   ============================================ */
+/* This container is the new flex parent */
+.schedule-content {
+  display: flex;
+  flex: 1; /* This makes it fill the remaining vertical space */
+  gap: 24px;
+  padding: 24px 32px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   ACTIVITY LIBRARY PANEL
+   ============================================ */
+.activity-library {
+  width: 420px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 20px;
+  padding: 28px;
+  color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-library::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.activity-library h3 {
+  margin: 0 0 24px 0;
+  color: #2c3e50;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.activity-library h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* ============================================
+   LIBRARY FILTERS
+   ============================================ */
+/* ... (existing filter styles) ... */
+.library-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-input, .category-select {
+  padding: 14px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus, .category-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow:
+    0 0 0 4px rgba(102, 126, 234, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.search-input::placeholder {
+  color: #95a5a6;
+  font-weight: 400;
+}
+
+/* ============================================
+   CUSTOM ACTIVITY CREATOR
+   ============================================ */
+/* ... (existing creator styles) ... */
+.custom-activity-creator {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.create-activity-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.4s ease;
+  box-shadow:
+    0 6px 20px rgba(40, 167, 69, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.create-activity-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.create-activity-button:hover::before {
+  left: 100%;
+}
+
+.create-activity-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 10px 30px rgba(40, 167, 69, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
+/* ============================================
+   ACTIVITIES GRID
+   ============================================ */
+/* This container is now a flex item, and it's the only one that scrolls */
+.activities-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  flex: 1; /* This allows it to grow and fill remaining vertical space */
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Removed fixed max-height and min-height */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f1f1;
+}
+
+.activities-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.activities-grid::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.8);
+  border-radius: 4px;
+}
+
+.activities-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.activities-grid::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ============================================
+   ACTIVITY CARDS
+   ============================================ */
+/* ... (existing activity card styles) ... */
+.activity-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  min-height: 80px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e1e8ed;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+  border-radius: 16px 16px 0 0;
+}
+
+.activity-card:hover::before {
+  transform: scaleX(1);
+}
+
+.activity-card:hover {
+  border-color: #667eea;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 12px 30px rgba(102, 126, 234, 0.25),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.activity-icon {
+  font-size: 2.2rem;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover .activity-icon {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.1);
+}
+
+.activity-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover .activity-photo {
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.activity-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-info h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.activity-duration {
+  display: inline-block;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  align-self: flex-start;
+}
+
+.activity-category {
+  display: inline-block;
+  font-size: 11px;
+  color: #7f8c8d;
+  background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+  align-self: flex-start;
+  border: 1px solid rgba(127, 140, 141, 0.2);
+}
+
+.activity-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   ACTIVITY ACTIONS
+   ============================================ */
+/* ... (existing action styles) ... */
+.activity-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  margin-left: 12px;
+}
+
+.add-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 4px 12px rgba(102, 126, 234, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.add-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.add-button:hover::before {
+  left: 100%;
+}
+
+.add-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 8px 25px rgba(102, 126, 234, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.add-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.delete-custom-button {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.delete-custom-button:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+/* ============================================
+   SCHEDULE CANVAS PANEL
+   ============================================ */
+.schedule-canvas {
+  flex: 1;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 20px;
+  padding: 28px;
+  color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.schedule-canvas::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.schedule-canvas h3 {
+  margin: 0 0 24px 0;
+  color: #2c3e50;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.schedule-canvas h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* ============================================
+   SCHEDULE LIST
+   ============================================ */
+/* This container is now a flex item, and it's the only one that scrolls */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1; /* This allows it to grow and fill remaining vertical space */
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Removed fixed max-height and min-height */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f1f1;
+}
+
+.schedule-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.schedule-list::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.8);
+  border-radius: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+/* ... (the rest of the CSS file remains the same) ... */
+/* ============================================
+   MAIN CONTENT LAYOUT
+   ============================================ */
+.schedule-content {
+  display: flex;
+  flex: 1; /* This makes it fill the remaining vertical space */
+  gap: 24px;
+  padding: 24px 32px;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   ACTIVITY LIBRARY PANEL
+   ============================================ */
+.activity-library {
+  width: 420px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 20px;
+  padding: 28px;
+  color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.activity-library::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.activity-library h3 {
+  margin: 0 0 24px 0;
+  color: #2c3e50;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.activity-library h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* ============================================
+   LIBRARY FILTERS
+   ============================================ */
+/* ... (existing filter styles) ... */
+.library-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-input, .category-select {
+  padding: 14px 16px;
+  border: 2px solid #e1e8ed;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.search-input:focus, .category-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow:
+    0 0 0 4px rgba(102, 126, 234, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.search-input::placeholder {
+  color: #95a5a6;
+  font-weight: 400;
+}
+
+/* ============================================
+   CUSTOM ACTIVITY CREATOR
+   ============================================ */
+/* ... (existing creator styles) ... */
+.custom-activity-creator {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.create-activity-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.4s ease;
+  box-shadow:
+    0 6px 20px rgba(40, 167, 69, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.create-activity-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.create-activity-button:hover::before {
+  left: 100%;
+}
+
+.create-activity-button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 10px 30px rgba(40, 167, 69, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
+/* ============================================
+   ACTIVITIES GRID
+   ============================================ */
+/* This container is now a flex item, and it's the only one that scrolls */
+.activities-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  flex: 1; /* This allows it to grow and fill remaining vertical space */
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Removed fixed max-height and min-height */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f1f1;
+}
+
+.activities-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.activities-grid::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.8);
+  border-radius: 4px;
+}
+
+.activities-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.activities-grid::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ============================================
+   ACTIVITY CARDS
+   ============================================ */
+/* ... (existing activity card styles) ... */
+.activity-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  min-height: 80px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e1e8ed;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.activity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transform: scaleX(0);
+  transition: transform 0.4s ease;
+  border-radius: 16px 16px 0 0;
+}
+
+.activity-card:hover::before {
+  transform: scaleX(1);
+}
+
+.activity-card:hover {
+  border-color: #667eea;
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 12px 30px rgba(102, 126, 234, 0.25),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(145deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.activity-icon {
+  font-size: 2.2rem;
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover .activity-icon {
+  background: rgba(102, 126, 234, 0.2);
+  transform: scale(1.1);
+}
+
+.activity-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+}
+
+.activity-card:hover .activity-photo {
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.activity-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-info h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.activity-duration {
+  display: inline-block;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 8px;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
+  align-self: flex-start;
+}
+
+.activity-category {
+  display: inline-block;
+  font-size: 11px;
+  color: #7f8c8d;
+  background: linear-gradient(135deg, #ecf0f1 0%, #d5dbdb 100%);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+  align-self: flex-start;
+  border: 1px solid rgba(127, 140, 141, 0.2);
+}
+
+.activity-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   ACTIVITY ACTIONS
+   ============================================ */
+/* ... (existing action styles) ... */
+.activity-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  margin-left: 12px;
+}
+
+.add-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  box-shadow:
+    0 4px 12px rgba(102, 126, 234, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.add-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.add-button:hover::before {
+  left: 100%;
+}
+
+.add-button:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow:
+    0 8px 25px rgba(102, 126, 234, 0.5),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.add-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.delete-custom-button {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.delete-custom-button:hover {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+/* ============================================
+   SCHEDULE CANVAS PANEL
+   ============================================ */
+.schedule-canvas {
+  flex: 1;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.95) 100%);
+  border-radius: 20px;
+  padding: 28px;
+  color: #2c3e50;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.schedule-canvas::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px 20px 0 0;
+}
+
+.schedule-canvas h3 {
+  margin: 0 0 24px 0;
+  color: #2c3e50;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.schedule-canvas h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
+}
+
+/* ============================================
+   SCHEDULE LIST
+   ============================================ */
+/* This container is now a flex item, and it's the only one that scrolls */
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1; /* This allows it to grow and fill remaining vertical space */
+  overflow-y: auto;
+  padding-right: 8px;
+  /* Removed fixed max-height and min-height */
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #f1f1f1;
+}
+
+.schedule-list::-webkit-scrollbar {
+  width: 10px;
+}
+
+.schedule-list::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.8);
+  border-radius: 4px;
+}
+
+.schedule-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.schedule-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ============================================
+   SMARTBOARD DISPLAY MODE
+   ============================================ */
+/* NEW RULE: Hides navigation and ensures display fills screen when in display mode */
+.main-app-container.display-mode {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Force no scrolling for this specific mode */
+}
+
+.main-app-container.display-mode .navigation-bar {
+  display: none !important;
+}
+
+/* ... (the rest of the CSS file remains the same) ... */
