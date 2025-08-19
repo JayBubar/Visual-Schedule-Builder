@@ -11,6 +11,15 @@ interface WeatherClothingStepProps {
   onWeatherUpdate: (weather: WeatherData) => void;
   onNext: () => void;
   onBack: () => void;
+  selectedVideo?: {
+    id: string;
+    title: string;
+    videoData: {
+      url: string;
+      title: string;
+      description: string;
+    };
+  } | null;
 }
 
 const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({ 
@@ -18,7 +27,8 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
   calendarSettings, 
   onWeatherUpdate,
   onNext, 
-  onBack 
+  onBack,
+  selectedVideo
 }) => {
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
   const [selectedClothing, setSelectedClothing] = useState<string[]>([]);
@@ -174,6 +184,39 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
           PICK what weather you see
         </p>
       </div>
+
+      {/* Play Video Button */}
+      {selectedVideo && (
+        <div style={{
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '12px',
+          border: '2px solid #2196f3',
+          flexShrink: 0
+        }}>
+          <button
+            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              fontSize: '1.3rem',
+              fontWeight: 'bold',
+              backgroundColor: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            🎥 Play Weather Video: {selectedVideo.title}
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div style={{

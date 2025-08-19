@@ -16,6 +16,15 @@ interface BehaviorCommitmentsProps {
   onUpdateCheckIn: (checkIn: DailyCheckInType) => void;
   onNext: () => void;
   onBack: () => void;
+  selectedVideo?: {
+    id: string;
+    title: string;
+    videoData: {
+      url: string;
+      title: string;
+      description: string;
+    };
+  } | null;
 }
 
 interface BehaviorCategory {
@@ -33,7 +42,8 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   todayCheckIn,
   onUpdateCheckIn,
   onNext,
-  onBack
+  onBack,
+  selectedVideo
 }) => {
   // Default behavior statements
   const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
@@ -579,6 +589,38 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
           )}
         </div>
       </div>
+
+      {/* Play Video Button */}
+      {selectedVideo && (
+        <div style={{
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          backgroundColor: '#f3e5f5',
+          borderRadius: '12px',
+          border: '2px solid #9c27b0'
+        }}>
+          <button
+            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              fontSize: '1.3rem',
+              fontWeight: 'bold',
+              backgroundColor: '#9c27b0',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            🎥 Play Behavior Video: {selectedVideo.title}
+          </button>
+        </div>
+      )}
 
       {/* Student Grid */}
       <div style={{

@@ -192,6 +192,39 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     setWeatherVocab(vocab);
   }, []);
 
+  // Load selected videos from settings and activity library
+  const [selectedVideos, setSelectedVideos] = useState<any>({});
+  const [videoDetails, setVideoDetails] = useState<{
+    weather: any;
+    seasonal: any;
+    behavior: any;
+  }>({
+    weather: null,
+    seasonal: null,
+    behavior: null
+  });
+
+  useEffect(() => {
+    // Load selected videos from settings
+    const settings = JSON.parse(localStorage.getItem('visualScheduleBuilderSettings') || '{}');
+    const morningMeetingVideos = settings.morningMeeting?.selectedVideos || {};
+    setSelectedVideos(morningMeetingVideos);
+
+    // Load Activity Library to get video details
+    const activityLibrary = JSON.parse(localStorage.getItem('unifiedActivities') || '[]');
+    const getVideoById = (id: string) => activityLibrary.find((item: any) => item.id === id && item.contentType === 'video');
+
+    const weatherVideo = morningMeetingVideos.weather ? getVideoById(morningMeetingVideos.weather) : null;
+    const seasonalVideo = morningMeetingVideos.seasonal ? getVideoById(morningMeetingVideos.seasonal) : null;
+    const behaviorVideo = morningMeetingVideos.behavior ? getVideoById(morningMeetingVideos.behavior) : null;
+
+    setVideoDetails({
+      weather: weatherVideo,
+      seasonal: seasonalVideo,
+      behavior: behaviorVideo
+    });
+  }, []);
+
   // Listen for settings changes from the Settings component
   useEffect(() => {
     const handleSettingsChange = (event: CustomEvent) => {
@@ -204,6 +237,24 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       if (newSettings.morningMeeting?.weatherVocabulary) {
         setWeatherVocab(newSettings.morningMeeting.weatherVocabulary);
         console.log('🌤️ Weather vocabulary updated from Settings:', newSettings.morningMeeting.weatherVocabulary);
+      }
+      // Update video selections when settings change
+      if (newSettings.morningMeeting?.selectedVideos) {
+        setSelectedVideos(newSettings.morningMeeting.selectedVideos);
+        
+        // Reload video details
+        const activityLibrary = JSON.parse(localStorage.getItem('unifiedActivities') || '[]');
+        const getVideoById = (id: string) => activityLibrary.find((item: any) => item.id === id && item.contentType === 'video');
+
+        const weatherVideo = newSettings.morningMeeting.selectedVideos.weather ? getVideoById(newSettings.morningMeeting.selectedVideos.weather) : null;
+        const seasonalVideo = newSettings.morningMeeting.selectedVideos.seasonal ? getVideoById(newSettings.morningMeeting.selectedVideos.seasonal) : null;
+        const behaviorVideo = newSettings.morningMeeting.selectedVideos.behavior ? getVideoById(newSettings.morningMeeting.selectedVideos.behavior) : null;
+
+        setVideoDetails({
+          weather: weatherVideo,
+          seasonal: seasonalVideo,
+          behavior: behaviorVideo
+        });
       }
     };
 
@@ -491,6 +542,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
             onUpdateCheckIn={saveTodayCheckIn}
             onNext={handleNext}
             onBack={handleBack}
+            selectedVideo={videoDetails.behavior}
           />
         )}
 
@@ -511,6 +563,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
             onWeatherUpdate={handleWeatherUpdate}
             onNext={handleNext}
             onBack={handleBack}
+            selectedVideo={videoDetails.weather}
           />
         )}
 
@@ -522,6 +575,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
             currentDate={currentDate}
             weather={todayCheckIn?.weather}
             weatherVocabulary={weatherVocab}
+            selectedVideo={videoDetails.seasonal}
           />
         )}
 

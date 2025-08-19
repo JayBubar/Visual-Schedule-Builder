@@ -18,6 +18,15 @@ interface SeasonalLearningStepProps {
     springWords: string[];
     weatherFacts: string[];
   } | null;
+  selectedVideo?: {
+    id: string;
+    title: string;
+    videoData: {
+      url: string;
+      title: string;
+      description: string;
+    };
+  } | null;
 }
 
 interface SeasonalActivity {
@@ -268,7 +277,8 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   onBack,
   currentDate,
   weather,
-  weatherVocabulary
+  weatherVocabulary,
+  selectedVideo
 }) => {
   const [currentActivity, setCurrentActivity] = useState<SeasonalActivity | null>(null);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
@@ -440,6 +450,38 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
           </div>
         )}
       </div>
+
+      {/* Play Video Button */}
+      {selectedVideo && (
+        <div style={{
+          marginBottom: '1.5rem',
+          padding: '1rem',
+          backgroundColor: '#fff3e0',
+          borderRadius: '12px',
+          border: '2px solid #ff9800'
+        }}>
+          <button
+            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              fontSize: '1.3rem',
+              fontWeight: 'bold',
+              backgroundColor: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            🎥 Play Seasonal Video: {selectedVideo.title}
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div style={{
