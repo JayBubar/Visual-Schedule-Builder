@@ -155,16 +155,54 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
 
   return (
     <div style={{ 
-      padding: '1rem 2rem',
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '100vh'
+      padding: 'clamp(1rem, 2vw, 2rem)'
     }}>
-
+      {/* Video Button - if selectedVideo exists */}
+      {selectedVideo && (
+        <div style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
+            style={{
+              background: 'rgba(33, 150, 243, 0.8)',
+              border: '2px solid rgba(33, 150, 243, 1)',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(33, 150, 243, 1)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(33, 150, 243, 0.8)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            🎥 Play Video
+          </button>
+        </div>
+      )}
+      
       {/* Header */}
       <div style={{ 
         textAlign: 'center', 
-        marginBottom: '1rem',
+        marginBottom: 'clamp(1rem, 2vh, 2rem)',
         flexShrink: 0
       }}>
         <h2 style={{
@@ -174,58 +212,17 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
           marginBottom: '0.5rem',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          🌤️ Let's Look Outside
+          🌤️ Weather & Clothing
         </h2>
-        <p style={{
-          fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '0'
-        }}>
-          PICK what weather you see
-        </p>
       </div>
 
-      {/* Play Video Button */}
-      {selectedVideo && (
-        <div style={{
-          marginBottom: '1.5rem',
-          padding: '1rem',
-          backgroundColor: '#e3f2fd',
-          borderRadius: '12px',
-          border: '2px solid #2196f3',
-          flexShrink: 0
-        }}>
-          <button
-            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              fontSize: '1.3rem',
-              fontWeight: 'bold',
-              backgroundColor: '#2196f3',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            🎥 Play Weather Video: {selectedVideo.title}
-          </button>
-        </div>
-      )}
-
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div style={{
         flex: 1,
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: '1rem',
-        paddingBottom: '100px'
+        justifyContent: 'center'
       }}>
         {/* Weather Widget */}
         <div style={{ flexShrink: 0 }}>

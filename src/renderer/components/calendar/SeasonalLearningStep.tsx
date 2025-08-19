@@ -404,95 +404,75 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   };
 
   return (
-    <div style={{
-      padding: '2rem',
-      textAlign: 'center',
-      minHeight: '100vh',
-      background: `linear-gradient(135deg, ${seasonalTheme.colors[0]}40, ${seasonalTheme.colors[1]}40, ${seasonalTheme.colors[2]}40)`,
+    <div style={{ 
+      height: '100%',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      padding: 'clamp(1rem, 2vw, 2rem)'
     }}>
-      {/* Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '0.5rem',
-          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '1rem'
-        }}>
-          {seasonalTheme.emoji} {seasonalTheme.season} Learning
-        </h2>
-        <p style={{
-          fontSize: '1.3rem',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '1rem'
-        }}>
-          Let's explore what makes {seasonalTheme.season.toLowerCase()} special!
-        </p>
-        
-        {/* Weather Connection */}
-        {weather && (
-          <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '12px',
-            padding: '1rem',
-            marginTop: '1rem',
-            fontSize: '1.1rem',
-            color: 'white',
-            fontWeight: '600'
-          }}>
-            {getWeatherConnection()}
-          </div>
-        )}
-      </div>
-
-      {/* Play Video Button */}
+      {/* Video Button - if selectedVideo exists */}
       {selectedVideo && (
         <div style={{
-          marginBottom: '1.5rem',
-          padding: '1rem',
-          backgroundColor: '#fff3e0',
-          borderRadius: '12px',
-          border: '2px solid #ff9800'
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 1000
         }}>
           <button
             onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
             style={{
-              width: '100%',
-              padding: '1rem',
-              fontSize: '1.3rem',
-              fontWeight: 'bold',
-              backgroundColor: '#ff9800',
+              background: 'rgba(255, 152, 0, 0.8)',
+              border: '2px solid rgba(255, 152, 0, 1)',
+              borderRadius: '12px',
               color: 'white',
-              border: 'none',
-              borderRadius: '8px',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
               cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
               gap: '0.5rem'
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 152, 0, 1)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 152, 0, 0.8)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
           >
-            🎥 Play Seasonal Video: {selectedVideo.title}
+            🎥 Play Video
           </button>
         </div>
       )}
+      
+      {/* Header */}
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: 'clamp(1rem, 2vh, 2rem)',
+        flexShrink: 0
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+          fontWeight: '700',
+          color: 'white',
+          marginBottom: '0.5rem',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        }}>
+          {seasonalTheme.emoji} Seasonal Learning
+        </h2>
+      </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div style={{
-        background: 'rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '20px',
-        padding: '2rem',
         flex: 1,
-        border: '1px solid rgba(255,255,255,0.2)',
         overflow: 'auto',
-        paddingBottom: '100px'
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}>
         
         {/* Vocabulary Section */}

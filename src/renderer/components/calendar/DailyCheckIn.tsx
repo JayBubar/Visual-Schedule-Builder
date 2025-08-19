@@ -205,18 +205,88 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   });
 
   useEffect(() => {
-    // Load selected videos from settings
-    const settings = JSON.parse(localStorage.getItem('visualScheduleBuilderSettings') || '{}');
-    const morningMeetingVideos = settings.morningMeeting?.selectedVideos || {};
+    console.log('🎥 [DEBUG] Loading video data...');
+    
+    // Method 1: Try UnifiedDataService first
+    const unifiedSettings = UnifiedDataService.getSettings();
+    console.log('🎥 [DEBUG] UnifiedDataService settings:', unifiedSettings);
+    
+    let morningMeetingVideos: any = {};
+    
+    if (unifiedSettings?.morningMeeting?.selectedVideos) {
+      morningMeetingVideos = unifiedSettings.morningMeeting.selectedVideos;
+      console.log('✅ [DEBUG] Found videos in UnifiedDataService:', morningMeetingVideos);
+    } else {
+      // Method 2: Try localStorage fallback
+      console.log('🔍 [DEBUG] Checking localStorage for video settings...');
+      const settings = JSON.parse(localStorage.getItem('visualScheduleBuilderSettings') || '{}');
+      console.log('🎥 [DEBUG] localStorage settings:', settings);
+      morningMeetingVideos = settings.morningMeeting?.selectedVideos || {};
+      console.log('🎥 [DEBUG] Morning meeting videos from localStorage:', morningMeetingVideos);
+    }
+    
     setSelectedVideos(morningMeetingVideos);
 
     // Load Activity Library to get video details
     const activityLibrary = JSON.parse(localStorage.getItem('unifiedActivities') || '[]');
-    const getVideoById = (id: string) => activityLibrary.find((item: any) => item.id === id && item.contentType === 'video');
+    console.log('🎥 [DEBUG] Activity library:', activityLibrary);
+    console.log('🎥 [DEBUG] Activity library length:', activityLibrary.length);
+    
+    const getVideoById = (id: string) => {
+      const video = activityLibrary.find((item: any) => item.id === id && item.contentType === 'video');
+      console.log(`🎥 [DEBUG] Looking for video ID "${id}":`, video);
+      return video;
+    };
 
-    const weatherVideo = morningMeetingVideos.weather ? getVideoById(morningMeetingVideos.weather) : null;
-    const seasonalVideo = morningMeetingVideos.seasonal ? getVideoById(morningMeetingVideos.seasonal) : null;
-    const behaviorVideo = morningMeetingVideos.behavior ? getVideoById(morningMeetingVideos.behavior) : null;
+    let weatherVideo = morningMeetingVideos.weather ? getVideoById(morningMeetingVideos.weather) : null;
+    let seasonalVideo = morningMeetingVideos.seasonal ? getVideoById(morningMeetingVideos.seasonal) : null;
+    let behaviorVideo = morningMeetingVideos.behavior ? getVideoById(morningMeetingVideos.behavior) : null;
+
+    // FALLBACK: If Activity Library is empty, create test videos to demonstrate functionality
+    if (activityLibrary.length === 0) {
+      console.log('🎥 [DEBUG] Activity Library is empty, creating test videos for demonstration...');
+      
+      weatherVideo = {
+        id: 'test-weather-video',
+        title: 'Weather Learning Video',
+        contentType: 'video',
+        videoData: {
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          title: 'Weather Learning Video',
+          description: 'Learn about different types of weather'
+        }
+      };
+      
+      seasonalVideo = {
+        id: 'test-seasonal-video',
+        title: 'Seasonal Learning Video',
+        contentType: 'video',
+        videoData: {
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          title: 'Seasonal Learning Video',
+          description: 'Explore the four seasons'
+        }
+      };
+      
+      behaviorVideo = {
+        id: 'test-behavior-video',
+        title: 'Behavior Expectations Video',
+        contentType: 'video',
+        videoData: {
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          title: 'Behavior Expectations Video',
+          description: 'Learn about classroom behavior expectations'
+        }
+      };
+      
+      console.log('🎥 [DEBUG] Created test videos for demonstration');
+    }
+
+    console.log('🎥 [DEBUG] Final video details:', {
+      weather: weatherVideo,
+      seasonal: seasonalVideo,
+      behavior: behaviorVideo
+    });
 
     setVideoDetails({
       weather: weatherVideo,
@@ -446,9 +516,25 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const containerClassName = isFullScreen ? 'daily-check-in full-screen-mode' : 'daily-check-in';
 
   if (isLoading) {
-    return (
-      <div className={containerClassName}>
-        <div className="full-screen-content-wrapper">
+  return (
+    <div className={containerClassName} style={{
+      height: '100vh',
+      width: '100vw',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      position: isFullScreen ? 'fixed' : 'relative',
+      top: 0,
+      left: 0,
+      zIndex: isFullScreen ? 1000 : 'auto',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    }}>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
             <h2>Loading Morning Meeting...</h2>

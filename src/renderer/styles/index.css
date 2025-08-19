@@ -1117,3 +1117,33 @@ html, body {
   flex: 1;
   overflow-y: auto;
 }
+
+/* ============================================
+   DAILY CHECK-IN FULL SCREEN SUPPORT
+   ============================================ */
+.daily-check-in.full-screen-mode {
+  height: 100vh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1000 !important;
+}
+
+/* ============================================
+   MORNING MEETING NAVIGATION BUTTONS
+   ============================================ */
+.morning-meeting-nav-button {
+  padding: clamp(0.8rem 2rem, 2.5vw, 1rem 3rem);
+  font-size: clamp(1rem, 2.2vw, 1.1rem);
+  min-height: 60px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  backdrop-filter: blur(10px);
+}

@@ -498,69 +498,66 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   const totalWithChoices = Object.keys(studentChoices).length;
 
   return (
-    <div style={{
-      padding: '2rem',
-      textAlign: 'center',
-      minHeight: '600px',
+    <div style={{ 
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      gap: '2rem'
+      padding: 'clamp(1rem, 2vw, 2rem)'
     }}>
-      {/* Home Button */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        left: '1rem',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '0.75rem 1rem',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          🏠 Home
-        </button>
-      </div>
-
+      {/* Video Button - if selectedVideo exists */}
+      {selectedVideo && (
+        <div style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
+            style={{
+              background: 'rgba(156, 39, 176, 0.8)',
+              border: '2px solid rgba(156, 39, 176, 1)',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(156, 39, 176, 1)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(156, 39, 176, 0.8)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            🎥 Play Video
+          </button>
+        </div>
+      )}
+      
       {/* Header */}
-      <div>
+      <div style={{ 
+        textAlign: 'center', 
+        marginBottom: 'clamp(1rem, 2vh, 2rem)',
+        flexShrink: 0
+      }}>
         <h2 style={{
-          fontSize: '2.5rem',
+          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
           fontWeight: '700',
           color: 'white',
-          marginBottom: '1rem',
+          marginBottom: '0.5rem',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          💪 "I Will..." Commitments
+          💪 Behavior Commitments
         </h2>
-        <p style={{
-          fontSize: '1.3rem',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '1rem'
-        }}>
-          Each student chooses ONE behavior goal for today!
-        </p>
         
         {/* Simple Completion Counter */}
         <div style={{
@@ -572,7 +569,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
           border: '2px solid rgba(255,255,255,0.2)'
         }}>
           <div style={{
-            fontSize: '1.5rem',
+            fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
             fontWeight: '700',
             color: 'white',
             marginBottom: '0.5rem'
@@ -581,7 +578,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
           </div>
           {totalWithChoices > 0 && (
             <div style={{
-              fontSize: '1.2rem',
+              fontSize: 'clamp(0.9rem, 2vw, 1.2rem)',
               color: 'rgba(255,255,255,0.9)'
             }}>
               🏆 {completedCount} commitments achieved!
@@ -590,46 +587,22 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
         </div>
       </div>
 
-      {/* Play Video Button */}
-      {selectedVideo && (
-        <div style={{
-          marginBottom: '1.5rem',
-          padding: '1rem',
-          backgroundColor: '#f3e5f5',
-          borderRadius: '12px',
-          border: '2px solid #9c27b0'
-        }}>
-          <button
-            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
-            style={{
-              width: '100%',
-              padding: '1rem',
-              fontSize: '1.3rem',
-              fontWeight: 'bold',
-              backgroundColor: '#9c27b0',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            🎥 Play Behavior Video: {selectedVideo.title}
-          </button>
-        </div>
-      )}
-
-      {/* Student Grid */}
+      {/* Main Content */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '1.5rem',
-        maxWidth: '1200px',
-        margin: '0 auto'
+        flex: 1,
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center'
       }}>
+        {/* Student Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1.5rem',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
         {students.map(student => {
           const hasChoice = studentChoices[student.id];
           const isCompleted = completedStudents.has(student.id);
@@ -850,6 +823,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
             </div>
           );
         })}
+        </div>
       </div>
 
       {/* Commitment Selection Modal */}
