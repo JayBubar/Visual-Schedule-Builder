@@ -737,7 +737,7 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
             boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)'
           }}
         >
-          Continue to Content Library →
+          Continue to Celebrations →
         </button>
       </div>
     </div>

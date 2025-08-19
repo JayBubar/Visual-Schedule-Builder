@@ -496,6 +496,42 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       flexDirection: 'column',
       gap: '2rem'
     }}>
+      {/* Home Button */}
+      <div style={{
+        position: 'fixed',
+        top: '1rem',
+        left: '1rem',
+        zIndex: 1000
+      }}>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '0.75rem 1rem',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          🏠 Home
+        </button>
+      </div>
 
       {/* Header */}
       <div>
@@ -926,28 +962,6 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       )}
 
 
-      {/* Statement Count Display */}
-      <div style={{
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '12px',
-        padding: '1rem',
-        marginBottom: '2rem',
-        textAlign: 'center',
-        backdropFilter: 'blur(10px)'
-      }}>
-        <div style={{ color: 'white', fontSize: '1rem', fontWeight: '600' }}>
-          📊 Behavior Statements Loaded
-        </div>
-        <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-          {behaviorCategories.length} categories • {' '}
-          {behaviorCategories.reduce((total, cat) => total + cat.commitments.length, 0)} total statements
-        </div>
-        {behaviorStatements.some(statement => statement.text.includes('🧪')) && (
-          <div style={{ color: '#ffc107', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            ⚠️ Test statements included
-          </div>
-        )}
-      </div>
 
       {/* Navigation Buttons */}
       <div style={{

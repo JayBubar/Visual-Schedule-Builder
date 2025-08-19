@@ -242,111 +242,56 @@ const calculateCelebrationDate = (birthday: string, currentDate: Date): string =
 
 const getTodaysBirthdays = () => {
   try {
-    console.log('🔄 [DEBUG] Checking for birthdays...');
-    console.log('📅 [DEBUG] Current date:', currentDate);
-    console.log('👥 [DEBUG] Students to check:', students.map(s => ({ 
-      name: s.name, 
-      birthday: (s as any).birthday,
-      allowBirthdayDisplay: (s as any).allowBirthdayDisplay 
-    })));
-    
     const today = formatDateForComparison(currentDate);
-    console.log('📅 [DEBUG] Today formatted:', today);
-    
     const birthdayStudents: Student[] = [];
 
     students.forEach(student => {
       const birthday = (student as any).birthday;
-      console.log(`🔍 [DEBUG] Checking ${student.name}: birthday=${birthday}`);
       
       if (birthday && (student as any).allowBirthdayDisplay !== false) {
         const celebrationDate = calculateCelebrationDate(birthday, currentDate);
-        console.log(`📅 [DEBUG] ${student.name} celebration date: ${celebrationDate} (today: ${today})`);
         
         if (celebrationDate === today) {
           birthdayStudents.push(student);
-          console.log(`🎂 [DEBUG] Added ${student.name} to birthday list!`);
         }
-      } else {
-        console.log(`⏭️ [DEBUG] Skipping ${student.name}: no birthday or display disabled`);
       }
     });
-
-    console.log('🎂 [DEBUG] Final birthday students:', birthdayStudents.map(s => s.name));
-    
-    // If no real birthdays, add a test birthday to verify display
-    if (birthdayStudents.length === 0 && students.length > 0) {
-      console.log('🧪 [DEBUG] No birthdays found, adding test birthday...');
-      const testStudent = { ...students[0] };
-      (testStudent as any).birthday = new Date().toISOString().split('T')[0]; // Today
-      birthdayStudents.push(testStudent);
-      console.log('🧪 [DEBUG] Added test birthday for:', testStudent.name);
-    }
 
     return birthdayStudents;
     
   } catch (error) {
-    console.error('❌ [DEBUG] Error checking birthdays:', error);
+    console.error('Error checking birthdays:', error);
     return [];
   }
 };
 
 const getCustomCelebrations = () => {
   try {
-    console.log('🔄 [DEBUG] Loading celebrations...');
-    
     // Method 1: Try UnifiedDataService
     const unifiedSettings = UnifiedDataService.getSettings();
-    console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
     
     let celebrations = [];
     
     // Check multiple possible paths
     if (unifiedSettings?.dailyCheckIn?.celebrations?.customCelebrations) {
       celebrations = unifiedSettings.dailyCheckIn.celebrations.customCelebrations;
-      console.log('✅ [DEBUG] Found celebrations in dailyCheckIn.celebrations:', celebrations);
     } else if (unifiedSettings?.celebrations?.customCelebrations) {
       celebrations = unifiedSettings.celebrations.customCelebrations;
-      console.log('✅ [DEBUG] Found celebrations in root celebrations:', celebrations);
     } else if (unifiedSettings?.customCelebrations) {
       celebrations = unifiedSettings.customCelebrations;
-      console.log('✅ [DEBUG] Found celebrations in root customCelebrations:', celebrations);
-    } else {
-      console.log('ℹ️ [DEBUG] No celebrations found in UnifiedDataService');
     }
     
-    // Method 2: Try legacy calendarSettings (even though we want to migrate away)
+    // Method 2: Try legacy calendarSettings
     if (celebrations.length === 0) {
-      console.log('🔍 [DEBUG] Checking legacy calendarSettings...');
       const legacySettings = localStorage.getItem('calendarSettings');
       if (legacySettings) {
         const parsed = JSON.parse(legacySettings);
-        console.log('📋 [DEBUG] Legacy settings:', parsed);
         if (parsed.customCelebrations) {
           celebrations = parsed.customCelebrations;
-          console.log('✅ [DEBUG] Found celebrations in legacy settings:', celebrations);
         }
       }
     }
     
-    // Method 3: Add test celebration to verify display works
-    if (celebrations.length === 0) {
-      console.log('🧪 [DEBUG] Adding test celebration...');
-      const testCelebration = {
-        id: 'test_celebration',
-        name: 'Test Celebration',
-        title: 'Test Celebration', // backup field
-        emoji: '🔧',
-        message: 'This is a test celebration to verify the display works!',
-        date: new Date().toISOString().split('T')[0], // Today
-        isRecurring: false,
-        enabled: true
-      };
-      celebrations = [testCelebration];
-      console.log('🧪 [DEBUG] Added test celebration:', celebrations);
-    }
-    
-    console.log('🎉 [DEBUG] Final celebrations to display:', celebrations);
     return celebrations.map((celebration: any) => ({
       type: 'custom',
       celebration,
@@ -356,22 +301,8 @@ const getCustomCelebrations = () => {
     }));
     
   } catch (error) {
-    console.error('❌ [DEBUG] Error loading celebrations:', error);
-    // Return test celebration even on error
-    return [{
-      type: 'custom',
-      celebration: {
-        id: 'error_test',
-        name: 'Error Test Celebration',
-        emoji: '⚠️',
-        message: 'There was an error loading celebrations, but this proves the display works!',
-        date: new Date().toISOString().split('T')[0],
-        enabled: true
-      },
-      icon: '⚠️',
-      title: 'Error Test Celebration',
-      description: 'There was an error loading celebrations, but this proves the display works!'
-    }];
+    console.error('Error loading celebrations:', error);
+    return [];
   }
 };
 
@@ -715,6 +646,43 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
       flexDirection: 'column',
       gap: '2rem'
     }}>
+      {/* Home Button */}
+      <div style={{
+        position: 'fixed',
+        top: '1rem',
+        left: '1rem',
+        zIndex: 1000
+      }}>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '0.75rem 1rem',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            backdropFilter: 'blur(10px)',
+            transition: 'all 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          🏠 Home
+        </button>
+      </div>
+
       {/* Header */}
       <div>
         <h2 style={{

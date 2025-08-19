@@ -24,6 +24,7 @@ import BehaviorCommitments from './BehaviorCommitments';
 import CalendarMathStep from './CalendarMathStep';
 import WeatherClothingStep from './WeatherClothingStep';
 import SeasonalLearningStep from './SeasonalLearningStep';
+import DailyHighlights from './DailyHighlights';
 
 
 interface DailyCheckInProps {
@@ -281,7 +282,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const handleNext = () => {
     let nextStep = currentStep + 1;
     
-    if (nextStep <= 11) {
+    if (nextStep <= 8) {
       setCurrentStep(nextStep);
     }
   };
@@ -305,21 +306,10 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     }
   };
 
-  // Single completion logic - replace existing multi-screen logic
-  const allRequiredTabsComplete = () => {
-    return (
-      todayCheckIn?.behaviorCommitments && 
-      todayCheckIn?.behaviorCommitments.length > 0 &&
-      todayCheckIn?.independentChoices &&
-      todayCheckIn?.weather
-    );
-  };
-
   // 🐛 DEBUG INFO to see the completion flow
   console.log('🐛 DailyCheckIn Debug:');
   console.log('- currentStep:', currentStep);
   console.log('- todayCheckIn:', todayCheckIn);
-  console.log('- All tabs completed?', allRequiredTabsComplete());
 
   const handleFinalConfirmation = () => {
     console.log('🚀 Daily Check-In Complete - Checking for temporary schedule');
@@ -460,7 +450,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         fontSize: '0.9rem',
         fontWeight: '600'
       }}>
-        Morning Meeting - Step {currentStep} of 10
+        Morning Meeting - Step {currentStep} of 8
         <div style={{
           width: '200px',
           height: '4px',
@@ -470,7 +460,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           overflow: 'hidden'
         }}>
           <div style={{
-            width: `${(currentStep / 10) * 100}%`,
+            width: `${(currentStep / 8) * 100}%`,
             height: '100%',
             background: 'linear-gradient(90deg, #10B981, #34D399)',
             borderRadius: '2px',
@@ -553,35 +543,25 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step 8: Choice Activities - REMOVED */}
-
-        {/* Step 8: Skip Choice Activities - Auto-advance to next step */}
+        {/* Step 8: Daily Highlights - RESTORED */}
         {currentStep === 8 && (
-          <div style={{ padding: '2rem', minHeight: '600px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                ⏭️ Skipping Choice Activities
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Choice activities have been disabled. Moving to schedule review...
-              </p>
-            </div>
+          <div style={{ padding: '1rem', minHeight: '600px' }}>
+            <DailyHighlights
+              currentDate={currentDate}
+              students={presentStudents}
+              staff={realStaff}
+              todayCheckIn={todayCheckIn}
+              selectedSchedule={selectedSchedule}
+              onUpdateCheckIn={saveTodayCheckIn}
+            />
             
+            {/* Navigation Buttons */}
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '1rem',
-              marginTop: '2rem'
+              marginTop: '2rem',
+              padding: '1rem'
             }}>
               <button
                 onClick={handleBack}
@@ -602,7 +582,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
               </button>
               
               <button
-                onClick={handleNext}
+                onClick={handleFinalConfirmation}
                 style={{
                   background: 'rgba(34, 197, 94, 0.8)',
                   border: 'none',
@@ -616,99 +596,15 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
                   transition: 'all 0.3s ease'
                 }}
               >
-                Continue to Schedule Review →
+                🚀 Start Our Visual Schedule! 🚀
               </button>
             </div>
           </div>
         )}
 
-        {/* Step 9: Schedule Review - NEW STEP ADDED */}
-        {currentStep === 9 && (
-          <div style={{ padding: '2rem', minHeight: '600px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h2 style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem',
-                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                📅 Today's Schedule Preview
-              </h2>
-              <p style={{
-                fontSize: '1.3rem',
-                color: 'rgba(255,255,255,0.9)',
-                marginBottom: '2rem'
-              }}>
-                Let's review what we'll be doing today!
-              </p>
-            </div>
-
-            {/* Schedule Preview */}
-            <div style={{
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '16px',
-              padding: '2rem',
-              marginBottom: '2rem',
-              backdropFilter: 'blur(10px)'
-            }}>
-              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)' }}>
-                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</div>
-                <p style={{ fontSize: '1.2rem' }}>
-                  No specific schedule loaded for today.<br />
-                  We'll follow our regular daily routine!
-                </p>
-              </div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1rem',
-              marginTop: '2rem'
-            }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ← Back to Choices
-              </button>
-              
-              <button
-                onClick={handleNext}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 3rem',
-                  fontSize: '1.1rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Continue to Daily Highlights →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Steps 10-11: COMBINED - Single Smooth Transition */}
-        {(currentStep === 10 || currentStep === 11) && (
+        {/* REMOVED: Steps 9-11 - No longer needed */}
+        {/* Final step is now Step 8 (Daily Highlights) which goes directly to completion */}
+        {(currentStep === 9 || currentStep === 10 || currentStep === 11) && (
           <div style={{
             padding: '2rem',
             textAlign: 'center',

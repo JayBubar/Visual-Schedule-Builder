@@ -28,7 +28,7 @@ interface SettingsData {
     autoFullscreen: boolean;
     gestureControls: boolean;
   };
-  dailyCheckIn: {
+  morningMeeting: {
     birthdaySettings: {
       enableBirthdayDisplay: boolean;
       birthdayCountdownDays: number;
@@ -48,7 +48,14 @@ interface SettingsData {
       enableWeather: boolean;
       enableCelebrations: boolean;
       enableBehaviorCommitments: boolean;
-      enableChoiceActivities: boolean;
+    };
+    weatherVocabulary: {
+      weatherWords: string[];
+      summerWords: string[];
+      fallWords: string[];
+      winterWords: string[];
+      springWords: string[];
+      weatherFacts: string[];
     };
     behaviorCommitments?: {
       customStatements?: any[];
@@ -106,7 +113,7 @@ const DEFAULT_SETTINGS: SettingsData = {
     autoFullscreen: false,
     gestureControls: true
   },
-  dailyCheckIn: {
+  morningMeeting: {
     birthdaySettings: {
       enableBirthdayDisplay: true,
       birthdayCountdownDays: 3,
@@ -125,8 +132,20 @@ const DEFAULT_SETTINGS: SettingsData = {
     checkInFlow: {
       enableWeather: true,
       enableCelebrations: true,
-      enableBehaviorCommitments: true,
-      enableChoiceActivities: true
+      enableBehaviorCommitments: true
+    },
+    weatherVocabulary: {
+      weatherWords: ["sunny", "cloudy", "rainy", "snowy", "windy", "stormy"],
+      summerWords: ["hot", "beach", "swimming", "vacation", "sunshine"],
+      fallWords: ["leaves", "pumpkin", "harvest", "cool", "orange"],
+      winterWords: ["cold", "snow", "ice", "mittens", "fireplace"],
+      springWords: ["flowers", "rain", "green", "growing", "warm"],
+      weatherFacts: [
+        "Rain helps plants grow!",
+        "Snow is made of tiny ice crystals",
+        "Wind can help birds fly faster",
+        "The sun gives us light and warmth"
+      ]
     }
   },
   schedule: {
@@ -162,7 +181,7 @@ const CelebrationsManagementModal: React.FC<{
   onUpdateSettings: (settings: any) => void;
 }> = ({ isOpen, onClose, settings, onUpdateSettings }) => {
   const [customCelebrations, setCustomCelebrations] = useState(
-    settings.dailyCheckIn?.celebrations?.customCelebrations || []
+    settings.morningMeeting?.celebrations?.customCelebrations || []
   );
 
   if (!isOpen) return null;
@@ -197,10 +216,10 @@ const CelebrationsManagementModal: React.FC<{
   const saveCelebrations = () => {
     const updatedSettings = {
       ...settings,
-      dailyCheckIn: {
-        ...settings.dailyCheckIn,
+      morningMeeting: {
+        ...settings.morningMeeting,
         celebrations: {
-          ...settings.dailyCheckIn.celebrations,
+          ...settings.morningMeeting.celebrations,
           customCelebrations
         }
       }
@@ -442,12 +461,13 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           appearance: { ...DEFAULT_SETTINGS.appearance, ...parsedSettings.appearance },
           accessibility: { ...DEFAULT_SETTINGS.accessibility, ...parsedSettings.accessibility },
           smartboard: { ...DEFAULT_SETTINGS.smartboard, ...parsedSettings.smartboard },
-          dailyCheckIn: {
-            ...DEFAULT_SETTINGS.dailyCheckIn,
-            ...parsedSettings.dailyCheckIn,
-            birthdaySettings: { ...DEFAULT_SETTINGS.dailyCheckIn.birthdaySettings, ...parsedSettings.dailyCheckIn?.birthdaySettings },
-            welcomeSettings: { ...DEFAULT_SETTINGS.dailyCheckIn.welcomeSettings, ...parsedSettings.dailyCheckIn?.welcomeSettings },
-            checkInFlow: { ...DEFAULT_SETTINGS.dailyCheckIn.checkInFlow, ...parsedSettings.dailyCheckIn?.checkInFlow }
+          morningMeeting: {
+            ...DEFAULT_SETTINGS.morningMeeting,
+            ...parsedSettings.morningMeeting,
+            birthdaySettings: { ...DEFAULT_SETTINGS.morningMeeting.birthdaySettings, ...parsedSettings.morningMeeting?.birthdaySettings },
+            welcomeSettings: { ...DEFAULT_SETTINGS.morningMeeting.welcomeSettings, ...parsedSettings.morningMeeting?.welcomeSettings },
+            checkInFlow: { ...DEFAULT_SETTINGS.morningMeeting.checkInFlow, ...parsedSettings.morningMeeting?.checkInFlow },
+            weatherVocabulary: { ...DEFAULT_SETTINGS.morningMeeting.weatherVocabulary, ...parsedSettings.morningMeeting?.weatherVocabulary }
           },
           schedule: { ...DEFAULT_SETTINGS.schedule, ...parsedSettings.schedule },
           notifications: { ...DEFAULT_SETTINGS.notifications, ...parsedSettings.notifications },
@@ -661,12 +681,13 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
               appearance: { ...DEFAULT_SETTINGS.appearance, ...importedSettings.appearance },
               accessibility: { ...DEFAULT_SETTINGS.accessibility, ...importedSettings.accessibility },
               smartboard: { ...DEFAULT_SETTINGS.smartboard, ...importedSettings.smartboard },
-              dailyCheckIn: {
-                ...DEFAULT_SETTINGS.dailyCheckIn,
-                ...importedSettings.dailyCheckIn,
-                birthdaySettings: { ...DEFAULT_SETTINGS.dailyCheckIn.birthdaySettings, ...importedSettings.dailyCheckIn?.birthdaySettings },
-                welcomeSettings: { ...DEFAULT_SETTINGS.dailyCheckIn.welcomeSettings, ...importedSettings.dailyCheckIn?.welcomeSettings },
-                checkInFlow: { ...DEFAULT_SETTINGS.dailyCheckIn.checkInFlow, ...importedSettings.dailyCheckIn?.checkInFlow }
+              morningMeeting: {
+                ...DEFAULT_SETTINGS.morningMeeting,
+                ...importedSettings.morningMeeting,
+                birthdaySettings: { ...DEFAULT_SETTINGS.morningMeeting.birthdaySettings, ...importedSettings.morningMeeting?.birthdaySettings },
+                welcomeSettings: { ...DEFAULT_SETTINGS.morningMeeting.welcomeSettings, ...importedSettings.morningMeeting?.welcomeSettings },
+                checkInFlow: { ...DEFAULT_SETTINGS.morningMeeting.checkInFlow, ...importedSettings.morningMeeting?.checkInFlow },
+                weatherVocabulary: { ...DEFAULT_SETTINGS.morningMeeting.weatherVocabulary, ...importedSettings.morningMeeting?.weatherVocabulary }
               },
               schedule: { ...DEFAULT_SETTINGS.schedule, ...importedSettings.schedule },
               notifications: { ...DEFAULT_SETTINGS.notifications, ...importedSettings.notifications },
@@ -712,7 +733,7 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
     { id: 'appearance', name: 'Appearance', icon: '🎨', description: 'Themes, fonts, and visual preferences' },
     { id: 'accessibility', name: 'Accessibility', icon: '♿', description: 'Screen readers, navigation, and inclusive features' },
     { id: 'smartboard', name: 'Smartboard', icon: '📺', description: 'Touch settings and classroom display options' },
-    { id: 'dailyCheckIn', name: 'Daily Check-In', icon: '👋', description: 'Birthday celebrations, welcome messages, and check-in flow' },
+    { id: 'morningMeeting', name: 'Morning Meeting', icon: '👋', description: 'Birthday celebrations, welcome messages, and check-in flow' },
     { id: 'notifications', name: 'Notifications', icon: '🔔', description: 'Alerts, sounds, and reminder settings' },
     { id: 'schedule', name: 'Schedule', icon: '📅', description: 'Default durations, time formats, and automation' },
     { id: 'data', name: 'Data & Backup', icon: '💾', description: 'Backup, export, and sync preferences' }
@@ -1037,17 +1058,17 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
             </div>
           )}
 
-          {/* Daily Check-In Settings */}
-          {activeSection === 'dailyCheckIn' && (
+          {/* Morning Meeting Settings */}
+          {activeSection === 'morningMeeting' && (
             <div className="settings-section">
-              <h3>👋 Daily Check-In Settings</h3>
+              <h3>👋 Morning Meeting Settings</h3>
               <p className="section-description">Customize behavior statements, birthday celebrations, welcome messages, and check-in flow</p>
 
               {/* Behavior Statements Management */}
               <div className="settings-subsection">
                 <h4>💪 Behavior Statements</h4>
                 <p className="setting-description">
-                  Current behavior statements: {settings.dailyCheckIn?.behaviorCommitments?.customStatements?.length || 0} configured
+                  Current behavior statements: {settings.morningMeeting?.behaviorCommitments?.customStatements?.length || 0} configured
                 </p>
                 
                 <button
@@ -1083,14 +1104,14 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn?.celebrations?.enabled ?? true}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
-                          ...settings.dailyCheckIn.celebrations,
+                        checked={settings.morningMeeting?.celebrations?.enabled ?? true}
+                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
+                          ...settings.morningMeeting.celebrations,
                           enabled: e.target.checked
                         })}
                       />
                       <span className="toggle-slider"></span>
-                      <span className="toggle-text">Enable celebrations in Daily Check-In</span>
+                      <span className="toggle-text">Enable celebrations in Morning Meeting</span>
                     </label>
                   </div>
                 </div>
@@ -1100,9 +1121,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn?.celebrations?.showBirthdayPhotos ?? true}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'celebrations', {
-                          ...settings.dailyCheckIn.celebrations,
+                        checked={settings.morningMeeting?.celebrations?.showBirthdayPhotos ?? true}
+                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
+                          ...settings.morningMeeting.celebrations,
                           showBirthdayPhotos: e.target.checked
                         })}
                       />
@@ -1142,16 +1163,16 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.birthdaySettings.enableBirthdayDisplay}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
-                          ...settings.dailyCheckIn.birthdaySettings,
+                        checked={settings.morningMeeting.birthdaySettings.enableBirthdayDisplay}
+                        onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
+                          ...settings.morningMeeting.birthdaySettings,
                           enableBirthdayDisplay: e.target.checked
                         })}
                       />
                       <span className="toggle-slider"></span>
                       <span className="toggle-text">Enable Birthday Celebrations</span>
                     </label>
-                    <p className="setting-description">Show birthday celebrations in Daily Check-In</p>
+                    <p className="setting-description">Show birthday celebrations in Morning Meeting</p>
                   </div>
                 </div>
 
@@ -1162,9 +1183,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                       type="number"
                       min="0"
                       max="7"
-                      value={settings.dailyCheckIn.birthdaySettings.birthdayCountdownDays}
-                      onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
-                        ...settings.dailyCheckIn.birthdaySettings,
+                      value={settings.morningMeeting.birthdaySettings.birthdayCountdownDays}
+                      onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
+                        ...settings.morningMeeting.birthdaySettings,
                         birthdayCountdownDays: parseInt(e.target.value)
                       })}
                       className="number-input"
@@ -1182,9 +1203,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                           type="radio"
                           name="weekendBirthdayHandling"
                           value={handling}
-                          checked={settings.dailyCheckIn.birthdaySettings.weekendBirthdayHandling === handling}
-                          onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
-                            ...settings.dailyCheckIn.birthdaySettings,
+                          checked={settings.morningMeeting.birthdaySettings.weekendBirthdayHandling === handling}
+                          onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
+                            ...settings.morningMeeting.birthdaySettings,
                             weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact'
                           })}
                         />
@@ -1207,9 +1228,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                           type="radio"
                           name="birthdayDisplayMode"
                           value={mode}
-                          checked={settings.dailyCheckIn.birthdaySettings.birthdayDisplayMode === mode}
-                          onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
-                            ...settings.dailyCheckIn.birthdaySettings,
+                          checked={settings.morningMeeting.birthdaySettings.birthdayDisplayMode === mode}
+                          onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
+                            ...settings.morningMeeting.birthdaySettings,
                             birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both'
                           })}
                         />
@@ -1228,9 +1249,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.birthdaySettings.showBirthdayBadges}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'birthdaySettings', {
-                          ...settings.dailyCheckIn.birthdaySettings,
+                        checked={settings.morningMeeting.birthdaySettings.showBirthdayBadges}
+                        onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
+                          ...settings.morningMeeting.birthdaySettings,
                           showBirthdayBadges: e.target.checked
                         })}
                       />
@@ -1250,9 +1271,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   <label className="setting-label">Custom Welcome Message</label>
                   <input
                     type="text"
-                    value={settings.dailyCheckIn.welcomeSettings.customWelcomeMessage}
-                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                      ...settings.dailyCheckIn.welcomeSettings,
+                    value={settings.morningMeeting.welcomeSettings.customWelcomeMessage}
+                    onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                      ...settings.morningMeeting.welcomeSettings,
                       customWelcomeMessage: e.target.value
                     })}
                     placeholder="Welcome to Our Classroom!"
@@ -1264,9 +1285,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   <label className="setting-label">School Name</label>
                   <input
                     type="text"
-                    value={settings.dailyCheckIn.welcomeSettings.schoolName}
-                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                      ...settings.dailyCheckIn.welcomeSettings,
+                    value={settings.morningMeeting.welcomeSettings.schoolName}
+                    onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                      ...settings.morningMeeting.welcomeSettings,
                       schoolName: e.target.value
                     })}
                     placeholder="Lincoln Elementary School"
@@ -1278,9 +1299,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   <label className="setting-label">Class Name</label>
                   <input
                     type="text"
-                    value={settings.dailyCheckIn.welcomeSettings.className}
-                    onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                      ...settings.dailyCheckIn.welcomeSettings,
+                    value={settings.morningMeeting.welcomeSettings.className}
+                    onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                      ...settings.morningMeeting.welcomeSettings,
                       className: e.target.value
                     })}
                     placeholder="Mrs. Smith's 3rd Grade"
@@ -1293,9 +1314,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.welcomeSettings.showTeacherName}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                          ...settings.dailyCheckIn.welcomeSettings,
+                        checked={settings.morningMeeting.welcomeSettings.showTeacherName}
+                        onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                          ...settings.morningMeeting.welcomeSettings,
                           showTeacherName: e.target.checked
                         })}
                       />
@@ -1311,9 +1332,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.welcomeSettings.substituteMode}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                          ...settings.dailyCheckIn.welcomeSettings,
+                        checked={settings.morningMeeting.welcomeSettings.substituteMode}
+                        onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                          ...settings.morningMeeting.welcomeSettings,
                           substituteMode: e.target.checked
                         })}
                       />
@@ -1324,14 +1345,14 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                   </div>
                 </div>
 
-                {settings.dailyCheckIn.welcomeSettings.substituteMode && (
+                {settings.morningMeeting.welcomeSettings.substituteMode && (
                   <div className="settings-group">
                     <label className="setting-label">Substitute Message</label>
                     <input
                       type="text"
-                      value={settings.dailyCheckIn.welcomeSettings.substituteMessage}
-                      onChange={(e) => updateSetting('dailyCheckIn', 'welcomeSettings', {
-                        ...settings.dailyCheckIn.welcomeSettings,
+                      value={settings.morningMeeting.welcomeSettings.substituteMessage}
+                      onChange={(e) => updateSetting('morningMeeting', 'welcomeSettings', {
+                        ...settings.morningMeeting.welcomeSettings,
                         substituteMessage: e.target.value
                       })}
                       placeholder="Today we have a substitute teacher"
@@ -1341,25 +1362,25 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                 )}
               </div>
 
-              {/* Check-In Flow Settings */}
+              {/* Morning Meeting Flow Settings */}
               <div className="settings-subsection">
-                <h4>📅 Check-In Flow Options</h4>
+                <h4>📅 Morning Meeting Flow Options</h4>
                 
                 <div className="settings-group">
                   <div className="toggle-setting">
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.checkInFlow.enableWeather}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
-                          ...settings.dailyCheckIn.checkInFlow,
+                        checked={settings.morningMeeting.checkInFlow.enableWeather}
+                        onChange={(e) => updateSetting('morningMeeting', 'checkInFlow', {
+                          ...settings.morningMeeting.checkInFlow,
                           enableWeather: e.target.checked
                         })}
                       />
                       <span className="toggle-slider"></span>
                       <span className="toggle-text">Enable Weather Display</span>
                     </label>
-                    <p className="setting-description">Show weather information in Daily Check-In</p>
+                    <p className="setting-description">Show weather information in Morning Meeting</p>
                   </div>
                 </div>
 
@@ -1368,9 +1389,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.checkInFlow.enableCelebrations}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
-                          ...settings.dailyCheckIn.checkInFlow,
+                        checked={settings.morningMeeting.checkInFlow.enableCelebrations}
+                        onChange={(e) => updateSetting('morningMeeting', 'checkInFlow', {
+                          ...settings.morningMeeting.checkInFlow,
                           enableCelebrations: e.target.checked
                         })}
                       />
@@ -1386,9 +1407,9 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <label className="toggle-label">
                       <input
                         type="checkbox"
-                        checked={settings.dailyCheckIn.checkInFlow.enableBehaviorCommitments}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
-                          ...settings.dailyCheckIn.checkInFlow,
+                        checked={settings.morningMeeting.checkInFlow.enableBehaviorCommitments}
+                        onChange={(e) => updateSetting('morningMeeting', 'checkInFlow', {
+                          ...settings.morningMeeting.checkInFlow,
                           enableBehaviorCommitments: e.target.checked
                         })}
                       />
@@ -1398,23 +1419,141 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     <p className="setting-description">Include "I will..." behavior commitment step</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Weather Vocabulary Management */}
+              <div className="settings-subsection">
+                <h4>🌤️ Weather Vocabulary</h4>
+                <p className="setting-description">
+                  Customize weather words and seasonal vocabulary for learning activities
+                </p>
+                
+                <div className="settings-group">
+                  <label className="setting-label">Weather Words</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                    {settings.morningMeeting.weatherVocabulary.weatherWords.map((word, index) => (
+                      <div key={index} style={{
+                        background: '#e3f2fd',
+                        border: '1px solid #90caf9',
+                        borderRadius: '16px',
+                        padding: '0.25rem 0.75rem',
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        <span>{word}</span>
+                        <button
+                          onClick={() => {
+                            const newWords = settings.morningMeeting.weatherVocabulary.weatherWords.filter((_, i) => i !== index);
+                            updateSetting('morningMeeting', 'weatherVocabulary', {
+                              ...settings.morningMeeting.weatherVocabulary,
+                              weatherWords: newWords
+                            });
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#1976d2',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Add weather word..."
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const newWord = e.currentTarget.value.trim();
+                          if (!settings.morningMeeting.weatherVocabulary.weatherWords.includes(newWord)) {
+                            updateSetting('morningMeeting', 'weatherVocabulary', {
+                              ...settings.morningMeeting.weatherVocabulary,
+                              weatherWords: [...settings.morningMeeting.weatherVocabulary.weatherWords, newWord]
+                            });
+                          }
+                          e.currentTarget.value = '';
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '0.5rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                </div>
 
                 <div className="settings-group">
-                  <div className="toggle-setting">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={settings.dailyCheckIn.checkInFlow.enableChoiceActivities}
-                        onChange={(e) => updateSetting('dailyCheckIn', 'checkInFlow', {
-                          ...settings.dailyCheckIn.checkInFlow,
-                          enableChoiceActivities: e.target.checked
-                        })}
-                      />
-                      <span className="toggle-slider"></span>
-                      <span className="toggle-text">Enable Choice Activities</span>
-                    </label>
-                    <p className="setting-description">Include independent choice activities step</p>
+                  <label className="setting-label">Weather Facts</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {settings.morningMeeting.weatherVocabulary.weatherFacts.map((fact, index) => (
+                      <div key={index} style={{
+                        background: '#f3e5f5',
+                        border: '1px solid #ce93d8',
+                        borderRadius: '8px',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ fontSize: '0.875rem' }}>{fact}</span>
+                        <button
+                          onClick={() => {
+                            const newFacts = settings.morningMeeting.weatherVocabulary.weatherFacts.filter((_, i) => i !== index);
+                            updateSetting('morningMeeting', 'weatherVocabulary', {
+                              ...settings.morningMeeting.weatherVocabulary,
+                              weatherFacts: newFacts
+                            });
+                          }}
+                          style={{
+                            background: '#9c27b0',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '0.25rem 0.5rem',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem'
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                  <textarea
+                    placeholder="Add a weather fact... (Press Enter to add)"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
+                        e.preventDefault();
+                        const newFact = e.currentTarget.value.trim();
+                        if (!settings.morningMeeting.weatherVocabulary.weatherFacts.includes(newFact)) {
+                          updateSetting('morningMeeting', 'weatherVocabulary', {
+                            ...settings.morningMeeting.weatherVocabulary,
+                            weatherFacts: [...settings.morningMeeting.weatherVocabulary.weatherFacts, newFact]
+                          });
+                        }
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      minHeight: '60px',
+                      resize: 'vertical',
+                      fontSize: '0.875rem',
+                      marginTop: '0.5rem'
+                    }}
+                  />
                 </div>
               </div>
             </div>

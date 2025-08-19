@@ -306,27 +306,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </p>
         </div>
 
-        {/* Weather Preview (if available) */}
-        <div style={{
-          background: 'rgba(59, 130, 246, 0.2)',
-          borderRadius: '16px',
-          padding: '1rem',
-          marginBottom: '2rem',
-          border: '2px solid rgba(59, 130, 246, 0.4)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '1rem'
-        }}>
-          <span style={{ fontSize: '1.5rem' }}>🌤️</span>
-          <span style={{
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: '500'
-          }}>
-            We'll check the weather together in just a moment!
-          </span>
-        </div>
 
         {/* Ready to Begin Button */}
         <button
@@ -369,29 +348,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </p>
       </div>
 
-      {/* Fun Facts or Tips */}
-      <div style={{
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '16px',
-        padding: '1.5rem',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        maxWidth: '500px',
-        transform: showAnimation ? 'translateY(0)' : 'translateY(20px)',
-        opacity: showAnimation ? 1 : 0,
-        transition: 'all 1s ease 0.5s'
-      }}>
-        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>💡</div>
-        <p style={{
-          fontSize: '1rem',
-          color: 'rgba(255,255,255,0.8)',
-          margin: 0,
-          lineHeight: '1.4'
-        }}>
-          <strong>Today's Focus:</strong> We'll take attendance, check the weather, 
-          celebrate special moments, and get ready for an amazing day of learning!
-        </p>
-      </div>
 
       {/* Animated CSS */}
       <style>{`
