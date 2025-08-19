@@ -692,6 +692,35 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
             Weather Complete! Continue →
           </button>
         )}
+
+        {/* ALWAYS AVAILABLE CONTINUE BUTTON - FIX FOR NAVIGATION */}
+        {currentWeather && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: '1rem',
+            marginTop: '2rem',
+            padding: '0 2rem'
+          }}>
+            <button
+              onClick={onNext}
+              style={{
+                background: 'rgba(34, 197, 94, 0.8)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                padding: '1rem 3rem',
+                fontSize: '1.1rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Continue to Seasonal Learning →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
