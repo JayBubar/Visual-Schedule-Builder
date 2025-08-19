@@ -15,13 +15,11 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     stepData?.completedLevels || []
   );
   const [startTime] = useState(new Date());
-  const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Settings from hub
   const enableOrdinalNumbers = hubSettings?.calendarMath?.enableOrdinalNumbers ?? true;
   const enableYesterday = hubSettings?.calendarMath?.enableYesterday ?? true;
   const enableTomorrow = hubSettings?.calendarMath?.enableTomorrow ?? true;
-  const autoAdvanceSeconds = hubSettings?.calendarMath?.autoAdvanceSeconds ?? 8;
 
   // Add custom vocabulary support
   const getCalendarVocabulary = (): string[] => {
@@ -80,20 +78,6 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     return week;
   };
 
-  // Auto-advance logic
-  useEffect(() => {
-    if (autoAdvanceSeconds > 0) {
-      const timer = setTimeout(() => {
-        handleLevelComplete(currentLevel);
-      }, autoAdvanceSeconds * 1000);
-      
-      setAutoAdvanceTimer(timer);
-      
-      return () => {
-        if (timer) clearTimeout(timer);
-      };
-    }
-  }, [currentLevel, autoAdvanceSeconds]);
 
   // Save step data
   useEffect(() => {
@@ -116,23 +100,10 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       setCurrentLevel('week');
     } else if (level === 'week' && currentLevel === 'week') {
       setCurrentLevel('day');
-    } else if (level === 'day' && currentLevel === 'day') {
-      // All levels complete
-      setTimeout(onNext, 1000);
-    }
-
-    // Clear auto-advance timer
-    if (autoAdvanceTimer) {
-      clearTimeout(autoAdvanceTimer);
-      setAutoAdvanceTimer(null);
     }
   };
 
   const handleManualNavigation = (level: 'month' | 'week' | 'day') => {
-    if (autoAdvanceTimer) {
-      clearTimeout(autoAdvanceTimer);
-      setAutoAdvanceTimer(null);
-    }
     setCurrentLevel(level);
   };
 
@@ -661,28 +632,6 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
         ))}
       </div>
 
-      {/* Progress Indicator */}
-      {autoAdvanceSeconds > 0 && !isAllComplete && (
-        <div style={{
-          padding: '0 2rem',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '12px',
-            padding: '0.5rem 1rem',
-            backdropFilter: 'blur(10px)',
-            display: 'inline-block'
-          }}>
-            <div style={{
-              fontSize: '0.9rem',
-              color: 'rgba(255,255,255,0.9)'
-            }}>
-              Auto-advancing in {autoAdvanceSeconds} seconds • Click buttons to control manually
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <div style={{
@@ -730,7 +679,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
           </button>
         )}
 
-        {isAllComplete && (
+        {currentLevel === 'day' && (
           <button
             onClick={onNext}
             style={{
@@ -738,23 +687,15 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
               border: 'none',
               borderRadius: '12px',
               color: 'white',
-              padding: '1rem 3rem',
-              fontSize: '1.1rem',
-              fontWeight: '700',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
               cursor: 'pointer',
               backdropFilter: 'blur(10px)',
               transition: 'all 0.3s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
           >
-            Calendar Math Complete! Continue →
+            Continue to Weather →
           </button>
         )}
       </div>
