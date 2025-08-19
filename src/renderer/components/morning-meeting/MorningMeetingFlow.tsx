@@ -50,14 +50,21 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     loadHubSettings();
   }, []);
 
-  // Get enabled steps from Hub settings
+  // Get enabled steps from Hub settings - FIXED VERSION
   const enabledSteps: StepKey[] = React.useMemo(() => {
-    const enabled = Object.entries(hubSettings.flowCustomization.enabledSteps)
-      .filter(([_, isEnabled]) => isEnabled)
-      .map(([stepKey, _]) => stepKey as StepKey);
+    // Get the step order from hub settings or use default
+    const stepOrder = hubSettings.flowCustomization.stepOrder?.length > 0 
+      ? hubSettings.flowCustomization.stepOrder 
+      : DEFAULT_STEP_ORDER;
     
-    return enabled.length > 0 ? enabled : [...DEFAULT_STEP_ORDER];
-  }, [hubSettings.flowCustomization.enabledSteps]);
+    // Filter the ordered steps to only include enabled ones
+    const orderedEnabledSteps = stepOrder.filter(stepKey => 
+      hubSettings.flowCustomization.enabledSteps[stepKey as StepKey] === true
+    ) as StepKey[];
+    
+    // Fallback to all steps if none are enabled (shouldn't happen, but safety)
+    return orderedEnabledSteps.length > 0 ? orderedEnabledSteps : [...DEFAULT_STEP_ORDER];
+  }, [hubSettings.flowCustomization.enabledSteps, hubSettings.flowCustomization.stepOrder]);
 
   const totalSteps = enabledSteps.length;
 
