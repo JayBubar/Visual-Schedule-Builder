@@ -188,15 +188,15 @@ const App: React.FC = () => {
   };
 
   const handleStartMyDay = () => {
-    // Create a temporary schedule with just Morning Meeting
+    // Create a schedule with Morning Meeting activity using the built-in activity ID
     const morningMeetingSchedule = {
-      id: `morning-meeting-${Date.now()}`,
-      name: 'Morning Meeting',
+      id: 'start-my-day',
+      name: 'Start My Day',
       type: 'daily' as const,
       startTime: '08:00',
       activities: [
         {
-          id: 'morning-meeting-activity',
+          id: 'morning-meeting-builtin',
           name: 'Morning Meeting',
           icon: '🌅',
           duration: 30,

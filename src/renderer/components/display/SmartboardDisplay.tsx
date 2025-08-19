@@ -1016,19 +1016,47 @@ useEffect(() => {
   const activeSchedule = currentSchedule || fallbackSchedule;
   const currentActivity = activeSchedule?.activities[currentActivityIndex];
 
-  // 🎯 NEW CODE: Morning Meeting detection (ADD THIS)
-  if (currentActivity?.name === 'Morning Meeting' && currentActivity?.id === 'morning-meeting-builtin') {
-    return (
-      <MorningMeetingFlow
-        students={realStudents}
-        staff={realStaff}
-        onComplete={() => {
-          // When MM completes, go back to normal activity flow
-          setCurrentActivityIndex(currentActivityIndex + 1);
-        }}
-        onNavigateHome={onNavigateHome}
-      />
-    );
+  // 🎯 MORNING MEETING DETECTION - Enhanced detection logic
+  const renderActivityContent = () => {
+    // Check if current activity is Morning Meeting
+    if (currentActivity?.name === 'Morning Meeting' || 
+        currentActivity?.description === 'Daily morning meeting routine' ||
+        currentActivity?.id === 'morning-meeting-builtin' ||
+        currentActivity?.category === 'routine') {
+      
+      console.log('🌅 SmartboardDisplay: Detected Morning Meeting activity');
+      
+      // Import and render MorningMeetingFlow
+      return (
+        <MorningMeetingFlow
+          students={realStudents}
+          staff={realStaff}
+          onComplete={() => {
+            // Handle completion - could advance to next activity or return to schedule
+            console.log('🌅 Morning Meeting completed in SmartboardDisplay');
+            if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
+              setCurrentActivityIndex(currentActivityIndex + 1);
+            } else {
+              // If this was the last activity, go back to home
+              onNavigateHome?.();
+            }
+          }}
+          onNavigateHome={() => {
+            // Handle navigation back to schedule builder
+            onNavigateHome?.();
+          }}
+        />
+      );
+    }
+    
+    // Return null for regular activities (will be handled by existing logic)
+    return null;
+  };
+
+  // Check for Morning Meeting first
+  const morningMeetingContent = renderActivityContent();
+  if (morningMeetingContent) {
+    return morningMeetingContent;
   }
 
   // Set initial timer when activity changes
