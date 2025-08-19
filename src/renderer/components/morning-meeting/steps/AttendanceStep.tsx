@@ -51,7 +51,7 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       manuallyMarkedAbsent: Array.from(attendanceState.manuallyMarkedAbsent)
     };
     onDataUpdate(stepData);
-  }, [attendanceState, onDataUpdate]);
+  }, [attendanceState]);
 
   const markPresent = (student: Student) => {
     // Save to data service

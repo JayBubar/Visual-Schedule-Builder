@@ -1,4 +1,5 @@
-// Replace existing imports with:
+import React, { useState, useEffect, useCallback } from 'react';
+import { Student, StaffMember } from '../../types';
 import { 
   WelcomeStep, 
   AttendanceStep, 
@@ -8,75 +9,83 @@ import {
   SeasonalStep,
   STEP_COMPONENTS,
   DEFAULT_STEP_ORDER,
-  type StepKey
+  type StepKey,
+  MorningMeetingSettings,
+  DEFAULT_MORNING_MEETING_SETTINGS
 } from './steps';
-import { 
-  MorningMeetingSettings, 
-  DEFAULT_MORNING_MEETING_SETTINGS 
-} from './steps';
-import React, { useState, useEffect } from 'react';
-import { Student, StaffMember } from '../../types';
-
-// Placeholder functions for settings management
-const loadMorningMeetingSettings = (): MorningMeetingSettings => {
-  // TODO: Implement actual settings loading from Hub or localStorage
-  return DEFAULT_MORNING_MEETING_SETTINGS;
-};
-
-const getEnabledSteps = (settings: MorningMeetingSettings): StepKey[] => {
-  // TODO: Implement logic to determine enabled steps based on settings
-  const enabledStepKeys = Object.entries(settings.flowCustomization.enabledSteps)
-    .filter(([_, enabled]) => enabled)
-    .map(([stepKey, _]) => stepKey as StepKey);
-  
-  return enabledStepKeys.length > 0 ? enabledStepKeys : [...DEFAULT_STEP_ORDER];
-};
-
-interface MorningMeetingSessionData {
-  startTime: Date;
-  attendees: string[];
-  completedSteps: StepKey[];
-  stepResults: Record<string, any>;
-}
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface MorningMeetingFlowProps {
   students?: Student[];
   staff?: StaffMember[];
   onComplete?: () => void;
   onNavigateHome?: () => void;
-  hubSettings?: any;
 }
 
 const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   students = [],
   staff = [],
   onComplete,
-  onNavigateHome,
-  hubSettings: propHubSettings = {}
+  onNavigateHome
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepData, setStepData] = useState<Record<string, any>>({});
-  const [enabledSteps, setEnabledSteps] = useState<StepKey[]>([...DEFAULT_STEP_ORDER]);
-  const [sessionData, setSessionData] = useState<MorningMeetingSessionData>();
+  const [hubSettings, setHubSettings] = useState<MorningMeetingSettings>(DEFAULT_MORNING_MEETING_SETTINGS);
   
-  // Load settings from Hub or localStorage
-  const [hubSettings, setHubSettings] = useState(loadMorningMeetingSettings());
-  
+  // Load Hub settings on mount
+  useEffect(() => {
+    const loadHubSettings = () => {
+      try {
+        const savedSettings = localStorage.getItem('morningMeetingSettings');
+        if (savedSettings) {
+          const parsed = JSON.parse(savedSettings);
+          setHubSettings({ ...DEFAULT_MORNING_MEETING_SETTINGS, ...parsed });
+        }
+      } catch (error) {
+        console.warn('Failed to load Morning Meeting settings:', error);
+        setHubSettings(DEFAULT_MORNING_MEETING_SETTINGS);
+      }
+    };
+    
+    loadHubSettings();
+  }, []);
+
+  // Get enabled steps from Hub settings
+  const enabledSteps: StepKey[] = React.useMemo(() => {
+    const enabled = Object.entries(hubSettings.flowCustomization.enabledSteps)
+      .filter(([_, isEnabled]) => isEnabled)
+      .map(([stepKey, _]) => stepKey as StepKey);
+    
+    return enabled.length > 0 ? enabled : [...DEFAULT_STEP_ORDER];
+  }, [hubSettings.flowCustomization.enabledSteps]);
+
   const totalSteps = enabledSteps.length;
 
-  // Update when settings change
-  useEffect(() => {
-    const settings = loadMorningMeetingSettings();
-    setHubSettings(settings);
-    setEnabledSteps(getEnabledSteps(settings));
-  }, []);
+  // Use useCallback to prevent infinite loops
+  const handleStepDataUpdate = useCallback((data: any) => {
+    const currentStepKey = enabledSteps[currentStepIndex];
+    setStepData(prev => ({
+      ...prev,
+      [currentStepKey]: data
+    }));
+    
+    // Save to UnifiedDataService
+    try {
+      const sessionKey = `morningMeeting_${new Date().toDateString()}_${currentStepKey}`;
+      UnifiedDataService.saveMorningMeetingStepData(sessionKey, data);
+    } catch (error) {
+      console.warn('Failed to save step data:', error);
+    }
+  }, [enabledSteps, currentStepIndex]);
 
   const handleNext = () => {
     if (currentStepIndex < enabledSteps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
     } else {
       // Complete morning meeting
-      onComplete();
+      if (onComplete) {
+        onComplete();
+      }
     }
   };
 
@@ -86,29 +95,23 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     }
   };
 
-  const saveSessionData = (stepKey: string, data: any) => {
-    // TODO: Implement actual session storage persistence
-    try {
-      const sessionKey = `morningMeeting_${new Date().toDateString()}_${stepKey}`;
-      localStorage.setItem(sessionKey, JSON.stringify(data));
-    } catch (error) {
-      console.warn('Failed to save session data:', error);
-    }
-  };
-
-  const handleStepDataUpdate = (stepKey: string, data: any) => {
-    setStepData(prev => ({
-      ...prev,
-      [stepKey]: data
-    }));
-    
-    // Save to session storage for persistence
-    saveSessionData(stepKey, data);
-  };
-
   const renderCurrentStep = () => {
     const currentStepKey = enabledSteps[currentStepIndex];
     const StepComponent = STEP_COMPONENTS[currentStepKey];
+    
+    if (!StepComponent) {
+      return (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100%',
+          color: 'white'
+        }}>
+          <h2>Step "{currentStepKey}" not found</h2>
+        </div>
+      );
+    }
     
     return (
       <StepComponent
@@ -117,12 +120,11 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         onBack={handleBack}
         currentDate={new Date()}
         hubSettings={hubSettings}
-        onDataUpdate={(data) => handleStepDataUpdate(currentStepKey, data)}
+        onDataUpdate={handleStepDataUpdate}
         stepData={stepData[currentStepKey]}
       />
     );
   };
-
 
   return (
     <div style={{
@@ -182,7 +184,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         {renderCurrentStep()}
       </div>
 
-      {/* Footer */}
+      {/* Footer - Navigation */}
       <div style={{
         height: '60px',
         display: 'flex',
@@ -242,13 +244,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
           {currentStepIndex >= totalSteps - 1 ? 'Complete 🎉' : 'Next →'}
         </button>
       </div>
-
-      <style>{`
-        button:hover:not(:disabled) {
-          transform: scale(1.05);
-          background: rgba(255, 255, 255, 0.3) !important;
-        }
-      `}</style>
     </div>
   );
 };

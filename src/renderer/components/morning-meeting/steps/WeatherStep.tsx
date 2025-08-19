@@ -214,7 +214,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       };
       onDataUpdate(stepData);
     }
-  }, [currentWeather, selectedClothing, customVocabulary, showDiscussion, onDataUpdate]);
+  }, [currentWeather, selectedClothing, customVocabulary, showDiscussion]);
 
   const handleClothingSelect = (item: string) => {
     if (selectedClothing.includes(item)) {

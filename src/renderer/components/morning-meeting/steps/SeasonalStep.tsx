@@ -296,7 +296,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
       completedAt: completedActivities.length > 0 ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentSeason, completedActivities, learnedVocabulary, onDataUpdate]);
+  }, [currentSeason, completedActivities, learnedVocabulary]);
 
   const startActivity = (activity: SeasonalActivity) => {
     setCurrentActivity(activity);

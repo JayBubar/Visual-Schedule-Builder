@@ -49,7 +49,7 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
       completedAt: isComplete ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [behaviorChoices, isComplete, onDataUpdate]);
+  }, [behaviorChoices, isComplete]);
 
   const handleBehaviorChoice = (studentId: string, statement: string) => {
     setBehaviorChoices(prev => ({

@@ -2175,6 +2175,28 @@ class UnifiedDataService {
       totalDataPoints: 0
     };
   }
+
+  // ===== MORNING MEETING DATA METHODS =====
+  
+  // Save Morning Meeting step data
+  static saveMorningMeetingStepData(sessionKey: string, data: any): void {
+    try {
+      localStorage.setItem(sessionKey, JSON.stringify(data));
+    } catch (error) {
+      console.warn('Failed to save Morning Meeting step data:', error);
+    }
+  }
+
+  // Load Morning Meeting step data
+  static loadMorningMeetingStepData(sessionKey: string): any {
+    try {
+      const saved = localStorage.getItem(sessionKey);
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.warn('Failed to load Morning Meeting step data:', error);
+      return null;
+    }
+  }
 }
 
 export default UnifiedDataService;

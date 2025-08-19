@@ -104,7 +104,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       completedAt: completedLevels.length >= 3 ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentLevel, completedLevels, onDataUpdate, startTime]);
+  }, [currentLevel, completedLevels, startTime]);
 
   const handleLevelComplete = (level: string) => {
     if (!completedLevels.includes(level)) {
