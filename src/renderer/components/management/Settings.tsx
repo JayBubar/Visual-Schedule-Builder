@@ -730,10 +730,10 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
   }, [settings.schedule.autoSave, hasUnsavedChanges, saveSettings]);
 
   const settingsSections = [
+    { id: 'morningMeeting', name: 'Morning Meeting', icon: '🌅', description: 'Birthday celebrations, welcome messages, and check-in flow' },
     { id: 'appearance', name: 'Appearance', icon: '🎨', description: 'Themes, fonts, and visual preferences' },
     { id: 'accessibility', name: 'Accessibility', icon: '♿', description: 'Screen readers, navigation, and inclusive features' },
-    { id: 'smartboard', name: 'Smartboard', icon: '📺', description: 'Touch settings and classroom display options' },
-    { id: 'morningMeeting', name: 'Morning Meeting', icon: '👋', description: 'Birthday celebrations, welcome messages, and check-in flow' },
+    { id: 'smartboard', name: 'Smartboard', icon: '📱', description: 'Touch settings and classroom display options' },
     { id: 'notifications', name: 'Notifications', icon: '🔔', description: 'Alerts, sounds, and reminder settings' },
     { id: 'schedule', name: 'Schedule', icon: '📅', description: 'Default durations, time formats, and automation' },
     { id: 'data', name: 'Data & Backup', icon: '💾', description: 'Backup, export, and sync preferences' }
@@ -1061,209 +1061,10 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           {/* Morning Meeting Settings */}
           {activeSection === 'morningMeeting' && (
             <div className="settings-section">
-              <h3>👋 Morning Meeting Settings</h3>
-              <p className="section-description">Customize behavior statements, birthday celebrations, welcome messages, and check-in flow</p>
+              <h3>🌅 Morning Meeting Settings</h3>
+              <p className="section-description">Customize welcome messages, video selection, behavior statements, celebrations, and check-in flow</p>
 
-              {/* Behavior Statements Management */}
-              <div className="settings-subsection">
-                <h4>💪 Behavior Statements</h4>
-                <p className="setting-description">
-                  Current behavior statements: {settings.morningMeeting?.behaviorCommitments?.customStatements?.length || 0} configured
-                </p>
-                
-                <button
-                  onClick={() => setShowBehaviorManager(true)}
-                  className="action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1.5rem',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  💪 Manage Behavior Statements
-                </button>
-              </div>
-
-              {/* Celebration Management */}
-              <div className="settings-subsection">
-                <h4>🎉 Celebrations</h4>
-                <p className="setting-description">
-                  Manage custom celebrations and birthday settings
-                </p>
-                
-                <div className="settings-group">
-                  <div className="toggle-setting">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={settings.morningMeeting?.celebrations?.enabled ?? true}
-                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
-                          ...settings.morningMeeting.celebrations,
-                          enabled: e.target.checked
-                        })}
-                      />
-                      <span className="toggle-slider"></span>
-                      <span className="toggle-text">Enable celebrations in Morning Meeting</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="toggle-setting">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={settings.morningMeeting?.celebrations?.showBirthdayPhotos ?? true}
-                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
-                          ...settings.morningMeeting.celebrations,
-                          showBirthdayPhotos: e.target.checked
-                        })}
-                      />
-                      <span className="toggle-slider"></span>
-                      <span className="toggle-text">Show photos in birthday celebrations</span>
-                    </label>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowCelebrationsModal(true)}
-                  className="action-button"
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '0.75rem 1.5rem',
-                    fontSize: '1rem',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem'
-                  }}
-                >
-                  🎊 Manage Celebrations
-                </button>
-              </div>
-
-              {/* Birthday Settings */}
-              <div className="settings-subsection">
-                <h4>🎂 Birthday Management</h4>
-                
-                <div className="settings-group">
-                  <div className="toggle-setting">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={settings.morningMeeting.birthdaySettings.enableBirthdayDisplay}
-                        onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
-                          ...settings.morningMeeting.birthdaySettings,
-                          enableBirthdayDisplay: e.target.checked
-                        })}
-                      />
-                      <span className="toggle-slider"></span>
-                      <span className="toggle-text">Enable Birthday Celebrations</span>
-                    </label>
-                    <p className="setting-description">Show birthday celebrations in Morning Meeting</p>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <label className="setting-label">Birthday Countdown Days</label>
-                  <div className="input-group">
-                    <input
-                      type="number"
-                      min="0"
-                      max="7"
-                      value={settings.morningMeeting.birthdaySettings.birthdayCountdownDays}
-                      onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
-                        ...settings.morningMeeting.birthdaySettings,
-                        birthdayCountdownDays: parseInt(e.target.value)
-                      })}
-                      className="number-input"
-                    />
-                    <span className="input-suffix">days before</span>
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <label className="setting-label">Weekend Birthday Handling</label>
-                  <div className="radio-group">
-                    {(['friday', 'monday', 'exact'] as const).map(handling => (
-                      <label key={handling} className="radio-item">
-                        <input
-                          type="radio"
-                          name="weekendBirthdayHandling"
-                          value={handling}
-                          checked={settings.morningMeeting.birthdaySettings.weekendBirthdayHandling === handling}
-                          onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
-                            ...settings.morningMeeting.birthdaySettings,
-                            weekendBirthdayHandling: e.target.value as 'friday' | 'monday' | 'exact'
-                          })}
-                        />
-                        <span className="radio-label">
-                          {handling === 'friday' && 'Celebrate on Friday'}
-                          {handling === 'monday' && 'Celebrate on Monday'}
-                          {handling === 'exact' && 'Exact Date'}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <label className="setting-label">Birthday Display Mode</label>
-                  <div className="radio-group">
-                    {(['photo', 'name', 'both'] as const).map(mode => (
-                      <label key={mode} className="radio-item">
-                        <input
-                          type="radio"
-                          name="birthdayDisplayMode"
-                          value={mode}
-                          checked={settings.morningMeeting.birthdaySettings.birthdayDisplayMode === mode}
-                          onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
-                            ...settings.morningMeeting.birthdaySettings,
-                            birthdayDisplayMode: e.target.value as 'photo' | 'name' | 'both'
-                          })}
-                        />
-                        <span className="radio-label">
-                          {mode === 'photo' && 'Photo Only'}
-                          {mode === 'name' && 'Name Only'}
-                          {mode === 'both' && 'Photo & Name'}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <div className="toggle-setting">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={settings.morningMeeting.birthdaySettings.showBirthdayBadges}
-                        onChange={(e) => updateSetting('morningMeeting', 'birthdaySettings', {
-                          ...settings.morningMeeting.birthdaySettings,
-                          showBirthdayBadges: e.target.checked
-                        })}
-                      />
-                      <span className="toggle-slider"></span>
-                      <span className="toggle-text">Show Birthday Badges</span>
-                    </label>
-                    <p className="setting-description">Display birthday badges on student cards</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Welcome Settings */}
+              {/* 1. Welcome Personalization (moved to top) */}
               <div className="settings-subsection">
                 <h4>👋 Welcome Personalization</h4>
                 
@@ -1362,9 +1163,211 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                 )}
               </div>
 
-              {/* Morning Meeting Flow Settings */}
+              {/* 2. Video Selection (NEW - added after Welcome) */}
               <div className="settings-subsection">
-                <h4>📅 Morning Meeting Flow Options</h4>
+                <h4>📺 Video Selection</h4>
+                <p className="setting-description">
+                  Manage video selections for Smartboard Display. Videos selected in the Activity Library will appear as quick-access buttons during activities.
+                </p>
+                
+                <div className="settings-group">
+                  <label className="setting-label">Current Video Selections</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                    {(() => {
+                      try {
+                        const selectedVideos = localStorage.getItem('selectedDisplayVideos');
+                        const videos = selectedVideos ? JSON.parse(selectedVideos) : {};
+                        
+                        const videoSlots = [
+                          { key: 'move1', label: 'Move Video 1', icon: '🏃‍♀️', color: '#e74c3c' },
+                          { key: 'move2', label: 'Move Video 2', icon: '🤸‍♂️', color: '#e67e22' },
+                          { key: 'lesson1', label: 'Lesson Video 1', icon: '📚', color: '#3498db' },
+                          { key: 'lesson2', label: 'Lesson Video 2', icon: '🎓', color: '#9b59b6' }
+                        ];
+
+                        return videoSlots.map(slot => {
+                          const video = videos[slot.key];
+                          return (
+                            <div key={slot.key} style={{
+                              background: video ? `linear-gradient(135deg, ${slot.color}20, ${slot.color}10)` : '#f8f9fa',
+                              border: `2px solid ${video ? slot.color : '#dee2e6'}`,
+                              borderRadius: '12px',
+                              padding: '1rem',
+                              textAlign: 'center'
+                            }}>
+                              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{slot.icon}</div>
+                              <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#495057' }}>
+                                {slot.label}
+                              </div>
+                              {video ? (
+                                <div>
+                                  <div style={{ 
+                                    fontSize: '0.875rem', 
+                                    color: '#28a745', 
+                                    fontWeight: '600',
+                                    marginBottom: '0.25rem'
+                                  }}>
+                                    ✅ {video.title}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const updatedVideos = { ...videos };
+                                      delete updatedVideos[slot.key];
+                                      localStorage.setItem('selectedDisplayVideos', JSON.stringify(updatedVideos));
+                                      // Force re-render by updating a dummy state
+                                      setHasUnsavedChanges(prev => !prev);
+                                      setTimeout(() => setHasUnsavedChanges(prev => !prev), 10);
+                                    }}
+                                    style={{
+                                      background: '#dc3545',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      padding: '0.25rem 0.5rem',
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.875rem', color: '#6c757d', fontStyle: 'italic' }}>
+                                  No video selected
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      } catch (error) {
+                        return (
+                          <div style={{ 
+                            gridColumn: '1 / -1', 
+                            textAlign: 'center', 
+                            color: '#6c757d',
+                            fontStyle: 'italic'
+                          }}>
+                            No video selections found
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div style={{
+                    background: '#e3f2fd',
+                    border: '1px solid #90caf9',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    fontSize: '0.875rem',
+                    color: '#1565c0'
+                  }}>
+                    <strong>💡 How to select videos:</strong>
+                    <ol style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '1rem' }}>
+                      <li>Go to the Activity Library</li>
+                      <li>Find video activities you want to use</li>
+                      <li>Check the boxes for "Smartboard Display Options"</li>
+                      <li>Selected videos will appear as quick-access buttons in the Smartboard Display</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Behavior Statements */}
+              <div className="settings-subsection">
+                <h4>💪 Behavior Statements</h4>
+                <p className="setting-description">
+                  Current behavior statements: {settings.morningMeeting?.behaviorCommitments?.customStatements?.length || 0} configured
+                </p>
+                
+                <button
+                  onClick={() => setShowBehaviorManager(true)}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  💪 Manage Behavior Statements
+                </button>
+              </div>
+
+              {/* 4. Celebrations */}
+              <div className="settings-subsection">
+                <h4>🎉 Celebrations</h4>
+                <p className="setting-description">
+                  Manage custom celebrations and birthday settings
+                </p>
+                
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.morningMeeting?.celebrations?.enabled ?? true}
+                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
+                          ...settings.morningMeeting.celebrations,
+                          enabled: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Enable celebrations in Morning Meeting</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="settings-group">
+                  <div className="toggle-setting">
+                    <label className="toggle-label">
+                      <input
+                        type="checkbox"
+                        checked={settings.morningMeeting?.celebrations?.showBirthdayPhotos ?? true}
+                        onChange={(e) => updateSetting('morningMeeting', 'celebrations', {
+                          ...settings.morningMeeting.celebrations,
+                          showBirthdayPhotos: e.target.checked
+                        })}
+                      />
+                      <span className="toggle-slider"></span>
+                      <span className="toggle-text">Show photos in birthday celebrations</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowCelebrationsModal(true)}
+                  className="action-button"
+                  style={{
+                    background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.75rem 1.5rem',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  🎊 Manage Celebrations
+                </button>
+              </div>
+
+              {/* 5. Check-In Flow Options */}
+              <div className="settings-subsection">
+                <h4>📅 Check-In Flow Options</h4>
                 
                 <div className="settings-group">
                   <div className="toggle-setting">
@@ -1418,142 +1421,6 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
                     </label>
                     <p className="setting-description">Include "I will..." behavior commitment step</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Weather Vocabulary Management */}
-              <div className="settings-subsection">
-                <h4>🌤️ Weather Vocabulary</h4>
-                <p className="setting-description">
-                  Customize weather words and seasonal vocabulary for learning activities
-                </p>
-                
-                <div className="settings-group">
-                  <label className="setting-label">Weather Words</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                    {settings.morningMeeting.weatherVocabulary.weatherWords.map((word, index) => (
-                      <div key={index} style={{
-                        background: '#e3f2fd',
-                        border: '1px solid #90caf9',
-                        borderRadius: '16px',
-                        padding: '0.25rem 0.75rem',
-                        fontSize: '0.875rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem'
-                      }}>
-                        <span>{word}</span>
-                        <button
-                          onClick={() => {
-                            const newWords = settings.morningMeeting.weatherVocabulary.weatherWords.filter((_, i) => i !== index);
-                            updateSetting('morningMeeting', 'weatherVocabulary', {
-                              ...settings.morningMeeting.weatherVocabulary,
-                              weatherWords: newWords
-                            });
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#1976d2',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input
-                      type="text"
-                      placeholder="Add weather word..."
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                          const newWord = e.currentTarget.value.trim();
-                          if (!settings.morningMeeting.weatherVocabulary.weatherWords.includes(newWord)) {
-                            updateSetting('morningMeeting', 'weatherVocabulary', {
-                              ...settings.morningMeeting.weatherVocabulary,
-                              weatherWords: [...settings.morningMeeting.weatherVocabulary.weatherWords, newWord]
-                            });
-                          }
-                          e.currentTarget.value = '';
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="settings-group">
-                  <label className="setting-label">Weather Facts</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {settings.morningMeeting.weatherVocabulary.weatherFacts.map((fact, index) => (
-                      <div key={index} style={{
-                        background: '#f3e5f5',
-                        border: '1px solid #ce93d8',
-                        borderRadius: '8px',
-                        padding: '0.75rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <span style={{ fontSize: '0.875rem' }}>{fact}</span>
-                        <button
-                          onClick={() => {
-                            const newFacts = settings.morningMeeting.weatherVocabulary.weatherFacts.filter((_, i) => i !== index);
-                            updateSetting('morningMeeting', 'weatherVocabulary', {
-                              ...settings.morningMeeting.weatherVocabulary,
-                              weatherFacts: newFacts
-                            });
-                          }}
-                          style={{
-                            background: '#9c27b0',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            padding: '0.25rem 0.5rem',
-                            cursor: 'pointer',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <textarea
-                    placeholder="Add a weather fact... (Press Enter to add)"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
-                        e.preventDefault();
-                        const newFact = e.currentTarget.value.trim();
-                        if (!settings.morningMeeting.weatherVocabulary.weatherFacts.includes(newFact)) {
-                          updateSetting('morningMeeting', 'weatherVocabulary', {
-                            ...settings.morningMeeting.weatherVocabulary,
-                            weatherFacts: [...settings.morningMeeting.weatherVocabulary.weatherFacts, newFact]
-                          });
-                        }
-                        e.currentTarget.value = '';
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      minHeight: '60px',
-                      resize: 'vertical',
-                      fontSize: '0.875rem',
-                      marginTop: '0.5rem'
-                    }}
-                  />
                 </div>
               </div>
             </div>
