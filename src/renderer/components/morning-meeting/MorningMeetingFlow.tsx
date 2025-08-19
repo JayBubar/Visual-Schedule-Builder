@@ -55,7 +55,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     // Get the step order from hub settings or use default
     const stepOrder = hubSettings.flowCustomization.stepOrder?.length > 0 
       ? hubSettings.flowCustomization.stepOrder 
-      : DEFAULT_STEP_ORDER;
+      : [...DEFAULT_STEP_ORDER]; // Convert readonly to mutable array
     
     // Filter the ordered steps to only include enabled ones
     const orderedEnabledSteps = stepOrder.filter(stepKey => 
