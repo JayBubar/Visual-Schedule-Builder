@@ -18,6 +18,7 @@ import GoalManager from './components/data-collection/GoalManager';
 import SmartGroups from './components/smart-groups/SmartGroups';
 import { SmartGroupsAIService } from './services/smartGroupsService';
 import { DataPrivacyService } from './services/dataPrivacyService';
+import MorningMeetingController from './components/morning-meeting';
 
 const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -312,20 +313,16 @@ const App: React.FC = () => {
             } : undefined}
             onNavigateHome={handleBackToStart}
             onNavigateToBuilder={() => handleViewChange('builder')}
-          />
+          />  
         ) : currentView === 'calendar' ? (
-          <div className="full-screen-container">
-            <DailyCheckIn
-              isActive={true}
-              isFullScreen={true}
-              students={students}
-              staff={staffMembers}
-              selectedSchedule={selectedSchedule}
-              onSwitchToScheduleBuilder={() => handleViewChange('builder')}
-              onSwitchToDisplay={() => handleViewChange('display')}
-            />
-          </div>
-        ) : (
+          <MorningMeetingController
+            students={students}
+            staff={staffMembers}
+            onClose={() => handleViewChange('builder')}
+            onNavigateHome={handleBackToStart}
+          />
+      ) : (
+
           <div className="main-app-container">
             <Navigation
               currentView={currentView}
