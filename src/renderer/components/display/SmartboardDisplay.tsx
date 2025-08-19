@@ -1017,7 +1017,7 @@ useEffect(() => {
   const currentActivity = activeSchedule?.activities[currentActivityIndex];
 
   // 🎯 NEW CODE: Morning Meeting detection (ADD THIS)
-  if (currentActivity?.name === 'Morning Meeting') {
+  if (currentActivity?.name === 'Morning Meeting' && currentActivity?.id === 'morning-meeting-builtin') {
     return (
       <MorningMeetingFlow
         students={realStudents}
