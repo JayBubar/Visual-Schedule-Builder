@@ -36,40 +36,28 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const [stepData, setStepData] = useState<Record<string, any>>({});
   const [hubSettings, setHubSettings] = useState<MorningMeetingSettings>(DEFAULT_MORNING_MEETING_SETTINGS);
   
-  // Load Hub settings on mount
+  // FORCE CORRECT SETTINGS - TEMPORARY FIX
   useEffect(() => {
-    const loadHubSettings = () => {
-      try {
-        console.log('🔍 DEBUG: Loading hub settings...');
-        
-        // Check what's actually in localStorage
-        const savedSettings = localStorage.getItem('morningMeetingSettings');
-        console.log('🔍 DEBUG: Raw localStorage value:', savedSettings);
-        
-        if (savedSettings) {
-          const parsed = JSON.parse(savedSettings);
-          console.log('🔍 DEBUG: Parsed settings:', parsed);
-          
-          const merged = { ...DEFAULT_MORNING_MEETING_SETTINGS, ...parsed };
-          console.log('🔍 DEBUG: Merged with defaults:', merged);
-          console.log('🔍 DEBUG: Flow customization:', merged.flowCustomization);
-          console.log('🔍 DEBUG: Enabled steps:', merged.flowCustomization.enabledSteps);
-          
-          setHubSettings(merged);
-        } else {
-          console.log('🔍 DEBUG: No saved settings, using defaults');
-          console.log('🔍 DEBUG: Default settings:', DEFAULT_MORNING_MEETING_SETTINGS);
-          console.log('🔍 DEBUG: Default enabled steps:', DEFAULT_MORNING_MEETING_SETTINGS.flowCustomization.enabledSteps);
-          
-          setHubSettings(DEFAULT_MORNING_MEETING_SETTINGS);
-        }
-      } catch (error) {
-        console.error('❌ DEBUG: Failed to load Morning Meeting settings:', error);
-        setHubSettings(DEFAULT_MORNING_MEETING_SETTINGS);
+    const correctSettings = {
+      ...DEFAULT_MORNING_MEETING_SETTINGS,
+      flowCustomization: {
+        enabledSteps: {
+          welcome: true,
+          attendance: true,
+          behavior: true,
+          calendarMath: true,
+          weather: true,        // Force enable
+          seasonal: true        // Force enable
+        },
+        stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
       }
     };
     
-    loadHubSettings();
+    console.log('🔧 FORCE: Setting correct hub settings:', correctSettings);
+    setHubSettings(correctSettings);
+    
+    // Also save to localStorage to persist
+    localStorage.setItem('morningMeetingSettings', JSON.stringify(correctSettings));
   }, []);
 
   // Get enabled steps from Hub settings - FIXED VERSION
