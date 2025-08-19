@@ -15,6 +15,10 @@ import {
 } from './steps';
 import UnifiedDataService from '../../services/unifiedDataService';
 
+// ALSO: Let's check if DEFAULT_MORNING_MEETING_SETTINGS is properly imported
+// Add this at the top of your MorningMeetingFlow.tsx file:
+console.log('🔍 DEBUG: DEFAULT_MORNING_MEETING_SETTINGS at import:', DEFAULT_MORNING_MEETING_SETTINGS);
+
 interface MorningMeetingFlowProps {
   students?: Student[];
   staff?: StaffMember[];
@@ -36,13 +40,31 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   useEffect(() => {
     const loadHubSettings = () => {
       try {
+        console.log('🔍 DEBUG: Loading hub settings...');
+        
+        // Check what's actually in localStorage
         const savedSettings = localStorage.getItem('morningMeetingSettings');
+        console.log('🔍 DEBUG: Raw localStorage value:', savedSettings);
+        
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
-          setHubSettings({ ...DEFAULT_MORNING_MEETING_SETTINGS, ...parsed });
+          console.log('🔍 DEBUG: Parsed settings:', parsed);
+          
+          const merged = { ...DEFAULT_MORNING_MEETING_SETTINGS, ...parsed };
+          console.log('🔍 DEBUG: Merged with defaults:', merged);
+          console.log('🔍 DEBUG: Flow customization:', merged.flowCustomization);
+          console.log('🔍 DEBUG: Enabled steps:', merged.flowCustomization.enabledSteps);
+          
+          setHubSettings(merged);
+        } else {
+          console.log('🔍 DEBUG: No saved settings, using defaults');
+          console.log('🔍 DEBUG: Default settings:', DEFAULT_MORNING_MEETING_SETTINGS);
+          console.log('🔍 DEBUG: Default enabled steps:', DEFAULT_MORNING_MEETING_SETTINGS.flowCustomization.enabledSteps);
+          
+          setHubSettings(DEFAULT_MORNING_MEETING_SETTINGS);
         }
       } catch (error) {
-        console.warn('Failed to load Morning Meeting settings:', error);
+        console.error('❌ DEBUG: Failed to load Morning Meeting settings:', error);
         setHubSettings(DEFAULT_MORNING_MEETING_SETTINGS);
       }
     };
@@ -195,23 +217,59 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
           </div>
         </div>
 
-        {onNavigateHome && (
-          <button
-            onClick={onNavigateHome}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {/* TEMPORARY DEBUG BUTTON */}
+          <button 
+            onClick={() => {
+              const testSettings = {
+                ...DEFAULT_MORNING_MEETING_SETTINGS,
+                flowCustomization: {
+                  enabledSteps: {
+                    welcome: true,
+                    attendance: true,
+                    behavior: true,
+                    calendarMath: true,
+                    weather: true,      // Force enable
+                    seasonal: true      // Force enable
+                  },
+                  stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
+                }
+              };
+              console.log('🔍 DEBUG: Setting test settings:', testSettings);
+              setHubSettings(testSettings);
+            }}
             style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              borderRadius: '8px',
+              background: 'red',
               color: 'white',
               padding: '0.5rem 0.75rem',
-              fontSize: '1rem',
+              border: 'none',
+              borderRadius: '5px',
               cursor: 'pointer',
+              fontSize: '0.9rem',
               fontWeight: '600'
             }}
           >
-            🏠 Home
+            Force Enable All Steps
           </button>
-        )}
+
+          {onNavigateHome && (
+            <button
+              onClick={onNavigateHome}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.5rem 0.75rem',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              🏠 Home
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
