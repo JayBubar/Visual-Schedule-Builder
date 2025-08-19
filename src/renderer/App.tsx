@@ -314,15 +314,17 @@ const App: React.FC = () => {
             onNavigateToBuilder={() => handleViewChange('builder')}
           />
         ) : currentView === 'calendar' ? (
-          <DailyCheckIn
-            isActive={true}
-            isFullScreen={true}
-            students={students}
-            staff={staffMembers}
-            selectedSchedule={selectedSchedule}
-            onSwitchToScheduleBuilder={() => handleViewChange('builder')}
-            onSwitchToDisplay={() => handleViewChange('display')}
-          />
+          <div className="full-screen-container">
+            <DailyCheckIn
+              isActive={true}
+              isFullScreen={true}
+              students={students}
+              staff={staffMembers}
+              selectedSchedule={selectedSchedule}
+              onSwitchToScheduleBuilder={() => handleViewChange('builder')}
+              onSwitchToDisplay={() => handleViewChange('display')}
+            />
+          </div>
         ) : (
           <div className="main-app-container">
             <Navigation

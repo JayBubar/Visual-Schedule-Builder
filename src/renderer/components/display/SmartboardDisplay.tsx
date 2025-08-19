@@ -1800,7 +1800,7 @@ useEffect(() => {
                 fontStyle: 'italic'
               }}>
                 No choice assignments found for today.<br />
-                Complete Daily Check-In to assign students to activities.
+                Complete Morning Meeting to assign students to activities.
               </p>
             )}
           </div>

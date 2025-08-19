@@ -47,6 +47,18 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   onSwitchToDisplay,
   isFullScreen = false,
 }) => {
+  
+  // Update document title for browser tab
+  useEffect(() => {
+    document.title = "Morning Meeting - Visual Schedule Builder";
+    return () => {
+      document.title = "Visual Schedule Builder"; // Reset on unmount
+    };
+  }, []);
+
+  // Dynamic screen sizing
+  const availableContentHeight = window.innerHeight - 140; // Account for header and controls
+
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
   const [presentStudents, setPresentStudents] = useState<Student[]>([]);
@@ -448,42 +460,8 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   return (
     <div className={containerClassName}>
-      {/* Navigation Bar */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(255,255,255,0.1)',
-        borderRadius: '20px',
-        padding: '0.5rem 1.5rem',
-        backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        zIndex: 1000,
-        fontSize: '0.9rem',
-        fontWeight: '600'
-      }}>
-        Morning Meeting - Step {currentStep} of 8
-        <div style={{
-          width: '200px',
-          height: '4px',
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '2px',
-          marginTop: '0.5rem',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${(currentStep / 8) * 100}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, #10B981, #34D399)',
-            borderRadius: '2px',
-            transition: 'width 0.5s ease'
-          }} />
-        </div>
-      </div>
+      <div className="full-screen-content-wrapper">
 
-      {/* Step Content */}
-      <div className="step-content-container">
         {/* Step 1: Welcome Screen */}
         {currentStep === 1 && (
           <WelcomeScreen
@@ -524,6 +502,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
             onBack={handleBack}
           />
         )}
+
         {/* Step 5: Weather & Clothing Discussion - ENHANCED WEATHER */}
         {currentStep === 5 && (
           <WeatherClothingStep
@@ -559,61 +538,14 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
         {/* Step 8: Daily Highlights - RESTORED */}
         {currentStep === 8 && (
-          <div style={{ padding: '1rem', minHeight: '600px' }}>
-            <DailyHighlights
-              currentDate={currentDate}
-              students={presentStudents}
-              staff={realStaff}
-              todayCheckIn={todayCheckIn}
-              selectedSchedule={selectedSchedule}
-              onUpdateCheckIn={saveTodayCheckIn}
-            />
-            
-            {/* Navigation Buttons */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '1rem',
-              marginTop: '2rem',
-              padding: '1rem'
-            }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '2px solid rgba(255,255,255,0.3)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ← Back to Celebrations
-              </button>
-              
-              <button
-                onClick={handleFinalConfirmation}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 3rem',
-                  fontSize: '1.1rem',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                🚀 Start Our Visual Schedule! 🚀
-              </button>
-            </div>
-          </div>
+          <DailyHighlights
+            currentDate={currentDate}
+            students={presentStudents}
+            staff={realStaff}
+            todayCheckIn={todayCheckIn}
+            selectedSchedule={selectedSchedule}
+            onUpdateCheckIn={saveTodayCheckIn}
+          />
         )}
 
         {/* REMOVED: Steps 9-11 - No longer needed */}
@@ -697,36 +629,35 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         )}
       </div>
 
-      {/* Settings Button */}
+      {/* Settings Button - Fixed Position */}
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         bottom: '2rem',
         right: '2rem',
         zIndex: 1000
       }}>
-        <button
+        <button 
           onClick={() => setShowSettings(true)}
           style={{
             background: 'rgba(255,255,255,0.2)',
             border: '2px solid rgba(255,255,255,0.3)',
             borderRadius: '50%',
-            width: '60px',
-            height: '60px',
+            width: 'clamp(50px, 8vw, 80px)',
+            height: 'clamp(50px, 8vw, 80px)',
             color: 'white',
-            fontSize: '1.5rem',
+            fontSize: 'clamp(1.2rem, 3vw, 2rem)',
             cursor: 'pointer',
             backdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}
-          title="Calendar Settings"
+          title="Morning Meeting Settings"
+          aria-label="Morning Meeting Settings"
         >
           ⚙️
         </button>
       </div>
-
-      {/* Choice Interface Modal - REMOVED */}
 
       {/* Settings Modal */}
       {calendarSettings && (

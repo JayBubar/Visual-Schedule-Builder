@@ -24,7 +24,7 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+4' },
     { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+5' },
     { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+6' },
-    { id: 'calendar', icon: '📅', label: 'Daily Check In', shortcut: 'Ctrl+7' },
+    { id: 'calendar', icon: '📅', label: 'Morning Meeting', shortcut: 'Ctrl+7' },
     { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+8' },
     { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+9' },
     { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+0' }
@@ -58,7 +58,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
       <div className={`nav-buttons ${isInDailyCheckIn ? 'daily-checkin-mode' : ''}`}>
         {navItems.map(item => {
-          // During Daily Check-In, only show the Daily Check-In button as active
+          // During Morning Meeting, only show the Morning Meeting button as active
           const isHidden = isInDailyCheckIn && item.id !== 'calendar';
           
           return (
@@ -66,7 +66,7 @@ const Navigation: React.FC<NavigationProps> = ({
               key={item.id}
               onClick={() => !isHidden && onViewChange(item.id as ViewType)}
               className={`nav-button ${currentView === item.id ? 'active' : ''} ${isHidden ? 'hidden-during-checkin' : ''}`}
-              title={isHidden ? 'Available after Daily Check-In' : `${item.label} (${item.shortcut})`}
+              title={isHidden ? 'Available after Morning Meeting' : `${item.label} (${item.shortcut})`}
               disabled={isHidden}
             >
               <span className="nav-icon">
@@ -182,7 +182,7 @@ const Navigation: React.FC<NavigationProps> = ({
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        /* Daily Check-In Mode Styles */
+        /* Morning Meeting Mode Styles */
         .nav-button.hidden-during-checkin {
           opacity: 0.3;
           filter: blur(1px);

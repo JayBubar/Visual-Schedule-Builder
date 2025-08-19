@@ -401,10 +401,9 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
   return (
     <div style={{ 
       padding: '1rem 2rem',
-      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      minHeight: '100vh'
     }}>
       {/* Header */}
       <div style={{ 
@@ -468,7 +467,8 @@ const CalendarMathStep: React.FC<CalendarMathStepProps> = ({
       <div style={{
         flex: 1,
         overflow: 'auto',
-        padding: '0 0.5rem'
+        padding: '0 0.5rem',
+        paddingBottom: '100px'
       }}>
         {currentLevel === 'month' && renderMonthLevel()}
         {currentLevel === 'week' && renderWeekLevel()}

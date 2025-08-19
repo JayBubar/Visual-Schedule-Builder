@@ -146,47 +146,10 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
   return (
     <div style={{ 
       padding: '1rem 2rem',
-      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      minHeight: '100vh'
     }}>
-      {/* Home Button */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        left: '1rem',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '0.75rem 1rem',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          🏠 Home
-        </button>
-      </div>
 
       {/* Header */}
       <div style={{ 
@@ -218,7 +181,8 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: '1rem'
+        gap: '1rem',
+        paddingBottom: '100px'
       }}>
         {/* Weather Widget */}
         <div style={{ flexShrink: 0 }}>

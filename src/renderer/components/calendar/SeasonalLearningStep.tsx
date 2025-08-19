@@ -397,7 +397,7 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
     <div style={{
       padding: '2rem',
       textAlign: 'center',
-      minHeight: '600px',
+      minHeight: '100vh',
       background: `linear-gradient(135deg, ${seasonalTheme.colors[0]}40, ${seasonalTheme.colors[1]}40, ${seasonalTheme.colors[2]}40)`,
       display: 'flex',
       flexDirection: 'column'
@@ -448,7 +448,9 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
         borderRadius: '20px',
         padding: '2rem',
         flex: 1,
-        border: '1px solid rgba(255,255,255,0.2)'
+        border: '1px solid rgba(255,255,255,0.2)',
+        overflow: 'auto',
+        paddingBottom: '100px'
       }}>
         
         {/* Vocabulary Section */}

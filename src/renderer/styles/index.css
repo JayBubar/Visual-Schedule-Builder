@@ -5,7 +5,7 @@
 /* Import Smart Groups Enhanced UI Animations */
 @import './smart-groups-animations.css';
 
-/* Global Styles - FIXED SCROLL HIERARCHY */
+/* Global Styles - ENHANCED FOR DYNAMIC VIEWPORT SIZING */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -14,18 +14,25 @@
 
 html, body {
   height: 100%;
+  width: 100%;
   overflow: auto; /* Allow scrolling on the main page */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.6;
   color: #2c3e50;
   background: #f8f9fa;
+  /* Enable proper viewport sizing */
+  position: relative;
 }
 
 #root {
   height: 100%;
+  width: 100%;
   overflow: visible; /* Let content flow into the body */
   display: flex;
   flex-direction: column;
+  /* Ensure root container fills viewport */
+  min-height: 100vh;
+  min-width: 100vw;
 }
 
 /* Main app container - ONLY scrollable element */
@@ -1066,6 +1073,22 @@ html, body {
 /* NEW RULE: Hides the settings button in display mode */
 .main-app-container.display-mode .daily-check-in-settings-button {
   display: none !important;
+}
+
+/* ============================================
+   FULL SCREEN CONTAINER FOR DAILY CHECK-IN
+   ============================================ */
+.full-screen-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1000;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 /* NEW RULE: Ensures Daily Check-in fits screen without scrolling */
