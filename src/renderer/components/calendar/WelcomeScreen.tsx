@@ -21,8 +21,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   useEffect(() => {
     // Load welcome settings from UnifiedDataService
     const settings = UnifiedDataService.getSettings();
-    if (settings.dailyCheckIn?.welcomeSettings) {
-      setWelcomeSettings(settings.dailyCheckIn.welcomeSettings);
+    if (settings.morningMeeting?.welcomeSettings) {
+      setWelcomeSettings(settings.morningMeeting.welcomeSettings);
     }
 
     // Update time every second
@@ -36,8 +36,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     // Listen for settings changes
     const handleSettingsChange = (event: CustomEvent) => {
       const newSettings = event.detail;
-      if (newSettings.dailyCheckIn?.welcomeSettings) {
-        setWelcomeSettings(newSettings.dailyCheckIn.welcomeSettings);
+      if (newSettings.morningMeeting?.welcomeSettings) {
+        setWelcomeSettings(newSettings.morningMeeting.welcomeSettings);
       }
     };
 

@@ -273,8 +273,8 @@ const getCustomCelebrations = () => {
     let celebrations = [];
     
     // Check multiple possible paths
-    if (unifiedSettings?.dailyCheckIn?.celebrations?.customCelebrations) {
-      celebrations = unifiedSettings.dailyCheckIn.celebrations.customCelebrations;
+    if (unifiedSettings?.morningMeeting?.celebrations?.customCelebrations) {
+      celebrations = unifiedSettings.morningMeeting.celebrations.customCelebrations;
     } else if (unifiedSettings?.celebrations?.customCelebrations) {
       celebrations = unifiedSettings.celebrations.customCelebrations;
     } else if (unifiedSettings?.customCelebrations) {

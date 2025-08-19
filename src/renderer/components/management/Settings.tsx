@@ -1925,10 +1925,10 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
           // Update settings state
           setSettings(prev => ({
             ...prev,
-            dailyCheckIn: {
-              ...prev.dailyCheckIn,
+            morningMeeting: {
+              ...prev.morningMeeting,
               behaviorCommitments: {
-                ...prev.dailyCheckIn.behaviorCommitments,
+                ...prev.morningMeeting.behaviorCommitments,
                 customStatements: statements
               }
             }

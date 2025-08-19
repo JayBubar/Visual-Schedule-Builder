@@ -107,9 +107,9 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
         let customStatements = [];
         
         // Check multiple possible paths for custom statements
-        if (unifiedSettings?.dailyCheckIn?.behaviorCommitments?.customStatements) {
-          customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
-          console.log('✅ [DEBUG] Found custom statements in dailyCheckIn.behaviorCommitments:', customStatements);
+        if (unifiedSettings?.morningMeeting?.behaviorCommitments?.customStatements) {
+          customStatements = unifiedSettings.morningMeeting.behaviorCommitments.customStatements;
+          console.log('✅ [DEBUG] Found custom statements in morningMeeting.behaviorCommitments:', customStatements);
         } else if (unifiedSettings?.behaviorCommitments?.customStatements) {
           customStatements = unifiedSettings.behaviorCommitments.customStatements;
           console.log('✅ [DEBUG] Found custom statements in root behaviorCommitments:', customStatements);
@@ -335,7 +335,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
           setIsLoadingStatements(true);
           
           const settings = UnifiedDataService.getSettings();
-          const customStatements = settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+          const customStatements = settings?.morningMeeting?.behaviorCommitments?.customStatements;
           
           if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
             const categoriesWithCustom = convertCustomStatementsToCategoryFormat(customStatements);
