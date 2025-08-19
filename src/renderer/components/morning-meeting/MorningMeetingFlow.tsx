@@ -62,11 +62,20 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       hubSettings.flowCustomization.enabledSteps[stepKey as StepKey] === true
     ) as StepKey[];
     
+    console.log('🔍 DEBUG: Hub Settings:', hubSettings.flowCustomization.enabledSteps);
+    console.log('🔍 DEBUG: Step Order:', stepOrder);
+    console.log('🔍 DEBUG: Enabled Steps:', orderedEnabledSteps);
+    
     // Fallback to all steps if none are enabled (shouldn't happen, but safety)
     return orderedEnabledSteps.length > 0 ? orderedEnabledSteps : [...DEFAULT_STEP_ORDER];
   }, [hubSettings.flowCustomization.enabledSteps, hubSettings.flowCustomization.stepOrder]);
 
   const totalSteps = enabledSteps.length;
+
+  // Add this useEffect to log step changes
+  useEffect(() => {
+    console.log('🔄 DEBUG: Current step changed to:', currentStepIndex, enabledSteps[currentStepIndex]);
+  }, [currentStepIndex, enabledSteps]);
 
   // Use useCallback to prevent infinite loops
   const handleStepDataUpdate = useCallback((data: any) => {
@@ -86,9 +95,16 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   }, [enabledSteps, currentStepIndex]);
 
   const handleNext = () => {
+    console.log('🔍 DEBUG: handleNext called');
+    console.log('🔍 DEBUG: Current index:', currentStepIndex);
+    console.log('🔍 DEBUG: Total steps:', enabledSteps.length);
+    console.log('🔍 DEBUG: Next step would be:', enabledSteps[currentStepIndex + 1]);
+    
     if (currentStepIndex < enabledSteps.length - 1) {
+      console.log('✅ DEBUG: Advancing to next step');
       setCurrentStepIndex(prev => prev + 1);
     } else {
+      console.log('🎉 DEBUG: Completing Morning Meeting');
       // Complete morning meeting
       if (onComplete) {
         onComplete();
@@ -106,16 +122,32 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     const currentStepKey = enabledSteps[currentStepIndex];
     const StepComponent = STEP_COMPONENTS[currentStepKey];
     
+    console.log('🔍 DEBUG: Current Step Index:', currentStepIndex);
+    console.log('🔍 DEBUG: Current Step Key:', currentStepKey);
+    console.log('🔍 DEBUG: Step Component:', StepComponent);
+    console.log('🔍 DEBUG: All Enabled Steps:', enabledSteps);
+    
     if (!StepComponent) {
+      console.error('❌ DEBUG: Step Component not found for:', currentStepKey);
       return (
         <div style={{
           display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
           height: '100%',
-          color: 'white'
+          color: 'white',
+          textAlign: 'center'
         }}>
           <h2>Step "{currentStepKey}" not found</h2>
+          <p>Available steps: {Object.keys(STEP_COMPONENTS).join(', ')}</p>
+          <p>Current index: {currentStepIndex} of {enabledSteps.length}</p>
+          <button onClick={() => setCurrentStepIndex(0)} style={{
+            background: 'red', color: 'white', padding: '10px', borderRadius: '5px', 
+            border: 'none', cursor: 'pointer', marginTop: '10px'
+          }}>
+            Reset to First Step
+          </button>
         </div>
       );
     }
