@@ -2,10 +2,10 @@
 # These rules ensure consistent development practices across all sessions
 
 ## Branch Management
-- Always work on branch: my-main-working-branch
+- Always work on branch: version-two-progress
 - Verify current branch before making any changes with: git branch
 - Never work directly on main/master branch
-- All development should happen on my-main-working-branch
+- All development should happen on version-two-progress
 
 ## Project Structure
 - Main project directory: visual-schedule-builder/
@@ -13,14 +13,18 @@
 - Key components: components/management/StudentManagement.tsx
 - Data service: services/unifiedDataService.ts
 - IEP components: components/data-collection/
+- Morning Meeting: components/morning-meeting/
 
 ## Development Workflow
 - Always check git status before starting work
 - Commit changes frequently with descriptive messages
 - Test IEP integration functionality after changes
 - Verify student card buttons work: 🎯 Manage Goals, 📊 Data Collection, 🖨️ Print Sheets
+- Test Morning Meeting integration and video/vocabulary features
 
 ## Current Task Context
-- Working on IEP button integration in StudentManagement.tsx
-- Adding debugging to GoalManager.tsx and UnifiedDataService.ts
-- Goal: Fix data flow between goal creation and student card display
+- Completed Morning Meeting video & vocabulary integration
+- Added video selection from Activity Library with tag-based filtering
+- Added custom vocabulary management for weather, seasonal, and calendar words
+- Implemented complete data flow from Hub settings to step components
+- All Morning Meeting integration features are now complete and functional

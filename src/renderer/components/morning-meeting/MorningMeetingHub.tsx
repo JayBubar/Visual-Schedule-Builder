@@ -1,38 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Play, Users, Video, Calendar, Cloud, CheckCircle, Eye } from 'lucide-react';
-
-interface MorningMeetingSettings {
-  welcomePersonalization: {
-    schoolName: string;
-    teacherName: string;
-    className: string;
-    welcomeMessage: string;
-  };
-  videoSelection: {
-    weather: string[];
-    seasonal: string[];
-    behavior: string[];
-  };
-  behaviorStatements: {
-    statements: string[];
-    enabled: boolean;
-  };
-  weatherAPI: {
-    enabled: boolean;
-    apiKey: string;
-    location: string;
-  };
-  flowCustomization: {
-    enabledSteps: {
-      welcome: boolean;
-      attendance: boolean;
-      behavior: boolean;
-      calendarMath: boolean;
-      weatherClothing: boolean;
-      seasonalLearning: boolean;
-    };
-  };
-}
+import { Settings, Play, Users, Video, Calendar, Cloud, CheckCircle, Eye, BookOpen } from 'lucide-react';
+import UnifiedDataService from '../../services/unifiedDataService';
+import { MorningMeetingSettings, DEFAULT_MORNING_MEETING_SETTINGS } from './types/morningMeetingTypes';
 
 interface MorningMeetingHubProps {
   onStartMorningMeeting: () => void;
@@ -45,50 +14,26 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
     const saved = localStorage.getItem('morningMeetingSettings');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsedSettings = JSON.parse(saved);
+        // Merge with defaults to ensure all new properties exist
+        return {
+          ...DEFAULT_MORNING_MEETING_SETTINGS,
+          ...parsedSettings,
+          videos: {
+            ...DEFAULT_MORNING_MEETING_SETTINGS.videos,
+            ...parsedSettings.videos
+          },
+          customVocabulary: {
+            ...DEFAULT_MORNING_MEETING_SETTINGS.customVocabulary,
+            ...parsedSettings.customVocabulary
+          }
+        };
       } catch (error) {
         console.error('Failed to parse Morning Meeting settings:', error);
       }
     }
     
-    // Default settings
-    return {
-      welcomePersonalization: {
-        schoolName: '',
-        teacherName: '',
-        className: '',
-        welcomeMessage: 'Good morning, class! Let\'s start our day together!'
-      },
-      videoSelection: {
-        weather: [],
-        seasonal: [],
-        behavior: []
-      },
-      behaviorStatements: {
-        statements: [
-          'I will be kind to others',
-          'I will listen when others are speaking',
-          'I will raise my hand before speaking',
-          'I will do my best work'
-        ],
-        enabled: true
-      },
-      weatherAPI: {
-        enabled: false,
-        apiKey: '',
-        location: ''
-      },
-      flowCustomization: {
-        enabledSteps: {
-          welcome: true,
-          attendance: true,
-          behavior: true,
-          calendarMath: true,
-          weatherClothing: true,
-          seasonalLearning: true
-        }
-      }
-    };
+    return DEFAULT_MORNING_MEETING_SETTINGS;
   });
 
   const [activeSection, setActiveSection] = useState<string>('welcome');
@@ -106,15 +51,6 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
     }));
   };
 
-  const sections = [
-    { id: 'welcome', label: 'Welcome Personalization', icon: Users, color: '#3498db' },
-    { id: 'videos', label: 'Video Selection', icon: Video, color: '#e74c3c' },
-    { id: 'behavior', label: 'Behavior Statements', icon: CheckCircle, color: '#2ecc71' },
-    { id: 'weather', label: 'Weather API', icon: Cloud, color: '#f39c12' },
-    { id: 'flow', label: 'Flow Customization', icon: Settings, color: '#9b59b6' },
-    { id: 'preview', label: 'Preview & Test', icon: Eye, color: '#1abc9c' }
-  ];
-
   const getCurrentSeason = () => {
     const month = new Date().getMonth();
     if (month >= 2 && month <= 4) return 'spring';
@@ -122,6 +58,116 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
     if (month >= 8 && month <= 10) return 'fall';
     return 'winter';
   };
+
+  // Get videos from Activity Library with proper tags
+  const getTaggedVideos = (tags: string[]) => {
+    const allActivities = UnifiedDataService.getAllActivities();
+    return allActivities.filter(activity => 
+      activity.category === 'video' && 
+      activity.materials && 
+      tags.some(tag => activity.materials?.some(material => 
+        material.toLowerCase().includes(tag.toLowerCase())
+      ))
+    );
+  };
+
+  // VideoSelectionStep Component
+  const VideoSelectionStep = ({ stepName, stepIcon, description, availableVideos, currentSelection, onSelectionChange }: {
+    stepName: string;
+    stepIcon: string;
+    description: string;
+    availableVideos: any[];
+    currentSelection: Array<{id: string, name: string, url: string}>;
+    onSelectionChange: (videos: Array<{id: string, name: string, url: string}>) => void;
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+      <div className="video-step-selector">
+        <div 
+          className="video-step-header"
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '1rem',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            marginBottom: '0.5rem'
+          }}
+        >
+          <div>
+            <strong>{stepIcon} {stepName}</strong>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>{description}</p>
+            <small>{currentSelection.length} video(s) selected</small>
+          </div>
+          <span>{isExpanded ? '▼' : '▶'}</span>
+        </div>
+        
+        {isExpanded && (
+          <div style={{ padding: '1rem', border: '1px solid #e9ecef', borderRadius: '8px' }}>
+            {availableVideos.length === 0 ? (
+              <p style={{ color: '#666', fontStyle: 'italic' }}>
+                No videos found. Add videos with appropriate tags in Activity Library.
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.5rem' }}>
+                {availableVideos.map(video => (
+                  <div 
+                    key={video.id} 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.5rem',
+                      border: '1px solid #dee2e6',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={currentSelection.some(sel => sel.id === video.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          onSelectionChange([...currentSelection, { 
+                            id: video.id, 
+                            name: video.name, 
+                            url: video.instructions || video.description || '' 
+                          }]);
+                        } else {
+                          onSelectionChange(currentSelection.filter(sel => sel.id !== video.id));
+                        }
+                      }}
+                      style={{ marginRight: '0.5rem' }}
+                    />
+                    <div>
+                      <strong>{video.name}</strong>
+                      {video.description && (
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>
+                          {video.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const sections = [
+    { id: 'welcome', label: 'Welcome Personalization', icon: Users, color: '#3498db' },
+    { id: 'videos', label: 'Video Selection', icon: Video, color: '#e74c3c' },
+    { id: 'vocabulary', label: 'Custom Vocabulary', icon: BookOpen, color: '#27ae60' },
+    { id: 'behavior', label: 'Behavior Statements', icon: CheckCircle, color: '#2ecc71' },
+    { id: 'weather', label: 'Weather API', icon: Cloud, color: '#f39c12' },
+    { id: 'flow', label: 'Flow Customization', icon: Settings, color: '#9b59b6' },
+    { id: 'preview', label: 'Preview & Test', icon: Eye, color: '#1abc9c' }
+  ];
 
   const renderWelcomeSection = () => (
     <div className="hub-section">
@@ -166,8 +212,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
         <div className="form-group full-width">
           <label>Welcome Message</label>
           <textarea
-            value={settings.welcomePersonalization.welcomeMessage}
-            onChange={(e) => updateSettings('welcomePersonalization', { welcomeMessage: e.target.value })}
+            value={settings.welcomePersonalization.customMessage || ''}
+            onChange={(e) => updateSettings('welcomePersonalization', { customMessage: e.target.value })}
             placeholder="Your daily welcome message to students"
             rows={3}
           />
@@ -176,62 +222,120 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
     </div>
   );
 
-  const renderVideoSection = () => (
+  const renderVideoSection = () => {
+    const weatherVideos = getTaggedVideos(['weather', 'clothing', 'seasons']);
+    const seasonalVideos = getTaggedVideos(['seasonal', getCurrentSeason()]);
+    const behaviorVideos = getTaggedVideos(['behavior', 'social', 'expectations']);
+    const calendarVideos = getTaggedVideos(['calendar', 'math', 'numbers']);
+
+    return (
+      <div className="hub-section">
+        <h3 className="section-title">
+          <Video size={20} /> Video Selection
+        </h3>
+        <p className="section-description">
+          Select videos from your Activity Library for each Morning Meeting step
+        </p>
+        
+        <VideoSelectionStep 
+          stepName="Weather & Clothing"
+          stepIcon="🌤️"
+          description="Weather and clothing selection videos"
+          availableVideos={weatherVideos}
+          currentSelection={settings.videos.weatherClothing}
+          onSelectionChange={(videos) => updateSettings('videos', {
+            ...settings.videos,
+            weatherClothing: videos
+          })}
+        />
+        
+        <VideoSelectionStep 
+          stepName="Seasonal Learning"
+          stepIcon="🍂"
+          description="Seasonal activities and learning videos"
+          availableVideos={seasonalVideos}
+          currentSelection={settings.videos.seasonalLearning}
+          onSelectionChange={(videos) => updateSettings('videos', {
+            ...settings.videos,
+            seasonalLearning: videos
+          })}
+        />
+        
+        <VideoSelectionStep 
+          stepName="Behavior Commitments"
+          stepIcon="⭐"
+          description="Social skills and behavior videos"
+          availableVideos={behaviorVideos}
+          currentSelection={settings.videos.behaviorCommitments}
+          onSelectionChange={(videos) => updateSettings('videos', {
+            ...settings.videos,
+            behaviorCommitments: videos
+          })}
+        />
+        
+        <VideoSelectionStep 
+          stepName="Calendar Math"
+          stepIcon="📅"
+          description="Math and calendar learning videos"
+          availableVideos={calendarVideos}
+          currentSelection={settings.videos.calendarMath}
+          onSelectionChange={(videos) => updateSettings('videos', {
+            ...settings.videos,
+            calendarMath: videos
+          })}
+        />
+      </div>
+    );
+  };
+
+  const renderVocabularySection = () => (
     <div className="hub-section">
       <h3 className="section-title">
-        <Video size={20} /> Video Selection
+        <BookOpen size={20} /> Custom Vocabulary
       </h3>
       <p className="section-description">
-        Select videos from your Activity Library for each Morning Meeting step
+        Customize vocabulary words for each Morning Meeting step
       </p>
       
-      <div className="video-categories">
-        <div className="video-category">
-          <h4>🌤️ Weather & Clothing Videos</h4>
-          <p>Videos about weather, seasons, and appropriate clothing</p>
-          <div className="video-list">
-            {settings.videoSelection.weather.length === 0 ? (
-              <div className="no-videos">No videos selected. Use Activity Library to add weather-tagged videos.</div>
-            ) : (
-              settings.videoSelection.weather.map((video, index) => (
-                <div key={index} className="video-item">{video}</div>
-              ))
-            )}
-          </div>
+      <div className="vocabulary-grid">
+        <div className="vocab-category">
+          <h4>🌤️ Weather Words</h4>
+          <textarea
+            value={settings.customVocabulary.weather.join(', ')}
+            onChange={(e) => updateSettings('customVocabulary', {
+              ...settings.customVocabulary,
+              weather: e.target.value.split(',').map(word => word.trim()).filter(word => word)
+            })}
+            placeholder="sunny, cloudy, rainy, snowy, windy, foggy"
+            rows={3}
+          />
         </div>
         
-        <div className="video-category">
-          <h4>🍂 Seasonal Learning Videos</h4>
-          <p>Videos about current season activities and learning</p>
-          <div className="video-list">
-            {settings.videoSelection.seasonal.length === 0 ? (
-              <div className="no-videos">No videos selected. Use Activity Library to add seasonal-tagged videos.</div>
-            ) : (
-              settings.videoSelection.seasonal.map((video, index) => (
-                <div key={index} className="video-item">{video}</div>
-              ))
-            )}
-          </div>
+        <div className="vocab-category">
+          <h4>🍂 Seasonal Words</h4>
+          <textarea
+            value={settings.customVocabulary.seasonal.join(', ')}
+            onChange={(e) => updateSettings('customVocabulary', {
+              ...settings.customVocabulary,
+              seasonal: e.target.value.split(',').map(word => word.trim()).filter(word => word)
+            })}
+            placeholder="spring, summer, fall, winter, leaves, flowers, snow"
+            rows={3}
+          />
         </div>
         
-        <div className="video-category">
-          <h4>💪 Behavior & Social Skills Videos</h4>
-          <p>Videos about behavior expectations and social skills</p>
-          <div className="video-list">
-            {settings.videoSelection.behavior.length === 0 ? (
-              <div className="no-videos">No videos selected. Use Activity Library to add behavior-tagged videos.</div>
-            ) : (
-              settings.videoSelection.behavior.map((video, index) => (
-                <div key={index} className="video-item">{video}</div>
-              ))
-            )}
-          </div>
+        <div className="vocab-category">
+          <h4>📅 Calendar Words</h4>
+          <textarea
+            value={settings.customVocabulary.calendar.join(', ')}
+            onChange={(e) => updateSettings('customVocabulary', {
+              ...settings.customVocabulary,
+              calendar: e.target.value.split(',').map(word => word.trim()).filter(word => word)
+            })}
+            placeholder="yesterday, today, tomorrow, week, month, ordinal"
+            rows={3}
+          />
         </div>
-      </div>
-      
-      <div className="video-note">
-        <strong>Note:</strong> Videos are managed through the Activity Library. Tag your videos with 
-        "weather", "seasonal", or "behavior" to make them available here.
       </div>
     </div>
   );
@@ -321,7 +425,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
             <label>API Key</label>
             <input
               type="password"
-              value={settings.weatherAPI.apiKey}
+              value={settings.weatherAPI.apiKey || ''}
               onChange={(e) => updateSettings('weatherAPI', { apiKey: e.target.value })}
               placeholder="Your weather API key"
             />
@@ -331,7 +435,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
             <label>Location</label>
             <input
               type="text"
-              value={settings.weatherAPI.location}
+              value={settings.weatherAPI.location || ''}
               onChange={(e) => updateSettings('weatherAPI', { location: e.target.value })}
               placeholder="City, State or ZIP code"
             />
@@ -400,6 +504,11 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
         <div className="summary-item">
           <strong>Weather API:</strong> {settings.weatherAPI.enabled ? 'Enabled' : 'Disabled'}
         </div>
+        <div className="summary-item">
+          <strong>Videos Selected:</strong> {
+            Object.values(settings.videos).reduce((total, videos) => total + videos.length, 0)
+          }
+        </div>
       </div>
       
       <div className="preview-actions">
@@ -423,6 +532,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
     switch (activeSection) {
       case 'welcome': return renderWelcomeSection();
       case 'videos': return renderVideoSection();
+      case 'vocabulary': return renderVocabularySection();
       case 'behavior': return renderBehaviorSection();
       case 'weather': return renderWeatherSection();
       case 'flow': return renderFlowSection();
@@ -646,57 +756,42 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
           border-color: #667eea;
         }
 
-        .video-categories {
+        .video-step-selector {
+          margin-bottom: 1rem;
+        }
+
+        .vocabulary-grid {
           display: grid;
-          gap: 2rem;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 1.5rem;
           margin-bottom: 2rem;
         }
 
-        .video-category {
+        .vocab-category {
           padding: 1.5rem;
           background: #f8f9fa;
           border-radius: 12px;
           border: 2px solid #e9ecef;
         }
 
-        .video-category h4 {
-          margin-bottom: 0.5rem;
+        .vocab-category h4 {
+          margin-bottom: 1rem;
           color: #2c3e50;
         }
 
-        .video-category p {
-          color: #7f8c8d;
-          font-size: 0.9rem;
-          margin-bottom: 1rem;
-        }
-
-        .video-list {
-          min-height: 60px;
-        }
-
-        .no-videos {
-          color: #95a5a6;
-          font-style: italic;
-          padding: 1rem;
-          text-align: center;
-          background: white;
-          border-radius: 6px;
-        }
-
-        .video-item {
-          padding: 0.5rem 0.75rem;
-          background: white;
-          border-radius: 6px;
-          margin-bottom: 0.5rem;
-          border-left: 4px solid #667eea;
-        }
-
-        .video-note {
-          background: #e8f4fd;
-          border: 1px solid #bee5eb;
+        .vocab-category textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border: 2px solid #e9ecef;
           border-radius: 8px;
-          padding: 1rem;
-          color: #0c5460;
+          font-size: 0.9rem;
+          transition: border-color 0.3s ease;
+          resize: vertical;
+        }
+
+        .vocab-category textarea:focus {
+          outline: none;
+          border-color: #667eea;
         }
 
         .behavior-controls,

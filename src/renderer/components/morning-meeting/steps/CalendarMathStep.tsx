@@ -23,6 +23,17 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   const enableTomorrow = hubSettings?.calendarMath?.enableTomorrow ?? true;
   const autoAdvanceSeconds = hubSettings?.calendarMath?.autoAdvanceSeconds ?? 8;
 
+  // Add custom vocabulary support
+  const getCalendarVocabulary = (): string[] => {
+    if (hubSettings?.customVocabulary?.calendar?.length > 0) {
+      return hubSettings.customVocabulary.calendar;
+    }
+    
+    return ['yesterday', 'today', 'tomorrow', 'week', 'month', 'ordinal'];
+  };
+
+  const customVocabulary = getCalendarVocabulary();
+
   // Date calculations
   const today = currentDate;
   const yesterday = new Date(today);
@@ -518,6 +529,48 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white'
     }}>
+      {/* Video Section */}
+      {hubSettings?.videos?.calendarMath && hubSettings.videos.calendarMath.length > 0 && (
+        <div style={{
+          padding: '1rem 2rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontWeight: '600', fontSize: '1rem' }}>🎬 Videos:</span>
+          {hubSettings.videos.calendarMath.map((video, index) => (
+            <button
+              key={index}
+              onClick={() => window.open(video.url, `calendar-video-${index}`, 'width=800,height=600')}
+              style={{
+                background: 'rgba(34, 197, 94, 0.8)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              Play Calendar Video {index + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         padding: '1.5rem 2rem 1rem 2rem',

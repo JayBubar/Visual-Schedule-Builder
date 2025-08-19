@@ -1,5 +1,6 @@
 // Morning Meeting Type Definitions
 import { Student } from '../../../types';
+import { BookOpen } from 'lucide-react';
 
 // Standard interface for all Morning Meeting step components
 export interface MorningMeetingStepProps {
@@ -27,6 +28,17 @@ export interface MorningMeetingSettings {
     teacherName: string;
     className: string;
     customMessage?: string;
+  };
+  videos: {
+    weatherClothing: Array<{id: string, name: string, url: string}>;
+    seasonalLearning: Array<{id: string, name: string, url: string}>;
+    behaviorCommitments: Array<{id: string, name: string, url: string}>;
+    calendarMath: Array<{id: string, name: string, url: string}>;
+  };
+  customVocabulary: {
+    weather: string[];
+    seasonal: string[];
+    calendar: string[];
   };
   behaviorStatements: {
     enabled: boolean;
@@ -60,12 +72,6 @@ export interface MorningMeetingSettings {
       seasonal: boolean;
     };
     stepOrder: string[];
-  };
-  videos: {
-    calendarMath: string[];
-    weatherClothing: string[];
-    seasonalLearning: string[];
-    behaviorCommitments: string[];
   };
 }
 
@@ -198,6 +204,17 @@ export const DEFAULT_MORNING_MEETING_SETTINGS: MorningMeetingSettings = {
     className: '',
     customMessage: undefined
   },
+  videos: {
+    weatherClothing: [],
+    seasonalLearning: [],
+    behaviorCommitments: [],
+    calendarMath: []
+  },
+  customVocabulary: {
+    weather: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
+    seasonal: ['spring', 'summer', 'fall', 'winter', 'leaves', 'flowers'],
+    calendar: ['yesterday', 'today', 'tomorrow', 'week', 'month', 'ordinal']
+  },
   behaviorStatements: {
     enabled: true,
     statements: [
@@ -234,11 +251,5 @@ export const DEFAULT_MORNING_MEETING_SETTINGS: MorningMeetingSettings = {
       seasonal: true
     },
     stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
-  },
-  videos: {
-    calendarMath: [],
-    weatherClothing: [],
-    seasonalLearning: [],
-    behaviorCommitments: []
   }
 };

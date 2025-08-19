@@ -273,11 +273,12 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   
   // Get vocabulary from hub settings or use defaults
   const getSeasonalVocabulary = (season: string): string[] => {
-    // If hub settings has custom seasonal vocabulary, use it
-    if (hubSettings?.seasonalLearning?.activities?.length > 0) {
-      return hubSettings.seasonalLearning.activities;
+    // FIRST: Check Hub custom vocabulary
+    if (hubSettings?.customVocabulary?.seasonal?.length > 0) {
+      return hubSettings.customVocabulary.seasonal;
     }
     
+    // SECOND: Use seasonal theme defaults
     return SEASONAL_THEMES[season]?.vocabulary || [];
   };
 
@@ -543,7 +544,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
           {hubSettings.videos.seasonalLearning.map((video, index) => (
             <button
               key={index}
-              onClick={() => window.open(video, `seasonal-video-${index}`, 'width=800,height=600')}
+              onClick={() => window.open(video.url, `seasonal-video-${index}`, 'width=800,height=600')}
               style={{
                 background: 'rgba(34, 197, 94, 0.8)',
                 border: 'none',

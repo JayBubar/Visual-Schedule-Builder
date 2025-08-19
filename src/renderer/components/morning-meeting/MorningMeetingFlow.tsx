@@ -1,39 +1,128 @@
+// Replace existing imports with:
+import { 
+  WelcomeStep, 
+  AttendanceStep, 
+  BehaviorStep, 
+  CalendarMathStep, 
+  WeatherStep, 
+  SeasonalStep,
+  STEP_COMPONENTS,
+  DEFAULT_STEP_ORDER,
+  type StepKey
+} from './steps';
+import { 
+  MorningMeetingSettings, 
+  DEFAULT_MORNING_MEETING_SETTINGS 
+} from './steps';
 import React, { useState, useEffect } from 'react';
 import { Student, StaffMember } from '../../types';
+
+// Placeholder functions for settings management
+const loadMorningMeetingSettings = (): MorningMeetingSettings => {
+  // TODO: Implement actual settings loading from Hub or localStorage
+  return DEFAULT_MORNING_MEETING_SETTINGS;
+};
+
+const getEnabledSteps = (settings: MorningMeetingSettings): StepKey[] => {
+  // TODO: Implement logic to determine enabled steps based on settings
+  const enabledStepKeys = Object.entries(settings.flowCustomization.enabledSteps)
+    .filter(([_, enabled]) => enabled)
+    .map(([stepKey, _]) => stepKey as StepKey);
+  
+  return enabledStepKeys.length > 0 ? enabledStepKeys : [...DEFAULT_STEP_ORDER];
+};
+
+interface MorningMeetingSessionData {
+  startTime: Date;
+  attendees: string[];
+  completedSteps: StepKey[];
+  stepResults: Record<string, any>;
+}
 
 interface MorningMeetingFlowProps {
   students?: Student[];
   staff?: StaffMember[];
   onComplete?: () => void;
   onNavigateHome?: () => void;
+  hubSettings?: any;
 }
 
 const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   students = [],
   staff = [],
   onComplete,
-  onNavigateHome
+  onNavigateHome,
+  hubSettings: propHubSettings = {}
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 6;
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [stepData, setStepData] = useState<Record<string, any>>({});
+  const [enabledSteps, setEnabledSteps] = useState<StepKey[]>([...DEFAULT_STEP_ORDER]);
+  const [sessionData, setSessionData] = useState<MorningMeetingSessionData>();
+  
+  // Load settings from Hub or localStorage
+  const [hubSettings, setHubSettings] = useState(loadMorningMeetingSettings());
+  
+  const totalSteps = enabledSteps.length;
+
+  // Update when settings change
+  useEffect(() => {
+    const settings = loadMorningMeetingSettings();
+    setHubSettings(settings);
+    setEnabledSteps(getEnabledSteps(settings));
+  }, []);
 
   const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+    if (currentStepIndex < enabledSteps.length - 1) {
+      setCurrentStepIndex(prev => prev + 1);
     } else {
-      if (onComplete) onComplete();
+      // Complete morning meeting
+      onComplete();
     }
   };
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(prev => prev - 1);
     }
   };
 
-  const stepNames = [
-    'Welcome', 'Attendance', 'Behavior', 'Calendar Math', 'Weather', 'Seasonal'
-  ];
+  const saveSessionData = (stepKey: string, data: any) => {
+    // TODO: Implement actual session storage persistence
+    try {
+      const sessionKey = `morningMeeting_${new Date().toDateString()}_${stepKey}`;
+      localStorage.setItem(sessionKey, JSON.stringify(data));
+    } catch (error) {
+      console.warn('Failed to save session data:', error);
+    }
+  };
+
+  const handleStepDataUpdate = (stepKey: string, data: any) => {
+    setStepData(prev => ({
+      ...prev,
+      [stepKey]: data
+    }));
+    
+    // Save to session storage for persistence
+    saveSessionData(stepKey, data);
+  };
+
+  const renderCurrentStep = () => {
+    const currentStepKey = enabledSteps[currentStepIndex];
+    const StepComponent = STEP_COMPONENTS[currentStepKey];
+    
+    return (
+      <StepComponent
+        students={students}
+        onNext={handleNext}
+        onBack={handleBack}
+        currentDate={new Date()}
+        hubSettings={hubSettings}
+        onDataUpdate={(data) => handleStepDataUpdate(currentStepKey, data)}
+        stepData={stepData[currentStepKey]}
+      />
+    );
+  };
+
 
   return (
     <div style={{
@@ -61,7 +150,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
             🌅 Morning Meeting
           </h1>
           <div style={{ fontSize: '1rem', opacity: 0.8 }}>
-            Step {currentStep} of {totalSteps}: {stepNames[currentStep - 1]}
+            Step {currentStepIndex + 1} of {totalSteps}: {enabledSteps[currentStepIndex]}
           </div>
         </div>
 
@@ -88,70 +177,9 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       <div style={{
         flex: 1,
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '2rem',
-        color: 'white',
-        textAlign: 'center'
+        flexDirection: 'column'
       }}>
-        <div style={{ fontSize: '5rem', marginBottom: '2rem' }}>
-          {currentStep === 1 && '👋'}
-          {currentStep === 2 && '✋'}
-          {currentStep === 3 && '💪'}
-          {currentStep === 4 && '📅'}
-          {currentStep === 5 && '🌤️'}
-          {currentStep === 6 && '🍂'}
-        </div>
-        
-        <h2 style={{ 
-          fontSize: 'clamp(2rem, 4vw, 3rem)', 
-          fontWeight: '700', 
-          margin: '0 0 1rem 0' 
-        }}>
-          {stepNames[currentStep - 1]}
-        </h2>
-        
-        <p style={{ 
-          fontSize: 'clamp(1rem, 2vw, 1.5rem)', 
-          opacity: 0.9,
-          maxWidth: '600px',
-          lineHeight: 1.5
-        }}>
-          {currentStep === 1 && "Welcome to our learning community! Let's start our day together."}
-          {currentStep === 2 && "Let's see who's here today and ready to learn!"}
-          {currentStep === 3 && "Choose a positive behavior to focus on today."}
-          {currentStep === 4 && "Let's explore the calendar and practice our math skills."}
-          {currentStep === 5 && "What's the weather like today? How should we dress?"}
-          {currentStep === 6 && "Let's learn about our current season and activities."}
-        </p>
-
-        {students.length > 0 && (
-          <div style={{
-            marginTop: '2rem',
-            display: 'flex',
-            gap: '1rem',
-            flexWrap: 'wrap',
-            justifyContent: 'center'
-          }}>
-            {students.slice(0, 6).map((student, index) => (
-              <div key={student.id} style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                borderRadius: '12px',
-                padding: '1rem',
-                minWidth: '100px',
-                textAlign: 'center'
-              }}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
-                  {(student as any).emoji || '👤'}
-                </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                  {student.name}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {renderCurrentStep()}
       </div>
 
       {/* Footer */}
@@ -167,17 +195,17 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       }}>
         <button
           onClick={handleBack}
-          disabled={currentStep === 1}
+          disabled={currentStepIndex === 0}
           style={{
             padding: '0.75rem 1.5rem',
-            background: currentStep === 1 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
+            background: currentStepIndex === 0 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
             border: '1px solid rgba(255, 255, 255, 0.3)',
             borderRadius: '8px',
-            color: currentStep === 1 ? 'rgba(255, 255, 255, 0.5)' : 'white',
-            cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
+            color: currentStepIndex === 0 ? 'rgba(255, 255, 255, 0.5)' : 'white',
+            cursor: currentStepIndex === 0 ? 'not-allowed' : 'pointer',
             fontSize: '1rem',
             fontWeight: '600',
-            opacity: currentStep === 1 ? 0.5 : 1
+            opacity: currentStepIndex === 0 ? 0.5 : 1
           }}
         >
           ← Back
@@ -191,7 +219,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
                 width: '12px',
                 height: '12px',
                 borderRadius: '50%',
-                background: index < currentStep ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
+                background: index <= currentStepIndex ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
                 transition: 'all 0.3s ease'
               }}
             />
@@ -211,7 +239,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
             fontWeight: '600'
           }}
         >
-          {currentStep >= totalSteps ? 'Complete 🎉' : 'Next →'}
+          {currentStepIndex >= totalSteps - 1 ? 'Complete 🎉' : 'Next →'}
         </button>
       </div>
 

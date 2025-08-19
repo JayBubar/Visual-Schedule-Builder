@@ -27,9 +27,22 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
   const [showDiscussion, setShowDiscussion] = useState(false);
 
   // Get custom vocabulary from hub settings or use defaults
-  const customVocabulary = hubSettings?.weatherAPI?.customVocabulary || [
-    'sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'
-  ];
+  const getSeasonalVocabulary = (): string[] => {
+    // FIRST: Check Hub custom vocabulary
+    if (hubSettings?.customVocabulary?.weather?.length > 0) {
+      return hubSettings.customVocabulary.weather;
+    }
+    
+    // SECOND: Check weather API custom vocabulary (legacy)
+    if (hubSettings?.weatherAPI?.customVocabulary?.length > 0) {
+      return hubSettings.weatherAPI.customVocabulary;
+    }
+    
+    // THIRD: Use defaults
+    return ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'];
+  };
+
+  const customVocabulary = getSeasonalVocabulary();
 
   // Get season from current date
   const getSeason = (date: Date) => {
@@ -280,7 +293,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
           {hubSettings.videos.weatherClothing.map((video, index) => (
             <button
               key={index}
-              onClick={() => window.open(video, `weather-video-${index}`, 'width=800,height=600')}
+              onClick={() => window.open(video.url, `weather-video-${index}`, 'width=800,height=600')}
               style={{
                 background: 'rgba(34, 197, 94, 0.8)',
                 border: 'none',
