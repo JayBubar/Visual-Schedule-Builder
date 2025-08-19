@@ -496,186 +496,6 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       flexDirection: 'column',
       gap: '2rem'
     }}>
-      {/* Debug Tools for Behavior Statements */}
-      <div style={{ 
-        position: 'fixed', 
-        top: '60px', // Below celebration buttons
-        right: '10px', 
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '5px'
-      }}>
-        <button
-          onClick={() => {
-            console.log('🧪 Testing behavior statement data...');
-            console.log('📋 UnifiedDataService.getSettings():', UnifiedDataService.getSettings());
-            console.log('🗄️ localStorage calendarSettings:', localStorage.getItem('calendarSettings'));
-            console.log('📊 Current behaviorStatements:', behaviorStatements);
-            
-            // Add a test custom statement directly to UnifiedDataService
-            const testSettings = {
-              dailyCheckIn: {
-                behaviorCommitments: {
-                  customStatements: [
-                    {
-                      id: 'manual_test_1',
-                      text: 'I will test my custom behavior statement',
-                      category: 'kindness',
-                      isActive: true,
-                      isDefault: false,
-                      createdAt: new Date().toISOString()
-                    },
-                    {
-                      id: 'manual_test_2', 
-                      text: 'I will verify the behavior fix works',
-                      category: 'respect',
-                      isActive: true,
-                      isDefault: false,
-                      createdAt: new Date().toISOString()
-                    }
-                  ]
-                }
-              }
-            };
-            
-            UnifiedDataService.updateSettings(testSettings);
-            window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', { detail: testSettings }));
-            
-            console.log('✅ Added manual test behavior statements');
-            alert('Test behavior statements added! Check console for details.');
-          }}
-          style={{
-            background: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            padding: '8px 12px',
-            fontSize: '11px',
-            cursor: 'pointer'
-          }}
-        >
-          🧪 Add Test Behaviors
-        </button>
-        
-        <button
-          onClick={() => {
-            console.log('🧪 Refreshing behavior data...');
-            const loadBehaviorStatementsFixed = () => {
-              try {
-                console.log('🔄 [DEBUG] Loading behavior statements...');
-                setIsLoadingStatements(true);
-                
-                const unifiedSettings = UnifiedDataService.getSettings();
-                console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
-                
-                let customStatements = [];
-                
-                if (unifiedSettings?.dailyCheckIn?.behaviorCommitments?.customStatements) {
-                  customStatements = unifiedSettings.dailyCheckIn.behaviorCommitments.customStatements;
-                  console.log('✅ [DEBUG] Found custom statements in dailyCheckIn.behaviorCommitments:', customStatements);
-                } else if (unifiedSettings?.behaviorCommitments?.customStatements) {
-                  customStatements = unifiedSettings.behaviorCommitments.customStatements;
-                  console.log('✅ [DEBUG] Found custom statements in root behaviorCommitments:', customStatements);
-                } else if (unifiedSettings?.customBehaviorStatements) {
-                  customStatements = unifiedSettings.customBehaviorStatements;
-                  console.log('✅ [DEBUG] Found custom statements in root customBehaviorStatements:', customStatements);
-                } else {
-                  console.log('ℹ️ [DEBUG] No custom statements found in UnifiedDataService');
-                }
-                
-                if (customStatements.length === 0) {
-                  console.log('🔍 [DEBUG] Checking legacy calendarSettings for behavior statements...');
-                  const legacySettings = localStorage.getItem('calendarSettings');
-                  if (legacySettings) {
-                    const parsed = JSON.parse(legacySettings);
-                    console.log('📋 [DEBUG] Legacy settings:', parsed);
-                    if (parsed.customBehaviorCommitments) {
-                      const legacyStatements = parsed.customBehaviorCommitments;
-                      customStatements = [];
-                      
-                      Object.keys(legacyStatements).forEach(categoryId => {
-                        const statements = legacyStatements[categoryId] || [];
-                        statements.forEach((statement, index) => {
-                          customStatements.push({
-                            id: `legacy_${categoryId}_${index}`,
-                            text: statement,
-                            category: categoryId,
-                            isActive: true,
-                            isDefault: false,
-                            createdAt: new Date().toISOString()
-                          });
-                        });
-                      });
-                      
-                      console.log('✅ [DEBUG] Converted legacy behavior statements:', customStatements);
-                    }
-                  }
-                }
-                
-                if (customStatements.length > 0) {
-                  const categoriesWithCustom = convertStatementsToCategoryFormat(customStatements);
-                  setBehaviorStatements(categoriesWithCustom);
-                  console.log('📊 [DEBUG] Using behavior categories with custom statements:', categoriesWithCustom);
-                } else {
-                  console.log('🧪 [DEBUG] No custom statements found, using defaults with test data...');
-                  const defaultsWithTest = [...DEFAULT_BEHAVIOR_STATEMENTS];
-                  
-                  defaultsWithTest[0] = {
-                    ...defaultsWithTest[0],
-                    text: '🧪 I will test that behavior statements are working'
-                  };
-                  
-                  setBehaviorStatements(defaultsWithTest);
-                  console.log('🧪 [DEBUG] Using defaults with test statement:', defaultsWithTest);
-                }
-                
-              } catch (error) {
-                console.error('❌ [DEBUG] Error loading behavior statements:', error);
-                setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
-              } finally {
-                setIsLoadingStatements(false);
-              }
-            };
-            
-            loadBehaviorStatementsFixed();
-            alert('Behavior data refreshed! Check console for details.');
-          }}
-          style={{
-            background: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            padding: '8px 12px',
-            fontSize: '11px',
-            cursor: 'pointer'
-          }}
-        >
-          🔄 Refresh Data
-        </button>
-        
-        <button
-          onClick={() => {
-            console.log('🔍 Inspecting behavior categories:');
-            behaviorCategories.forEach(category => {
-              console.log(`📂 ${category.name} (${category.id}):`, category.commitments);
-            });
-            console.log('📊 Current behaviorStatements:', behaviorStatements);
-            alert('Behavior categories logged! Check console for details.');
-          }}
-          style={{
-            background: '#ffc107',
-            color: 'black',
-            border: 'none',
-            borderRadius: '4px',
-            padding: '8px 12px',
-            fontSize: '11px',
-            cursor: 'pointer'
-          }}
-        >
-          🔍 Inspect Categories
-        </button>
-      </div>
 
       {/* Header */}
       <div>
@@ -1153,7 +973,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
             transition: 'all 0.3s ease'
           }}
         >
-          ← Back to Celebrations
+          ← Back to Attendance
         </button>
         
         <button
@@ -1173,7 +993,7 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
             zIndex: 11 // Highest priority for the continue button
           }}
         >
-          Continue to Choices →
+          Continue to Weather →
         </button>
       </div>
 

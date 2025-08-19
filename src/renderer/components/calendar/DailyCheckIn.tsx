@@ -445,7 +445,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
 
   return (
     <div className={containerClassName}>
-      {/* Progress Indicator */}
+      {/* Navigation Bar */}
       <div style={{
         position: 'fixed',
         top: '1rem',
@@ -460,7 +460,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         fontSize: '0.9rem',
         fontWeight: '600'
       }}>
-        Step {currentStep} of 10
+        Morning Meeting - Step {currentStep} of 10
         <div style={{
           width: '200px',
           height: '4px',

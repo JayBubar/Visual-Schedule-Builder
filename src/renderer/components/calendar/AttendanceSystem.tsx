@@ -296,7 +296,7 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
             transition: 'all 0.3s ease'
           }}
         >
-          {remainingStudents.length === 0 ? 'Continue to Calendar Talk' : 'Taking Attendance...'}
+          {remainingStudents.length === 0 ? 'Continue to I Will...' : 'Taking Attendance...'}
         </button>
       </div>
 

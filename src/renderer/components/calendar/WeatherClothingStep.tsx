@@ -165,14 +165,14 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
           marginBottom: '0.5rem',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
-          🌤️ Weather & What We Wear
+          🌤️ Let's Look Outside
         </h2>
         <p style={{
           fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
           color: 'rgba(255,255,255,0.9)',
           marginBottom: '0'
         }}>
-          Let's check the weather and talk about what to wear today!
+          PICK what weather you see
         </p>
       </div>
 
@@ -447,7 +447,7 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
             minHeight: '60px'
           }}
         >
-          Continue to Celebrations →
+          Continue to What are we wearing →
         </button>
       </div>
     </div>

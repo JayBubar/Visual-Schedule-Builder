@@ -705,80 +705,6 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
   );
 };
 
-  // Test buttons for debugging (temporarily for troubleshooting)
-  const addTestCelebrationButton = (
-    <div style={{ 
-      position: 'fixed', 
-      top: '10px', 
-      right: '10px', 
-      zIndex: 9999,
-      display: 'flex',
-      gap: '5px'
-    }}>
-      <button
-        onClick={() => {
-          console.log('🧪 Testing celebration data...');
-          console.log('📋 UnifiedDataService.getSettings():', UnifiedDataService.getSettings());
-          console.log('🗄️ localStorage calendarSettings:', localStorage.getItem('calendarSettings'));
-          
-          // Add a test celebration directly to UnifiedDataService
-          const testSettings = {
-            dailyCheckIn: {
-              celebrations: {
-                enabled: true,
-                customCelebrations: [{
-                  id: 'manual_test',
-                  name: 'Manual Test Celebration',
-                  emoji: '🎯',
-                  message: 'This celebration was added manually for testing!',
-                  date: new Date().toISOString().split('T')[0],
-                  enabled: true,
-                  isRecurring: false
-                }]
-              }
-            }
-          };
-          
-          UnifiedDataService.updateSettings(testSettings);
-          window.dispatchEvent(new CustomEvent('unifiedSettingsChanged', { detail: testSettings }));
-          
-          console.log('✅ Added manual test celebration');
-          alert('Test celebration added! Check console for details.');
-        }}
-        style={{
-          background: '#007bff',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          padding: '8px 12px',
-          fontSize: '12px',
-          cursor: 'pointer'
-        }}
-      >
-        🧪 Add Test Celebration
-      </button>
-      
-      <button
-        onClick={() => {
-          console.log('🧪 Testing birthday data...');
-          console.log('👥 All students:', students);
-          console.log('🎂 Birthday check results:', getTodaysBirthdays());
-          alert('Birthday test complete! Check console for details.');
-        }}
-        style={{
-          background: '#28a745',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          padding: '8px 12px',
-          fontSize: '12px',
-          cursor: 'pointer'
-        }}
-      >
-        🎂 Test Birthdays
-      </button>
-    </div>
-  );
 
   return (
     <div style={{
@@ -789,8 +715,6 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
       flexDirection: 'column',
       gap: '2rem'
     }}>
-      {/* Add test buttons */}
-      {addTestCelebrationButton}
       {/* Header */}
       <div>
         <h2 style={{
@@ -990,7 +914,7 @@ const CustomCelebrationManager: React.FC<CustomCelebrationManagerProps> = ({ cur
             transition: 'all 0.3s ease'
           }}
         >
-          Continue to Behavior Goals →
+          Continue to Review →
         </button>
       </div>
 
