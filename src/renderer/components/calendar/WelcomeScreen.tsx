@@ -98,16 +98,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
   return (
     <div style={{
-      padding: '3rem 2rem',
+      padding: '2rem',
       textAlign: 'center',
-      minHeight: '600px',
+      minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: '2rem',
+      gap: '1.5rem',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'auto',
+      paddingBottom: '100px' // Ensure button is always visible
     }}>
       {/* Floating Background Elements */}
       <div style={{
