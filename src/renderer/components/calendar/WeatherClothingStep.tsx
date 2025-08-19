@@ -132,8 +132,7 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
   const handleWeatherUpdate = (weather: WeatherData) => {
     setCurrentWeather(weather);
     onWeatherUpdate(weather);
-    // Auto-show clothing discussion after weather loads
-    setTimeout(() => setShowClothingDiscussion(true), 2000);
+    // Manual advancement - user must click to show clothing discussion
   };
 
   const handleClothingSelect = (item: string) => {
@@ -256,6 +255,32 @@ const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({
             This is typical {season.name.toLowerCase()} weather for our area
           </p>
         </div>
+
+        {/* Show Clothing Discussion Button */}
+        {currentWeather && !showClothingDiscussion && (
+          <div style={{
+            textAlign: 'center',
+            flexShrink: 0
+          }}>
+            <button
+              onClick={() => setShowClothingDiscussion(true)}
+              style={{
+                background: 'rgba(34, 197, 94, 0.8)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                padding: '1rem 2rem',
+                fontSize: 'clamp(1rem, 2.2vw, 1.2rem)',
+                fontWeight: '700',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              👕 What Should We Wear Today?
+            </button>
+          </div>
+        )}
 
         {/* Clothing Discussion */}
         {showClothingDiscussion && clothingSuggestions.length > 0 && (

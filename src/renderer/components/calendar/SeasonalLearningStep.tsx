@@ -10,6 +10,14 @@ interface SeasonalLearningStepProps {
     temperatureUnit?: 'F' | 'C';
     icon: string;
   } | null;
+  weatherVocabulary?: {
+    weatherWords: string[];
+    summerWords: string[];
+    fallWords: string[];
+    winterWords: string[];
+    springWords: string[];
+    weatherFacts: string[];
+  } | null;
 }
 
 interface SeasonalActivity {
@@ -259,7 +267,8 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   onNext,
   onBack,
   currentDate,
-  weather
+  weather,
+  weatherVocabulary
 }) => {
   const [currentActivity, setCurrentActivity] = useState<SeasonalActivity | null>(null);
   const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
@@ -277,7 +286,52 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   };
 
   const currentSeason = getCurrentSeason();
-  const seasonalTheme = SEASONAL_THEMES[currentSeason];
+  
+  // Get vocabulary from settings with fallbacks
+  const getSeasonalVocabulary = (season: string): string[] => {
+    if (!weatherVocabulary) {
+      return SEASONAL_THEMES[season]?.vocabulary || [];
+    }
+    
+    switch (season) {
+      case 'spring':
+        return weatherVocabulary.springWords?.length > 0 
+          ? weatherVocabulary.springWords 
+          : ['flowers', 'rain', 'green', 'growing', 'warm'];
+      case 'summer':
+        return weatherVocabulary.summerWords?.length > 0 
+          ? weatherVocabulary.summerWords 
+          : ['hot', 'beach', 'swimming', 'vacation', 'sunshine'];
+      case 'fall':
+        return weatherVocabulary.fallWords?.length > 0 
+          ? weatherVocabulary.fallWords 
+          : ['leaves', 'cool', 'harvest', 'pumpkin', 'orange'];
+      case 'winter':
+        return weatherVocabulary.winterWords?.length > 0 
+          ? weatherVocabulary.winterWords 
+          : ['cold', 'snow', 'ice', 'coat', 'mittens'];
+      default:
+        return SEASONAL_THEMES[season]?.vocabulary || [];
+    }
+  };
+
+  // Get weather facts from settings with fallbacks
+  const getWeatherFacts = (): string[] => {
+    if (weatherVocabulary?.weatherFacts?.length > 0) {
+      return weatherVocabulary.weatherFacts;
+    }
+    return [
+      'Rain helps plants grow',
+      'Sun gives us energy', 
+      'Snow is frozen water',
+      'Wind can help birds fly faster'
+    ];
+  };
+
+  const seasonalTheme = {
+    ...SEASONAL_THEMES[currentSeason],
+    vocabulary: getSeasonalVocabulary(currentSeason)
+  };
 
   // Auto-start with vocabulary display
   useEffect(() => {

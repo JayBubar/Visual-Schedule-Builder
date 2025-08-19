@@ -615,7 +615,7 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
                 fontSize: '0.9rem',
                 marginBottom: '1rem'
               }}>
-                No custom celebrations yet. Add them in the Daily Check-In celebration step.
+                No custom celebrations yet. Add them in the Morning Meeting celebration step.
               </div>
             )}
           </div>
@@ -647,7 +647,7 @@ const CalendarSettingsComponent: React.FC<CalendarSettingsProps> = ({
             fontSize: '0.9rem',
             color: 'rgba(255,255,255,0.8)'
           }}>
-            Add custom behavior commitment statements that will appear alongside the default ones in Daily Check-In.
+            Add custom behavior commitment statements that will appear alongside the default ones in Morning Meeting.
           </div>
 
           {/* Custom Behavior Statements by Category */}

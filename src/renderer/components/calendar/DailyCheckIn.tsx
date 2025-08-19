@@ -62,6 +62,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showCelebrationAnimation, setShowCelebrationAnimation] = useState(false);
+  const [weatherVocab, setWeatherVocab] = useState(null);
 
   useEffect(() => {
     try {
@@ -120,7 +121,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       // Load settings from unified data service - both calendar and dailyCheckIn settings
       const unifiedSettings = UnifiedDataService.getSettings();
       
-      // Load Daily Check-In settings from the new Settings structure
+      // Load Morning Meeting settings from the new Settings structure
       if (unifiedSettings.dailyCheckIn) {
         setDailyCheckInSettings(unifiedSettings.dailyCheckIn);
       }
@@ -172,6 +173,13 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
     }
   }, [currentDate, isLoading]);
 
+  // Load weather vocabulary from settings
+  useEffect(() => {
+    const settings = UnifiedDataService.getSettings();
+    const vocab = settings?.morningMeeting?.weatherVocabulary;
+    setWeatherVocab(vocab);
+  }, []);
+
   // Listen for settings changes from the Settings component
   useEffect(() => {
     const handleSettingsChange = (event: CustomEvent) => {
@@ -179,6 +187,11 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
       if (newSettings.dailyCheckIn) {
         setDailyCheckInSettings(newSettings.dailyCheckIn);
         console.log('🔄 DailyCheckIn settings updated from Settings component:', newSettings.dailyCheckIn);
+      }
+      // Update weather vocabulary when settings change
+      if (newSettings.morningMeeting?.weatherVocabulary) {
+        setWeatherVocab(newSettings.morningMeeting.weatherVocabulary);
+        console.log('🌤️ Weather vocabulary updated from Settings:', newSettings.morningMeeting.weatherVocabulary);
       }
     };
 
@@ -312,7 +325,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
   console.log('- todayCheckIn:', todayCheckIn);
 
   const handleFinalConfirmation = () => {
-    console.log('🚀 Daily Check-In Complete - Checking for temporary schedule');
+    console.log('🚀 Morning Meeting Complete - Checking for temporary schedule');
     
     // Save any final data
     if (todayCheckIn) {
@@ -375,7 +388,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
         <div className="full-screen-content-wrapper">
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
-            <h2>Loading Daily Check-In...</h2>
+            <h2>Loading Morning Meeting...</h2>
           </div>
         </div>
       </div>
@@ -522,13 +535,14 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({
           />
         )}
 
-        {/* Step :6 Seasonal Learning */}
+        {/* Step 6: Seasonal Learning */}
         {currentStep === 6 && (
           <SeasonalLearningStep
             onNext={handleNext}
             onBack={handleBack}
             currentDate={currentDate}
             weather={todayCheckIn?.weather}
+            weatherVocabulary={weatherVocab}
           />
         )}
 
