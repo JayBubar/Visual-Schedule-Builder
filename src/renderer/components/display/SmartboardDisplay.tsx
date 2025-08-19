@@ -7,6 +7,65 @@ import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 
+// Video Button Component
+interface VideoButtonProps {
+  label: string;
+  videoUrl?: string;
+  icon: string;
+  color: string;
+}
+
+const VideoButton: React.FC<VideoButtonProps> = ({ label, videoUrl, icon, color }) => {
+  const handleClick = () => {
+    if (videoUrl) {
+      // Open video in new window
+      window.open(videoUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={!videoUrl}
+      style={{
+        background: videoUrl ? 
+          `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)` : 
+          'rgba(255,255,255,0.1)',
+        border: videoUrl ? `2px solid ${color}` : '2px solid rgba(255,255,255,0.2)',
+        borderRadius: '12px',
+        color: 'white',
+        padding: 'clamp(0.5rem, 1vh, 0.75rem) clamp(0.75rem, 1.5vw, 1rem)',
+        fontSize: 'clamp(0.8rem, 1.5vw, 1rem)',
+        fontWeight: '600',
+        cursor: videoUrl ? 'pointer' : 'not-allowed',
+        backdropFilter: 'blur(10px)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        opacity: videoUrl ? 1 : 0.5,
+        transition: 'all 0.3s ease',
+        minWidth: 'clamp(120px, 15vw, 160px)'
+      }}
+      onMouseEnter={(e) => {
+        if (videoUrl) {
+          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.boxShadow = `0 4px 20px ${color}40`;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (videoUrl) {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = 'none';
+        }
+      }}
+      title={videoUrl ? `Play ${label}` : `No ${label} selected`}
+    >
+      <span style={{ fontSize: '1.2em' }}>{icon}</span>
+      <span style={{ fontSize: '0.9em' }}>{label}</span>
+    </button>
+  );
+};
+
 // Utility function to get today's behavior commitments
 const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
   try {
@@ -1053,6 +1112,20 @@ useEffect(() => {
     }
   }, [isChoiceItemTime, currentActivityIndex]);
 
+  // Function to get selected videos from localStorage
+  const getSelectedVideo = (slot: 'move1' | 'move2' | 'lesson1' | 'lesson2'): string | undefined => {
+    try {
+      const selectedVideos = localStorage.getItem('selectedDisplayVideos');
+      if (selectedVideos) {
+        const videos = JSON.parse(selectedVideos);
+        return videos[slot]?.url;
+      }
+    } catch (error) {
+      console.error('Error loading selected videos:', error);
+    }
+    return undefined;
+  };
+
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
     return null;
@@ -1503,135 +1576,166 @@ useEffect(() => {
       {/* Out of Class Display - Top Right Corner */}
       <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
 
-      {/* Header - Fixed Height with Navigation */}
+      {/* Header - Fixed Height with Navigation and Video Buttons */}
       <div style={{
-        padding: '0.75rem 1rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-        position: 'relative',
-        flexShrink: 0,
         height: `${headerHeight}px`,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'space-between',
+        padding: '0 2rem',
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(10px)',
+        position: 'relative',
+        zIndex: 1000,
+        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+        flexShrink: 0
       }}>
-        {/* LEFT: Home Button */}
+        
+        {/* LEFT SIDE: Move Videos - Moved more toward center */}
+        <div style={{ display: 'flex', gap: '1rem', marginLeft: '6rem' }}>
+          <VideoButton
+            label="Move Video 1"
+            videoUrl={getSelectedVideo('move1')}
+            icon="🏃‍♀️"
+            color="#e74c3c"
+          />
+          <VideoButton
+            label="Move Video 2" 
+            videoUrl={getSelectedVideo('move2')}
+            icon="🤸‍♂️"
+            color="#e67e22"
+          />
+        </div>
+
+        {/* CENTER: Activity Title (keep existing) */}
+        <div style={{ textAlign: 'center', flex: 1 }}>
+          <h1 style={{
+            margin: '0',
+            fontSize: 'clamp(1.5rem, 3vw, 2.5rem)',
+            fontWeight: '700',
+            color: 'white',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>
+            {currentActivity?.icon} {currentActivity?.name}
+          </h1>
+          <div style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '0.25rem' }}>
+            Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: Lesson Videos - Moved more toward center */}
+        <div style={{ display: 'flex', gap: '1rem', marginRight: '6rem' }}>
+          <VideoButton
+            label="Lesson Video 1"
+            videoUrl={getSelectedVideo('lesson1')}
+            icon="📚"
+            color="#3498db"
+          />
+          <VideoButton
+            label="Lesson Video 2"
+            videoUrl={getSelectedVideo('lesson2')}
+            icon="🎓"
+            color="#9b59b6"
+          />
+        </div>
+
+        {/* Navigation and Controls - Positioned absolutely */}
         {onNavigateHome && (
           <button
             onClick={onNavigateHome}
             style={{
               position: 'absolute',
+              bottom: '0.5rem',
               left: '1rem',
-              top: '50%',
-              transform: 'translateY(-50%)',
               background: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '8px',
               color: 'white',
-              padding: '0.75rem 1rem',
-              fontSize: '0.9rem',
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.8rem',
               cursor: 'pointer',
               fontWeight: '600',
               transition: 'all 0.3s ease',
               backdropFilter: 'blur(10px)',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.25rem'
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+              e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
             🏠 Home
           </button>
         )}
 
-        {/* CENTER: Activity Title */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{
-            margin: '0 0 0.25rem 0',
-            fontSize: '1.8rem',
-            fontWeight: '700',
-            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-          }}>
-            {currentActivity?.icon} {currentActivity?.name}
-          </h1>
-
-          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-            Activity {currentActivityIndex + 1} of {activeSchedule?.activities.length}
-          </div>
-        </div>
-
-        {/* RIGHT: Builder Button & Behavior Statements Toggle */}
-        <div style={{
-          position: 'absolute',
-          right: '1rem',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem' // Add a gap between the buttons
-        }}>
-          {onNavigateToBuilder && (
-            <button
-              onClick={onNavigateToBuilder}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: 'none',
-                borderRadius: '12px',
-                color: 'white',
-                padding: '0.75rem 1rem',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                fontWeight: '600',
-                transition: 'all 0.3s ease',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              🛠️ Builder
-            </button>
-          )}
-
-          {/* Behavior Statements Toggle */}
+        {onNavigateToBuilder && (
           <button
-            onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
+            onClick={onNavigateToBuilder}
             style={{
-              background: 'rgba(255, 255, 255, 0.15)',
+              position: 'absolute',
+              bottom: '0.5rem',
+              right: '1rem',
+              background: 'rgba(255, 255, 255, 0.2)',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               color: 'white',
-              padding: '0.3rem 0.6rem',
-              fontSize: '0.7rem',
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.8rem',
               cursor: 'pointer',
               fontWeight: '600',
-              transition: 'all 0.2s ease',
-              backdropFilter: 'blur(5px)'
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
+            🛠️ Builder
           </button>
-        </div>
+        )}
+
+        {/* Behavior Statements Toggle - Bottom Center */}
+        <button
+          onClick={() => setShowBehaviorStatements(!showBehaviorStatements)}
+          style={{
+            position: 'absolute',
+            bottom: '0.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(255, 255, 255, 0.15)',
+            border: 'none',
+            borderRadius: '6px',
+            color: 'white',
+            padding: '0.3rem 0.6rem',
+            fontSize: '0.7rem',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 0.2s ease',
+            backdropFilter: 'blur(5px)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+          }}
+        >
+          {showBehaviorStatements ? '👁️ Hide Goals' : '👁️ Show Goals'}
+        </button>
       </div>
 
       {/* Timer Controls - Fixed Height */}

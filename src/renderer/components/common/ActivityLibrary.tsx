@@ -1,6 +1,87 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
 
+// DisplayVideoCheckbox Component
+interface DisplayVideoCheckboxProps {
+  videoId: string;
+  slot: 'move1' | 'move2' | 'lesson1' | 'lesson2';
+  label: string;
+  video: any; // Use your video type
+}
+
+const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({ 
+  videoId, 
+  slot, 
+  label, 
+  video 
+}) => {
+  const [isSelected, setIsSelected] = useState(false);
+
+  // Load current selection on mount
+  useEffect(() => {
+    const selectedVideos = localStorage.getItem('selectedDisplayVideos');
+    if (selectedVideos) {
+      const videos = JSON.parse(selectedVideos);
+      setIsSelected(videos[slot]?.id === videoId);
+    }
+  }, [videoId, slot]);
+
+  const handleChange = (checked: boolean) => {
+    try {
+      const selectedVideos = localStorage.getItem('selectedDisplayVideos');
+      const videos = selectedVideos ? JSON.parse(selectedVideos) : {};
+      
+      if (checked) {
+        // Select this video for this slot
+        videos[slot] = {
+          id: videoId,
+          url: video.videoData?.videoUrl || video.url,
+          title: video.name
+        };
+      } else {
+        // Deselect this slot
+        delete videos[slot];
+      }
+      
+      localStorage.setItem('selectedDisplayVideos', JSON.stringify(videos));
+      setIsSelected(checked);
+      
+      // If selecting, deselect other videos for this slot
+      if (checked) {
+        // Trigger re-render of other checkboxes (you might need a context or state management)
+        window.dispatchEvent(new CustomEvent('displayVideoSelectionChanged'));
+      }
+    } catch (error) {
+      console.error('Error updating video selection:', error);
+    }
+  };
+
+  return (
+    <label style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: '0.5rem',
+      cursor: 'pointer',
+      padding: '0.25rem',
+      borderRadius: '4px',
+      background: isSelected ? 'rgba(102, 126, 234, 0.2)' : 'transparent'
+    }}>
+      <input
+        type="checkbox"
+        checked={isSelected}
+        onChange={(e) => handleChange(e.target.checked)}
+        style={{ margin: 0 }}
+      />
+      <span style={{ 
+        fontSize: '0.8rem',
+        fontWeight: isSelected ? '600' : '400'
+      }}>
+        {label}
+      </span>
+    </label>
+  );
+};
+
 // Utility function to generate unique IDs
 let idCounter = 0;
 const generateUniqueId = (prefix: string = 'id'): string => {
@@ -944,6 +1025,57 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                         <strong>Notes:</strong> {content.videoData.notes}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Add video selection checkboxes for videos */}
+                {content.contentType === 'video' && (
+                  <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: 'rgba(102, 126, 234, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(102, 126, 234, 0.3)'
+                  }}>
+                    <h4 style={{ 
+                      margin: '0 0 0.5rem 0', 
+                      fontSize: '0.9rem', 
+                      color: '#667eea',
+                      fontWeight: '600'
+                    }}>
+                      📺 Smartboard Display Options
+                    </h4>
+                    
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr 1fr', 
+                      gap: '0.5rem' 
+                    }}>
+                      <DisplayVideoCheckbox
+                        videoId={content.id}
+                        slot="move1"
+                        label="🏃‍♀️ Move Video 1"
+                        video={content}
+                      />
+                      <DisplayVideoCheckbox
+                        videoId={content.id}
+                        slot="lesson1"
+                        label="📚 Lesson Video 1"
+                        video={content}
+                      />
+                      <DisplayVideoCheckbox
+                        videoId={content.id}
+                        slot="move2"
+                        label="🤸‍♂️ Move Video 2"
+                        video={content}
+                      />
+                      <DisplayVideoCheckbox
+                        videoId={content.id}
+                        slot="lesson2"
+                        label="🎓 Lesson Video 2"
+                        video={content}
+                      />
+                    </div>
                   </div>
                 )}
 
