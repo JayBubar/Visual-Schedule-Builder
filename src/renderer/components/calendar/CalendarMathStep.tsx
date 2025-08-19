@@ -4,14 +4,14 @@
 import React, { useState, useEffect } from 'react';
 
 interface CalendarMathStepProps {
-  currentDate: Date;
   onNext: () => void;
   onBack: () => void;
+  currentDate?: Date; // Make optional
   selectedVideos?: string[]; // NEW: Video integration from Hub
 }
 
 const CalendarMathStep: React.FC<CalendarMathStepProps> = ({ 
-  currentDate, 
+  currentDate = new Date(), // Default to current date if not provided
   onNext, 
   onBack,
   selectedVideos

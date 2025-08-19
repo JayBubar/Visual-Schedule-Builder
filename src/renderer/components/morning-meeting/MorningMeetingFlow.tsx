@@ -478,7 +478,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes celebrationColors {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }

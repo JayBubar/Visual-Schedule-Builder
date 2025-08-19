@@ -6,11 +6,11 @@ import WeatherWidget from './WeatherWidget';
 import { CalendarSettings, WeatherData } from '../../types';
 
 interface WeatherClothingStepProps {
-  currentDate: Date;
-  calendarSettings: CalendarSettings | null;
-  onWeatherUpdate: (weather: WeatherData) => void;
   onNext: () => void;
   onBack: () => void;
+  currentDate?: Date; // Make optional
+  calendarSettings?: CalendarSettings | null; // Make optional
+  onWeatherUpdate?: (weather: WeatherData) => void; // Make optional
   selectedVideos?: string[]; // NEW: Video integration from Hub
   selectedVideo?: {
     id: string;
@@ -24,9 +24,9 @@ interface WeatherClothingStepProps {
 }
 
 const WeatherClothingStep: React.FC<WeatherClothingStepProps> = ({ 
-  currentDate,
-  calendarSettings, 
-  onWeatherUpdate,
+  currentDate = new Date(), // Default to current date
+  calendarSettings = null, // Default to null
+  onWeatherUpdate = () => {}, // Default to no-op function
   onNext, 
   onBack,
   selectedVideos,

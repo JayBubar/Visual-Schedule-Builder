@@ -6,6 +6,7 @@ import OutOfClassDisplay from './OutOfClassDisplay';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
+import MorningMeetingFlow from '../morning-meeting/MorningMeetingFlow';
 
 // Video Button Component
 interface VideoButtonProps {
@@ -1014,6 +1015,21 @@ useEffect(() => {
   // 🎯 AFTER ALL HOOKS: Now calculate derived values
   const activeSchedule = currentSchedule || fallbackSchedule;
   const currentActivity = activeSchedule?.activities[currentActivityIndex];
+
+  // 🎯 NEW CODE: Morning Meeting detection (ADD THIS)
+  if (currentActivity?.name === 'Morning Meeting') {
+    return (
+      <MorningMeetingFlow
+        students={realStudents}
+        staff={realStaff}
+        onComplete={() => {
+          // When MM completes, go back to normal activity flow
+          setCurrentActivityIndex(currentActivityIndex + 1);
+        }}
+        onNavigateHome={onNavigateHome}
+      />
+    );
+  }
 
   // Set initial timer when activity changes
   useEffect(() => {

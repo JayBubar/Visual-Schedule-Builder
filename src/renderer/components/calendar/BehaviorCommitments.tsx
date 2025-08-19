@@ -10,12 +10,12 @@ import UnifiedDataService from '../../services/unifiedDataService';
 import { DataMigrationUtility } from '../../utils/dataMigration';
 
 interface BehaviorCommitmentsProps {
-  currentDate: Date;
-  students: Student[];
-  todayCheckIn?: DailyCheckInType | null;
-  onUpdateCheckIn?: (checkIn: DailyCheckInType) => void;
   onNext: () => void;
   onBack: () => void;
+  currentDate?: Date; // Make optional
+  students?: Student[]; // Make optional
+  todayCheckIn?: DailyCheckInType | null;
+  onUpdateCheckIn?: (checkIn: DailyCheckInType) => void;
   selectedVideos?: string[]; // NEW: Video integration from Hub
   behaviorSettings?: {
     statements: string[];
@@ -24,8 +24,8 @@ interface BehaviorCommitmentsProps {
 }
 
 const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
-  currentDate,
-  students,
+  currentDate = new Date(), // Default to current date
+  students = [], // Default to empty array
   todayCheckIn,
   onUpdateCheckIn,
   onNext,

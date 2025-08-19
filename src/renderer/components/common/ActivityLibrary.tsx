@@ -608,6 +608,7 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
     { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
     { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
     { id: 'base-safety', name: 'Safety Drill', icon: '🛡️', category: 'other', contentType: 'activity', defaultDuration: 10, description: 'Emergency preparedness and safety practice', tags: ['safety', 'drill', 'emergency'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'morning-meeting-builtin', name: 'Morning Meeting', icon: '🌅', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Daily morning meeting with welcome, attendance, behavior commitments, and learning activities', tags: ['morning', 'routine', 'community', 'daily'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString(), materials: ['Morning Meeting Hub configuration'], instructions: 'Automated morning meeting flow guided by Morning Meeting Hub settings' },
   ];
 
   // Load custom content from UnifiedDataService

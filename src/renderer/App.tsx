@@ -189,8 +189,33 @@ const App: React.FC = () => {
   };
 
   const handleStartMyDay = () => {
+    // Create a temporary schedule with just Morning Meeting
+    const morningMeetingSchedule = {
+      id: `morning-meeting-${Date.now()}`,
+      name: 'Morning Meeting',
+      type: 'daily' as const,
+      startTime: '08:00',
+      activities: [
+        {
+          id: 'morning-meeting-activity',
+          name: 'Morning Meeting',
+          icon: '🌅',
+          duration: 30,
+          category: 'routine' as const,
+          type: 'activity' as const,
+          description: 'Daily morning meeting routine'
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // Set this as the selected schedule
+    setSelectedSchedule(morningMeetingSchedule);
+    
+    // Close start screen and go directly to display mode
     setShowStartScreen(false);
-    setCurrentView('calendar');
+    setCurrentView('display'); // This will open SmartboardDisplay with MM
   };
 
   const handleManageClassroom = () => {
