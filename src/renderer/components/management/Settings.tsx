@@ -57,6 +57,11 @@ interface SettingsData {
       springWords: string[];
       weatherFacts: string[];
     };
+    selectedVideos: {
+      weather: string | null;
+      seasonal: string | null;
+      behavior: string | null;
+    };
     behaviorCommitments?: {
       customStatements?: any[];
     };
@@ -146,6 +151,11 @@ const DEFAULT_SETTINGS: SettingsData = {
         "Wind can help birds fly faster",
         "The sun gives us light and warmth"
       ]
+    },
+    selectedVideos: {
+      weather: null,
+      seasonal: null,
+      behavior: null
     }
   },
   schedule: {
@@ -467,7 +477,8 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
             birthdaySettings: { ...DEFAULT_SETTINGS.morningMeeting.birthdaySettings, ...parsedSettings.morningMeeting?.birthdaySettings },
             welcomeSettings: { ...DEFAULT_SETTINGS.morningMeeting.welcomeSettings, ...parsedSettings.morningMeeting?.welcomeSettings },
             checkInFlow: { ...DEFAULT_SETTINGS.morningMeeting.checkInFlow, ...parsedSettings.morningMeeting?.checkInFlow },
-            weatherVocabulary: { ...DEFAULT_SETTINGS.morningMeeting.weatherVocabulary, ...parsedSettings.morningMeeting?.weatherVocabulary }
+            weatherVocabulary: { ...DEFAULT_SETTINGS.morningMeeting.weatherVocabulary, ...parsedSettings.morningMeeting?.weatherVocabulary },
+            selectedVideos: { ...DEFAULT_SETTINGS.morningMeeting.selectedVideos, ...parsedSettings.morningMeeting?.selectedVideos }
           },
           schedule: { ...DEFAULT_SETTINGS.schedule, ...parsedSettings.schedule },
           notifications: { ...DEFAULT_SETTINGS.notifications, ...parsedSettings.notifications },
@@ -1167,112 +1178,145 @@ const Settings: React.FC<SettingsProps> = ({ isActive }) => {
               <div className="settings-subsection">
                 <h4>📺 Video Selection</h4>
                 <p className="setting-description">
-                  Manage video selections for Smartboard Display. Videos selected in the Activity Library will appear as quick-access buttons during activities.
+                  Select videos from your Activity Library to use during Morning Meeting activities.
                 </p>
                 
-                <div className="settings-group">
-                  <label className="setting-label">Current Video Selections</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                    {(() => {
-                      try {
-                        const selectedVideos = localStorage.getItem('selectedDisplayVideos');
-                        const videos = selectedVideos ? JSON.parse(selectedVideos) : {};
-                        
-                        const videoSlots = [
-                          { key: 'move1', label: 'Move Video 1', icon: '🏃‍♀️', color: '#e74c3c' },
-                          { key: 'move2', label: 'Move Video 2', icon: '🤸‍♂️', color: '#e67e22' },
-                          { key: 'lesson1', label: 'Lesson Video 1', icon: '📚', color: '#3498db' },
-                          { key: 'lesson2', label: 'Lesson Video 2', icon: '🎓', color: '#9b59b6' }
-                        ];
+                {(() => {
+                  // Load Activity Library videos and filter by tags
+                  const weatherVideos = (() => {
+                    try {
+                      const activities = UnifiedDataService.getAllActivities();
+                      return activities.filter(item => 
+                        (item as any).contentType === 'video' && 
+                        (item as any).tags?.includes('weather')
+                      );
+                    } catch (error) {
+                      return [];
+                    }
+                  })();
+                  
+                  const seasonalVideos = (() => {
+                    try {
+                      const activities = UnifiedDataService.getAllActivities();
+                      return activities.filter(item => 
+                        (item as any).contentType === 'video' && 
+                        (item as any).tags?.includes('seasonal')
+                      );
+                    } catch (error) {
+                      return [];
+                    }
+                  })();
+                  
+                  const behaviorVideos = (() => {
+                    try {
+                      const activities = UnifiedDataService.getAllActivities();
+                      return activities.filter(item => 
+                        (item as any).contentType === 'video' && 
+                        (item as any).tags?.includes('behavior')
+                      );
+                    } catch (error) {
+                      return [];
+                    }
+                  })();
 
-                        return videoSlots.map(slot => {
-                          const video = videos[slot.key];
-                          return (
-                            <div key={slot.key} style={{
-                              background: video ? `linear-gradient(135deg, ${slot.color}20, ${slot.color}10)` : '#f8f9fa',
-                              border: `2px solid ${video ? slot.color : '#dee2e6'}`,
-                              borderRadius: '12px',
-                              padding: '1rem',
-                              textAlign: 'center'
-                            }}>
-                              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{slot.icon}</div>
-                              <div style={{ fontWeight: '600', marginBottom: '0.5rem', color: '#495057' }}>
-                                {slot.label}
-                              </div>
-                              {video ? (
-                                <div>
-                                  <div style={{ 
-                                    fontSize: '0.875rem', 
-                                    color: '#28a745', 
-                                    fontWeight: '600',
-                                    marginBottom: '0.25rem'
-                                  }}>
-                                    ✅ {video.title}
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const updatedVideos = { ...videos };
-                                      delete updatedVideos[slot.key];
-                                      localStorage.setItem('selectedDisplayVideos', JSON.stringify(updatedVideos));
-                                      // Force re-render by updating a dummy state
-                                      setHasUnsavedChanges(prev => !prev);
-                                      setTimeout(() => setHasUnsavedChanges(prev => !prev), 10);
-                                    }}
-                                    style={{
-                                      background: '#dc3545',
-                                      color: 'white',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      padding: '0.25rem 0.5rem',
-                                      fontSize: '0.75rem',
-                                      cursor: 'pointer'
-                                    }}
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ) : (
-                                <div style={{ fontSize: '0.875rem', color: '#6c757d', fontStyle: 'italic' }}>
-                                  No video selected
-                                </div>
-                              )}
-                            </div>
-                          );
-                        });
-                      } catch (error) {
-                        return (
-                          <div style={{ 
-                            gridColumn: '1 / -1', 
-                            textAlign: 'center', 
-                            color: '#6c757d',
-                            fontStyle: 'italic'
-                          }}>
-                            No video selections found
-                          </div>
-                        );
-                      }
-                    })()}
-                  </div>
-                </div>
+                  return (
+                    <>
+                      <div className="settings-group">
+                        <label className="setting-label">🌤️ Weather Video</label>
+                        <select
+                          value={settings.morningMeeting.selectedVideos.weather || ''}
+                          onChange={(e) => updateSetting('morningMeeting', 'selectedVideos', {
+                            ...settings.morningMeeting.selectedVideos,
+                            weather: e.target.value || null
+                          })}
+                          className="text-input"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <option value="">No weather video selected</option>
+                          {weatherVideos.map(video => (
+                            <option key={video.id} value={video.id}>
+                              {video.name}
+                            </option>
+                          ))}
+                        </select>
+                        {weatherVideos.length === 0 && (
+                          <p className="setting-description" style={{ color: '#dc3545', fontStyle: 'italic' }}>
+                            No weather videos found. Add videos with "weather" tag in Activity Library.
+                          </p>
+                        )}
+                      </div>
 
-                <div className="settings-group">
-                  <div style={{
-                    background: '#e3f2fd',
-                    border: '1px solid #90caf9',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    fontSize: '0.875rem',
-                    color: '#1565c0'
-                  }}>
-                    <strong>💡 How to select videos:</strong>
-                    <ol style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '1rem' }}>
-                      <li>Go to the Activity Library</li>
-                      <li>Find video activities you want to use</li>
-                      <li>Check the boxes for "Smartboard Display Options"</li>
-                      <li>Selected videos will appear as quick-access buttons in the Smartboard Display</li>
-                    </ol>
-                  </div>
-                </div>
+                      <div className="settings-group">
+                        <label className="setting-label">🍂 Seasonal Video</label>
+                        <select
+                          value={settings.morningMeeting.selectedVideos.seasonal || ''}
+                          onChange={(e) => updateSetting('morningMeeting', 'selectedVideos', {
+                            ...settings.morningMeeting.selectedVideos,
+                            seasonal: e.target.value || null
+                          })}
+                          className="text-input"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <option value="">No seasonal video selected</option>
+                          {seasonalVideos.map(video => (
+                            <option key={video.id} value={video.id}>
+                              {video.name}
+                            </option>
+                          ))}
+                        </select>
+                        {seasonalVideos.length === 0 && (
+                          <p className="setting-description" style={{ color: '#dc3545', fontStyle: 'italic' }}>
+                            No seasonal videos found. Add videos with "seasonal" tag in Activity Library.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="settings-group">
+                        <label className="setting-label">💪 Behavior Video</label>
+                        <select
+                          value={settings.morningMeeting.selectedVideos.behavior || ''}
+                          onChange={(e) => updateSetting('morningMeeting', 'selectedVideos', {
+                            ...settings.morningMeeting.selectedVideos,
+                            behavior: e.target.value || null
+                          })}
+                          className="text-input"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <option value="">No behavior video selected</option>
+                          {behaviorVideos.map(video => (
+                            <option key={video.id} value={video.id}>
+                              {video.name}
+                            </option>
+                          ))}
+                        </select>
+                        {behaviorVideos.length === 0 && (
+                          <p className="setting-description" style={{ color: '#dc3545', fontStyle: 'italic' }}>
+                            No behavior videos found. Add videos with "behavior" tag in Activity Library.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="settings-group">
+                        <div style={{
+                          background: '#e8f5e8',
+                          border: '1px solid #4caf50',
+                          borderRadius: '8px',
+                          padding: '1rem',
+                          fontSize: '0.875rem',
+                          color: '#2e7d32'
+                        }}>
+                          <strong>💡 How to add videos:</strong>
+                          <ol style={{ margin: '0.5rem 0 0 1rem', paddingLeft: '1rem' }}>
+                            <li>Go to the Activity Library</li>
+                            <li>Create or edit video activities</li>
+                            <li>Add appropriate tags: "weather", "seasonal", or "behavior"</li>
+                            <li>Return here to select them from the dropdowns</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* 3. Behavior Statements */}
