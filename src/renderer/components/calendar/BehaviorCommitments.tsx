@@ -12,28 +12,15 @@ import { DataMigrationUtility } from '../../utils/dataMigration';
 interface BehaviorCommitmentsProps {
   currentDate: Date;
   students: Student[];
-  todayCheckIn: DailyCheckInType | null;
-  onUpdateCheckIn: (checkIn: DailyCheckInType) => void;
+  todayCheckIn?: DailyCheckInType | null;
+  onUpdateCheckIn?: (checkIn: DailyCheckInType) => void;
   onNext: () => void;
   onBack: () => void;
-  selectedVideo?: {
-    id: string;
-    title: string;
-    videoData: {
-      url: string;
-      title: string;
-      description: string;
-    };
-  } | null;
-}
-
-interface BehaviorCategory {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  commitments: string[];
-  description: string;
+  selectedVideos?: string[]; // NEW: Video integration from Hub
+  behaviorSettings?: {
+    statements: string[];
+    enabled: boolean;
+  };
 }
 
 const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
@@ -43,429 +30,81 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
   onUpdateCheckIn,
   onNext,
   onBack,
-  selectedVideo
+  selectedVideos = [],
+  behaviorSettings
 }) => {
-  // Default behavior statements
-  const DEFAULT_BEHAVIOR_STATEMENTS: BehaviorStatement[] = [
-    { id: 'kindness_1', text: 'I will be kind to my friends', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'kindness_2', text: 'I will help others when they need it', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'kindness_3', text: 'I will share with my classmates', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'kindness_4', text: 'I will use nice words', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'kindness_5', text: 'I will include everyone in activities', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'kindness_6', text: 'I will say please and thank you', category: 'kindness', emoji: '🤝', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    
-    { id: 'respect_1', text: 'I will listen when others are talking', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'respect_2', text: 'I will raise my hand to speak', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'respect_3', text: 'I will take care of our classroom', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'respect_4', text: 'I will follow directions the first time', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'respect_5', text: 'I will use my inside voice', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'respect_6', text: 'I will keep my hands to myself', category: 'respect', emoji: '👂', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    
-    { id: 'effort_1', text: 'I will try my best in all activities', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'effort_2', text: 'I will ask for help when I need it', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'effort_3', text: 'I will finish my work', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'effort_4', text: 'I will not give up when things are hard', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'effort_5', text: 'I will pay attention during lessons', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'effort_6', text: 'I will practice what I learn', category: 'effort', emoji: '💪', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    
-    { id: 'responsibility_1', text: 'I will clean up after myself', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'responsibility_2', text: 'I will take care of my belongings', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'responsibility_3', text: 'I will remember my homework', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'responsibility_4', text: 'I will be ready for activities', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'responsibility_5', text: 'I will make good choices', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'responsibility_6', text: 'I will tell the truth', category: 'responsibility', emoji: '📋', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    
-    { id: 'safety_1', text: 'I will walk in the hallways', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'safety_2', text: 'I will use materials safely', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'safety_3', text: 'I will ask before leaving my seat', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'safety_4', text: 'I will keep food out of my mouth during non-eating times', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'safety_5', text: 'I will follow playground rules', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'safety_6', text: 'I will tell an adult if someone is hurt', category: 'safety', emoji: '🛡️', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    
-    { id: 'learning_1', text: 'I will ask questions when I don\'t understand', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'learning_2', text: 'I will listen to learn new things', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'learning_3', text: 'I will try new activities', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'learning_4', text: 'I will help my friends learn too', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'learning_5', text: 'I will celebrate my mistakes as learning', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() },
-    { id: 'learning_6', text: 'I will be proud of my progress', category: 'learning', emoji: '📚', isActive: true, isDefault: true, createdAt: new Date().toISOString() }
-  ];
+  // State management
+  const [behaviorStatements, setBehaviorStatements] = useState<BehaviorStatement[]>([]);
+  const [studentChoices, setStudentChoices] = useState<{ [studentId: string]: string }>({});
+  const [isLoading, setIsLoading] = useState(true);
 
-  // NEW: Individual student choice tracking
-  const [studentChoices, setStudentChoices] = useState<{[studentId: string]: string}>({});
-  const [completedStudents, setCompletedStudents] = useState<Set<string>>(new Set());
-  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
-  const [showCelebration, setShowCelebration] = useState<string | null>(null);
+  // Dynamic screen sizing - SmartboardDisplay compatible pattern
+  const availableHeight = window.innerHeight - 140; // Account for header/footer
+  const contentHeight = availableHeight - 120; // Space for navigation
 
-  // Replace the hardcoded behaviorOptions array with:
-  const [behaviorStatements, setBehaviorStatements] = useState<BehaviorStatement[]>(DEFAULT_BEHAVIOR_STATEMENTS);
-  const [isLoadingStatements, setIsLoadingStatements] = useState(true);
-
-  // Dynamic behavior categories - will be populated from custom statements or defaults
-  const [behaviorCategories, setBehaviorCategories] = useState<BehaviorCategory[]>([]);
-
-  // FIXED: Load behavior statements with proper data loading (same approach as celebrations)
   useEffect(() => {
-    const loadBehaviorStatementsFixed = () => {
-      try {
-        console.log('🔄 [DEBUG] Loading behavior statements...');
-        setIsLoadingStatements(true);
+    loadBehaviorStatements();
+  }, [behaviorSettings]);
+
+  const loadBehaviorStatements = async () => {
+    setIsLoading(true);
+    try {
+      // Use settings from Hub if available, otherwise load from storage
+      if (behaviorSettings?.enabled && behaviorSettings.statements) {
+        const statements = behaviorSettings.statements.map((statement, index) => ({
+          id: `statement-${index}`,
+          text: statement,
+          isActive: true
+        }));
+        setBehaviorStatements(statements);
+      } else {
+        // Fallback to existing system
+        const settings = UnifiedDataService.getSettings();
+        const dailyCheckInSettings = settings?.dailyCheckInSettings;
         
-        // Method 1: Try UnifiedDataService (same pattern that worked for celebrations)
-        const unifiedSettings = UnifiedDataService.getSettings();
-        console.log('📋 [DEBUG] UnifiedDataService settings:', unifiedSettings);
-        
-        let customStatements = [];
-        
-        // Check multiple possible paths for custom statements
-        if (unifiedSettings?.morningMeeting?.behaviorCommitments?.customStatements) {
-          customStatements = unifiedSettings.morningMeeting.behaviorCommitments.customStatements;
-          console.log('✅ [DEBUG] Found custom statements in morningMeeting.behaviorCommitments:', customStatements);
-        } else if (unifiedSettings?.behaviorCommitments?.customStatements) {
-          customStatements = unifiedSettings.behaviorCommitments.customStatements;
-          console.log('✅ [DEBUG] Found custom statements in root behaviorCommitments:', customStatements);
-        } else if (unifiedSettings?.customBehaviorStatements) {
-          customStatements = unifiedSettings.customBehaviorStatements;
-          console.log('✅ [DEBUG] Found custom statements in root customBehaviorStatements:', customStatements);
+        if (dailyCheckInSettings?.behaviorStatements) {
+          setBehaviorStatements(dailyCheckInSettings.behaviorStatements);
         } else {
-          console.log('ℹ️ [DEBUG] No custom statements found in UnifiedDataService');
+          // Default statements
+          setBehaviorStatements([
+            { id: '1', text: 'I will be kind to others', isActive: true },
+            { id: '2', text: 'I will listen when others are speaking', isActive: true },
+            { id: '3', text: 'I will raise my hand before speaking', isActive: true },
+            { id: '4', text: 'I will do my best work', isActive: true }
+          ]);
         }
-        
-        // Method 2: Try legacy calendarSettings (same as celebrations)
-        if (customStatements.length === 0) {
-          console.log('🔍 [DEBUG] Checking legacy calendarSettings for behavior statements...');
-          const legacySettings = localStorage.getItem('calendarSettings');
-          if (legacySettings) {
-            const parsed = JSON.parse(legacySettings);
-            console.log('📋 [DEBUG] Legacy settings:', parsed);
-            if (parsed.customBehaviorCommitments) {
-              // Convert legacy format: { categoryId: string[] } to BehaviorStatement[]
-              const legacyStatements = parsed.customBehaviorCommitments;
-              customStatements = [];
-              
-              Object.keys(legacyStatements).forEach(categoryId => {
-                const statements = legacyStatements[categoryId] || [];
-                statements.forEach((statement, index) => {
-                  customStatements.push({
-                    id: `legacy_${categoryId}_${index}`,
-                    text: statement,
-                    category: categoryId,
-                    isActive: true,
-                    isDefault: false,
-                    createdAt: new Date().toISOString()
-                  });
-                });
-              });
-              
-              console.log('✅ [DEBUG] Converted legacy behavior statements:', customStatements);
-            }
-          }
-        }
-        
-        // Method 3: Create behavior categories with custom statements
-        if (customStatements.length > 0) {
-          // Convert custom statements to category format for the modal
-          const categoriesWithCustom = convertStatementsToCategoryFormat(customStatements);
-          setBehaviorCategories(categoriesWithCustom);
-          setBehaviorStatements(customStatements); // Keep original format for other uses
-          console.log('📊 [DEBUG] Using behavior categories with custom statements:', categoriesWithCustom);
-        } else {
-          // Use defaults - create default categories
-          console.log('🧪 [DEBUG] No custom statements found, using defaults...');
-          const defaultCategories = createDefaultCategories();
-          setBehaviorCategories(defaultCategories);
-          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
-          console.log('🧪 [DEBUG] Using default categories:', defaultCategories);
-        }
-        
-      } catch (error) {
-        console.error('❌ [DEBUG] Error loading behavior statements:', error);
-        setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
-      } finally {
-        setIsLoadingStatements(false);
       }
-    };
-
-    loadBehaviorStatementsFixed();
-  }, []);
-
-  // Helper function to create default categories from DEFAULT_BEHAVIOR_STATEMENTS
-  const createDefaultCategories = (): BehaviorCategory[] => {
-    const categoryMeta = {
-      kindness: { name: 'Kindness', icon: '💝', color: '#e91e63', description: 'Being caring and helpful to others' },
-      respect: { name: 'Respect', icon: '🤝', color: '#2196f3', description: 'Treating others and our classroom with care' },
-      effort: { name: 'Effort', icon: '💪', color: '#ff9800', description: 'Trying my best in everything I do' },
-      responsibility: { name: 'Responsibility', icon: '🎯', color: '#4caf50', description: 'Taking care of myself and my belongings' },
-      safety: { name: 'Safety', icon: '🛡️', color: '#f44336', description: 'Keeping myself and others safe' },
-      learning: { name: 'Learning', icon: '📚', color: '#9c27b0', description: 'Growing my mind and skills every day' }
-    };
-
-    // Group default statements by category
-    const defaultByCategory: { [key: string]: string[] } = {};
-    DEFAULT_BEHAVIOR_STATEMENTS.forEach(statement => {
-      const category = statement.category;
-      if (!defaultByCategory[category]) {
-        defaultByCategory[category] = [];
-      }
-      defaultByCategory[category].push(statement.text);
-    });
-
-    // Create categories with default statements
-    const defaultCategories: BehaviorCategory[] = [];
-    Object.keys(defaultByCategory).forEach(categoryId => {
-      const meta = categoryMeta[categoryId] || categoryMeta.kindness;
-      defaultCategories.push({
-        id: categoryId,
-        name: meta.name,
-        icon: meta.icon,
-        color: meta.color,
-        description: meta.description,
-        commitments: defaultByCategory[categoryId]
-      });
-    });
-
-    return defaultCategories;
-  };
-
-  // Helper function to convert custom statements to category structure
-  const convertStatementsToCategoryFormat = (customStatements) => {
-    console.log('🔄 [DEBUG] Converting custom statements to categories:', customStatements);
-    
-    // Group custom statements by category
-    const customByCategory = {};
-    customStatements.forEach(statement => {
-      if (statement.isActive !== false) {
-        const category = statement.category || 'kindness';
-        if (!customByCategory[category]) {
-          customByCategory[category] = [];
-        }
-        customByCategory[category].push(statement.text);
-      }
-    });
-    
-    console.log('📊 [DEBUG] Grouped by category:', customByCategory);
-    
-    // Create new categories based on custom statements ONLY
-    const newCategories = [];
-    
-    // Define category metadata
-    const categoryMeta = {
-      kindness: { name: 'Kindness', icon: '💝', color: '#e91e63', description: 'Being caring and helpful to others' },
-      respect: { name: 'Respect', icon: '🤝', color: '#2196f3', description: 'Treating others and our classroom with care' },
-      effort: { name: 'Effort', icon: '💪', color: '#ff9800', description: 'Trying my best in everything I do' },
-      responsibility: { name: 'Responsibility', icon: '🎯', color: '#4caf50', description: 'Taking care of myself and my belongings' },
-      safety: { name: 'Safety', icon: '🛡️', color: '#f44336', description: 'Keeping myself and others safe' },
-      learning: { name: 'Learning', icon: '📚', color: '#9c27b0', description: 'Growing my mind and skills every day' }
-    };
-    
-    // Create categories with ONLY custom statements
-    Object.keys(customByCategory).forEach(categoryId => {
-      const meta = categoryMeta[categoryId] || categoryMeta.kindness;
-      newCategories.push({
-        id: categoryId,
-        name: meta.name,
-        icon: meta.icon,
-        color: meta.color,
-        description: meta.description,
-        commitments: customByCategory[categoryId]
-      });
-    });
-    
-    console.log('✅ [DEBUG] Created categories with custom statements only:', newCategories);
-    return newCategories;
-  };
-
-  // Helper function to convert flat custom statements to category structure
-  const convertCustomStatementsToCategoryFormat = (customStatements: any[]): BehaviorStatement[] => {
-    const categories = [...DEFAULT_BEHAVIOR_STATEMENTS];
-    
-    // Group custom statements by category
-    const customByCategory: { [key: string]: string[] } = {};
-    
-    customStatements.forEach(statement => {
-      if (statement.isActive !== false) {
-        const category = statement.category || 'kindness';
-        if (!customByCategory[category]) {
-          customByCategory[category] = [];
-        }
-        customByCategory[category].push(statement.text || statement.commitment || statement.statement);
-      }
-    });
-    
-    // Add custom statements to existing categories
-    Object.keys(customByCategory).forEach(categoryId => {
-      const categoryIndex = categories.findIndex(cat => cat.category === categoryId);
-      if (categoryIndex !== -1) {
-        // Add custom statements to existing category
-        customByCategory[categoryId].forEach(customText => {
-          categories.push({
-            id: `custom_${Date.now()}_${Math.random()}`,
-            text: customText,
-            category: categoryId as any,
-            emoji: categories[categoryIndex].emoji,
-            isActive: true,
-            isDefault: false,
-            createdAt: new Date().toISOString()
-          });
+      
+      // Load existing choices
+      if (todayCheckIn?.behaviorChoices) {
+        const choices: { [studentId: string]: string } = {};
+        todayCheckIn.behaviorChoices.forEach(choice => {
+          choices[choice.studentId] = choice.statementId;
         });
+        setStudentChoices(choices);
       }
-    });
-    
-    return categories;
+    } catch (error) {
+      console.error('Error loading behavior statements:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Add settings sync hook for real-time updates
-  const useSettingsSync = () => {
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
-    
-    useEffect(() => {
-      const handleSettingsChange = (event: CustomEvent) => {
-        console.log('🔄 Settings changed, refreshing behavior statements...');
-        setRefreshTrigger(prev => prev + 1);
-      };
-      
-      window.addEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
-      
-      return () => {
-        window.removeEventListener('unifiedSettingsChanged', handleSettingsChange as EventListener);
-      };
-    }, []);
-    
-    return refreshTrigger;
-  };
-
-  const refreshTrigger = useSettingsSync();
-
-  // Re-run data loading when settings change
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      // Reload behavior statements when settings change
-      const reloadBehaviorStatements = async () => {
-        try {
-          console.log('🔄 [REFRESH] Reloading behavior statements from settings change...');
-          setIsLoadingStatements(true);
-          
-          const settings = UnifiedDataService.getSettings();
-          const customStatements = settings?.morningMeeting?.behaviorCommitments?.customStatements;
-          
-          if (customStatements && Array.isArray(customStatements) && customStatements.length > 0) {
-            const categoriesWithCustom = convertCustomStatementsToCategoryFormat(customStatements);
-            setBehaviorStatements(categoriesWithCustom);
-            console.log('📊 Refreshed with custom statements:', categoriesWithCustom);
-          } else {
-            setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
-            console.log('📊 Refreshed with default statements');
-          }
-        } catch (error) {
-          console.error('❌ Failed to reload behavior statements:', error);
-          setBehaviorStatements(DEFAULT_BEHAVIOR_STATEMENTS);
-        } finally {
-          setIsLoadingStatements(false);
-        }
-      };
-      
-      reloadBehaviorStatements();
-    }
-  }, [refreshTrigger]);
-
-  // Load existing commitments on mount
-  useEffect(() => {
-    if (todayCheckIn?.behaviorCommitments) {
-      const choices: {[studentId: string]: string} = {};
-      const completed = new Set<string>();
-      
-      todayCheckIn.behaviorCommitments.forEach(commitment => {
-        choices[commitment.studentId] = commitment.commitment;
-        if (commitment.achieved) {
-          completed.add(commitment.studentId);
-        }
-      });
-      
-      setStudentChoices(choices);
-      setCompletedStudents(completed);
-    }
-  }, [todayCheckIn]);
-
-  // Get category for a commitment text
-  const getCategoryForCommitment = (commitmentText: string): BehaviorCategory | null => {
-    for (const category of behaviorCategories) {
-      if (category.commitments.includes(commitmentText)) {
-        return category;
-      }
-    }
-    return null;
-  };
-
-  // Handle student commitment selection
-  const handleStudentCommitmentSelect = (student: Student, commitment: string) => {
-    if (!todayCheckIn) return;
-
-    const category = getCategoryForCommitment(commitment);
-    if (!category) return;
-
-    // Update local state
-    const newChoices = { ...studentChoices };
-    newChoices[student.id] = commitment;
+  const handleStudentChoice = (studentId: string, statementId: string) => {
+    const newChoices = { ...studentChoices, [studentId]: statementId };
     setStudentChoices(newChoices);
 
-    // Create behavior choice object
-    const behaviorChoice: StudentBehaviorChoice = {
-      id: `commitment_${student.id}_${Date.now()}`,
-      studentId: student.id,
-      commitmentId: `behavior_${category.id}_${Date.now()}`,
-      date: currentDate.toISOString().split('T')[0],
-      completed: false,
-      timestamp: new Date().toISOString(),
-      studentName: student.name,
-      studentPhoto: student.photo,
-      commitment: commitment,
-      category: category.id as any,
-      achieved: completedStudents.has(student.id),
-      selectedAt: new Date().toISOString()
-    };
-
-    // Update check-in data
-    const existingCommitments = todayCheckIn.behaviorCommitments || [];
-    const updatedCommitments = existingCommitments.filter(c => c.studentId !== student.id);
-    updatedCommitments.push(behaviorChoice);
-
-    const updatedCheckIn = {
-      ...todayCheckIn,
-      behaviorCommitments: updatedCommitments,
-      updatedAt: new Date().toISOString()
-    };
-
-    onUpdateCheckIn(updatedCheckIn);
-    setSelectedStudent(null); // Close selection modal
-  };
-
-  // Toggle student achievement
-  const toggleStudentAchievement = (studentId: string) => {
-    const newCompleted = new Set(completedStudents);
-    const isCompleted = newCompleted.has(studentId);
-    
-    if (isCompleted) {
-      newCompleted.delete(studentId);
-    } else {
-      newCompleted.add(studentId);
-      // Show celebration
-      setShowCelebration(studentId);
-      setTimeout(() => setShowCelebration(null), 2000);
-    }
-    
-    setCompletedStudents(newCompleted);
-
-    // Update check-in data
-    if (todayCheckIn?.behaviorCommitments) {
-      const updatedCommitments = todayCheckIn.behaviorCommitments.map(commitment => {
-        if (commitment.studentId === studentId) {
-          return { ...commitment, achieved: !isCompleted };
-        }
-        return commitment;
-      });
+    // Update check-in data if callback provided
+    if (todayCheckIn && onUpdateCheckIn) {
+      const behaviorChoices = Object.entries(newChoices).map(([sId, sStatementId]) => ({
+        studentId: sId,
+        statementId: sStatementId,
+        timestamp: new Date().toISOString()
+      }));
 
       const updatedCheckIn = {
         ...todayCheckIn,
-        behaviorCommitments: updatedCommitments,
+        behaviorChoices,
         updatedAt: new Date().toISOString()
       };
 
@@ -473,117 +112,135 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
     }
   };
 
-  // Remove student commitment
-  const removeStudentCommitment = (studentId: string) => {
-    const newChoices = { ...studentChoices };
-    delete newChoices[studentId];
-    setStudentChoices(newChoices);
-
-    const newCompleted = new Set(completedStudents);
-    newCompleted.delete(studentId);
-    setCompletedStudents(newCompleted);
-
-    if (todayCheckIn) {
-      const updatedCommitments = (todayCheckIn.behaviorCommitments || []).filter(c => c.studentId !== studentId);
-      const updatedCheckIn = {
-        ...todayCheckIn,
-        behaviorCommitments: updatedCommitments,
-        updatedAt: new Date().toISOString()
-      };
-      onUpdateCheckIn(updatedCheckIn);
-    }
+  const openVideo = (videoUrl: string, index: number) => {
+    window.open(videoUrl, `video-window-${index}`, 'width=800,height=600,scrollbars=yes,resizable=yes');
   };
 
-  const completedCount = completedStudents.size;
-  const totalWithChoices = Object.keys(studentChoices).length;
+  const getCompletionPercentage = () => {
+    const totalStudents = students.length;
+    const completedChoices = Object.keys(studentChoices).length;
+    return totalStudents > 0 ? Math.round((completedChoices / totalStudents) * 100) : 0;
+  };
+
+  const isComplete = students.length > 0 && Object.keys(studentChoices).length === students.length;
+
+  if (isLoading) {
+    return (
+      <div style={{
+        height: `${availableHeight}px`,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔄</div>
+          <div style={{ fontSize: '1.5rem' }}>Loading Behavior Commitments...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ 
-      height: '100%',
+    <div style={{
+      height: `${availableHeight}px`,
+      width: '100%',
+      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      padding: 'clamp(1rem, 2vw, 2rem)'
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white'
     }}>
-      {/* Video Button - if selectedVideo exists */}
-      {selectedVideo && (
+      {/* Video Section - NEW: Simple video buttons at top */}
+      {selectedVideos && selectedVideos.length > 0 && (
         <div style={{
-          position: 'fixed',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 1000
+          padding: '1rem 2rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          flexWrap: 'wrap'
         }}>
-          <button
-            onClick={() => window.open(selectedVideo.videoData.url, '_blank')}
-            style={{
-              background: 'rgba(156, 39, 176, 0.8)',
-              border: '2px solid rgba(156, 39, 176, 1)',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 39, 176, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 39, 176, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            🎥 Play Video
-          </button>
+          <span style={{ fontWeight: '600', fontSize: '1rem' }}>📹 Behavior Videos:</span>
+          {selectedVideos.map((video, index) => (
+            <button
+              key={index}
+              onClick={() => openVideo(video, index)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              ▶️ Play Video {index + 1}
+            </button>
+          ))}
         </div>
       )}
-      
+
       {/* Header */}
-      <div style={{ 
-        textAlign: 'center', 
-        marginBottom: 'clamp(1rem, 2vh, 2rem)',
-        flexShrink: 0
+      <div style={{
+        padding: '2rem 2rem 1rem',
+        textAlign: 'center'
       }}>
-        <h2 style={{
-          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+        <h1 style={{
+          fontSize: 'clamp(2rem, 4vw, 3rem)',
           fontWeight: '700',
-          color: 'white',
-          marginBottom: '0.5rem',
+          margin: '0 0 0.5rem 0',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
           💪 Behavior Commitments
-        </h2>
+        </h1>
+        <p style={{
+          fontSize: 'clamp(1rem, 2vw, 1.25rem)',
+          opacity: 0.9,
+          margin: 0
+        }}>
+          Choose one positive behavior to focus on today
+        </p>
         
-        {/* Simple Completion Counter */}
+        {/* Progress Indicator */}
         <div style={{
-          background: 'rgba(255,255,255,0.15)',
-          borderRadius: '16px',
-          padding: '1rem',
-          display: 'inline-block',
-          backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(255,255,255,0.2)'
+          marginTop: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '1rem'
         }}>
           <div style={{
-            fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
-            fontWeight: '700',
-            color: 'white',
-            marginBottom: '0.5rem'
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '20px',
+            padding: '0.5rem 1rem',
+            fontSize: '1rem',
+            fontWeight: '600'
           }}>
-            📊 {Object.keys(studentChoices).length} of {students.length} students have made choices
+            {Object.keys(studentChoices).length} of {students.length} students complete
           </div>
-          {totalWithChoices > 0 && (
-            <div style={{
-              fontSize: 'clamp(0.9rem, 2vw, 1.2rem)',
-              color: 'rgba(255,255,255,0.9)'
-            }}>
-              🏆 {completedCount} commitments achieved!
-            </div>
-          )}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '20px',
+            padding: '0.5rem 1rem',
+            fontSize: '1rem',
+            fontWeight: '600'
+          }}>
+            {getCompletionPercentage()}% 
+          </div>
         </div>
       </div>
 
@@ -591,458 +248,218 @@ const BehaviorCommitments: React.FC<BehaviorCommitmentsProps> = ({
       <div style={{
         flex: 1,
         overflow: 'auto',
+        padding: '0 2rem',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        minHeight: 0
       }}>
-        {/* Student Grid */}
+        {/* Behavior Statements */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '16px',
+          padding: '1.5rem',
+          marginBottom: '2rem',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <h3 style={{
+            fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+            fontWeight: '600',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            Today's Behavior Focus Options:
+          </h3>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '1rem'
+          }}>
+            {behaviorStatements.filter(stmt => stmt.isActive).map((statement) => (
+              <div
+                key={statement.id}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  border: '2px solid rgba(255, 255, 255, 0.2)',
+                  textAlign: 'center',
+                  fontSize: 'clamp(0.9rem, 1.8vw, 1.1rem)',
+                  fontWeight: '500'
+                }}
+              >
+                {statement.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Student Selection Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '1.5rem',
-          maxWidth: '1200px',
-          margin: '0 auto'
+          paddingBottom: '2rem'
         }}>
-        {students.map(student => {
-          const hasChoice = studentChoices[student.id];
-          const isCompleted = completedStudents.has(student.id);
-          const category = hasChoice ? getCategoryForCommitment(hasChoice) : null;
-
-          return (
+          {students.map((student) => (
             <div
               key={student.id}
               style={{
-                background: hasChoice 
-                  ? (isCompleted 
-                    ? 'linear-gradient(145deg, #28a745, #20c997)'
-                    : `linear-gradient(145deg, ${category?.color || '#667eea'}40, ${category?.color || '#667eea'}20)`)
-                  : 'rgba(255,255,255,0.1)',
-                borderRadius: '20px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
                 padding: '1.5rem',
-                border: hasChoice 
-                  ? (isCompleted 
-                    ? '3px solid #28a745'
-                    : `3px solid ${category?.color || '#667eea'}`)
-                  : '2px solid rgba(255,255,255,0.2)',
-                textAlign: 'center',
-                position: 'relative',
+                backdropFilter: 'blur(10px)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
                 transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                backdropFilter: 'blur(10px)'
-              }}
-              onClick={() => {
-                if (hasChoice) {
-                  toggleStudentAchievement(student.id);
-                } else {
-                  setSelectedStudent(student.id);
-                }
-              }}
-              onMouseEnter={(e) => {
-                if (!hasChoice) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!hasChoice) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
+                transform: studentChoices[student.id] ? 'scale(1.02)' : 'scale(1)',
+                boxShadow: studentChoices[student.id] 
+                  ? '0 8px 25px rgba(0, 0, 0, 0.3)' 
+                  : '0 4px 15px rgba(0, 0, 0, 0.2)'
               }}
             >
-              {/* Student Photo */}
               <div style={{
-                width: '80px',
-                height: '80px',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                background: student.photo 
-                  ? 'transparent' 
-                  : 'linear-gradient(145deg, #667eea, #764ba2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1rem auto',
-                border: hasChoice 
-                  ? (isCompleted ? '4px solid #FFD700' : `3px solid ${category?.color || '#667eea'}`)
-                  : '2px solid rgba(255,255,255,0.3)',
-                boxShadow: hasChoice 
-                  ? '0 6px 20px rgba(0,0,0,0.3)'
-                  : '0 4px 15px rgba(0,0,0,0.2)'
+                textAlign: 'center',
+                marginBottom: '1rem'
               }}>
-                {student.photo ? (
-                  <img
-                    src={student.photo}
-                    alt={student.name}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                ) : (
-                  <span style={{
-                    fontSize: '2rem',
-                    color: 'white',
-                    fontWeight: '700'
+                <div style={{
+                  fontSize: '3rem',
+                  marginBottom: '0.5rem'
+                }}>
+                  {student.emoji || '👤'}
+                </div>
+                <h4 style={{
+                  fontSize: 'clamp(1.1rem, 2vw, 1.3rem)',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  {student.name}
+                </h4>
+                {studentChoices[student.id] && (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    fontSize: '2rem'
                   }}>
-                    {student.name.split(' ').map(n => n[0]).join('')}
-                  </span>
+                    ✅
+                  </div>
                 )}
               </div>
 
-              {/* Student Name */}
               <div style={{
-                fontSize: '1.2rem',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '1rem'
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem'
               }}>
-                {student.name}
+                {behaviorStatements.filter(stmt => stmt.isActive).map((statement) => (
+                  <button
+                    key={statement.id}
+                    onClick={() => handleStudentChoice(student.id, statement.id)}
+                    style={{
+                      background: studentChoices[student.id] === statement.id 
+                        ? 'rgba(46, 204, 113, 0.8)' 
+                        : 'rgba(255, 255, 255, 0.2)',
+                      border: studentChoices[student.id] === statement.id 
+                        ? '2px solid #27ae60' 
+                        : '2px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '8px',
+                      color: 'white',
+                      padding: '0.75rem',
+                      fontSize: 'clamp(0.8rem, 1.6vw, 0.95rem)',
+                      cursor: 'pointer',
+                      fontWeight: studentChoices[student.id] === statement.id ? '600' : '500',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'left'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (studentChoices[student.id] !== statement.id) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (studentChoices[student.id] !== statement.id) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                      }
+                    }}
+                  >
+                    {studentChoices[student.id] === statement.id && '✓ '}
+                    {statement.text}
+                  </button>
+                ))}
               </div>
-
-              {/* Commitment Status */}
-              {hasChoice ? (
-                <div>
-                  {/* Category Badge */}
-                  <div style={{
-                    background: category?.color || '#667eea',
-                    color: 'white',
-                    padding: '0.3rem 0.8rem',
-                    borderRadius: '12px',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    display: 'inline-block',
-                    marginBottom: '0.8rem'
-                  }}>
-                    {category?.icon} {category?.name}
-                  </div>
-                  
-                  {/* Commitment Text */}
-                  <div style={{
-                    fontSize: '0.95rem',
-                    color: 'white',
-                    marginBottom: '1rem',
-                    lineHeight: '1.3',
-                    fontStyle: 'italic'
-                  }}>
-                    "{hasChoice}"
-                  </div>
-                  
-                  {/* Achievement Status */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem'
-                  }}>
-                    <span style={{ fontSize: '1.5rem' }}>
-                      {isCompleted ? '✅' : '⏳'}
-                    </span>
-                    <span style={{
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      color: 'white'
-                    }}>
-                      {isCompleted ? 'Achieved!' : 'Working on it'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{
-                    fontSize: '3rem',
-                    marginBottom: '0.5rem',
-                    opacity: 0.7
-                  }}>
-                    🎯
-                  </div>
-                  <div style={{
-                    fontSize: '1rem',
-                    color: 'rgba(255,255,255,0.8)',
-                    fontStyle: 'italic'
-                  }}>
-                    Click to choose commitment
-                  </div>
-                </div>
-              )}
-
-              {/* Remove Button */}
-              {hasChoice && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`Remove ${student.name}'s commitment?`)) {
-                      removeStudentCommitment(student.id);
-                    }
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: '12px',
-                    right: '12px',
-                    background: 'rgba(220, 53, 69, 0.8)',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '28px',
-                    height: '28px',
-                    color: 'white',
-                    fontSize: '1rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(10px)'
-                  }}
-                >
-                  ×
-                </button>
-              )}
-
-              {/* Achievement Celebration */}
-              {showCelebration === student.id && (
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  background: 'rgba(255, 215, 0, 0.95)',
-                  borderRadius: '50%',
-                  width: '80px',
-                  height: '80px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '2.5rem',
-                  animation: 'celebrate 0.8s ease-in-out',
-                  zIndex: 10,
-                  boxShadow: '0 0 30px rgba(255, 215, 0, 0.8)'
-                }}>
-                  🎉
-                </div>
-              )}
             </div>
-          );
-        })}
+          ))}
         </div>
       </div>
 
-      {/* Commitment Selection Modal */}
-      {selectedStudent && (
-        <div style={{
-          position: 'fixed',
-          top: '0',
-          left: '0',
-          right: '0',
-          bottom: '0',
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{
-            background: 'linear-gradient(145deg, #667eea, #764ba2)',
-            borderRadius: '24px',
-            padding: '2rem',
-            maxWidth: '800px',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            border: '3px solid rgba(255,255,255,0.3)'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              marginBottom: '2rem'
-            }}>
-              <h3 style={{
-                fontSize: '2rem',
-                color: 'white',
-                marginBottom: '0.5rem'
-              }}>
-                Choose a commitment for {students.find(s => s.id === selectedStudent)?.name}
-              </h3>
-              <p style={{
-                fontSize: '1.1rem',
-                color: 'rgba(255,255,255,0.9)'
-              }}>
-                Select any statement from any category
-              </p>
-            </div>
-
-            {/* Categories and Commitments */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1.5rem'
-            }}>
-              {behaviorCategories.map(category => (
-                <div key={category.id} style={{
-                  background: `linear-gradient(145deg, ${category.color}30, ${category.color}10)`,
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  border: `2px solid ${category.color}`
-                }}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    marginBottom: '1rem'
-                  }}>
-                    <span style={{ fontSize: '2rem' }}>{category.icon}</span>
-                    <div>
-                      <h4 style={{
-                        margin: '0',
-                        fontSize: '1.3rem',
-                        color: 'white',
-                        fontWeight: '700'
-                      }}>
-                        {category.name}
-                      </h4>
-                      <p style={{
-                        margin: '0',
-                        fontSize: '0.9rem',
-                        color: 'rgba(255,255,255,0.8)'
-                      }}>
-                        {category.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                    gap: '0.8rem'
-                  }}>
-                    {category.commitments.map((commitment, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          const student = students.find(s => s.id === selectedStudent);
-                          if (student) {
-                            handleStudentCommitmentSelect(student, commitment);
-                          }
-                        }}
-                        style={{
-                          background: 'rgba(255,255,255,0.15)',
-                          border: '2px solid rgba(255,255,255,0.3)',
-                          borderRadius: '12px',
-                          color: 'white',
-                          padding: '1rem',
-                          fontSize: '0.95rem',
-                          fontWeight: '500',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          textAlign: 'left',
-                          lineHeight: '1.3'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
-                          e.currentTarget.style.transform = 'translateY(-2px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
-                          e.currentTarget.style.transform = 'translateY(0)';
-                        }}
-                      >
-                        "{commitment}"
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Close Button */}
-            <div style={{
-              textAlign: 'center',
-              marginTop: '2rem'
-            }}>
-              <button
-                onClick={() => setSelectedStudent(null)}
-                style={{
-                  background: 'rgba(255,255,255,0.2)',
-                  border: '2px solid rgba(255,255,255,0.5)',
-                  borderRadius: '12px',
-                  color: 'white',
-                  padding: '1rem 2rem',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* Navigation Buttons */}
+      {/* Navigation Footer */}
       <div style={{
+        padding: '1.5rem 2rem',
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.2)',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: '2rem',
-        position: 'relative', // Ensure proper stacking context
-        zIndex: 10 // Above any modal content
+        alignItems: 'center'
       }}>
         <button
           onClick={onBack}
           style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: '2px solid rgba(255,255,255,0.3)',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
             borderRadius: '12px',
             color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
+            fontSize: 'clamp(1rem, 2vw, 1.1rem)',
             fontWeight: '600',
             cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
             transition: 'all 0.3s ease'
           }}
-        >
-          ← Back to Attendance
-        </button>
-        
-        <button
-          onClick={onNext}
-          style={{
-            background: 'rgba(34, 197, 94, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 3rem',
-            fontSize: '1.1rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease',
-            position: 'relative',
-            zIndex: 11 // Highest priority for the continue button
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
-          Continue to Weather →
+          ← Back
+        </button>
+
+        <button
+          onClick={onNext}
+          disabled={!isComplete}
+          style={{
+            background: isComplete 
+              ? 'linear-gradient(145deg, #28a745, #20c997)' 
+              : 'rgba(255, 255, 255, 0.1)',
+            border: isComplete 
+              ? 'none' 
+              : '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '12px',
+            color: isComplete ? 'white' : 'rgba(255, 255, 255, 0.5)',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
+            fontSize: 'clamp(1rem, 2vw, 1.1rem)',
+            fontWeight: '600',
+            cursor: isComplete ? 'pointer' : 'not-allowed',
+            transition: 'all 0.3s ease',
+            opacity: isComplete ? 1 : 0.6,
+            boxShadow: isComplete ? '0 4px 15px rgba(40, 167, 69, 0.3)' : 'none'
+          }}
+          onMouseEnter={(e) => {
+            if (isComplete) {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(40, 167, 69, 0.4)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (isComplete) {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(40, 167, 69, 0.3)';
+            }
+          }}
+        >
+          {isComplete ? 'Continue →' : `Continue (${Object.keys(studentChoices).length}/${students.length})`}
         </button>
       </div>
-
-      <style>{`
-        @keyframes celebrate {
-          0% {
-            transform: translate(-50%, -50%) scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: translate(-50%, -50%) scale(1.2);
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </div>
   );
 };

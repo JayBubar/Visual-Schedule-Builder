@@ -4,6 +4,7 @@ interface SeasonalLearningStepProps {
   onNext: () => void;
   onBack: () => void;
   currentDate: Date;
+  selectedVideos?: string[]; // NEW: Video integration from Hub
   weather?: {
     condition: string;
     temperature: number;
@@ -276,6 +277,7 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   onNext,
   onBack,
   currentDate,
+  selectedVideos,
   weather,
   weatherVocabulary,
   selectedVideo
@@ -404,12 +406,65 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
   };
 
   return (
-    <div style={{ 
-      height: '100%',
+    <div style={{
+      height: `${window.innerHeight - 140}px`,
+      width: '100%',
+      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      padding: 'clamp(1rem, 2vw, 2rem)'
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white'
     }}>
+      {/* Video Section - ADD THIS if selectedVideos prop exists */}
+      {selectedVideos && selectedVideos.length > 0 && (
+        <div style={{
+          padding: '1rem 2rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          <span style={{ fontWeight: '600', fontSize: '1rem' }}>📹 Videos:</span>
+          {selectedVideos.map((video, index) => (
+            <button
+              key={index}
+              onClick={() => window.open(video, `video-${index}`, 'width=800,height=600')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid rgba(255, 255, 255, 0.3)',
+                borderRadius: '8px',
+                color: 'white',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              ▶️ Play Video {index + 1}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* KEEP EXISTING COMPONENT CONTENT HERE - just wrap in proper container */}
+      <div style={{
+        flex: 1,
+        overflow: 'auto',
+        padding: '2rem',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
       {/* Video Button - if selectedVideo exists */}
       {selectedVideo && (
         <div style={{
@@ -774,48 +829,50 @@ const SeasonalLearningStep: React.FC<SeasonalLearningStepProps> = ({
         )}
       </div>
 
-      {/* Navigation */}
+      </div>
+
+      {/* Navigation Footer - ADD THIS at the bottom */}
       <div style={{
+        padding: '1.5rem 2rem',
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.2)',
         display: 'flex',
         justifyContent: 'space-between',
-        gap: '1rem',
-        marginTop: '2rem'
+        alignItems: 'center'
       }}>
         <button
           onClick={onBack}
           style={{
-            background: 'rgba(255,255,255,0.1)',
-            border: '2px solid rgba(255,255,255,0.3)',
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
             borderRadius: '12px',
             color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
+            fontSize: 'clamp(1rem, 2vw, 1.1rem)',
             fontWeight: '600',
             cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
             transition: 'all 0.3s ease'
           }}
         >
-          ← Back to Weather & Clothing
+          ← Back
         </button>
-        
+
         <button
           onClick={onNext}
           style={{
-            background: 'rgba(34, 197, 94, 0.8)',
+            background: 'linear-gradient(145deg, #28a745, #20c997)',
             border: 'none',
             borderRadius: '12px',
             color: 'white',
-            padding: '1rem 3rem',
-            fontSize: '1.1rem',
-            fontWeight: '700',
+            padding: 'clamp(0.75rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
+            fontSize: 'clamp(1rem, 2vw, 1.1rem)',
+            fontWeight: '600',
             cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
             transition: 'all 0.3s ease',
-            boxShadow: '0 4px 15px rgba(34, 197, 94, 0.4)'
+            boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)'
           }}
         >
-          Continue to Celebrations →
+          Continue →
         </button>
       </div>
     </div>
