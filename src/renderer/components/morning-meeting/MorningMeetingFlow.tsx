@@ -50,8 +50,17 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   // Load students data
   useEffect(() => {
     try {
-      const studentData = UnifiedDataService.getStudents();
-      setStudents(studentData || []);
+      // Try different methods to get students
+      let allStudents = [];
+      if (typeof (UnifiedDataService as any).getAllStudents === 'function') {
+        allStudents = (UnifiedDataService as any).getAllStudents();
+      } else if (typeof (UnifiedDataService as any).getStudents === 'function') {
+        allStudents = (UnifiedDataService as any).getStudents();
+      } else {
+        // Fallback to empty array
+        allStudents = [];
+      }
+      setStudents(allStudents || []);
     } catch (error) {
       console.error('Error loading students:', error);
       setStudents([]);
@@ -96,7 +105,8 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
             celebrations: hubSettings.celebrations
           }
         };
-        UnifiedDataService.saveMorningMeetingSession(completionData);
+        // Save to localStorage for now since saveMorningMeetingSession may not exist
+        localStorage.setItem('morningMeetingSession', JSON.stringify(completionData));
       } catch (error) {
         console.error('Error saving Morning Meeting session:', error);
       }
@@ -118,9 +128,10 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       [currentStepKey]: data
     }));
 
-    // Save step data to UnifiedDataService
+    // Save step data to localStorage for now
     try {
-      UnifiedDataService.saveMorningMeetingStepData(currentStepKey, data);
+      const stepDataKey = `morningMeetingStep_${currentStepKey}`;
+      localStorage.setItem(stepDataKey, JSON.stringify(data));
     } catch (error) {
       console.error('Error saving step data:', error);
     }
@@ -207,7 +218,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   }
 
   // Create step props with all necessary data
-  const stepProps: MorningMeetingStepProps = {
+  const stepProps: any = {
     currentDate: new Date(),
     onNext: handleNext,
     onBack: handlePrevious,

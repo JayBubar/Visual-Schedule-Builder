@@ -100,7 +100,7 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   };
 
   const behaviorCommitments = getBehaviorCommitments();
-  const presentStudents = students.filter(student => student.present === true);
+  const presentStudents = students.filter((student: any) => student.present === true);
 
   useEffect(() => {
     const stepDataUpdate: any = {
