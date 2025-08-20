@@ -1,606 +1,742 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Play, Users, Video, Calendar, Cloud, CheckCircle, Eye, BookOpen } from 'lucide-react';
-import UnifiedDataService from '../../services/unifiedDataService';
-import { MorningMeetingSettings, DEFAULT_MORNING_MEETING_SETTINGS } from './types/morningMeetingTypes';
+import { Calendar, Settings, Users, Video, Star, Gift, BookOpen, Save, Play } from 'lucide-react';
+import UnifiedDataService from '../../../services/unifiedDataService';
 
 interface MorningMeetingHubProps {
   onStartMorningMeeting: () => void;
-  onClose: () => void;
+  onNavigateHome: () => void;
 }
 
-const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMeeting, onClose }) => {
-  const [settings, setSettings] = useState<MorningMeetingSettings>(() => {
-    // Load existing settings from localStorage
-    const saved = localStorage.getItem('morningMeetingSettings');
-    if (saved) {
-      try {
-        const parsedSettings = JSON.parse(saved);
-        // Merge with defaults to ensure all new properties exist
-        return {
-          ...DEFAULT_MORNING_MEETING_SETTINGS,
-          ...parsedSettings,
-          videos: {
-            ...DEFAULT_MORNING_MEETING_SETTINGS.videos,
-            ...parsedSettings.videos
-          },
-          customVocabulary: {
-            ...DEFAULT_MORNING_MEETING_SETTINGS.customVocabulary,
-            ...parsedSettings.customVocabulary
-          }
-        };
-      } catch (error) {
-        console.error('Failed to parse Morning Meeting settings:', error);
-      }
+interface HubSettings {
+  welcomePersonalization: {
+    schoolName: string;
+    teacherName: string;
+    className: string;
+    customMessage?: string;
+  };
+  videos: {
+    weather: string | null;
+    seasonal: string | null;
+    behavior: string | null;
+    calendarMath: string | null;
+  };
+  behaviorStatements: {
+    enabled: boolean;
+    statements: string[];
+    allowCustom: boolean;
+  };
+  celebrations: {
+    enabled: boolean;
+    showBirthdayPhotos: boolean;
+    customCelebrations: Celebration[];
+  };
+  flowCustomization: {
+    enabledSteps: Record<string, boolean>;
+  };
+}
+
+interface Celebration {
+  id: string;
+  name: string;
+  emoji: string;
+  message: string;
+  type: 'birthday' | 'custom';
+  recurring?: boolean;
+  date?: string;
+  students: string[];
+  createdAt: string;
+}
+
+const DEFAULT_HUB_SETTINGS: HubSettings = {
+  welcomePersonalization: {
+    schoolName: '',
+    teacherName: '',
+    className: '',
+    customMessage: 'Welcome to Our Classroom!'
+  },
+  videos: {
+    weather: null,
+    seasonal: null,
+    behavior: null,
+    calendarMath: null
+  },
+  behaviorStatements: {
+    enabled: true,
+    statements: [
+      'I will be kind to others',
+      'I will listen when others are speaking',
+      'I will do my best work',
+      'I will help others when they need it',
+      'I will follow classroom rules'
+    ],
+    allowCustom: true
+  },
+  celebrations: {
+    enabled: true,
+    showBirthdayPhotos: true,
+    customCelebrations: []
+  },
+  flowCustomization: {
+    enabledSteps: {
+      welcome: true,
+      attendance: true,
+      behavior: true,
+      calendarMath: true,
+      weather: true,
+      seasonal: true,
+      celebration: true,
+      dayReview: true
     }
-    
-    return DEFAULT_MORNING_MEETING_SETTINGS;
-  });
+  }
+};
 
-  const [activeSection, setActiveSection] = useState<string>('welcome');
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+// Celebrations Management Modal Component
+const CelebrationsManagementModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  celebrations: Celebration[];
+  onUpdateCelebrations: (celebrations: Celebration[]) => void;
+}> = ({ isOpen, onClose, celebrations, onUpdateCelebrations }) => {
+  const [customCelebrations, setCustomCelebrations] = useState<Celebration[]>(celebrations);
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem('morningMeetingSettings', JSON.stringify(settings));
-  }, [settings]);
+  if (!isOpen) return null;
 
-  const updateSettings = (section: keyof MorningMeetingSettings, data: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: { ...prev[section], ...data }
-    }));
+  const addCustomCelebration = () => {
+    const newCelebration: Celebration = {
+      id: `custom_${Date.now()}`,
+      name: '',
+      emoji: '🎉',
+      message: '',
+      type: 'custom',
+      recurring: false,
+      date: '',
+      students: [],
+      createdAt: new Date().toISOString()
+    };
+    setCustomCelebrations([...customCelebrations, newCelebration]);
   };
 
-  const getCurrentSeason = () => {
-    const month = new Date().getMonth();
-    if (month >= 2 && month <= 4) return 'spring';
-    if (month >= 5 && month <= 7) return 'summer';
-    if (month >= 8 && month <= 10) return 'fall';
-    return 'winter';
-  };
-
-  // Get videos from Activity Library with proper tags
-  const getTaggedVideos = (tags: string[]) => {
-    const allActivities = UnifiedDataService.getAllActivities();
-    return allActivities.filter(activity => 
-      activity.category === 'video' && 
-      activity.materials && 
-      tags.some(tag => activity.materials?.some(material => 
-        material.toLowerCase().includes(tag.toLowerCase())
-      ))
+  const updateCelebration = (id: string, updates: Partial<Celebration>) => {
+    setCustomCelebrations(prev => 
+      prev.map(cel => cel.id === id ? { ...cel, ...updates } : cel)
     );
   };
 
-  // VideoSelectionStep Component
-  const VideoSelectionStep = ({ stepName, stepIcon, description, availableVideos, currentSelection, onSelectionChange }: {
-    stepName: string;
-    stepIcon: string;
-    description: string;
-    availableVideos: any[];
-    currentSelection: Array<{id: string, name: string, url: string}>;
-    onSelectionChange: (videos: Array<{id: string, name: string, url: string}>) => void;
-  }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    return (
-      <div className="video-step-selector">
-        <div 
-          className="video-step-header"
-          onClick={() => setIsExpanded(!isExpanded)}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '1rem',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            marginBottom: '0.5rem'
-          }}
-        >
-          <div>
-            <strong>{stepIcon} {stepName}</strong>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>{description}</p>
-            <small>{currentSelection.length} video(s) selected</small>
-          </div>
-          <span>{isExpanded ? '▼' : '▶'}</span>
-        </div>
-        
-        {isExpanded && (
-          <div style={{ padding: '1rem', border: '1px solid #e9ecef', borderRadius: '8px' }}>
-            {availableVideos.length === 0 ? (
-              <p style={{ color: '#666', fontStyle: 'italic' }}>
-                No videos found. Add videos with appropriate tags in Activity Library.
-              </p>
-            ) : (
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
-                {availableVideos.map(video => (
-                  <div 
-                    key={video.id} 
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.5rem',
-                      border: '1px solid #dee2e6',
-                      borderRadius: '4px'
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={currentSelection.some(sel => sel.id === video.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          onSelectionChange([...currentSelection, { 
-                            id: video.id, 
-                            name: video.name, 
-                            url: video.instructions || video.description || '' 
-                          }]);
-                        } else {
-                          onSelectionChange(currentSelection.filter(sel => sel.id !== video.id));
-                        }
-                      }}
-                      style={{ marginRight: '0.5rem' }}
-                    />
-                    <div>
-                      <strong>{video.name}</strong>
-                      {video.description && (
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#666' }}>
-                          {video.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const sections = [
-    { id: 'welcome', label: 'Welcome Personalization', icon: Users, color: '#3498db' },
-    { id: 'videos', label: 'Video Selection', icon: Video, color: '#e74c3c' },
-    { id: 'vocabulary', label: 'Custom Vocabulary', icon: BookOpen, color: '#27ae60' },
-    { id: 'behavior', label: 'Behavior Statements', icon: CheckCircle, color: '#2ecc71' },
-    { id: 'weather', label: 'Weather API', icon: Cloud, color: '#f39c12' },
-    { id: 'flow', label: 'Flow Customization', icon: Settings, color: '#9b59b6' },
-    { id: 'preview', label: 'Preview & Test', icon: Eye, color: '#1abc9c' }
-  ];
-
-  const renderWelcomeSection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <Users size={20} /> Welcome Personalization
-      </h3>
-      <p className="section-description">
-        Customize the welcome experience for your classroom
-      </p>
-      
-      <div className="form-grid">
-        <div className="form-group">
-          <label>School Name</label>
-          <input
-            type="text"
-            value={settings.welcomePersonalization.schoolName}
-            onChange={(e) => updateSettings('welcomePersonalization', { schoolName: e.target.value })}
-            placeholder="Your School Name"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Teacher Name</label>
-          <input
-            type="text"
-            value={settings.welcomePersonalization.teacherName}
-            onChange={(e) => updateSettings('welcomePersonalization', { teacherName: e.target.value })}
-            placeholder="Mr./Ms. Your Name"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Class Name</label>
-          <input
-            type="text"
-            value={settings.welcomePersonalization.className}
-            onChange={(e) => updateSettings('welcomePersonalization', { className: e.target.value })}
-            placeholder="Grade 3A, Room 102, etc."
-          />
-        </div>
-        
-        <div className="form-group full-width">
-          <label>Welcome Message</label>
-          <textarea
-            value={settings.welcomePersonalization.customMessage || ''}
-            onChange={(e) => updateSettings('welcomePersonalization', { customMessage: e.target.value })}
-            placeholder="Your daily welcome message to students"
-            rows={3}
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderVideoSection = () => {
-    const weatherVideos = getTaggedVideos(['weather', 'clothing', 'seasons']);
-    const seasonalVideos = getTaggedVideos(['seasonal', getCurrentSeason()]);
-    const behaviorVideos = getTaggedVideos(['behavior', 'social', 'expectations']);
-    const calendarVideos = getTaggedVideos(['calendar', 'math', 'numbers']);
-
-    return (
-      <div className="hub-section">
-        <h3 className="section-title">
-          <Video size={20} /> Video Selection
-        </h3>
-        <p className="section-description">
-          Select videos from your Activity Library for each Morning Meeting step
-        </p>
-        
-        <VideoSelectionStep 
-          stepName="Weather & Clothing"
-          stepIcon="🌤️"
-          description="Weather and clothing selection videos"
-          availableVideos={weatherVideos}
-          currentSelection={settings.videos.weatherClothing}
-          onSelectionChange={(videos) => updateSettings('videos', {
-            ...settings.videos,
-            weatherClothing: videos
-          })}
-        />
-        
-        <VideoSelectionStep 
-          stepName="Seasonal Learning"
-          stepIcon="🍂"
-          description="Seasonal activities and learning videos"
-          availableVideos={seasonalVideos}
-          currentSelection={settings.videos.seasonalLearning}
-          onSelectionChange={(videos) => updateSettings('videos', {
-            ...settings.videos,
-            seasonalLearning: videos
-          })}
-        />
-        
-        <VideoSelectionStep 
-          stepName="Behavior Commitments"
-          stepIcon="⭐"
-          description="Social skills and behavior videos"
-          availableVideos={behaviorVideos}
-          currentSelection={settings.videos.behaviorCommitments}
-          onSelectionChange={(videos) => updateSettings('videos', {
-            ...settings.videos,
-            behaviorCommitments: videos
-          })}
-        />
-        
-        <VideoSelectionStep 
-          stepName="Calendar Math"
-          stepIcon="📅"
-          description="Math and calendar learning videos"
-          availableVideos={calendarVideos}
-          currentSelection={settings.videos.calendarMath}
-          onSelectionChange={(videos) => updateSettings('videos', {
-            ...settings.videos,
-            calendarMath: videos
-          })}
-        />
-      </div>
-    );
-  };
-
-  const renderVocabularySection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <BookOpen size={20} /> Custom Vocabulary
-      </h3>
-      <p className="section-description">
-        Customize vocabulary words for each Morning Meeting step
-      </p>
-      
-      <div className="vocabulary-grid">
-        <div className="vocab-category">
-          <h4>🌤️ Weather Words</h4>
-          <textarea
-            value={settings.customVocabulary.weather.join(', ')}
-            onChange={(e) => updateSettings('customVocabulary', {
-              ...settings.customVocabulary,
-              weather: e.target.value.split(',').map(word => word.trim()).filter(word => word)
-            })}
-            placeholder="sunny, cloudy, rainy, snowy, windy, foggy"
-            rows={3}
-          />
-        </div>
-        
-        <div className="vocab-category">
-          <h4>🍂 Seasonal Words</h4>
-          <textarea
-            value={settings.customVocabulary.seasonal.join(', ')}
-            onChange={(e) => updateSettings('customVocabulary', {
-              ...settings.customVocabulary,
-              seasonal: e.target.value.split(',').map(word => word.trim()).filter(word => word)
-            })}
-            placeholder="spring, summer, fall, winter, leaves, flowers, snow"
-            rows={3}
-          />
-        </div>
-        
-        <div className="vocab-category">
-          <h4>📅 Calendar Words</h4>
-          <textarea
-            value={settings.customVocabulary.calendar.join(', ')}
-            onChange={(e) => updateSettings('customVocabulary', {
-              ...settings.customVocabulary,
-              calendar: e.target.value.split(',').map(word => word.trim()).filter(word => word)
-            })}
-            placeholder="yesterday, today, tomorrow, week, month, ordinal"
-            rows={3}
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderBehaviorSection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <CheckCircle size={20} /> Behavior Statements
-      </h3>
-      <p className="section-description">
-        Manage positive behavior expectations for your classroom
-      </p>
-      
-      <div className="behavior-controls">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={settings.behaviorStatements.enabled}
-            onChange={(e) => updateSettings('behaviorStatements', { enabled: e.target.checked })}
-          />
-          Enable Behavior Statements in Morning Meeting
-        </label>
-      </div>
-      
-      {settings.behaviorStatements.enabled && (
-        <div className="statements-list">
-          {settings.behaviorStatements.statements.map((statement, index) => (
-            <div key={index} className="statement-item">
-              <input
-                type="text"
-                value={statement}
-                onChange={(e) => {
-                  const newStatements = [...settings.behaviorStatements.statements];
-                  newStatements[index] = e.target.value;
-                  updateSettings('behaviorStatements', { statements: newStatements });
-                }}
-              />
-              <button
-                onClick={() => {
-                  const newStatements = settings.behaviorStatements.statements.filter((_, i) => i !== index);
-                  updateSettings('behaviorStatements', { statements: newStatements });
-                }}
-                className="remove-btn"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-          
-          <button
-            onClick={() => {
-              const newStatements = [...settings.behaviorStatements.statements, 'New behavior statement'];
-              updateSettings('behaviorStatements', { statements: newStatements });
-            }}
-            className="add-statement-btn"
-          >
-            + Add Statement
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderWeatherSection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <Cloud size={20} /> Weather API Settings
-      </h3>
-      <p className="section-description">
-        Configure automatic weather data for Weather & Clothing step
-      </p>
-      
-      <div className="weather-controls">
-        <label className="toggle-label">
-          <input
-            type="checkbox"
-            checked={settings.weatherAPI.enabled}
-            onChange={(e) => updateSettings('weatherAPI', { enabled: e.target.checked })}
-          />
-          Enable Automatic Weather Data
-        </label>
-      </div>
-      
-      {settings.weatherAPI.enabled && (
-        <div className="form-grid">
-          <div className="form-group">
-            <label>API Key</label>
-            <input
-              type="password"
-              value={settings.weatherAPI.apiKey || ''}
-              onChange={(e) => updateSettings('weatherAPI', { apiKey: e.target.value })}
-              placeholder="Your weather API key"
-            />
-          </div>
-          
-          <div className="form-group">
-            <label>Location</label>
-            <input
-              type="text"
-              value={settings.weatherAPI.location || ''}
-              onChange={(e) => updateSettings('weatherAPI', { location: e.target.value })}
-              placeholder="City, State or ZIP code"
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderFlowSection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <Settings size={20} /> Flow Customization
-      </h3>
-      <p className="section-description">
-        Enable or disable specific steps in your Morning Meeting flow
-      </p>
-      
-      <div className="flow-steps">
-        {Object.entries(settings.flowCustomization.enabledSteps).map(([step, enabled]) => (
-          <label key={step} className="step-toggle">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(e) => updateSettings('flowCustomization', {
-                enabledSteps: {
-                  ...settings.flowCustomization.enabledSteps,
-                  [step]: e.target.checked
-                }
-              })}
-            />
-            <span className="step-name">
-              {step.charAt(0).toUpperCase() + step.slice(1).replace(/([A-Z])/g, ' $1')}
-            </span>
-          </label>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderPreviewSection = () => (
-    <div className="hub-section">
-      <h3 className="section-title">
-        <Eye size={20} /> Preview & Test
-      </h3>
-      <p className="section-description">
-        Preview your Morning Meeting configuration and test the flow
-      </p>
-      
-      <div className="preview-summary">
-        <div className="summary-item">
-          <strong>School:</strong> {settings.welcomePersonalization.schoolName || 'Not set'}
-        </div>
-        <div className="summary-item">
-          <strong>Teacher:</strong> {settings.welcomePersonalization.teacherName || 'Not set'}
-        </div>
-        <div className="summary-item">
-          <strong>Class:</strong> {settings.welcomePersonalization.className || 'Not set'}
-        </div>
-        <div className="summary-item">
-          <strong>Enabled Steps:</strong> {Object.values(settings.flowCustomization.enabledSteps).filter(Boolean).length} of 6
-        </div>
-        <div className="summary-item">
-          <strong>Behavior Statements:</strong> {settings.behaviorStatements.enabled ? 'Enabled' : 'Disabled'}
-        </div>
-        <div className="summary-item">
-          <strong>Weather API:</strong> {settings.weatherAPI.enabled ? 'Enabled' : 'Disabled'}
-        </div>
-        <div className="summary-item">
-          <strong>Videos Selected:</strong> {
-            Object.values(settings.videos).reduce((total, videos) => total + videos.length, 0)
-          }
-        </div>
-      </div>
-      
-      <div className="preview-actions">
-        <button 
-          onClick={() => setIsPreviewMode(true)}
-          className="preview-btn"
-        >
-          <Eye size={16} /> Preview Mode
-        </button>
-        <button 
-          onClick={onStartMorningMeeting}
-          className="test-btn"
-        >
-          <Play size={16} /> Test Morning Meeting
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'welcome': return renderWelcomeSection();
-      case 'videos': return renderVideoSection();
-      case 'vocabulary': return renderVocabularySection();
-      case 'behavior': return renderBehaviorSection();
-      case 'weather': return renderWeatherSection();
-      case 'flow': return renderFlowSection();
-      case 'preview': return renderPreviewSection();
-      default: return renderWelcomeSection();
+  const deleteCelebration = (id: string) => {
+    if (confirm('Delete this celebration?')) {
+      setCustomCelebrations(prev => prev.filter(cel => cel.id !== id));
     }
+  };
+
+  const saveCelebrations = () => {
+    onUpdateCelebrations(customCelebrations);
+    onClose();
   };
 
   return (
-    <div className="morning-meeting-hub">
-      {/* Header */}
-      <div className="hub-header">
-        <div className="hub-title">
-          <Calendar size={24} />
-          <div>
-            <h1>Morning Meeting Hub</h1>
-            <p>Configure and manage your daily Morning Meeting experience</p>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2>🎊 Manage Celebrations</h2>
+          <button onClick={onClose} className="close-button">×</button>
+        </div>
+
+        <div className="modal-body">
+          <button onClick={addCustomCelebration} className="add-celebration-button">
+            ➕ Add Custom Celebration
+          </button>
+
+          <div className="celebrations-list">
+            {customCelebrations.map(celebration => (
+              <div key={celebration.id} className="celebration-item">
+                <div className="celebration-row">
+                  <input
+                    type="text"
+                    placeholder="Celebration Name"
+                    value={celebration.name}
+                    onChange={(e) => updateCelebration(celebration.id, { name: e.target.value })}
+                    className="celebration-input"
+                  />
+                  <input
+                    type="text"
+                    placeholder="🎉"
+                    value={celebration.emoji}
+                    onChange={(e) => updateCelebration(celebration.id, { emoji: e.target.value })}
+                    className="emoji-input"
+                  />
+                  <button
+                    onClick={() => deleteCelebration(celebration.id)}
+                    className="delete-button"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                
+                <div className="celebration-row">
+                  <div className="date-section">
+                    <label>Date</label>
+                    <input
+                      type="date"
+                      value={celebration.date || ''}
+                      onChange={(e) => updateCelebration(celebration.id, { date: e.target.value })}
+                      className="date-input"
+                    />
+                  </div>
+                  <div className="recurring-section">
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={celebration.recurring || false}
+                        onChange={(e) => updateCelebration(celebration.id, { recurring: e.target.checked })}
+                      />
+                      Repeat Annually
+                    </label>
+                  </div>
+                </div>
+                
+                <textarea
+                  placeholder="Celebration message..."
+                  value={celebration.message}
+                  onChange={(e) => updateCelebration(celebration.id, { message: e.target.value })}
+                  className="message-input"
+                  rows={3}
+                />
+              </div>
+            ))}
           </div>
         </div>
-        <button onClick={onClose} className="close-btn">×</button>
-      </div>
 
-      {/* Main Content */}
-      <div className="hub-content">
-        {/* Sidebar Navigation */}
-        <div className="hub-sidebar">
-          {sections.map(section => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`sidebar-btn ${activeSection === section.id ? 'active' : ''}`}
-              style={{ '--section-color': section.color } as React.CSSProperties}
-            >
-              <section.icon size={16} />
-              {section.label}
+        <div className="modal-footer">
+          <button onClick={onClose} className="cancel-button">
+            Cancel
+          </button>
+          <button onClick={saveCelebrations} className="save-button">
+            Save Celebrations
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
+  onStartMorningMeeting,
+  onNavigateHome
+}) => {
+  const [activeSection, setActiveSection] = useState<'welcome' | 'videos' | 'behavior' | 'celebrations' | 'flow'>('welcome');
+  const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
+  const [availableVideos, setAvailableVideos] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadSettings();
+    loadAvailableVideos();
+  }, []);
+
+  const loadSettings = () => {
+    try {
+      const savedSettings = UnifiedDataService.getSettings();
+      const morningMeetingSettings = savedSettings?.morningMeeting || {};
+      
+      const mergedSettings: HubSettings = {
+        ...DEFAULT_HUB_SETTINGS,
+        welcomePersonalization: {
+          ...DEFAULT_HUB_SETTINGS.welcomePersonalization,
+          ...morningMeetingSettings.welcomeSettings
+        },
+        videos: {
+          ...DEFAULT_HUB_SETTINGS.videos,
+          weather: morningMeetingSettings.selectedVideos?.weather || null,
+          seasonal: morningMeetingSettings.selectedVideos?.seasonal || null,
+          behavior: morningMeetingSettings.selectedVideos?.behavior || null,
+          calendarMath: morningMeetingSettings.selectedVideos?.calendarMath || null
+        },
+        behaviorStatements: {
+          ...DEFAULT_HUB_SETTINGS.behaviorStatements,
+          ...morningMeetingSettings.behaviorCommitments
+        },
+        celebrations: {
+          ...DEFAULT_HUB_SETTINGS.celebrations,
+          ...morningMeetingSettings.celebrations
+        },
+        flowCustomization: {
+          ...DEFAULT_HUB_SETTINGS.flowCustomization,
+          enabledSteps: {
+            ...DEFAULT_HUB_SETTINGS.flowCustomization.enabledSteps,
+            ...morningMeetingSettings.checkInFlow
+          }
+        }
+      };
+      
+      setSettings(mergedSettings);
+    } catch (error) {
+      console.error('Error loading Morning Meeting settings:', error);
+      setSettings(DEFAULT_HUB_SETTINGS);
+    }
+  };
+
+  const loadAvailableVideos = () => {
+    try {
+      const activities = UnifiedDataService.getAllActivities();
+      const videos = activities.filter(activity => 
+        (activity as any).contentType === 'video'
+      );
+      setAvailableVideos(videos);
+    } catch (error) {
+      console.error('Error loading videos:', error);
+      setAvailableVideos([]);
+    }
+  };
+
+  const getTaggedVideos = (tags: string[]) => {
+    return availableVideos.filter(video => 
+      (video as any).tags && 
+      tags.some(tag => (video as any).tags.includes(tag))
+    );
+  };
+
+  const updateSettings = (section: keyof HubSettings, updates: any) => {
+    setSettings(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        ...updates
+      }
+    }));
+    setHasUnsavedChanges(true);
+  };
+
+  const saveSettings = () => {
+    try {
+      // Convert hub settings back to the format expected by Settings.tsx
+      const morningMeetingSettings = {
+        welcomeSettings: settings.welcomePersonalization,
+        selectedVideos: settings.videos,
+        behaviorCommitments: settings.behaviorStatements,
+        celebrations: settings.celebrations,
+        checkInFlow: settings.flowCustomization.enabledSteps
+      };
+
+      // Get current settings and update just the morningMeeting section
+      const currentSettings = UnifiedDataService.getSettings();
+      const updatedSettings = {
+        ...currentSettings,
+        morningMeeting: {
+          ...currentSettings.morningMeeting,
+          ...morningMeetingSettings
+        }
+      };
+
+      UnifiedDataService.updateSettings(updatedSettings);
+      setHasUnsavedChanges(false);
+      
+      // Dispatch event for other components
+      window.dispatchEvent(new CustomEvent('morningMeetingSettingsChanged', {
+        detail: settings
+      }));
+      
+      console.log('Morning Meeting settings saved successfully');
+    } catch (error) {
+      console.error('Error saving Morning Meeting settings:', error);
+    }
+  };
+
+  const playVideo = (videoId: string | null) => {
+    if (!videoId) return;
+    
+    const video = availableVideos.find(v => v.id === videoId);
+    if (video && (video as any).url) {
+      window.open((video as any).url, '_blank');
+    }
+  };
+
+  const hubSections = [
+    { id: 'welcome', name: 'Welcome', icon: '👋', description: 'Personalize your classroom greeting' },
+    { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select videos for each step' },
+    { id: 'behavior', name: 'Behavior', icon: '⭐', description: 'Manage behavior expectations' },
+    { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and custom celebrations' },
+    { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize which steps to include' }
+  ] as const;
+
+  return (
+    <div className="morning-meeting-hub">
+      <div className="hub-header">
+        <div className="header-content">
+          <h1>🌅 Morning Meeting Hub</h1>
+          <p>Configure your perfect Morning Meeting experience</p>
+        </div>
+        <div className="header-actions">
+          <button onClick={onNavigateHome} className="home-button">
+            ← Home
+          </button>
+          {hasUnsavedChanges && (
+            <button onClick={saveSettings} className="save-button">
+              <Save size={20} />
+              Save Changes
             </button>
-          ))}
-        </div>
-
-        {/* Content Area */}
-        <div className="hub-main">
-          {renderContent()}
+          )}
+          <button onClick={onStartMorningMeeting} className="start-button">
+            <Play size={20} />
+            Start My Day
+          </button>
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="hub-footer">
-        <button onClick={onClose} className="secondary-btn">
-          Close Hub
-        </button>
-        <button onClick={onStartMorningMeeting} className="primary-btn">
-          <Play size={16} />
-          Start Morning Meeting
-        </button>
+      <div className="hub-layout">
+        {/* Navigation */}
+        <div className="hub-nav">
+          <h3>Configuration</h3>
+          <div className="nav-sections">
+            {hubSections.map(section => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id as any)}
+                className={`nav-section ${activeSection === section.id ? 'active' : ''}`}
+              >
+                <span className="section-icon">{section.icon}</span>
+                <div className="section-info">
+                  <div className="section-name">{section.name}</div>
+                  <div className="section-desc">{section.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="hub-content">
+          {/* Welcome Personalization */}
+          {activeSection === 'welcome' && (
+            <div className="hub-section">
+              <h2>👋 Welcome Personalization</h2>
+              <p>Customize your classroom greeting and information</p>
+
+              <div className="form-group">
+                <label>School Name</label>
+                <input
+                  type="text"
+                  value={settings.welcomePersonalization.schoolName}
+                  onChange={(e) => updateSettings('welcomePersonalization', { schoolName: e.target.value })}
+                  placeholder="Lincoln Elementary School"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Teacher Name</label>
+                <input
+                  type="text"
+                  value={settings.welcomePersonalization.teacherName}
+                  onChange={(e) => updateSettings('welcomePersonalization', { teacherName: e.target.value })}
+                  placeholder="Mrs. Smith"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Class Name</label>
+                <input
+                  type="text"
+                  value={settings.welcomePersonalization.className}
+                  onChange={(e) => updateSettings('welcomePersonalization', { className: e.target.value })}
+                  placeholder="3rd Grade Class"
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Custom Welcome Message</label>
+                <input
+                  type="text"
+                  value={settings.welcomePersonalization.customMessage || ''}
+                  onChange={(e) => updateSettings('welcomePersonalization', { customMessage: e.target.value })}
+                  placeholder="Welcome to Our Classroom!"
+                  className="form-input"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Video Selection */}
+          {activeSection === 'videos' && (
+            <div className="hub-section">
+              <h2>🎥 Video Selection</h2>
+              <p>Select videos from your Activity Library to use during Morning Meeting steps</p>
+
+              <div className="video-categories">
+                <div className="video-category">
+                  <h3>🌤️ Weather & Clothing Video</h3>
+                  <div className="video-selection">
+                    <select
+                      value={settings.videos.weather || ''}
+                      onChange={(e) => updateSettings('videos', { weather: e.target.value || null })}
+                      className="video-select"
+                    >
+                      <option value="">No video selected</option>
+                      {getTaggedVideos(['weather', 'clothing', 'seasons']).map(video => (
+                        <option key={video.id} value={video.id}>{video.name}</option>
+                      ))}
+                    </select>
+                    {settings.videos.weather && (
+                      <button 
+                        onClick={() => playVideo(settings.videos.weather)}
+                        className="preview-button"
+                      >
+                        ▶️ Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="video-category">
+                  <h3>🍂 Seasonal Learning Video</h3>
+                  <div className="video-selection">
+                    <select
+                      value={settings.videos.seasonal || ''}
+                      onChange={(e) => updateSettings('videos', { seasonal: e.target.value || null })}
+                      className="video-select"
+                    >
+                      <option value="">No video selected</option>
+                      {getTaggedVideos(['seasonal', 'activities']).map(video => (
+                        <option key={video.id} value={video.id}>{video.name}</option>
+                      ))}
+                    </select>
+                    {settings.videos.seasonal && (
+                      <button 
+                        onClick={() => playVideo(settings.videos.seasonal)}
+                        className="preview-button"
+                      >
+                        ▶️ Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="video-category">
+                  <h3>💪 Behavior Expectations Video</h3>
+                  <div className="video-selection">
+                    <select
+                      value={settings.videos.behavior || ''}
+                      onChange={(e) => updateSettings('videos', { behavior: e.target.value || null })}
+                      className="video-select"
+                    >
+                      <option value="">No video selected</option>
+                      {getTaggedVideos(['behavior', 'social-skills']).map(video => (
+                        <option key={video.id} value={video.id}>{video.name}</option>
+                      ))}
+                    </select>
+                    {settings.videos.behavior && (
+                      <button 
+                        onClick={() => playVideo(settings.videos.behavior)}
+                        className="preview-button"
+                      >
+                        ▶️ Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="video-category">
+                  <h3>📅 Calendar Math Video</h3>
+                  <div className="video-selection">
+                    <select
+                      value={settings.videos.calendarMath || ''}
+                      onChange={(e) => updateSettings('videos', { calendarMath: e.target.value || null })}
+                      className="video-select"
+                    >
+                      <option value="">No video selected</option>
+                      {getTaggedVideos(['calendar', 'math', 'numbers']).map(video => (
+                        <option key={video.id} value={video.id}>{video.name}</option>
+                      ))}
+                    </select>
+                    {settings.videos.calendarMath && (
+                      <button 
+                        onClick={() => playVideo(settings.videos.calendarMath)}
+                        className="preview-button"
+                      >
+                        ▶️ Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {availableVideos.length === 0 && (
+                <div className="no-videos-message">
+                  <p>No videos found in Activity Library. Add videos with appropriate tags to see them here.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Behavior Statements */}
+          {activeSection === 'behavior' && (
+            <div className="hub-section">
+              <h2>⭐ Behavior Expectations</h2>
+              <p>Manage positive behavior expectations for your classroom</p>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={settings.behaviorStatements.enabled}
+                    onChange={(e) => updateSettings('behaviorStatements', { enabled: e.target.checked })}
+                  />
+                  Enable Behavior Commitments in Morning Meeting
+                </label>
+              </div>
+
+              {settings.behaviorStatements.enabled && (
+                <div className="behavior-statements">
+                  <h3>Behavior Statements</h3>
+                  {settings.behaviorStatements.statements.map((statement, index) => (
+                    <div key={index} className="statement-item">
+                      <input
+                        type="text"
+                        value={statement}
+                        onChange={(e) => {
+                          const newStatements = [...settings.behaviorStatements.statements];
+                          newStatements[index] = e.target.value;
+                          updateSettings('behaviorStatements', { statements: newStatements });
+                        }}
+                        className="statement-input"
+                      />
+                      <button
+                        onClick={() => {
+                          const newStatements = settings.behaviorStatements.statements.filter((_, i) => i !== index);
+                          updateSettings('behaviorStatements', { statements: newStatements });
+                        }}
+                        className="delete-statement-button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      const newStatements = [...settings.behaviorStatements.statements, ''];
+                      updateSettings('behaviorStatements', { statements: newStatements });
+                    }}
+                    className="add-statement-button"
+                  >
+                    ➕ Add Statement
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Celebrations */}
+          {activeSection === 'celebrations' && (
+            <div className="hub-section">
+              <h2>🎉 Celebrations</h2>
+              <p>Manage birthday celebrations and custom recognitions</p>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={settings.celebrations.enabled}
+                    onChange={(e) => updateSettings('celebrations', { enabled: e.target.checked })}
+                  />
+                  Enable celebrations in Morning Meeting
+                </label>
+              </div>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={settings.celebrations.showBirthdayPhotos}
+                    onChange={(e) => updateSettings('celebrations', { showBirthdayPhotos: e.target.checked })}
+                  />
+                  Show photos in birthday celebrations
+                </label>
+              </div>
+
+              <div className="celebrations-summary">
+                <h3>Custom Celebrations</h3>
+                <p>Current celebrations: {settings.celebrations.customCelebrations.length}</p>
+                
+                <button
+                  onClick={() => setShowCelebrationsModal(true)}
+                  className="manage-celebrations-button"
+                >
+                  🎊 Manage Celebrations
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Flow Customization */}
+          {activeSection === 'flow' && (
+            <div className="hub-section">
+              <h2>⚙️ Flow Customization</h2>
+              <p>Choose which steps to include in your Morning Meeting</p>
+
+              <div className="flow-steps">
+                {Object.entries({
+                  welcome: { name: 'Welcome Message', icon: '👋' },
+                  attendance: { name: 'Attendance', icon: '📋' },
+                  behavior: { name: 'Behavior Commitments', icon: '⭐' },
+                  calendarMath: { name: 'Calendar Math', icon: '📅' },
+                  weather: { name: 'Weather & Clothing', icon: '🌤️' },
+                  seasonal: { name: 'Seasonal Learning', icon: '🍂' },
+                  celebration: { name: 'Celebrations', icon: '🎉' },
+                  dayReview: { name: 'Day Review & Goals', icon: '🎯' }
+                }).map(([stepKey, stepInfo]) => (
+                  <div key={stepKey} className="flow-step">
+                    <label className="step-toggle">
+                      <input
+                        type="checkbox"
+                        checked={settings.flowCustomization.enabledSteps[stepKey] !== false}
+                        onChange={(e) => updateSettings('flowCustomization', {
+                          enabledSteps: {
+                            ...settings.flowCustomization.enabledSteps,
+                            [stepKey]: e.target.checked
+                          }
+                        })}
+                        disabled={stepKey === 'attendance'} // Attendance is always required
+                      />
+                      <span className="step-icon">{stepInfo.icon}</span>
+                      <span className="step-name">{stepInfo.name}</span>
+                      {stepKey === 'attendance' && <span className="required-badge">Required</span>}
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flow-summary">
+                <h3>Your Morning Meeting Flow</h3>
+                <p>
+                  {Object.values(settings.flowCustomization.enabledSteps).filter(Boolean).length} of 8 steps enabled
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Celebrations Management Modal */}
+      <CelebrationsManagementModal
+        isOpen={showCelebrationsModal}
+        onClose={() => setShowCelebrationsModal(false)}
+        celebrations={settings.celebrations.customCelebrations}
+        onUpdateCelebrations={(celebrations) => {
+          updateSettings('celebrations', { customCelebrations: celebrations });
+          setShowCelebrationsModal(false);
+        }}
+      />
 
       <style>{`
         .morning-meeting-hub {
-          height: 100vh;
-          width: 100vw;
-          overflow: hidden;
           display: flex;
           flex-direction: column;
+          height: 100vh;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          position: fixed;
-          top: 0;
-          left: 0;
-          z-index: 1000;
+          color: white;
         }
 
         .hub-header {
@@ -608,351 +744,715 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({ onStartMorningMee
           justify-content: space-between;
           align-items: center;
           padding: 1.5rem 2rem;
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(0, 0, 0, 0.1);
           backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .hub-title {
+        .header-content h1 {
+          font-size: 2rem;
+          margin: 0 0 0.25rem 0;
+          font-weight: 700;
+        }
+
+        .header-content p {
+          margin: 0;
+          opacity: 0.8;
+          font-size: 1.1rem;
+        }
+
+        .header-actions {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .home-button,
+        .save-button,
+        .start-button {
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px;
+          padding: 0.75rem 1.5rem;
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .save-button {
+          background: rgba(76, 175, 80, 0.2);
+          border-color: rgba(76, 175, 80, 0.4);
+        }
+
+        .start-button {
+          background: rgba(255, 193, 7, 0.2);
+          border-color: rgba(255, 193, 7, 0.4);
+          font-size: 1.1rem;
+          padding: 1rem 2rem;
+        }
+
+        .home-button:hover,
+        .save-button:hover,
+        .start-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .hub-layout {
+          display: flex;
+          flex: 1;
+          overflow: hidden;
+        }
+
+        .hub-nav {
+          width: 300px;
+          background: rgba(0, 0, 0, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 1.5rem;
+          overflow-y: auto;
+        }
+
+        .hub-nav h3 {
+          margin: 0 0 1rem 0;
+          font-size: 1.2rem;
+          opacity: 0.8;
+          text-align: center;
+        }
+
+        .nav-sections {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .nav-section {
           display: flex;
           align-items: center;
           gap: 1rem;
-          color: white;
-        }
-
-        .hub-title h1 {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin: 0;
-        }
-
-        .hub-title p {
-          font-size: 0.9rem;
-          opacity: 0.8;
-          margin: 0;
-        }
-
-        .close-btn {
-          background: rgba(255, 255, 255, 0.2);
-          border: none;
-          color: white;
-          font-size: 1.5rem;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
+          padding: 1rem;
+          background: rgba(255, 255, 255, 0.05);
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
           cursor: pointer;
           transition: all 0.3s ease;
+          text-align: left;
+          width: 100%;
+          color: white;
         }
 
-        .close-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: scale(1.1);
+        .nav-section:hover {
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-section.active {
+          background: rgba(255, 255, 255, 0.15);
+          border-color: rgba(255, 255, 255, 0.3);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-icon {
+          font-size: 1.5rem;
+        }
+
+        .section-info {
+          flex: 1;
+        }
+
+        .section-name {
+          font-weight: 600;
+          margin-bottom: 0.25rem;
+        }
+
+        .section-desc {
+          font-size: 0.8rem;
+          opacity: 0.7;
         }
 
         .hub-content {
           flex: 1;
-          display: flex;
-          overflow: hidden;
-        }
-
-        .hub-sidebar {
-          width: 250px;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          padding: 1rem;
-          border-right: 1px solid rgba(255, 255, 255, 0.2);
-          overflow-y: auto;
-        }
-
-        .sidebar-btn {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          margin-bottom: 0.5rem;
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          color: white;
-          font-size: 0.9rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          text-align: left;
-        }
-
-        .sidebar-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .sidebar-btn.active {
-          background: var(--section-color);
-          border-color: var(--section-color);
-          font-weight: 600;
-        }
-
-        .hub-main {
-          flex: 1;
           padding: 2rem;
           overflow-y: auto;
-          background: rgba(255, 255, 255, 0.95);
-          color: #333;
+          background: rgba(255, 255, 255, 0.05);
         }
 
         .hub-section {
           max-width: 800px;
+          margin: 0 auto;
         }
 
-        .section-title {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 1.25rem;
+        .hub-section h2 {
+          font-size: 2rem;
+          margin: 0 0 0.5rem 0;
           font-weight: 700;
-          margin-bottom: 0.5rem;
-          color: #2c3e50;
         }
 
-        .section-description {
-          color: #7f8c8d;
-          margin-bottom: 2rem;
-          line-height: 1.5;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
+        .hub-section > p {
+          font-size: 1.1rem;
+          opacity: 0.9;
+          margin: 0 0 2rem 0;
         }
 
         .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-group.full-width {
-          grid-column: 1 / -1;
+          margin-bottom: 1.5rem;
         }
 
         .form-group label {
+          display: block;
           font-weight: 600;
-          color: #2c3e50;
+          margin-bottom: 0.5rem;
+          font-size: 1rem;
         }
 
-        .form-group input,
-        .form-group textarea {
-          padding: 0.75rem;
-          border: 2px solid #e9ecef;
-          border-radius: 8px;
-          font-size: 0.9rem;
-          transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
-          outline: none;
-          border-color: #667eea;
-        }
-
-        .video-step-selector {
-          margin-bottom: 1rem;
-        }
-
-        .vocabulary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-
-        .vocab-category {
-          padding: 1.5rem;
-          background: #f8f9fa;
-          border-radius: 12px;
-          border: 2px solid #e9ecef;
-        }
-
-        .vocab-category h4 {
-          margin-bottom: 1rem;
-          color: #2c3e50;
-        }
-
-        .vocab-category textarea {
+        .form-input {
           width: 100%;
-          padding: 0.75rem;
-          border: 2px solid #e9ecef;
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
           border-radius: 8px;
-          font-size: 0.9rem;
-          transition: border-color 0.3s ease;
-          resize: vertical;
+          padding: 0.75rem;
+          color: white;
+          font-size: 1rem;
+          backdrop-filter: blur(10px);
         }
 
-        .vocab-category textarea:focus {
+        .form-input::placeholder {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-input:focus {
           outline: none;
-          border-color: #667eea;
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
         }
 
-        .behavior-controls,
-        .weather-controls {
-          margin-bottom: 2rem;
-        }
-
-        .toggle-label {
+        .checkbox-label {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
+          cursor: pointer;
           font-weight: 600;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+          transform: scale(1.2);
+        }
+
+        /* Video Selection Styles */
+        .video-categories {
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .video-category {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .video-category h3 {
+          margin: 0 0 1rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
+        }
+
+        .video-selection {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .video-select {
+          flex: 1;
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          padding: 0.75rem;
+          color: white;
+          font-size: 1rem;
           cursor: pointer;
         }
 
-        .statements-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
+        .video-select option {
+          background: #333;
+          color: white;
+        }
+
+        .preview-button {
+          background: rgba(255, 193, 7, 0.2);
+          border: 2px solid rgba(255, 193, 7, 0.4);
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+        }
+
+        .preview-button:hover {
+          background: rgba(255, 193, 7, 0.3);
+          transform: translateY(-2px);
+        }
+
+        .no-videos-message {
+          text-align: center;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 2rem;
+          margin-top: 2rem;
+        }
+
+        .no-videos-message p {
+          font-size: 1.1rem;
+          opacity: 0.8;
+          margin: 0;
+        }
+
+        /* Behavior Statements Styles */
+        .behavior-statements {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .behavior-statements h3 {
+          margin: 0 0 1rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
         }
 
         .statement-item {
           display: flex;
           gap: 1rem;
+          margin-bottom: 1rem;
           align-items: center;
         }
 
-        .statement-item input {
+        .statement-input {
           flex: 1;
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
           padding: 0.75rem;
-          border: 2px solid #e9ecef;
-          border-radius: 8px;
+          color: white;
+          font-size: 1rem;
         }
 
-        .remove-btn {
-          width: 30px;
-          height: 30px;
-          background: #e74c3c;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          cursor: pointer;
-          font-size: 1.2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+        .statement-input:focus {
+          outline: none;
+          border-color: rgba(255, 255, 255, 0.4);
         }
 
-        .add-statement-btn {
-          padding: 0.75rem 1.5rem;
-          background: #2ecc71;
-          color: white;
-          border: none;
+        .delete-statement-button {
+          background: rgba(220, 53, 69, 0.2);
+          border: 2px solid rgba(220, 53, 69, 0.4);
           border-radius: 8px;
+          padding: 0.5rem;
+          color: white;
           cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .delete-statement-button:hover {
+          background: rgba(220, 53, 69, 0.3);
+        }
+
+        .add-statement-button {
+          background: rgba(40, 167, 69, 0.2);
+          border: 2px solid rgba(40, 167, 69, 0.4);
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          color: white;
           font-weight: 600;
-          align-self: flex-start;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          width: 100%;
         }
 
+        .add-statement-button:hover {
+          background: rgba(40, 167, 69, 0.3);
+        }
+
+        /* Celebrations Styles */
+        .celebrations-summary {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .celebrations-summary h3 {
+          margin: 0 0 0.5rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
+        }
+
+        .celebrations-summary p {
+          margin: 0 0 1.5rem 0;
+          opacity: 0.8;
+        }
+
+        .manage-celebrations-button {
+          background: rgba(255, 107, 107, 0.2);
+          border: 2px solid rgba(255, 107, 107, 0.4);
+          border-radius: 12px;
+          padding: 1rem 1.5rem;
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 1.1rem;
+          width: 100%;
+        }
+
+        .manage-celebrations-button:hover {
+          background: rgba(255, 107, 107, 0.3);
+          transform: translateY(-2px);
+        }
+
+        /* Flow Customization Styles */
         .flow-steps {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          display: flex;
+          flex-direction: column;
           gap: 1rem;
+          margin-bottom: 2rem;
+        }
+
+        .flow-step {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1rem;
+          backdrop-filter: blur(10px);
         }
 
         .step-toggle {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 1rem;
-          background: #f8f9fa;
-          border-radius: 8px;
+          gap: 1rem;
           cursor: pointer;
-          font-weight: 500;
+          font-weight: 600;
         }
 
-        .preview-summary {
-          display: grid;
-          gap: 1rem;
-          margin-bottom: 2rem;
-          padding: 1.5rem;
-          background: #f8f9fa;
+        .step-toggle input[type="checkbox"] {
+          transform: scale(1.2);
+        }
+
+        .step-toggle input[type="checkbox"]:disabled {
+          opacity: 0.6;
+        }
+
+        .step-icon {
+          font-size: 1.5rem;
+        }
+
+        .step-name {
+          flex: 1;
+        }
+
+        .required-badge {
+          background: rgba(255, 193, 7, 0.3);
+          border: 1px solid rgba(255, 193, 7, 0.5);
+          border-radius: 4px;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.8rem;
+          font-weight: 600;
+        }
+
+        .flow-summary {
+          background: rgba(255, 255, 255, 0.1);
           border-radius: 12px;
+          padding: 1.5rem;
+          text-align: center;
+          backdrop-filter: blur(10px);
         }
 
-        .summary-item {
-          display: flex;
-          justify-content: space-between;
-          padding: 0.5rem 0;
-          border-bottom: 1px solid #e9ecef;
+        .flow-summary h3 {
+          margin: 0 0 0.5rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
         }
 
-        .preview-actions {
-          display: flex;
-          gap: 1rem;
+        .flow-summary p {
+          margin: 0;
+          opacity: 0.8;
+          font-size: 1.1rem;
         }
 
-        .preview-btn,
-        .test-btn {
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.8);
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s ease;
+          justify-content: center;
+          z-index: 10000;
         }
 
-        .preview-btn {
-          background: #3498db;
-          color: white;
+        .modal-content {
+          background: white;
+          border-radius: 16px;
+          width: 90%;
+          max-width: 600px;
+          max-height: 80vh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          color: #333;
         }
 
-        .test-btn {
-          background: #2ecc71;
-          color: white;
-        }
-
-        .hub-footer {
+        .modal-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 1.5rem 2rem;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          border-top: 1px solid rgba(255, 255, 255, 0.2);
+          border-bottom: 1px solid #e1e8ed;
         }
 
-        .secondary-btn,
-        .primary-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 2rem;
+        .modal-header h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+        }
+
+        .close-button {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #666;
+          padding: 0.25rem;
+        }
+
+        .close-button:hover {
+          color: #333;
+        }
+
+        .modal-body {
+          padding: 2rem;
+          overflow-y: auto;
+          flex: 1;
+        }
+
+        .add-celebration-button {
+          background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+          color: white;
           border: none;
           border-radius: 8px;
-          font-weight: 600;
+          padding: 0.75rem 1.5rem;
           cursor: pointer;
-          transition: all 0.3s ease;
+          font-weight: 600;
+          margin-bottom: 2rem;
+          width: 100%;
         }
 
-        .secondary-btn {
-          background: rgba(255, 255, 255, 0.2);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .primary-btn {
-          background: #2ecc71;
-          color: white;
-        }
-
-        .secondary-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
-        }
-
-        .primary-btn:hover {
-          background: #27ae60;
+        .add-celebration-button:hover {
           transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .celebrations-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .celebration-item {
+          border: 1px solid #e1e8ed;
+          border-radius: 8px;
+          padding: 1.5rem;
+          background: #f8f9fa;
+        }
+
+        .celebration-row {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          align-items: end;
+        }
+
+        .celebration-input {
+          flex: 1;
+          padding: 0.5rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 1rem;
+        }
+
+        .emoji-input {
+          width: 60px;
+          padding: 0.5rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          text-align: center;
+          font-size: 1rem;
+        }
+
+        .delete-button {
+          background: #dc3545;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          padding: 0.5rem 1rem;
+          cursor: pointer;
+          font-size: 1rem;
+        }
+
+        .delete-button:hover {
+          background: #c82333;
+        }
+
+        .date-section {
+          flex: 1;
+        }
+
+        .date-section label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 600;
+          color: #333;
+          font-size: 0.9rem;
+        }
+
+        .date-input {
+          width: 100%;
+          padding: 0.5rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 1rem;
+        }
+
+        .recurring-section {
+          display: flex;
+          align-items: end;
+          padding-bottom: 0.5rem;
+        }
+
+        .recurring-section .checkbox-label {
+          font-size: 0.9rem;
+          color: #333;
+          gap: 0.5rem;
+        }
+
+        .message-input {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          resize: vertical;
+          font-size: 1rem;
+          font-family: inherit;
+        }
+
+        .modal-footer {
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+          padding: 1.5rem 2rem;
+          border-top: 1px solid #e1e8ed;
+        }
+
+        .cancel-button {
+          background: #6c757d;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .cancel-button:hover {
+          background: #5a6268;
+        }
+
+        .save-button {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          padding: 0.75rem 1.5rem;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+        .save-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+          .hub-layout {
+            flex-direction: column;
+          }
+
+          .hub-nav {
+            width: 100%;
+            padding: 1rem;
+          }
+
+          .nav-sections {
+            flex-direction: row;
+            overflow-x: auto;
+            gap: 1rem;
+          }
+
+          .nav-section {
+            min-width: 200px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .hub-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+
+          .header-actions {
+            flex-direction: column;
+            width: 100%;
+          }
+
+          .hub-content {
+            padding: 1rem;
+          }
+
+          .video-selection {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .celebration-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .modal-content {
+            width: 95%;
+            margin: 1rem;
+          }
+
+          .modal-body {
+            padding: 1rem;
+          }
+
+          .modal-footer {
+            flex-direction: column;
+          }
         }
       `}</style>
     </div>
