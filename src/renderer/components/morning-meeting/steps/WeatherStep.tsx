@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps, WeatherStepData } from '../types/morningMeetingTypes';
 
 interface WeatherData {
@@ -195,8 +195,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
     }
   }, [hubSettings, currentWeather]);
 
-  // Save step data whenever state changes
-  useEffect(() => {
+  // FIX: Use useCallback to memoize data update function and prevent infinite loops
+  const handleDataUpdate = useCallback(() => {
     if (currentWeather) {
       const stepData: WeatherStepData = {
         currentWeather,
@@ -207,6 +207,14 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       onDataUpdate(stepData);
     }
   }, [currentWeather, selectedClothing, showDiscussion, customVocabulary, onDataUpdate]);
+
+  // FIX: Only update data when meaningful changes occur
+  useEffect(() => {
+    // Only call data update if we have weather data and some progression
+    if (currentWeather && (selectedClothing.length > 0 || showClothingSelection || showDiscussion)) {
+      handleDataUpdate();
+    }
+  }, [currentWeather, selectedClothing, showClothingSelection, showDiscussion, handleDataUpdate]);
 
   const season = getSeason(currentDate);
   const clothingSuggestions = getClothingSuggestions(currentWeather);

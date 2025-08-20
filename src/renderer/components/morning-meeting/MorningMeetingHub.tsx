@@ -245,40 +245,50 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
       const morningMeetingSettings = UnifiedDataService.getSettings()?.morningMeeting || {};
       console.log('🔧 DEBUG: Raw MM settings from UnifiedDataService:', morningMeetingSettings);
       
+      // FIX: Ensure all required properties are included in merged settings
       const mergedSettings: HubSettings = {
-        ...DEFAULT_HUB_SETTINGS,
+        // FIX: Always include welcomePersonalization
         welcomePersonalization: {
-          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || '',
-          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || '',
-          className: morningMeetingSettings.welcomeSettings?.className || '',
-          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || 'Welcome to Our Classroom!'
+          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || DEFAULT_HUB_SETTINGS.welcomePersonalization.schoolName,
+          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || DEFAULT_HUB_SETTINGS.welcomePersonalization.teacherName,
+          className: morningMeetingSettings.welcomeSettings?.className || DEFAULT_HUB_SETTINGS.welcomePersonalization.className,
+          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || DEFAULT_HUB_SETTINGS.welcomePersonalization.customMessage
         },
+        // FIX: Always include customVocabulary
         customVocabulary: {
-          weather: morningMeetingSettings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
-          seasonal: morningMeetingSettings.customVocabulary?.seasonal || ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
+          weather: morningMeetingSettings.customVocabulary?.weather || DEFAULT_HUB_SETTINGS.customVocabulary.weather,
+          seasonal: morningMeetingSettings.customVocabulary?.seasonal || DEFAULT_HUB_SETTINGS.customVocabulary.seasonal
         },
+        // FIX: Ensure videos array structure with proper URLs
         videos: {
-          ...DEFAULT_HUB_SETTINGS.videos,
-          weatherClothing: morningMeetingSettings.selectedVideos?.weather ? [{
-  id: morningMeetingSettings.selectedVideos.weather,
-  name: 'Selected Weather Video',
-  url: ''
-}] : [],
-          seasonalLearning: morningMeetingSettings.selectedVideos?.seasonal ? [{
-  id: morningMeetingSettings.selectedVideos.seasonal,
-  name: 'Selected Seasonal Video',
-  url: ''
-}] : [],
-          behaviorCommitments: morningMeetingSettings.selectedVideos?.behavior ? [{
-  id: morningMeetingSettings.selectedVideos.behavior,
-  name: 'Selected Behavior Video',
-  url: ''
-}] : [],
-          calendarMath: morningMeetingSettings.selectedVideos?.calendarMath ? [{
-  id: morningMeetingSettings.selectedVideos.calendarMath,
-  name: 'Selected Calendar Math Video',
-  url: ''
-}] : []
+          weatherClothing: Array.isArray(morningMeetingSettings.selectedVideos?.weatherClothing) 
+            ? morningMeetingSettings.selectedVideos.weatherClothing
+            : (morningMeetingSettings.selectedVideos?.weatherClothing ? [{
+                id: morningMeetingSettings.selectedVideos.weatherClothing,
+                name: 'Selected Weather Video',
+                url: morningMeetingSettings.selectedVideos.weatherClothing
+              }] : []),
+          seasonalLearning: Array.isArray(morningMeetingSettings.selectedVideos?.seasonalLearning) 
+            ? morningMeetingSettings.selectedVideos.seasonalLearning
+            : (morningMeetingSettings.selectedVideos?.seasonalLearning ? [{
+                id: morningMeetingSettings.selectedVideos.seasonalLearning,
+                name: 'Selected Seasonal Video',
+                url: morningMeetingSettings.selectedVideos.seasonalLearning
+              }] : []),
+          behaviorCommitments: Array.isArray(morningMeetingSettings.selectedVideos?.behaviorCommitments) 
+            ? morningMeetingSettings.selectedVideos.behaviorCommitments
+            : (morningMeetingSettings.selectedVideos?.behaviorCommitments ? [{
+                id: morningMeetingSettings.selectedVideos.behaviorCommitments,
+                name: 'Selected Behavior Video',
+                url: morningMeetingSettings.selectedVideos.behaviorCommitments
+              }] : []),
+          calendarMath: Array.isArray(morningMeetingSettings.selectedVideos?.calendarMath) 
+            ? morningMeetingSettings.selectedVideos.calendarMath
+            : (morningMeetingSettings.selectedVideos?.calendarMath ? [{
+                id: morningMeetingSettings.selectedVideos.calendarMath,
+                name: 'Selected Calendar Math Video',
+                url: morningMeetingSettings.selectedVideos.calendarMath
+              }] : [])
         },
         behaviorStatements: {
           enabled: morningMeetingSettings.behaviorCommitments?.enabled || true,
@@ -345,11 +355,27 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
     try {
       console.log('💾 DEBUG: Saving settings:', settings);
       
-      // Convert hub settings back to the format expected by Settings.tsx
+      // FIX: Convert hub settings back to the format expected by Settings.tsx
+      // but ensure ALL properties are included
       const morningMeetingSettings = {
-        welcomeSettings: settings.welcomePersonalization,
-        customVocabulary: settings.customVocabulary,
-        selectedVideos: settings.videos,
+        // FIX: Save welcomePersonalization properly
+        welcomeSettings: {
+          schoolName: settings.welcomePersonalization.schoolName,
+          teacherName: settings.welcomePersonalization.teacherName,
+          className: settings.welcomePersonalization.className,
+          customMessage: settings.welcomePersonalization.customMessage
+        },
+        // FIX: Save customVocabulary properly
+        customVocabulary: {
+          weather: settings.customVocabulary.weather,
+          seasonal: settings.customVocabulary.seasonal
+        },
+        selectedVideos: {
+          weatherClothing: settings.videos.weatherClothing,
+          seasonalLearning: settings.videos.seasonalLearning,
+          behaviorCommitments: settings.videos.behaviorCommitments,
+          calendarMath: settings.videos.calendarMath
+        },
         behaviorCommitments: settings.behaviorStatements,
         celebrations: settings.celebrations,
         checkInFlow: settings.flowCustomization.enabledSteps

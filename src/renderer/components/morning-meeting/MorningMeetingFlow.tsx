@@ -288,33 +288,29 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         }}>
           {currentStepKey.replace(/([A-Z])/g, ' $1').trim()}
         </span>
+        {/* HOME BUTTON - FIX: Add exit functionality */}
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(220, 53, 69, 0.8)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'white',
+            padding: '0.5rem 1rem',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          title="Exit Morning Meeting"
+        >
+          🏠 Exit
+        </button>
       </div>
 
       {/* Step Component */}
       <CurrentStepComponent {...stepProps} />
 
-      {/* Debug info (remove in production) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div style={{
-          position: 'fixed',
-          bottom: '10px',
-          right: '10px',
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: 'white',
-          padding: '0.5rem',
-          borderRadius: '8px',
-          fontSize: '0.7rem',
-          zIndex: 2000,
-          maxWidth: '300px'
-        }}>
-          <div>Step: {currentStepKey}</div>
-          <div>Videos: {hubSettings?.videos?.[getVideoKey(currentStepKey)]?.length || 0}</div>
-          <div>Students: {students.filter(s => s.present === true).length} present</div>
-          <div>Welcome: {hubSettings?.welcomePersonalization?.customMessage || 'DEFAULT'}</div>
-          <div>Behaviors: {hubSettings?.behaviorStatements?.statements?.length || 0}</div>
-          <div>Vocab: {hubSettings?.customVocabulary?.weather?.length || 0}</div>
-        </div>
-      )}
     </div>
   );
 };

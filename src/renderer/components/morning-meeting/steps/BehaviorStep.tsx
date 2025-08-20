@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps, BehaviorStepData } from '../types/morningMeetingTypes';
 
 interface Student {
@@ -107,7 +107,8 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
     console.log('💪 DEBUG Behavior statements:', hubSettings?.behaviorStatements?.statements);
   }, [hubSettings]);
 
-  useEffect(() => {
+  // FIX: Use useCallback to memoize the data update function
+  const handleDataUpdate = useCallback(() => {
     const stepDataUpdate: any = {
       selectedCommitments,
       studentCommitments,
@@ -117,6 +118,14 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
     };
     onDataUpdate(stepDataUpdate);
   }, [selectedCommitments, studentCommitments, currentView, presentStudents, onDataUpdate]);
+
+  // FIX: Only update data when meaningful state changes occur
+  useEffect(() => {
+    // Only call data update if we have actual changes to report
+    if (currentView !== 'selection' || selectedCommitments.length > 0 || Object.keys(studentCommitments).length > 0) {
+      handleDataUpdate();
+    }
+  }, [selectedCommitments, studentCommitments, currentView, handleDataUpdate]);
 
   const toggleCommitment = (commitmentId: string) => {
     setSelectedCommitments(prev => 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
 const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
@@ -46,8 +46,8 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    // Save step completion data
+  // FIX: Use useCallback to memoize onDataUpdate and prevent infinite loops
+  const handleDataUpdate = useCallback(() => {
     const stepData = {
       welcomeMessage,
       classInfo,
@@ -56,6 +56,13 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
     };
     onDataUpdate(stepData);
   }, [welcomeMessage, classInfo, showGreeting, onDataUpdate]);
+
+  // FIX: Only call onDataUpdate when showGreeting changes to true (completion)
+  useEffect(() => {
+    if (showGreeting) {
+      handleDataUpdate();
+    }
+  }, [showGreeting, handleDataUpdate]);
 
   return (
     <div style={{
