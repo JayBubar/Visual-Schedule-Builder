@@ -847,10 +847,65 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [showChoiceModal, setShowChoiceModal] = useState(false);
   const [todayChoices, setTodayChoices] = useState<StudentChoice[]>([]);
   const [showBehaviorStatements, setShowBehaviorStatements] = useState(true);
+  const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
 
   // Get current pull-outs from resource schedule
   const { getCurrentPullOuts } = useResourceSchedule();
   const currentPullOuts = getCurrentPullOuts();
+
+  // Load behavior commitments at main component level
+  useEffect(() => {
+    setBehaviorCommitments(getTodaysBehaviorCommitments());
+  }, []);
+
+  // Toggle function for behavior achievements at main component level
+  const toggleStudentAchievement = (studentId: string) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const savedCheckIns = localStorage.getItem('dailyCheckIns');
+      
+      if (!savedCheckIns) return;
+      
+      const checkIns = JSON.parse(savedCheckIns);
+      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
+      
+      if (todayCheckInIndex === -1) return;
+      
+      const todayCheckIn = checkIns[todayCheckInIndex];
+      
+      if (todayCheckIn.behaviorCommitments) {
+        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
+          (commitment: any) => commitment.studentId === studentId
+        );
+        
+        if (commitmentIndex !== -1) {
+          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
+          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
+            ? new Date().toISOString() 
+            : null;
+          
+          todayCheckIn.updatedAt = new Date().toISOString();
+          checkIns[todayCheckInIndex] = todayCheckIn;
+          
+          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
+          
+          // Update the local state
+          setBehaviorCommitments((prev: any) => ({
+            ...prev,
+            [studentId]: {
+              ...prev[studentId],
+              achieved: newAchievedStatus
+            }
+          }));
+          
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
+  };
 
   // Dynamic screen sizing - calculate available heights
   const headerHeight = 70; // Reduced from 80px - more compact header
@@ -1384,7 +1439,7 @@ useEffect(() => {
   );
 
   // 🎯 Enhanced Group display component with better error handling and dynamic sizing
-  const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number; availableHeight: number }> = ({ group, groupIndex, availableHeight }) => {
+  const GroupDisplay: React.FC<{ group: GroupAssignment; groupIndex: number; availableHeight: number; behaviorCommitments: any; toggleStudentAchievement: (studentId: string) => void }> = ({ group, groupIndex, availableHeight, behaviorCommitments, toggleStudentAchievement }) => {
     console.log(`🎨 Rendering group ${groupIndex + 1}:`, group);
 
     // Filter out absent students from group display using UnifiedDataService
@@ -1411,61 +1466,7 @@ useEffect(() => {
     });
 
     const groupColor = group.color || '#9C27B0';
-    
-    const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
-    
-    // Load commitments once
-    useEffect(() => {
-      setBehaviorCommitments(getTodaysBehaviorCommitments());
-    }, []);
 
-    const toggleStudentAchievement = (studentId: string) => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const savedCheckIns = localStorage.getItem('dailyCheckIns');
-        
-        if (!savedCheckIns) return;
-        
-        const checkIns = JSON.parse(savedCheckIns);
-        const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-        
-        if (todayCheckInIndex === -1) return;
-        
-        const todayCheckIn = checkIns[todayCheckInIndex];
-        
-        if (todayCheckIn.behaviorCommitments) {
-          const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
-            (commitment: any) => commitment.studentId === studentId
-          );
-          
-          if (commitmentIndex !== -1) {
-            const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
-            todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-            todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
-              ? new Date().toISOString() 
-              : null;
-            
-            todayCheckIn.updatedAt = new Date().toISOString();
-            checkIns[todayCheckInIndex] = todayCheckIn;
-            
-            localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-            
-            // Update the local state
-            setBehaviorCommitments((prev: any) => ({
-              ...prev,
-              [studentId]: {
-                ...prev[studentId],
-                achieved: newAchievedStatus
-              }
-            }));
-            
-            console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
-          }
-        }
-      } catch (error) {
-        console.error('Error toggling achievement:', error);
-      }
-    };
 
 
     // Calculate dynamic card heights based on available space and number of students
@@ -1995,6 +1996,8 @@ useEffect(() => {
                   group={group}
                   groupIndex={index}
                   availableHeight={availableContentHeight / Math.ceil(groupAssignments.length / (groupAssignments.length > 2 ? 2 : 1))}
+                  behaviorCommitments={behaviorCommitments}
+                  toggleStudentAchievement={toggleStudentAchievement}
                 />
               ))}
             </div>
