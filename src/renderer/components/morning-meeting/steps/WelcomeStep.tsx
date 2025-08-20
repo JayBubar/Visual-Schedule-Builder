@@ -46,23 +46,18 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
-  // FIX: Use useCallback to memoize onDataUpdate and prevent infinite loops
-  const handleDataUpdate = useCallback(() => {
-    const stepData = {
-      welcomeMessage,
-      classInfo,
-      showedGreeting: showGreeting,
-      completedAt: showGreeting ? new Date() : undefined
-    };
-    onDataUpdate(stepData);
-  }, [welcomeMessage, classInfo, showGreeting, onDataUpdate]);
-
-  // FIX: Only call onDataUpdate when showGreeting changes to true (completion)
+  // SIMPLIFIED FIX - Only update once when showGreeting becomes true
   useEffect(() => {
     if (showGreeting) {
-      handleDataUpdate();
+      const stepData = {
+        welcomeMessage,
+        classInfo,
+        showedGreeting: showGreeting,
+        completedAt: new Date()
+      };
+      onDataUpdate(stepData);
     }
-  }, [showGreeting, handleDataUpdate]);
+  }, [showGreeting]); // Only depend on showGreeting
 
   return (
     <div style={{
