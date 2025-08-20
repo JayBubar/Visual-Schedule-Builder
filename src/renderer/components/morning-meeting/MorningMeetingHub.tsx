@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Settings, Users, Video, Star, Gift, BookOpen, Save, Play } from 'lucide-react';
-import UnifiedDataService from '../../../services/unifiedDataService';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 interface MorningMeetingHubProps {
   onStartMorningMeeting: () => void;

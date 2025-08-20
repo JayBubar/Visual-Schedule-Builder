@@ -1286,4 +1286,9 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
             opacity: 1;
           }
         }
-      `}
+      `}</style>
+    </div>
+  );
+};
+
+export default DayReviewStep;
