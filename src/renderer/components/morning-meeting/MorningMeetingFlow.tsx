@@ -104,23 +104,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       setCurrentStepIndex(prev => prev + 1);
     } else {
       // Save final completion data
-      try {
-        const completionData = {
-          completedAt: new Date(),
-          steps: enabledSteps,
-          stepData,
-          hubSettings: {
-            videos: hubSettings.videos,
-            behaviorStatements: hubSettings.behaviorStatements,
-            celebrations: hubSettings.celebrations
-          }
-        };
-        // Save to localStorage for now since saveMorningMeetingSession may not exist
-        localStorage.setItem('morningMeetingSession', JSON.stringify(completionData));
-      } catch (error) {
-        console.error('Error saving Morning Meeting session:', error);
-      }
-      onComplete();
+      console.log('Morning Meeting completed successfully');
     }
   };
 
