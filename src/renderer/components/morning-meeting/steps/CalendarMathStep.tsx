@@ -9,13 +9,27 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings
 }) => {
-  const [currentLevel, setCurrentLevel] = useState<'month' | 'week' | 'day'>(
-    stepData?.currentLevel || 'month'
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [mathConcepts, setMathConcepts] = useState<string[]>([]);
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+  const [currentSection, setCurrentSection] = useState<string>('day');
+  const [currentLevel, setCurrentLevel] = useState<'day' | 'week' | 'month'>(
+    stepData?.currentLevel || 'day'
   );
   const [completedLevels, setCompletedLevels] = useState<string[]>(
     stepData?.completedLevels || []
   );
+  const [timeSpentSeconds, setTimeSpentSeconds] = useState<number>(0);
   const [startTime] = useState(new Date());
+
+  // Update time spent every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeSpentSeconds(Math.floor((new Date().getTime() - startTime.getTime()) / 1000));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startTime]);
 
   // Settings from hub
   const enableOrdinalNumbers = hubSettings?.calendarMath?.enableOrdinalNumbers ?? true;
@@ -83,13 +97,23 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   // Save step data
   useEffect(() => {
     const stepData: CalendarMathStepData = {
-      currentLevel,
-      completedLevels,
-      timeSpentSeconds: Math.floor((new Date().getTime() - startTime.getTime()) / 1000),
-      completedAt: completedLevels.length >= 3 ? new Date() : undefined
+      // Required properties from interface
+      currentDate: new Date(), // or currentDate prop
+      selectedActivities: selectedActivities || [], // from component state
+      mathConcepts: mathConcepts || [], // from component state
+      completedSections: completedSections || [], // from component state
+      currentSection: currentSection || 'day', // from component state
+      
+      // New properties that were added
+      currentLevel: currentLevel || 'day', // from component state
+      completedLevels: completedLevels || [], // from component state
+      timeSpentSeconds: timeSpentSeconds || 0, // from component state
+      
+      // Optional property
+      completedAt: currentLevel === 'month' && completedLevels.length >= 3 ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentLevel, completedLevels, startTime]);
+  }, [currentLevel, completedLevels, selectedActivities, mathConcepts, completedSections, currentSection, timeSpentSeconds]);
 
   const handleLevelComplete = (level: string) => {
     if (!completedLevels.includes(level)) {
