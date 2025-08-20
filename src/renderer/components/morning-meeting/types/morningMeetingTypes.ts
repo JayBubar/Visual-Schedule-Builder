@@ -70,6 +70,8 @@ export interface MorningMeetingSettings {
       calendarMath: boolean;
       weather: boolean;
       seasonal: boolean;
+      celebration: boolean;
+      dayReview: boolean;
     };
     stepOrder: string[];
   };
@@ -193,6 +195,18 @@ export const MORNING_MEETING_STEPS = {
     icon: '🍂',
     component: 'SeasonalStep',
     required: false
+  },
+  celebration: {
+    name: 'Celebrations',
+    icon: '🎉',
+    component: 'CelebrationStep',
+    required: false
+  },
+  dayReview: {
+    name: 'Day Review & Goals',
+    icon: '🎯',
+    component: 'DayReviewStep',
+    required: false
   }
 } as const;
 
@@ -250,8 +264,10 @@ export const DEFAULT_MORNING_MEETING_SETTINGS: MorningMeetingSettings = {
       behavior: true,
       calendarMath: true,
       weather: true,
-      seasonal: true
+      seasonal: true,
+      celebration: true,
+      dayReview: true
     },
-    stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
+    stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal', 'celebration', 'dayReview']
   }
 };

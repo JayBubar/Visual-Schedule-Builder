@@ -68,6 +68,13 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   }, [enabledSteps, currentStepIndex]);
 
   const handleNext = () => {
+    console.log('🔍 DEBUG handleNext:', { 
+      currentStepIndex, 
+      enabledStepsLength: enabledSteps.length, 
+      enabledSteps: enabledSteps,
+      condition: currentStepIndex < enabledSteps.length - 1 
+    });
+    
     if (currentStepIndex < enabledSteps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
     } else {
