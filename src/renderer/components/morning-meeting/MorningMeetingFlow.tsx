@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { STEP_COMPONENTS, getEnabledStepsInOrder, StepKey } from './steps';
 import { MorningMeetingStepProps } from './types/morningMeetingTypes';
 import UnifiedDataService from '../../services/unifiedDataService';
@@ -132,7 +132,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     }
   };
 
-  const handleStepDataUpdate = (data: any) => {
+  const handleStepDataUpdate = useCallback((data: any) => {
     setStepData(prev => ({
       ...prev,
       [currentStepKey]: data
@@ -145,7 +145,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     } catch (error) {
       console.error('Error saving step data:', error);
     }
-  };
+  }, [currentStepKey]);
 
   // Handle case where no steps are enabled
   if (enabledSteps.length === 0) {
