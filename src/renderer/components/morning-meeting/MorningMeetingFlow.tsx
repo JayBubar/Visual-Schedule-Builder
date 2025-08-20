@@ -15,10 +15,6 @@ import {
 } from './steps';
 import UnifiedDataService from '../../services/unifiedDataService';
 
-// ALSO: Let's check if DEFAULT_MORNING_MEETING_SETTINGS is properly imported
-// Add this at the top of your MorningMeetingFlow.tsx file:
-console.log('🔍 DEBUG: DEFAULT_MORNING_MEETING_SETTINGS at import:', DEFAULT_MORNING_MEETING_SETTINGS);
-
 interface MorningMeetingFlowProps {
   students?: Student[];
   staff?: StaffMember[];
@@ -35,32 +31,8 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepData, setStepData] = useState<Record<string, any>>({});
   const [hubSettings, setHubSettings] = useState<MorningMeetingSettings>(DEFAULT_MORNING_MEETING_SETTINGS);
-  
-  // FORCE CORRECT SETTINGS - TEMPORARY FIX
-  useEffect(() => {
-    const correctSettings = {
-      ...DEFAULT_MORNING_MEETING_SETTINGS,
-      flowCustomization: {
-        enabledSteps: {
-          welcome: true,
-          attendance: true,
-          behavior: true,
-          calendarMath: true,
-          weather: true,        // Force enable
-          seasonal: true        // Force enable
-        },
-        stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
-      }
-    };
-    
-    console.log('🔧 FORCE: Setting correct hub settings:', correctSettings);
-    setHubSettings(correctSettings);
-    
-    // Also save to localStorage to persist
-    localStorage.setItem('morningMeetingSettings', JSON.stringify(correctSettings));
-  }, []);
 
-  // Get enabled steps from Hub settings - FIXED VERSION
+  // Get enabled steps from Hub settings
   const enabledSteps: StepKey[] = React.useMemo(() => {
     // Get the step order from hub settings or use default
     const stepOrder = hubSettings.flowCustomization.stepOrder?.length > 0 
@@ -72,20 +44,11 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       hubSettings.flowCustomization.enabledSteps[stepKey as StepKey] === true
     ) as StepKey[];
     
-    console.log('🔍 DEBUG: Hub Settings:', hubSettings.flowCustomization.enabledSteps);
-    console.log('🔍 DEBUG: Step Order:', stepOrder);
-    console.log('🔍 DEBUG: Enabled Steps:', orderedEnabledSteps);
-    
     // Fallback to all steps if none are enabled (shouldn't happen, but safety)
     return orderedEnabledSteps.length > 0 ? orderedEnabledSteps : [...DEFAULT_STEP_ORDER];
   }, [hubSettings.flowCustomization.enabledSteps, hubSettings.flowCustomization.stepOrder]);
 
   const totalSteps = enabledSteps.length;
-
-  // Add this useEffect to log step changes
-  useEffect(() => {
-    console.log('🔄 DEBUG: Current step changed to:', currentStepIndex, enabledSteps[currentStepIndex]);
-  }, [currentStepIndex, enabledSteps]);
 
   // Use useCallback to prevent infinite loops
   const handleStepDataUpdate = useCallback((data: any) => {
@@ -105,16 +68,9 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   }, [enabledSteps, currentStepIndex]);
 
   const handleNext = () => {
-    console.log('🔍 DEBUG: handleNext called');
-    console.log('🔍 DEBUG: Current index:', currentStepIndex);
-    console.log('🔍 DEBUG: Total steps:', enabledSteps.length);
-    console.log('🔍 DEBUG: Next step would be:', enabledSteps[currentStepIndex + 1]);
-    
     if (currentStepIndex < enabledSteps.length - 1) {
-      console.log('✅ DEBUG: Advancing to next step');
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      console.log('🎉 DEBUG: Completing Morning Meeting');
       // Complete morning meeting
       if (onComplete) {
         onComplete();
@@ -132,13 +88,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     const currentStepKey = enabledSteps[currentStepIndex];
     const StepComponent = STEP_COMPONENTS[currentStepKey];
     
-    console.log('🔍 DEBUG: Current Step Index:', currentStepIndex);
-    console.log('🔍 DEBUG: Current Step Key:', currentStepKey);
-    console.log('🔍 DEBUG: Step Component:', StepComponent);
-    console.log('🔍 DEBUG: All Enabled Steps:', enabledSteps);
-    
     if (!StepComponent) {
-      console.error('❌ DEBUG: Step Component not found for:', currentStepKey);
       return (
         <div style={{
           display: 'flex',
@@ -149,12 +99,18 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
           color: 'white',
           textAlign: 'center'
         }}>
-          <h2>Step "{currentStepKey}" not found</h2>
-          <p>Available steps: {Object.keys(STEP_COMPONENTS).join(', ')}</p>
-          <p>Current index: {currentStepIndex} of {enabledSteps.length}</p>
+          <h2>Step not found</h2>
+          <p>Please check your Morning Meeting configuration.</p>
           <button onClick={() => setCurrentStepIndex(0)} style={{
-            background: 'red', color: 'white', padding: '10px', borderRadius: '5px', 
-            border: 'none', cursor: 'pointer', marginTop: '10px'
+            background: 'rgba(255, 255, 255, 0.2)', 
+            color: 'white', 
+            padding: '1rem 2rem', 
+            borderRadius: '8px', 
+            border: 'none', 
+            cursor: 'pointer', 
+            marginTop: '1rem',
+            fontSize: '1rem',
+            fontWeight: '600'
           }}>
             Reset to First Step
           </button>
@@ -206,40 +162,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {/* TEMPORARY DEBUG BUTTON */}
-          <button 
-            onClick={() => {
-              const testSettings = {
-                ...DEFAULT_MORNING_MEETING_SETTINGS,
-                flowCustomization: {
-                  enabledSteps: {
-                    welcome: true,
-                    attendance: true,
-                    behavior: true,
-                    calendarMath: true,
-                    weather: true,      // Force enable
-                    seasonal: true      // Force enable
-                  },
-                  stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal']
-                }
-              };
-              console.log('🔍 DEBUG: Setting test settings:', testSettings);
-              setHubSettings(testSettings);
-            }}
-            style={{
-              background: 'red',
-              color: 'white',
-              padding: '0.5rem 0.75rem',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: '600'
-            }}
-          >
-            Force Enable All Steps
-          </button>
-
           {onNavigateHome && (
             <button
               onClick={onNavigateHome}
