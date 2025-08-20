@@ -14,6 +14,10 @@ interface HubSettings {
     className: string;
     customMessage?: string;
   };
+  customVocabulary: {
+    weather: string[];
+    seasonal: string[];
+  };
   videos: {
     weatherClothing: Array<{id: string, name: string, url: string}>;
     seasonalLearning: Array<{id: string, name: string, url: string}>;
@@ -54,6 +58,10 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
     className: '',
     customMessage: 'Welcome to Our Classroom!'
   },
+  customVocabulary: {
+    weather: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
+    seasonal: ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
+  },
   videos: {
     weatherClothing: [],
     seasonalLearning: [],
@@ -63,11 +71,9 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
   behaviorStatements: {
     enabled: true,
     statements: [
-      'I will be kind to others',
-      'I will listen when others are speaking',
-      'I will do my best work',
-      'I will help others when they need it',
-      'I will follow classroom rules'
+      'I will use kind words with my friends',
+      'I will listen when my teacher is talking',
+      'I will try my best in everything I do'
     ],
     allowCustom: true
   },
@@ -223,7 +229,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
   onClose
 }) => {
-  const [activeSection, setActiveSection] = useState<'welcome' | 'videos' | 'behavior' | 'celebrations' | 'flow'>('welcome');
+  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'behavior' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
@@ -236,14 +242,19 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
   const loadSettings = () => {
     try {
-      const savedSettings = UnifiedDataService.getSettings();
-      const morningMeetingSettings = savedSettings?.morningMeeting || {};
+      const morningMeetingSettings = UnifiedDataService.getSettings()?.morningMeeting || {};
       
       const mergedSettings: HubSettings = {
         ...DEFAULT_HUB_SETTINGS,
         welcomePersonalization: {
-          ...DEFAULT_HUB_SETTINGS.welcomePersonalization,
-          ...morningMeetingSettings.welcomeSettings
+          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || '',
+          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || '',
+          className: morningMeetingSettings.welcomeSettings?.className || '',
+          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || 'Welcome to Our Classroom!'
+        },
+        customVocabulary: {
+          weather: morningMeetingSettings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
+          seasonal: morningMeetingSettings.customVocabulary?.seasonal || ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
         },
         videos: {
           ...DEFAULT_HUB_SETTINGS.videos,
@@ -269,8 +280,13 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 }] : []
         },
         behaviorStatements: {
-          ...DEFAULT_HUB_SETTINGS.behaviorStatements,
-          ...morningMeetingSettings.behaviorCommitments
+          enabled: morningMeetingSettings.behaviorCommitments?.enabled || true,
+          statements: morningMeetingSettings.behaviorCommitments?.statements || [
+            'I will use kind words with my friends',
+            'I will listen when my teacher is talking',
+            'I will try my best in everything I do'
+          ],
+          allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom || true
         },
         celebrations: {
           ...DEFAULT_HUB_SETTINGS.celebrations,
@@ -369,10 +385,11 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
   const hubSections = [
     { id: 'welcome', name: 'Welcome', icon: '👋', description: 'Personalize your classroom greeting' },
-    { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select videos for each step' },
+    { id: 'vocabulary', name: 'Vocabulary', icon: '📚', description: 'Customize learning words' },
+    { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select educational videos' },
     { id: 'behavior', name: 'Behavior', icon: '⭐', description: 'Manage behavior expectations' },
-    { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and custom celebrations' },
-    { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize which steps to include' }
+    { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and special events' },
+    { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize meeting steps' }
   ] as const;
 
   return (
@@ -470,6 +487,112 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                   placeholder="Welcome to Our Classroom!"
                   className="form-input"
                 />
+              </div>
+            </div>
+          )}
+
+          {/* Vocabulary Customization */}
+          {activeSection === 'vocabulary' && (
+            <div className="hub-section">
+              <h2>📚 Custom Vocabulary</h2>
+              <p>Customize vocabulary words for weather and seasonal learning</p>
+
+              <div className="form-group">
+                <label>Weather Vocabulary Words</label>
+                <p className="form-description">Words that will be used in the weather step</p>
+                <div className="vocabulary-list">
+                  {(settings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy']).map((word, index) => (
+                    <div key={index} className="vocabulary-item">
+                      <input
+                        type="text"
+                        value={word}
+                        onChange={(e) => {
+                          const newWords = [...(settings.customVocabulary?.weather || [])];
+                          newWords[index] = e.target.value;
+                          updateSettings('customVocabulary', { 
+                            ...settings.customVocabulary,
+                            weather: newWords 
+                          });
+                        }}
+                        className="vocabulary-input"
+                      />
+                      <button
+                        onClick={() => {
+                          const newWords = (settings.customVocabulary?.weather || []).filter((_, i) => i !== index);
+                          updateSettings('customVocabulary', { 
+                            ...settings.customVocabulary,
+                            weather: newWords 
+                          });
+                        }}
+                        className="delete-vocab-button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const newWords = [...(settings.customVocabulary?.weather || []), ''];
+                    updateSettings('customVocabulary', { 
+                      ...settings.customVocabulary,
+                      weather: newWords 
+                    });
+                  }}
+                  className="add-vocab-button"
+                >
+                  + Add Weather Word
+                </button>
+              </div>
+
+              <div className="form-group">
+                <label>Seasonal Vocabulary Words</label>
+                <p className="form-description">Words that will be used in the seasonal learning step</p>
+                <div className="vocabulary-list">
+                  {(settings.customVocabulary?.seasonal || ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']).map((word, index) => (
+                    <div key={index} className="vocabulary-item">
+                      <input
+                        type="text"
+                        value={word}
+                        onChange={(e) => {
+                          const newWords = [...(settings.customVocabulary?.seasonal || [])];
+                          newWords[index] = e.target.value;
+                          updateSettings('customVocabulary', { 
+                            ...settings.customVocabulary,
+                            seasonal: newWords 
+                          });
+                        }}
+                        className="vocabulary-input"
+                      />
+                      <button
+                        onClick={() => {
+                          const newWords = (settings.customVocabulary?.seasonal || []).filter((_, i) => i !== index);
+                          updateSettings('customVocabulary', { 
+                            ...settings.customVocabulary,
+                            seasonal: newWords 
+                          });
+                        }}
+                        className="delete-vocab-button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const newWords = [...(settings.customVocabulary?.seasonal || []), ''];
+                    updateSettings('customVocabulary', { 
+                      ...settings.customVocabulary,
+                      seasonal: newWords 
+                    });
+                  }}
+                  className="add-vocab-button"
+                >
+                  + Add Seasonal Word
+                </button>
               </div>
             </div>
           )}
@@ -1244,6 +1367,79 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         }
 
         .add-statement-button:hover {
+          background: rgba(40, 167, 69, 0.3);
+        }
+
+        /* Vocabulary Styles */
+        .form-description {
+          font-size: 0.9rem;
+          opacity: 0.8;
+          margin: 0 0 1rem 0;
+          font-style: italic;
+        }
+
+        .vocabulary-list {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
+        }
+
+        .vocabulary-item {
+          display: flex;
+          gap: 1rem;
+          align-items: center;
+        }
+
+        .vocabulary-input {
+          flex: 1;
+          background: rgba(255, 255, 255, 0.1);
+          border: 2px solid rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+          padding: 0.75rem;
+          color: white;
+          font-size: 1rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .vocabulary-input::placeholder {
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .vocabulary-input:focus {
+          outline: none;
+          border-color: rgba(255, 255, 255, 0.4);
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .delete-vocab-button {
+          background: rgba(220, 53, 69, 0.2);
+          border: 2px solid rgba(220, 53, 69, 0.4);
+          border-radius: 8px;
+          padding: 0.5rem;
+          color: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.9rem;
+        }
+
+        .delete-vocab-button:hover {
+          background: rgba(220, 53, 69, 0.3);
+        }
+
+        .add-vocab-button {
+          background: rgba(40, 167, 69, 0.2);
+          border: 2px solid rgba(40, 167, 69, 0.4);
+          border-radius: 8px;
+          padding: 0.75rem 1rem;
+          color: white;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          width: 100%;
+        }
+
+        .add-vocab-button:hover {
           background: rgba(40, 167, 69, 0.3);
         }
 

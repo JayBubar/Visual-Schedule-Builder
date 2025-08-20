@@ -1,385 +1,270 @@
 import React, { useState, useEffect } from 'react';
-import { MorningMeetingStepProps, WelcomeStepData } from '../types/morningMeetingTypes';
+import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
 const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
+  onBack,
   onDataUpdate,
   stepData,
-  hubSettings
+  hubSettings,
+  students = []
 }) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showGreeting, setShowGreeting] = useState(false);
 
-  // Get personalization from hub settings
-  const schoolName = hubSettings?.welcomePersonalization?.schoolName || 'Our School';
-  const teacherName = hubSettings?.welcomePersonalization?.teacherName || 'Teacher';
-  const className = hubSettings?.welcomePersonalization?.className || '';
-  const customMessage = hubSettings?.welcomePersonalization?.customMessage || '';
+  // Get custom welcome message from hub settings
+  const getWelcomeMessage = (): string => {
+    if (hubSettings?.welcomePersonalization?.customMessage) {
+      return hubSettings.welcomePersonalization.customMessage;
+    }
+    return 'Welcome to Our Classroom!';
+  };
+
+  // Get school/class info from hub settings
+  const getClassInfo = () => {
+    return {
+      schoolName: hubSettings?.welcomePersonalization?.schoolName || '',
+      teacherName: hubSettings?.welcomePersonalization?.teacherName || '',
+      className: hubSettings?.welcomePersonalization?.className || ''
+    };
+  };
+
+  const welcomeMessage = getWelcomeMessage();
+  const classInfo = getClassInfo();
 
   useEffect(() => {
-    // Update time every second
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    // Show animation after component mounts
-    setTimeout(() => setShowAnimation(true), 500);
-
-    // Auto-advance after 8 seconds (configurable)
-    const autoTimer = setTimeout(() => {
-      handleNext();
-    }, 8000);
-
-    setAutoAdvanceTimer(autoTimer);
-
-    // Save step data on mount
-    const stepData: WelcomeStepData = {
-      personalizedMessage: getWelcomeMessage(),
-      viewedAt: new Date(),
-      completedAt: new Date()
-    };
-    onDataUpdate(stepData);
-
-    return () => {
-      clearInterval(timer);
-      if (autoTimer) clearTimeout(autoTimer);
-    };
+    // Auto-start greeting animation
+    const timer = setTimeout(() => {
+      setShowGreeting(true);
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  const handleNext = () => {
-    if (autoAdvanceTimer) {
-      clearTimeout(autoAdvanceTimer);
-      setAutoAdvanceTimer(null);
-    }
-    onNext();
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    return "Good Evening";
-  };
-
-  const getDayMotivation = () => {
-    const dayOfWeek = currentDate.getDay();
-    const motivations = [
-      "Ready for a fresh week of learning!", // Sunday
-      "Monday Motivation - Let's make it amazing!", // Monday
-      "Tuesday Teamwork - Together we shine!", // Tuesday
-      "Wednesday Wisdom - Learning something new!", // Wednesday
-      "Thursday Thinking - Growing our minds!", // Thursday
-      "Friday Fun - Let's finish strong!", // Friday
-      "Saturday Smiles - Every day is special!" // Saturday
-    ];
-    return motivations[dayOfWeek];
-  };
-
-  const getSeasonalIcon = () => {
-    const month = currentDate.getMonth();
-    if (month >= 2 && month <= 4) return '🌸'; // Spring
-    if (month >= 5 && month <= 7) return '☀️'; // Summer
-    if (month >= 8 && month <= 10) return '🍂'; // Fall
-    return '❄️'; // Winter
-  };
-
-  const getWelcomeMessage = () => {
-    if (customMessage) {
-      return customMessage;
-    }
-    return `Welcome to ${className ? `${className} at ` : ''}${schoolName}!`;
-  };
-
-  const getSeasonalColors = () => {
-    const month = currentDate.getMonth();
-    if (month >= 2 && month <= 4) return ['#90EE90', '#98FB98']; // Spring - greens
-    if (month >= 5 && month <= 7) return ['#FFD700', '#FF6347']; // Summer - yellows/oranges
-    if (month >= 8 && month <= 10) return ['#FF8C00', '#DC143C']; // Fall - oranges/reds
-    return ['#87CEEB', '#4682B4']; // Winter - blues
-  };
-
-  const seasonalColors = getSeasonalColors();
+  useEffect(() => {
+    // Save step completion data
+    const stepData = {
+      welcomeMessage,
+      classInfo,
+      showedGreeting: showGreeting,
+      completedAt: showGreeting ? new Date() : undefined
+    };
+    onDataUpdate(stepData);
+  }, [welcomeMessage, classInfo, showGreeting, onDataUpdate]);
 
   return (
     <div style={{
       height: '100%',
-      width: '100%',
-      overflow: 'hidden',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
-      alignItems: 'center',
+      flexDirection: 'column',
       justifyContent: 'center',
-      background: `linear-gradient(135deg, ${seasonalColors[0]}, ${seasonalColors[1]})`,
-      position: 'relative'
+      alignItems: 'center',
+      textAlign: 'center',
+      padding: '2rem',
+      overflow: 'hidden'
     }}>
-      {/* Floating Background Elements */}
+      {/* Welcome Animation */}
       <div style={{
-        position: 'absolute',
-        top: '10%',
-        left: '15%',
-        fontSize: '3rem',
-        opacity: 0.3,
-        animation: 'float 6s ease-in-out infinite'
+        transform: showGreeting ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(20px)',
+        opacity: showGreeting ? 1 : 0,
+        transition: 'all 1s ease-out',
+        maxWidth: '800px'
       }}>
-        🌟
-      </div>
-      <div style={{
-        position: 'absolute',
-        top: '20%',
-        right: '20%',
-        fontSize: '2.5rem',
-        opacity: 0.3,
-        animation: 'float 8s ease-in-out infinite reverse'
-      }}>
-        📚
-      </div>
-      <div style={{
-        position: 'absolute',
-        bottom: '15%',
-        left: '10%',
-        fontSize: '2rem',
-        opacity: 0.3,
-        animation: 'float 7s ease-in-out infinite'
-      }}>
-        ✨
-      </div>
-
-      {/* Main Content */}
-      <div style={{
-        textAlign: 'center',
-        color: 'white',
-        zIndex: 10,
-        maxWidth: '800px',
-        padding: '2rem',
-        transform: showAnimation ? 'translateY(0) scale(1)' : 'translateY(30px) scale(0.95)',
-        opacity: showAnimation ? 1 : 0,
-        transition: 'all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-      }}>
-        {/* Seasonal Icon */}
-        <div style={{
-          fontSize: '4rem',
-          marginBottom: '1rem',
-          animation: 'bounce 2s ease-in-out infinite'
-        }}>
-          {getSeasonalIcon()}
-        </div>
-
-        {/* Greeting */}
+        {/* Main Welcome Message */}
         <h1 style={{
-          fontSize: '3rem',
+          fontSize: 'clamp(2.5rem, 8vw, 5rem)',
           fontWeight: '700',
-          marginBottom: '1rem',
+          color: 'white',
+          marginBottom: '2rem',
           textShadow: '0 4px 8px rgba(0,0,0,0.3)',
-          lineHeight: '1.2'
+          lineHeight: 1.2
         }}>
-          {getGreeting()}!
+          {welcomeMessage}
         </h1>
 
-        {/* Custom Welcome Message */}
-        {(customMessage || schoolName) && (
+        {/* Class Information */}
+        {(classInfo.schoolName || classInfo.className || classInfo.teacherName) && (
           <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '16px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem',
-            border: '1px solid rgba(255,255,255,0.3)',
-            backdropFilter: 'blur(10px)'
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '20px',
+            padding: '2rem',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            marginBottom: '3rem'
           }}>
-            <h2 style={{
-              fontSize: '2rem',
-              fontWeight: '600',
-              color: 'white',
-              margin: 0,
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-            }}>
-              {getWelcomeMessage()}
-            </h2>
+            {classInfo.schoolName && (
+              <h2 style={{
+                fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+                fontWeight: '600',
+                color: 'white',
+                marginBottom: '1rem'
+              }}>
+                {classInfo.schoolName}
+              </h2>
+            )}
+            
+            {classInfo.className && (
+              <h3 style={{
+                fontSize: 'clamp(1.2rem, 3vw, 2rem)',
+                fontWeight: '500',
+                color: 'rgba(255,255,255,0.9)',
+                marginBottom: '0.5rem'
+              }}>
+                {classInfo.className}
+              </h3>
+            )}
+            
+            {classInfo.teacherName && (
+              <p style={{
+                fontSize: 'clamp(1rem, 2.5vw, 1.5rem)',
+                color: 'rgba(255,255,255,0.8)'
+              }}>
+                with {classInfo.teacherName}
+              </p>
+            )}
           </div>
         )}
 
-        {/* Teacher Name */}
-        {teacherName && teacherName !== 'Teacher' && (
-          <div style={{
-            fontSize: '1.5rem',
-            color: 'rgba(255,255,255,0.9)',
-            marginBottom: '1rem',
-            fontWeight: '500'
-          }}>
-            with {teacherName}
-          </div>
-        )}
-
-        {/* Class Name */}
-        {className && (
-          <div style={{
-            fontSize: '1.3rem',
-            color: 'rgba(255,255,255,0.8)',
-            marginBottom: '2rem',
-            fontWeight: '400'
-          }}>
-            {className}
-          </div>
-        )}
-
-        {/* Date and Time Display */}
+        {/* Date Display */}
         <div style={{
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '20px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.3)'
-        }}>
-          <div style={{
-            fontSize: '1.8rem',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-            color: 'white'
-          }}>
-            {formatDate(currentDate)}
-          </div>
-          <div style={{
-            fontSize: '1.4rem',
-            color: 'rgba(255,255,255,0.9)',
-            fontWeight: '500'
-          }}>
-            {formatTime(currentTime)}
-          </div>
-        </div>
-
-        {/* Daily Motivation */}
-        <div style={{
-          background: 'rgba(255,255,255,0.15)',
+          background: 'rgba(255, 255, 255, 0.1)',
           borderRadius: '16px',
           padding: '1.5rem',
-          marginBottom: '2rem',
+          marginBottom: '3rem',
           backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255,255,255,0.2)'
+          border: '2px solid rgba(255, 255, 255, 0.2)'
         }}>
           <p style={{
-            fontSize: '1.3rem',
+            fontSize: 'clamp(1.2rem, 3vw, 2rem)',
+            fontWeight: '600',
             color: 'white',
-            margin: 0,
-            fontWeight: '500',
-            lineHeight: '1.4'
+            marginBottom: '0.5rem'
           }}>
-            {getDayMotivation()}
+            📅 Today is
+          </p>
+          <p style={{
+            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+            fontWeight: '700',
+            color: 'white'
+          }}>
+            {currentDate.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
           </p>
         </div>
 
-        {/* Begin Button */}
-        <button
-          onClick={handleNext}
-          style={{
-            background: 'linear-gradient(135deg, #ff6b6b, #ee5a52)',
-            border: 'none',
-            borderRadius: '25px',
-            color: 'white',
-            padding: '1.5rem 3rem',
-            fontSize: '1.5rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            boxShadow: '0 8px 25px rgba(255, 107, 107, 0.4)',
-            transition: 'all 0.3s ease',
-            animation: 'glow 2s ease-in-out infinite alternate',
-            textTransform: 'uppercase',
-            letterSpacing: '1px'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 12px 35px rgba(255, 107, 107, 0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1) translateY(0)';
-            e.currentTarget.style.boxShadow = '0 8px 25px rgba(255, 107, 107, 0.4)';
-          }}
-        >
-          Let's Begin Our Day! 🚀
-        </button>
+        {/* Student Count */}
+        {students.length > 0 && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '3rem',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <p style={{
+              fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+              color: 'white',
+              fontWeight: '600'
+            }}>
+              👥 We have {students.filter((s: any) => s.present === true).length} students here today!
+            </p>
+          </div>
+        )}
 
-        {/* Auto-advance indicator */}
-        <p style={{
-          fontSize: '0.9rem',
-          color: 'rgba(255,255,255,0.7)',
-          marginTop: '1.5rem',
-          fontStyle: 'italic'
-        }}>
-          Starting automatically in a few seconds...
-        </p>
-
-        {/* Encouragement Text */}
-        <p style={{
-          fontSize: '1rem',
-          color: 'rgba(255,255,255,0.8)',
-          marginTop: '1rem',
-          fontStyle: 'italic',
-          lineHeight: '1.4'
-        }}>
-          "Every day is a fresh start to learn, grow, and shine together!"
-        </p>
+        {/* Continue Button */}
+        {showGreeting && (
+          <button
+            onClick={onNext}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              border: '3px solid rgba(255, 255, 255, 0.4)',
+              borderRadius: '20px',
+              color: 'white',
+              padding: '1.5rem 3rem',
+              fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            Let's Start Our Day! →
+          </button>
+        )}
       </div>
 
-      {/* Animated CSS */}
-      <style>{`
-        @keyframes float {
-          0%, 100% { 
-            transform: translateY(0px) rotate(0deg); 
-          }
-          33% { 
-            transform: translateY(-10px) rotate(5deg); 
-          }
-          66% { 
-            transform: translateY(-5px) rotate(-3deg); 
-          }
-        }
-
-        @keyframes bounce {
-          0%, 100% { 
-            transform: translateY(0); 
-          }
-          50% { 
-            transform: translateY(-10px); 
-          }
-        }
-
-        @keyframes glow {
-          from {
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
-          }
-          to {
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.8), 0 0 30px rgba(255, 107, 107, 0.3);
-          }
-        }
-
-        @keyframes slideInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+      {/* Always visible navigation buttons */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '1rem',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: '20px',
+        padding: '1rem 2rem',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(156, 163, 175, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back
+        </button>
+        
+        <button
+          onClick={onNext}
+          style={{
+            background: 'rgba(34, 197, 94, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Welcome Complete! →
+        </button>
+      </div>
     </div>
   );
 };
