@@ -1,107 +1,129 @@
-// Morning Meeting Type Definitions
-import { Student } from '../../../types';
-import { BookOpen } from 'lucide-react';
+// Morning Meeting Types
+// Complete type definitions for all Morning Meeting functionality
 
-// Standard interface for all Morning Meeting step components
+export interface Student {
+  id: string;
+  name: string;
+  photo?: string;
+  present?: boolean;
+  grade?: string;
+  birthday?: string;
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  permissions?: string[];
+}
+
+// Base props that all step components receive
 export interface MorningMeetingStepProps {
-  students: Student[];
+  currentDate: Date;
   onNext: () => void;
   onBack: () => void;
-  currentDate: Date;
-  hubSettings: MorningMeetingSettings;
-  onDataUpdate: (stepData: any) => void;
-  stepData?: any; // Current step's saved data
+  onDataUpdate: (data: any) => void;
+  stepData?: any;
+  hubSettings?: HubSettings;
+  students?: Student[];
+  staff?: StaffMember[];
 }
 
-// Step component metadata interface
-export interface MorningMeetingStepComponent {
-  stepName: string;
-  stepIcon: string;
-  isComplete: boolean;
-  requiredData?: string[];
-}
-
-// Morning Meeting settings from Hub
-export interface MorningMeetingSettings {
-  welcomePersonalization: {
+// Hub Settings Interface
+export interface HubSettings {
+  welcomePersonalization?: {
     schoolName: string;
     teacherName: string;
     className: string;
     customMessage?: string;
   };
-  videos: {
-    weatherClothing: Array<{id: string, name: string, url: string}>;
-    seasonalLearning: Array<{id: string, name: string, url: string}>;
-    behaviorCommitments: Array<{id: string, name: string, url: string}>;
-    calendarMath: Array<{id: string, name: string, url: string}>;
-  };
-  customVocabulary: {
+  customVocabulary?: {
     weather: string[];
     seasonal: string[];
-    calendar: string[];
+    calendar: string[]; // ✅ ADDED: Calendar vocabulary
+  };
+  videos: {
+    calendarMath: Array<{ id: string; name: string; url: string; }>;
+    weatherClothing: Array<{ id: string; name: string; url: string; }>;
+    seasonalLearning: Array<{ id: string; name: string; url: string; }>;
+    behaviorCommitments: Array<{ id: string; name: string; url: string; }>;
   };
   behaviorStatements: {
     enabled: boolean;
     statements: string[];
     allowCustom: boolean;
   };
-  weatherAPI: {
+  celebrations: {
     enabled: boolean;
-    apiKey?: string;
-    location?: string;
-    customVocabulary: string[];
+    showBirthdayPhotos: boolean;
+    customCelebrations: Celebration[];
   };
-  calendarMath: {
+  flowCustomization: {
+    enabledSteps: Record<string, boolean>;
+  };
+  calendarMath?: { // ✅ ADDED: Calendar Math settings
     enableOrdinalNumbers: boolean;
     enableYesterday: boolean;
     enableTomorrow: boolean;
-    autoAdvanceSeconds: number;
+    enableWeekdays: boolean;
+    enableMonths: boolean;
+    enableCounting: boolean;
   };
-  seasonalLearning: {
+  weatherAPI?: {
     enabled: boolean;
-    currentSeason: 'spring' | 'summer' | 'fall' | 'winter';
-    activities: string[];
-  };
-  flowCustomization: {
-    enabledSteps: {
-      welcome: boolean;
-      attendance: boolean;
-      behavior: boolean;
-      calendarMath: boolean;
-      weather: boolean;
-      seasonal: boolean;
-      celebration: boolean;
-      dayReview: boolean;
-    };
-    stepOrder: string[];
+    apiKey?: string;
+    customVocabulary?: string[];
   };
 }
 
-// Step data interfaces for persistence
+// Individual Step Data Interfaces
+export interface WelcomeStepData {
+  welcomeMessage: string;
+  classInfo: {
+    schoolName: string;
+    teacherName: string;
+    className: string;
+  };
+  showedGreeting: boolean;
+  completedAt?: Date;
+}
+
 export interface AttendanceStepData {
-  presentStudents: Student[];
-  absentStudents: Student[];
-  manuallyMarkedAbsent: string[]; // Student IDs
+  presentStudents: string[];
+  absentStudents: string[];
+  attendanceNotes?: Record<string, string>;
   completedAt?: Date;
 }
 
 export interface BehaviorStepData {
-  studentBehaviorChoices: Record<string, string>; // studentId -> behavior statement
+  selectedCommitments: string[];
+  studentCommitments: Record<string, string[]>;
+  currentView: 'selection' | 'confirmation' | 'complete';
+  presentStudents: string[];
   completedAt?: Date;
 }
 
 export interface CalendarMathStepData {
-  currentLevel: 'month' | 'week' | 'day';
-  completedLevels: string[];
-  timeSpentSeconds: number;
+  currentDate: Date;
+  weatherCondition?: string;
+  selectedActivities: string[];
+  mathConcepts: string[];
+  completedSections: string[];
+  currentSection: string;
+  currentLevel: 'day' | 'week' | 'month'; // ✅ ADDED: Current difficulty level
+  completedLevels: string[]; // ✅ ADDED: Completed difficulty levels
+  timeSpentSeconds: number; // ✅ ADDED: Time tracking
   completedAt?: Date;
 }
 
 export interface WeatherStepData {
-  currentWeather?: {
+  currentWeather: {
     temperature: number;
+    temperatureUnit: string;
     condition: string;
     clothingRecommendations: string[];
+    humidity?: number;
+    description?: string;
   };
   selectedClothing: string[];
   customVocabulary: string[];
@@ -110,164 +132,275 @@ export interface WeatherStepData {
 
 export interface SeasonalStepData {
   currentSeason: string;
-  currentSection?: 'characteristics' | 'vocabulary' | 'activities';
-  completedSections?: string[];
+  currentSection: 'characteristics' | 'vocabulary' | 'activities';
+  completedSections: string[];
   completedActivities: string[];
   learnedVocabulary: string[];
   completedAt?: Date;
 }
 
-export interface WelcomeStepData {
-  personalizedMessage: string;
-  viewedAt: Date;
+export interface CelebrationStepData {
+  todaysBirthdays: string[];
+  customCelebrations: string[];
+  celebrationMessages: Record<string, string>;
+  showedCelebrations: boolean;
   completedAt?: Date;
 }
 
-// Complete Morning Meeting session data
-export interface MorningMeetingSessionData {
-  sessionId: string;
+// ✅ ADDED: DayReviewStep Data Interface
+export interface DayReviewStepData {
+  selectedGoals: string[];
+  reflectionAnswers: Record<string, string>;
+  currentSection: 'goals' | 'reflection' | 'summary';
+  completedAt?: string;
+}
+
+// Supporting Types
+export interface Celebration {
+  id: string;
+  name: string;
+  emoji: string;
+  message: string;
+  type: 'birthday' | 'custom';
+  recurring?: boolean;
+  date?: string;
+  students: string[];
+  createdAt: string;
+}
+
+export interface VideoContent {
+  id: string;
+  name: string;
+  url: string;
+  category: 'weather' | 'seasonal' | 'behavior' | 'calendar';
+  tags?: string[];
+  duration?: number;
+  description?: string;
+}
+
+export interface BehaviorCommitment {
+  id: string;
+  statement: string;
+  category: 'kindness' | 'responsibility' | 'respect' | 'effort' | 'safety';
+  icon: string;
+  selected?: boolean;
+}
+
+export interface WeatherCondition {
+  code: string;
+  description: string;
+  icon: string;
+  clothingRecommendations: string[];
+}
+
+export interface SeasonalActivity {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  category: 'vocabulary' | 'observation' | 'movement' | 'science' | 'art';
+  duration: string;
+  instructions: string[];
+}
+
+// ✅ ADDED: Day Review Types
+export interface DayGoal {
+  id: string;
+  category: 'learning' | 'behavior' | 'teamwork' | 'personal';
+  icon: string;
+  title: string;
+  description: string;
+  selected: boolean;
+}
+
+export interface ReflectionPrompt {
+  id: string;
+  question: string;
+  emoji: string;
+  category: 'gratitude' | 'learning' | 'friendship' | 'growth';
+}
+
+// Session and Progress Tracking
+export interface MorningMeetingSession {
+  id: string;
   date: Date;
   startTime: Date;
   endTime?: Date;
-  presentStudents: Student[];
-  absentStudents: Student[];
-  stepData: {
-    welcome?: WelcomeStepData;
-    attendance?: AttendanceStepData;
-    behavior?: BehaviorStepData;
-    calendarMath?: CalendarMathStepData;
-    weather?: WeatherStepData;
-    seasonal?: SeasonalStepData;
-  };
   completedSteps: string[];
-  isComplete: boolean;
+  stepData: Record<string, any>;
+  hubSettings: HubSettings;
+  participants: {
+    presentStudents: string[];
+    absentStudents: string[];
+    staff: string[];
+  };
+  status: 'in_progress' | 'completed' | 'interrupted';
 }
 
-// Flow control interfaces
+export interface StepProgress {
+  stepKey: string;
+  startTime: Date;
+  endTime?: Date;
+  data: any;
+  isCompleted: boolean;
+  timeSpent?: number; // in seconds
+}
+
+// Validation and Error Types
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface MorningMeetingError {
+  code: string;
+  message: string;
+  stepKey?: string;
+  timestamp: Date;
+  context?: Record<string, any>;
+}
+
+// Settings and Configuration
+export interface MorningMeetingConfiguration {
+  defaultDuration: number; // in minutes
+  allowSkipSteps: boolean;
+  requireDataCollection: boolean;
+  autoSaveInterval: number; // in seconds
+  enableVideoSupport: boolean;
+  enableWeatherAPI: boolean;
+  theme: 'default' | 'seasonal' | 'custom';
+  language: string;
+  accessibility: {
+    highContrast: boolean;
+    largeText: boolean;
+    screenReader: boolean;
+    reducedMotion: boolean;
+  };
+}
+
+// Export and Import Types
+export interface MorningMeetingExport {
+  metadata: {
+    exportDate: Date;
+    version: string;
+    source: string;
+  };
+  sessions: MorningMeetingSession[];
+  configuration: MorningMeetingConfiguration;
+  hubSettings: HubSettings;
+}
+
+// Analytics and Reporting
+export interface MorningMeetingAnalytics {
+  period: {
+    start: Date;
+    end: Date;
+  };
+  totalSessions: number;
+  averageDuration: number;
+  completionRate: number;
+  stepAnalytics: Record<string, {
+    completionRate: number;
+    averageTimeSpent: number;
+    mostCommonIssues: string[];
+  }>;
+  studentParticipation: Record<string, {
+    attendanceRate: number;
+    engagementScore: number;
+    behaviorCommitments: string[];
+  }>;
+  trendData: {
+    date: Date;
+    metric: string;
+    value: number;
+  }[];
+}
+
+// API Response Types (for future integration)
+export interface WeatherAPIResponse {
+  temperature: number;
+  temperatureUnit: 'F' | 'C';
+  condition: string;
+  humidity: number;
+  windSpeed: number;
+  description: string;
+  icon: string;
+  clothingRecommendations: string[];
+}
+
+export interface VideoAPIResponse {
+  videos: VideoContent[];
+  totalCount: number;
+  categories: string[];
+  tags: string[];
+}
+
+// Component State Types
 export interface MorningMeetingFlowState {
   currentStepIndex: number;
   enabledSteps: string[];
-  sessionData: MorningMeetingSessionData;
-  hubSettings: MorningMeetingSettings;
+  stepData: Record<string, any>;
+  session: MorningMeetingSession;
+  isLoading: boolean;
+  errors: MorningMeetingError[];
 }
 
-export interface MorningMeetingFlowProps {
-  students: Student[];
-  staff?: any[];
-  onComplete: () => void;
-  onNavigateHome?: () => void;
+export interface MorningMeetingHubState {
+  activeSection: string;
+  settings: HubSettings;
+  hasUnsavedChanges: boolean;
+  isLoading: boolean;
+  availableContent: {
+    videos: VideoContent[];
+    activities: any[];
+    templates: any[];
+  };
 }
 
-// Step metadata for flow management
-export const MORNING_MEETING_STEPS = {
-  welcome: {
-    name: 'Welcome',
-    icon: '👋',
-    component: 'WelcomeStep',
-    required: false
-  },
-  attendance: {
-    name: 'Attendance',
-    icon: '📋',
-    component: 'AttendanceStep',
-    required: true
-  },
-  behavior: {
-    name: 'Behavior',
-    icon: '⭐',
-    component: 'BehaviorStep',
-    required: false
-  },
-  calendarMath: {
-    name: 'Calendar Math',
-    icon: '📅',
-    component: 'CalendarMathStep',
-    required: false
-  },
-  weather: {
-    name: 'Weather',
-    icon: '🌤️',
-    component: 'WeatherStep',
-    required: false
-  },
-  seasonal: {
-    name: 'Seasonal Learning',
-    icon: '🍂',
-    component: 'SeasonalStep',
-    required: false
-  },
-  celebration: {
-    name: 'Celebrations',
-    icon: '🎉',
-    component: 'CelebrationStep',
-    required: false
-  },
-  dayReview: {
-    name: 'Day Review & Goals',
-    icon: '🎯',
-    component: 'DayReviewStep',
-    required: false
-  }
-} as const;
+// Event Types
+export interface MorningMeetingEvent {
+  type: 'step_started' | 'step_completed' | 'step_skipped' | 'session_started' | 'session_completed' | 'error_occurred';
+  timestamp: Date;
+  stepKey?: string;
+  data?: any;
+  metadata?: Record<string, any>;
+}
 
-export type StepKey = keyof typeof MORNING_MEETING_STEPS;
+// Utility Types
+export type StepKey = 
+  | 'welcome'
+  | 'attendance'
+  | 'behavior'
+  | 'calendarMath'
+  | 'weather'
+  | 'seasonal'
+  | 'celebration'
+  | 'dayReview'; // ✅ ADDED BACK
 
-// Default settings
-export const DEFAULT_MORNING_MEETING_SETTINGS: MorningMeetingSettings = {
-  welcomePersonalization: {
-    schoolName: '',
-    teacherName: '',
-    className: '',
-    customMessage: undefined
-  },
-  videos: {
-    weatherClothing: [],
-    seasonalLearning: [],
-    behaviorCommitments: [],
-    calendarMath: []
-  },
-  customVocabulary: {
-    weather: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
-    seasonal: ['spring', 'summer', 'fall', 'winter', 'leaves', 'flowers'],
-    calendar: ['yesterday', 'today', 'tomorrow', 'week', 'month', 'ordinal']
-  },
-  behaviorStatements: {
-    enabled: true,
-    statements: [
-      'I will be kind to others',
-      'I will listen when others are speaking',
-      'I will do my best work',
-      'I will help others when they need it',
-      'I will follow classroom rules'
-    ],
-    allowCustom: true
-  },
-  weatherAPI: {
-    enabled: false,
-    customVocabulary: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy']
-  },
-  calendarMath: {
-    enableOrdinalNumbers: true,
-    enableYesterday: true,
-    enableTomorrow: true,
-    autoAdvanceSeconds: 8
-  },
-  seasonalLearning: {
-    enabled: true,
-    currentSeason: 'fall',
-    activities: []
-  },
-  flowCustomization: {
-    enabledSteps: {
-      welcome: true,
-      attendance: true,
-      behavior: true,
-      calendarMath: true,
-      weather: true,
-      seasonal: true,
-      celebration: true,
-      dayReview: true
-    },
-    stepOrder: ['welcome', 'attendance', 'behavior', 'calendarMath', 'weather', 'seasonal', 'celebration', 'dayReview']
-  }
+export type StepComponent = React.ComponentType<MorningMeetingStepProps>;
+
+export type StepDataType = 
+  | WelcomeStepData
+  | AttendanceStepData
+  | BehaviorStepData
+  | CalendarMathStepData
+  | WeatherStepData
+  | SeasonalStepData
+  | CelebrationStepData
+  | DayReviewStepData; // ✅ ADDED BACK
+
+// Helper type for type-safe step data access
+export type StepDataMap = {
+  welcome: WelcomeStepData;
+  attendance: AttendanceStepData;
+  behavior: BehaviorStepData;
+  calendarMath: CalendarMathStepData;
+  weather: WeatherStepData;
+  seasonal: SeasonalStepData;
+  celebration: CelebrationStepData;
+  dayReview: DayReviewStepData; // ✅ ADDED BACK
 };
+
+// Generic type for getting step data by key
+export type GetStepData<K extends StepKey> = StepDataMap[K];

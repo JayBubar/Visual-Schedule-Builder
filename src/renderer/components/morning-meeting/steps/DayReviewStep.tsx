@@ -942,7 +942,7 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
         .nav-button:hover:not(.disabled) {
           background: rgba(255, 255, 255, 0.3);
           transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(0, 0, 0,
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .nav-button.disabled {
@@ -1111,7 +1111,6 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
             color: black;
           }
 
-          .hub-section,
           .summary-card,
           .reflection-card,
           .goal-card {
