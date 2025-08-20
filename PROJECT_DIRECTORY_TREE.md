@@ -229,7 +229,7 @@ visual-schedule-builder/
 
 ### 4. SmartboardDisplay Pattern
 **Correct Layout Approach:**
-- Uses `height: '100vh', width: '100vw', overflow: 'hidden'`
+- Uses `height: '100%', width: '100%', overflow: 'hidden'`
 - Dynamic flex layout with calculated heights
 - No scrolling - everything fits within viewport
 - Uses `clamp()` functions for responsive sizing

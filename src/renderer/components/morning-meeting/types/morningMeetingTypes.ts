@@ -108,6 +108,8 @@ export interface WeatherStepData {
 
 export interface SeasonalStepData {
   currentSeason: string;
+  currentSection?: 'characteristics' | 'vocabulary' | 'activities';
+  completedSections?: string[];
   completedActivities: string[];
   learnedVocabulary: string[];
   completedAt?: Date;

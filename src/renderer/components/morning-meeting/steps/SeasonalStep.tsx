@@ -246,6 +246,7 @@ const SEASONAL_THEMES: { [key: string]: SeasonalTheme } = {
 const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
+  onBack,
   onDataUpdate,
   stepData,
   hubSettings
@@ -257,7 +258,12 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   const [learnedVocabulary, setLearnedVocabulary] = useState<string[]>(
     stepData?.learnedVocabulary || []
   );
-  const [showVocabulary, setShowVocabulary] = useState(true);
+  const [currentSection, setCurrentSection] = useState<'characteristics' | 'vocabulary' | 'activities'>(
+    stepData?.currentSection || 'characteristics'
+  );
+  const [completedSections, setCompletedSections] = useState<string[]>(
+    stepData?.completedSections || []
+  );
 
   // Determine current season based on date
   const getCurrentSeason = (): string => {
@@ -291,16 +297,17 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   useEffect(() => {
     const stepData: SeasonalStepData = {
       currentSeason,
+      currentSection,
+      completedSections,
       completedActivities,
       learnedVocabulary,
-      completedAt: completedActivities.length > 0 ? new Date() : undefined
+      completedAt: completedSections.length >= 3 ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentSeason, completedActivities, learnedVocabulary]);
+  }, [currentSeason, currentSection, completedSections, completedActivities, learnedVocabulary]);
 
   const startActivity = (activity: SeasonalActivity) => {
     setCurrentActivity(activity);
-    setShowVocabulary(false);
   };
 
   const completeActivity = (activityId: string) => {
@@ -308,7 +315,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
       setCompletedActivities(prev => [...prev, activityId]);
     }
     setCurrentActivity(null);
-    setShowVocabulary(true);
   };
 
   const addToVocabulary = (word: string) => {
@@ -316,6 +322,136 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
       setLearnedVocabulary(prev => [...prev, word]);
     }
   };
+
+  // Section navigation functions
+  const handleSectionComplete = (section: string) => {
+    if (!completedSections.includes(section)) {
+      setCompletedSections(prev => [...prev, section]);
+    }
+
+    // Auto-progress to next section
+    if (section === 'characteristics' && currentSection === 'characteristics') {
+      setCurrentSection('vocabulary');
+    } else if (section === 'vocabulary' && currentSection === 'vocabulary') {
+      setCurrentSection('activities');
+    }
+    // Don't auto-advance from activities - let user click Continue
+  };
+
+  const handleManualNavigation = (section: 'characteristics' | 'vocabulary' | 'activities') => {
+    setCurrentSection(section);
+  };
+
+  // Section rendering functions
+  const renderCharacteristicsSection = () => (
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
+        About {seasonalTheme.season}
+      </h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+        {seasonalTheme.characteristics.map((characteristic, index) => (
+          <div key={index} style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            padding: '1rem',
+            fontSize: '1.1rem',
+            lineHeight: '1.4'
+          }}>
+            • {characteristic}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderVocabularySection = () => (
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
+        📚 {seasonalTheme.season} Words
+      </h3>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: '1rem',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
+        {seasonalTheme.vocabulary.map((word, index) => (
+          <div
+            key={index}
+            onClick={() => addToVocabulary(word)}
+            style={{
+              background: learnedVocabulary.includes(word) 
+                ? 'rgba(34, 197, 94, 0.8)' 
+                : 'rgba(255, 255, 255, 0.3)',
+              borderRadius: '12px',
+              padding: '1rem',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              fontSize: '1rem',
+              fontWeight: '500',
+              border: learnedVocabulary.includes(word) ? '2px solid white' : 'none'
+            }}
+          >
+            {word}
+            {learnedVocabulary.includes(word) && (
+              <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>✓ Learned!</div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.9 }}>
+        Tap words to mark them as learned!
+      </p>
+    </div>
+  );
+
+  const renderActivitiesSection = () => (
+    <div style={{ textAlign: 'center', padding: '2rem' }}>
+      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
+        🎯 Choose an Activity
+      </h3>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gap: '1rem',
+        maxWidth: '800px',
+        margin: '0 auto'
+      }}>
+        {seasonalTheme.activities.map((activity) => (
+          <div
+            key={activity.id}
+            onClick={() => startActivity(activity)}
+            style={{
+              background: completedActivities.includes(activity.id)
+                ? 'rgba(34, 197, 94, 0.8)'
+                : 'rgba(255, 255, 255, 0.3)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              border: completedActivities.includes(activity.id) ? '2px solid white' : 'none'
+            }}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+              {activity.emoji}
+            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+              {activity.title}
+            </div>
+            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
+              {activity.description}
+            </div>
+            {completedActivities.includes(activity.id) && (
+              <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                ✓ Completed!
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -571,42 +707,56 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       )}
 
-      {/* Header */}
-      <div style={{
-        padding: '2rem 2rem 1rem 2rem',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          fontSize: '4rem',
-          marginBottom: '1rem'
-        }}>
-          {seasonalTheme.emoji}
+      {/* Header with section navigation */}
+      <div style={{ padding: '1rem 2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '3rem' }}>{seasonalTheme.emoji}</div>
+          <h2 style={{ fontSize: '2rem', fontWeight: '700', margin: '0.5rem 0' }}>
+            {seasonalTheme.season} Learning
+          </h2>
         </div>
-        <h2 style={{
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '0.5rem',
-          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-        }}>
-          {seasonalTheme.season} Learning
-        </h2>
-        <p style={{
-          fontSize: '1.2rem',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '0.5rem'
-        }}>
-          {formatDate(currentDate)}
-        </p>
-        <div style={{
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '12px',
-          padding: '0.75rem 1rem',
-          display: 'inline-block',
-          backdropFilter: 'blur(10px)',
-          fontSize: '1rem'
-        }}>
-          {getWeatherConnection()}
+        
+        {/* Section Navigation */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          {(['characteristics', 'vocabulary', 'activities'] as const).map((section) => (
+            <button
+              key={section}
+              onClick={() => handleManualNavigation(section)}
+              style={{
+                background: currentSection === section
+                  ? 'rgba(255, 255, 255, 0.3)'
+                  : 'rgba(255, 255, 255, 0.1)',
+                border: currentSection === section ? '2px solid white' : '2px solid transparent',
+                borderRadius: '12px',
+                color: 'white',
+                padding: '0.75rem 1.5rem',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                position: 'relative'
+              }}
+            >
+              {section.charAt(0).toUpperCase() + section.slice(1)}
+              {completedSections.includes(section) && (
+                <span style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-8px',
+                  background: 'rgba(34, 197, 94, 1)',
+                  borderRadius: '50%',
+                  width: '20px',
+                  height: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.7rem'
+                }}>
+                  ✓
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -614,205 +764,74 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
       <div style={{
         flex: 1,
         overflow: 'auto',
-        padding: '1rem 2rem',
         display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Season Characteristics */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          marginBottom: '2rem',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h3 style={{
-            fontSize: '1.5rem',
-            fontWeight: '600',
-            marginBottom: '1rem',
-            textAlign: 'center'
-          }}>
-            About {seasonalTheme.season}
-          </h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '0.75rem'
-          }}>
-            {seasonalTheme.characteristics.map((characteristic, index) => (
-              <div
-                key={index}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.2)',
-                  borderRadius: '8px',
-                  padding: '0.75rem',
-                  fontSize: '0.95rem',
-                  lineHeight: '1.4'
-                }}
-              >
-                • {characteristic}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Vocabulary Section */}
-        {showVocabulary && (
-          <div style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '16px',
-            padding: '1.5rem',
-            marginBottom: '2rem',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              textAlign: 'center'
-            }}>
-              📚 {seasonalTheme.season} Words
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '0.75rem'
-            }}>
-              {seasonalTheme.vocabulary.map((word, index) => (
-                <div
-                  key={index}
-                  onClick={() => addToVocabulary(word)}
-                  style={{
-                    background: learnedVocabulary.includes(word) 
-                      ? 'rgba(34, 197, 94, 0.8)' 
-                      : 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '12px',
-                    padding: '0.75rem',
-                    textAlign: 'center',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontSize: '0.9rem',
-                    fontWeight: '500',
-                    border: learnedVocabulary.includes(word) ? '2px solid white' : 'none'
-                  }}
-                >
-                  {word}
-                  {learnedVocabulary.includes(word) && (
-                    <div style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>
-                      ✓ Learned!
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <div style={{
-              textAlign: 'center',
-              marginTop: '1rem',
-              fontSize: '0.9rem',
-              opacity: 0.9
-            }}>
-              Tap words to mark them as learned!
-            </div>
-          </div>
-        )}
-
-        {/* Activities */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '16px',
-          padding: '1.5rem',
-          marginBottom: '1rem',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h3 style={{
-            fontSize: '1.5rem',
-            fontWeight: '600',
-            marginBottom: '1rem',
-            textAlign: 'center'
-          }}>
-            🎯 {seasonalTheme.season} Activities
-          </h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '1rem'
-          }}>
-            {seasonalTheme.activities.map((activity) => (
-              <div
-                key={activity.id}
-                onClick={() => startActivity(activity)}
-                style={{
-                  background: completedActivities.includes(activity.id)
-                    ? 'rgba(34, 197, 94, 0.8)'
-                    : 'rgba(255, 255, 255, 0.3)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  textAlign: 'center',
-                  border: completedActivities.includes(activity.id) ? '2px solid white' : 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (!completedActivities.includes(activity.id)) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
-                    e.currentTarget.style.transform = 'scale(1.02)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!completedActivities.includes(activity.id)) {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }
-                }}
-              >
-                <div style={{
-                  fontSize: '3rem',
-                  marginBottom: '0.5rem'
-                }}>
-                  {activity.emoji}
-                </div>
-                <div style={{
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  marginBottom: '0.5rem'
-                }}>
-                  {activity.title}
-                </div>
-                <div style={{
-                  fontSize: '0.9rem',
-                  opacity: 0.9,
-                  marginBottom: '0.5rem',
-                  lineHeight: '1.3'
-                }}>
-                  {activity.description}
-                </div>
-                <div style={{
-                  fontSize: '0.8rem',
-                  opacity: 0.8
-                }}>
-                  {activity.duration} • {activity.category}
-                </div>
-                {completedActivities.includes(activity.id) && (
-                  <div style={{
-                    marginTop: '0.5rem',
-                    fontSize: '0.9rem',
-                    fontWeight: 'bold'
-                  }}>
-                    ✓ Completed!
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div style={{
-        padding: '1rem 2rem 2rem 2rem',
-        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center'
       }}>
+        {currentSection === 'characteristics' && renderCharacteristicsSection()}
+        {currentSection === 'vocabulary' && renderVocabularySection()}
+        {currentSection === 'activities' && renderActivitiesSection()}
+      </div>
+
+      {/* Section-specific navigation (for section progression) */}
+      {currentSection !== 'activities' && (
+        <div style={{
+          flexShrink: 0,
+          padding: '1rem 2rem',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={() => handleSectionComplete(currentSection)}
+            style={{
+              background: 'rgba(34, 197, 94, 0.8)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Continue to {currentSection === 'characteristics' ? 'Vocabulary' : 'Activities'} →
+          </button>
+        </div>
+      )}
+
+      {/* ALWAYS VISIBLE NAVIGATION - QUICK FIX */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '1rem',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: '20px',
+        padding: '1rem 2rem',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(156, 163, 175, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back
+        </button>
+        
         <button
           onClick={onNext}
           style={{
@@ -820,11 +839,10 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
             border: 'none',
             borderRadius: '12px',
             color: 'white',
-            padding: '1rem 3rem',
-            fontSize: '1.1rem',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
             fontWeight: '700',
             cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
@@ -836,7 +854,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          Seasonal Learning Complete! Continue →
+          Seasonal Learning Complete! →
         </button>
       </div>
     </div>

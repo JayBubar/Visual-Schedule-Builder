@@ -4,6 +4,7 @@ import { MorningMeetingStepProps, CalendarMathStepData } from '../types/morningM
 const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
+  onBack,
   onDataUpdate,
   stepData,
   hubSettings
@@ -698,6 +699,64 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
             Continue to Weather →
           </button>
         )}
+      </div>
+
+      {/* ALWAYS VISIBLE NAVIGATION - QUICK FIX */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '1rem',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: '20px',
+        padding: '1rem 2rem',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+      }}>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(156, 163, 175, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back
+        </button>
+        
+        <button
+          onClick={onNext}
+          style={{
+            background: 'rgba(34, 197, 94, 0.8)',
+            border: 'none',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Calendar Math Complete! →
+        </button>
       </div>
     </div>
   );
