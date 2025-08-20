@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Target, CheckCircle, BookOpen, Users, Clock, Star, Award, ArrowRight } from 'lucide-react';
 
 interface Student {
@@ -125,15 +125,23 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
     }
   ];
 
+  // 🔧 FIX: Use useCallback to prevent infinite loops
+  const handleDataUpdate = useCallback(() => {
+    // Only update when there's meaningful data to save
+    if (selectedGoals.length > 0 || Object.keys(reflectionAnswers).length > 0 || currentSection !== 'goals') {
+      onDataUpdate({
+        selectedGoals,
+        reflectionAnswers,
+        completedAt: currentSection === 'summary' ? new Date().toISOString() : null,
+        currentSection
+      });
+    }
+  }, [selectedGoals, reflectionAnswers, currentSection, onDataUpdate]);
+
+  // 🔧 FIX: Only call data update when meaningful changes occur
   useEffect(() => {
-    // Update data whenever selections change
-    onDataUpdate({
-      selectedGoals,
-      reflectionAnswers,
-      completedAt: new Date(),
-      currentSection
-    });
-  }, [selectedGoals, reflectionAnswers, currentSection]);
+    handleDataUpdate();
+  }, [handleDataUpdate]);
 
   const handleGoalToggle = (goalId: string) => {
     setSelectedGoals(prev => 
@@ -934,7 +942,7 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
         .nav-button:hover:not(.disabled) {
           background: rgba(255, 255, 255, 0.3);
           transform: translateY(-2px);
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 4px 15px rgba(0, 0, 0,
         }
 
         .nav-button.disabled {

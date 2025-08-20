@@ -41,8 +41,6 @@ function createWindow(): void {
   if (isDev) {
     // Development: load from Vite dev server
     mainWindow.loadURL('http://localhost:5173');
-    // Open DevTools in development
-    mainWindow.webContents.openDevTools();
   } else {
     // Production: load from built files
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
@@ -323,7 +321,6 @@ ipcMain.handle('data:save-schedule', async (event, scheduleData) => {
     writeFileSync(filePath, JSON.stringify(scheduleData, null, 2));
     return { success: true, path: filePath };
   } catch (error) {
-    console.error('Error saving schedule:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
@@ -340,7 +337,6 @@ ipcMain.handle('data:load-schedule', async (event, filePath?: string) => {
     const scheduleData = JSON.parse(data);
     return { success: true, data: scheduleData };
   } catch (error) {
-    console.error('Error loading schedule:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
@@ -351,7 +347,6 @@ ipcMain.handle('data:save-settings', async (event, settings) => {
     writeFileSync(filePath, JSON.stringify(settings, null, 2));
     return { success: true };
   } catch (error) {
-    console.error('Error saving settings:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
@@ -382,7 +377,6 @@ ipcMain.handle('data:load-settings', async () => {
     const settings = JSON.parse(data);
     return { success: true, data: settings };
   } catch (error) {
-    console.error('Error loading settings:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });

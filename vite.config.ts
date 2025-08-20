@@ -30,7 +30,6 @@ export default defineConfig({
     // Optimize for Electron
     target: 'esnext',
     minify: 'esbuild',
-    // Enable source maps for debugging
     sourcemap: false,
     // Chunk size warnings
     chunkSizeWarningLimit: 1000,

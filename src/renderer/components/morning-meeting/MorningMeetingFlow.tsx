@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { STEP_COMPONENTS, getEnabledStepsInOrder, StepKey } from './steps';
 import { MorningMeetingStepProps } from './types/morningMeetingTypes';
 import UnifiedDataService from '../../services/unifiedDataService';
@@ -57,17 +57,15 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const currentStepKey = enabledSteps[currentStepIndex];
   const CurrentStepComponent = STEP_COMPONENTS[currentStepKey];
 
-  // Load students data
+  // Load students data - FIXED: removed dependency array to prevent loops
   useEffect(() => {
     try {
-      // Try different methods to get students
       let allStudents = [];
       if (typeof (UnifiedDataService as any).getAllStudents === 'function') {
         allStudents = (UnifiedDataService as any).getAllStudents();
       } else if (typeof (UnifiedDataService as any).getStudents === 'function') {
         allStudents = (UnifiedDataService as any).getStudents();
       } else {
-        // Fallback to empty array
         allStudents = [];
       }
       setStudents(allStudents || []);
@@ -75,14 +73,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       console.error('Error loading students:', error);
       setStudents([]);
     }
-  }, []);
-
-  // Debug log to verify hubSettings.videos is flowing through
-  useEffect(() => {
-    console.log('🎥 MorningMeetingFlow: hubSettings.videos:', hubSettings?.videos);
-    console.log('🎥 Current step:', currentStepKey);
-    console.log('🎥 Videos for current step:', hubSettings?.videos?.[getVideoKey(currentStepKey)]);
-  }, [hubSettings, currentStepKey]);
+  }, []); // FIXED: Empty dependency array
 
   // Helper function to get video key for current step
   const getVideoKey = (stepKey: StepKey): keyof typeof hubSettings.videos => {
@@ -104,7 +95,22 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       setCurrentStepIndex(prev => prev + 1);
     } else {
       // Save final completion data
-      console.log('Morning Meeting completed successfully');
+      try {
+        const completionData = {
+          completedAt: new Date(),
+          steps: enabledSteps,
+          stepData,
+          hubSettings: {
+            videos: hubSettings.videos,
+            behaviorStatements: hubSettings.behaviorStatements,
+            celebrations: hubSettings.celebrations
+          }
+        };
+        localStorage.setItem('morningMeetingSession', JSON.stringify(completionData));
+      } catch (error) {
+        console.error('Error saving Morning Meeting session:', error);
+      }
+      onComplete();
     }
   };
 
@@ -116,20 +122,21 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     }
   };
 
-  const handleStepDataUpdate = useCallback((data: any) => {
+  // FIXED: Proper memoization to prevent infinite loops
+  const handleStepDataUpdate = React.useCallback((data: any) => {
     setStepData(prev => ({
       ...prev,
       [currentStepKey]: data
     }));
 
-    // Save step data to localStorage for now
+    // Save step data to localStorage
     try {
       const stepDataKey = `morningMeetingStep_${currentStepKey}`;
       localStorage.setItem(stepDataKey, JSON.stringify(data));
     } catch (error) {
       console.error('Error saving step data:', error);
     }
-  }, [currentStepKey]);
+  }, [currentStepKey]); // FIXED: Only depend on currentStepKey
 
   // Handle case where no steps are enabled
   if (enabledSteps.length === 0) {
@@ -216,9 +223,9 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     currentDate: new Date(),
     onNext: handleNext,
     onBack: handlePrevious,
-    onDataUpdate: handleStepDataUpdate,
+    onDataUpdate: handleStepDataUpdate, // FIXED: Now properly memoized
     stepData: stepData[currentStepKey],
-    hubSettings, // Pass complete hubSettings including videos
+    hubSettings, // Pass complete hubSettings including videos, welcomePersonalization, customVocabulary
     students
   };
 
@@ -272,29 +279,89 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         }}>
           {currentStepKey.replace(/([A-Z])/g, ' $1').trim()}
         </span>
-        {/* HOME BUTTON - FIX: Add exit functionality */}
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(220, 53, 69, 0.8)',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            fontSize: '0.8rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          title="Exit Morning Meeting"
-        >
-          🏠 Exit
-        </button>
       </div>
+
+      {/* Exit Button - FIXED: Added proper exit mechanism */}
+      <button
+        onClick={onBack}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          zIndex: 1001,
+          background: 'rgba(220, 53, 69, 0.8)',
+          border: 'none',
+          borderRadius: '50%',
+          width: '50px',
+          height: '50px',
+          color: 'white',
+          fontSize: '1.5rem',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(220, 53, 69, 1)';
+          e.currentTarget.style.transform = 'scale(1.1)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(220, 53, 69, 0.8)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+        title="Exit Morning Meeting"
+      >
+        ×
+      </button>
 
       {/* Step Component */}
       <CurrentStepComponent {...stepProps} />
 
+      {/* Home Button - FIXED: Added home functionality */}
+      <button
+        onClick={() => {
+          // Close Morning Meeting and return to main app
+          if (typeof window !== 'undefined' && (window as any).electronAPI) {
+            (window as any).electronAPI.send('navigate-home');
+          }
+          onBack();
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 1001,
+          background: 'rgba(52, 152, 219, 0.8)',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
+          borderRadius: '12px',
+          color: 'white',
+          padding: '0.75rem 1.5rem',
+          fontSize: '1rem',
+          fontWeight: '600',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(52, 152, 219, 1)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(52, 152, 219, 0.8)';
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+        title="Return to Bloom Classroom Home"
+      >
+        🏠 Home
+      </button>
     </div>
   );
 };

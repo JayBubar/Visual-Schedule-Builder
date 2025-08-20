@@ -1102,14 +1102,13 @@ useEffect(() => {
             }
           }}
           onComplete={() => {
-            // Handle completion - could advance to next activity or return to schedule
-            console.log('🌅 Morning Meeting completed in SmartboardDisplay');
-            if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
-              setCurrentActivityIndex(currentActivityIndex + 1);
-            } else {
-              // If this was the last activity, go back to home
-              onNavigateHome?.();
-            }
+            console.log('🔧 DEBUG: About to handle MM completion');
+            console.log('🔧 Current activity index:', currentActivityIndex);
+            console.log('🔧 Total activities:', activeSchedule?.activities.length);
+            console.log('🔧 Next activity would be:', activeSchedule?.activities[currentActivityIndex + 1]);
+            
+            // TEMPORARY FIX: Always go home
+            onNavigateHome?.();
           }}
           onBack={() => {
             // Handle navigation back to schedule builder
