@@ -24,21 +24,23 @@ interface Celebration {
 interface CelebrationStepProps {
   students: Student[];
   onNext: () => void;
-  onPrevious: () => void;
-  onUpdateData: (data: any) => void;
-  data?: any;
+  onBack: () => void;
+  currentDate: Date;
+  hubSettings: any;
+  onDataUpdate: (data: any) => void;
+  stepData?: any;
 }
 
 const CelebrationStep: React.FC<CelebrationStepProps> = ({
   students,
   onNext,
-  onPrevious,
-  onUpdateData,
-  data
+  onBack,
+  onDataUpdate,
+  stepData
 }) => {
   const [todaysCelebrations, setTodaysCelebrations] = useState<Celebration[]>([]);
   const [birthdayStudents, setBirthdayStudents] = useState<Student[]>([]);
-  const [selectedCelebrations, setSelectedCelebrations] = useState<string[]>(data?.selectedCelebrations || []);
+  const [selectedCelebrations, setSelectedCelebrations] = useState<string[]>(stepData?.selectedCelebrations || []);
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
       : [...selectedCelebrations, celebrationId];
     
     setSelectedCelebrations(newSelected);
-    onUpdateData({
+    onDataUpdate({
       selectedCelebrations: newSelected,
       birthdayStudents: birthdayStudents.map(s => s.id),
       completedAt: new Date()
@@ -265,7 +267,7 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
 
       {/* Navigation */}
       <div className="step-navigation">
-        <button onClick={onPrevious} className="nav-button previous">
+        <button onClick={onBack} className="nav-button previous">
           ← Previous
         </button>
         <div className="step-indicator">

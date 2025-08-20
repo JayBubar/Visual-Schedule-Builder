@@ -8,6 +8,44 @@ export { default as SeasonalStep } from './SeasonalStep';
 export { default as CelebrationStep } from './CelebrationStep';
 export { default as DayReviewStep } from './DayReviewStep';
 
+// Re-export types from the types file
+export type { MorningMeetingSettings, MorningMeetingStepProps } from '../types/morningMeetingTypes';
+export { DEFAULT_MORNING_MEETING_SETTINGS } from '../types/morningMeetingTypes';
+
+// Import the components for the STEP_COMPONENTS map
+import WelcomeStep from './WelcomeStep';
+import AttendanceStep from './AttendanceStep';
+import BehaviorStep from './BehaviorStep';
+import CalendarMathStep from './CalendarMathStep';
+import WeatherStep from './WeatherStep';
+import SeasonalStep from './SeasonalStep';
+import CelebrationStep from './CelebrationStep';
+import DayReviewStep from './DayReviewStep';
+
+// Step components map for dynamic rendering (required by MorningMeetingFlow.tsx)
+export const STEP_COMPONENTS = {
+  welcome: WelcomeStep,
+  attendance: AttendanceStep,
+  behavior: BehaviorStep,
+  calendarMath: CalendarMathStep,
+  weather: WeatherStep,
+  seasonal: SeasonalStep,
+  celebration: CelebrationStep,
+  dayReview: DayReviewStep
+} as const;
+
+// Default step order (required by MorningMeetingFlow.tsx)
+export const DEFAULT_STEP_ORDER = [
+  'welcome',
+  'attendance',
+  'behavior', 
+  'calendarMath',
+  'weather',
+  'seasonal',
+  'celebration',
+  'dayReview'
+] as const;
+
 // Step metadata for flow management
 export const MORNING_MEETING_STEPS = {
   welcome: {
@@ -68,7 +106,8 @@ export const MORNING_MEETING_STEPS = {
   }
 } as const;
 
-export type StepKey = keyof typeof MORNING_MEETING_STEPS;
+// Type for step keys (re-exported for compatibility)
+export type StepKey = keyof typeof STEP_COMPONENTS;
 
 // Default enabled steps for new installations
 export const DEFAULT_ENABLED_STEPS: StepKey[] = [
@@ -100,16 +139,5 @@ export const getEnabledStepsInOrder = (enabledSteps: Record<string, boolean>): S
 
 // Helper function to get step component by key
 export const getStepComponent = (stepKey: StepKey) => {
-  const componentMap = {
-    welcome: 'WelcomeStep',
-    attendance: 'AttendanceStep',
-    behavior: 'BehaviorStep',
-    calendarMath: 'CalendarMathStep',
-    weather: 'WeatherStep',
-    seasonal: 'SeasonalStep',
-    celebration: 'CelebrationStep',
-    dayReview: 'DayReviewStep'
-  };
-  
-  return componentMap[stepKey];
+  return STEP_COMPONENTS[stepKey];
 };

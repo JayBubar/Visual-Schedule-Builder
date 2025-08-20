@@ -10,10 +10,11 @@ interface Student {
 interface DayReviewStepProps {
   students: Student[];
   onNext: () => void;
-  onPrevious: () => void;
-  onComplete: () => void;
-  onUpdateData: (data: any) => void;
-  data?: any;
+  onBack: () => void;
+  currentDate: Date;
+  hubSettings: any;
+  onDataUpdate: (data: any) => void;
+  stepData?: any;
 }
 
 interface DayGoal {
@@ -35,14 +36,15 @@ interface ReflectionPrompt {
 const DayReviewStep: React.FC<DayReviewStepProps> = ({
   students,
   onNext,
-  onPrevious,
-  onComplete,
-  onUpdateData,
-  data
+  onBack,
+  currentDate,
+  hubSettings,
+  onDataUpdate,
+  stepData
 }) => {
   const [currentSection, setCurrentSection] = useState<'goals' | 'reflection' | 'summary'>('goals');
-  const [selectedGoals, setSelectedGoals] = useState<string[]>(data?.selectedGoals || []);
-  const [reflectionAnswers, setReflectionAnswers] = useState<Record<string, string>>(data?.reflectionAnswers || {});
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(stepData?.selectedGoals || []);
+  const [reflectionAnswers, setReflectionAnswers] = useState<Record<string, string>>(stepData?.reflectionAnswers || {});
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
 
   const dayGoals: DayGoal[] = [
@@ -125,7 +127,7 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
 
   useEffect(() => {
     // Update data whenever selections change
-    onUpdateData({
+    onDataUpdate({
       selectedGoals,
       reflectionAnswers,
       completedAt: new Date(),
@@ -151,7 +153,7 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
   const handleComplete = () => {
     setShowCompletionAnimation(true);
     setTimeout(() => {
-      onComplete();
+      onNext();
     }, 2000);
   };
 
@@ -169,7 +171,7 @@ const DayReviewStep: React.FC<DayReviewStepProps> = ({
     } else if (currentSection === 'summary') {
       setCurrentSection('reflection');
     } else {
-      onPrevious();
+      onBack();
     }
   };
 

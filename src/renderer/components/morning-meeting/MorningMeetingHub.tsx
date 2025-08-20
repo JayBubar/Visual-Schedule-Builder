@@ -4,7 +4,7 @@ import UnifiedDataService from '../../services/unifiedDataService';
 
 interface MorningMeetingHubProps {
   onStartMorningMeeting: () => void;
-  onNavigateHome: () => void;
+  onClose: () => void;
 }
 
 interface HubSettings {
@@ -15,10 +15,10 @@ interface HubSettings {
     customMessage?: string;
   };
   videos: {
-    weather: string | null;
-    seasonal: string | null;
-    behavior: string | null;
-    calendarMath: string | null;
+    weatherClothing: Array<{id: string, name: string, url: string}>;
+    seasonalLearning: Array<{id: string, name: string, url: string}>;
+    behaviorCommitments: Array<{id: string, name: string, url: string}>;
+    calendarMath: Array<{id: string, name: string, url: string}>;
   };
   behaviorStatements: {
     enabled: boolean;
@@ -55,10 +55,10 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
     customMessage: 'Welcome to Our Classroom!'
   },
   videos: {
-    weather: null,
-    seasonal: null,
-    behavior: null,
-    calendarMath: null
+    weatherClothing: [],
+    seasonalLearning: [],
+    behaviorCommitments: [],
+    calendarMath: []
   },
   behaviorStatements: {
     enabled: true,
@@ -221,7 +221,7 @@ const CelebrationsManagementModal: React.FC<{
 
 const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
-  onNavigateHome
+  onClose
 }) => {
   const [activeSection, setActiveSection] = useState<'welcome' | 'videos' | 'behavior' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
@@ -247,10 +247,26 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         },
         videos: {
           ...DEFAULT_HUB_SETTINGS.videos,
-          weather: morningMeetingSettings.selectedVideos?.weather || null,
-          seasonal: morningMeetingSettings.selectedVideos?.seasonal || null,
-          behavior: morningMeetingSettings.selectedVideos?.behavior || null,
-          calendarMath: morningMeetingSettings.selectedVideos?.calendarMath || null
+          weatherClothing: morningMeetingSettings.selectedVideos?.weather ? [{
+  id: morningMeetingSettings.selectedVideos.weather,
+  name: 'Selected Weather Video',
+  url: ''
+}] : [],
+          seasonalLearning: morningMeetingSettings.selectedVideos?.seasonal ? [{
+  id: morningMeetingSettings.selectedVideos.seasonal,
+  name: 'Selected Seasonal Video',
+  url: ''
+}] : [],
+          behaviorCommitments: morningMeetingSettings.selectedVideos?.behavior ? [{
+  id: morningMeetingSettings.selectedVideos.behavior,
+  name: 'Selected Behavior Video',
+  url: ''
+}] : [],
+          calendarMath: morningMeetingSettings.selectedVideos?.calendarMath ? [{
+  id: morningMeetingSettings.selectedVideos.calendarMath,
+  name: 'Selected Calendar Math Video',
+  url: ''
+}] : []
         },
         behaviorStatements: {
           ...DEFAULT_HUB_SETTINGS.behaviorStatements,
@@ -367,8 +383,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           <p>Configure your perfect Morning Meeting experience</p>
         </div>
         <div className="header-actions">
-          <button onClick={onNavigateHome} className="home-button">
-            ← Home
+          <button onClick={onClose} className="home-button">
+            ← Close
           </button>
           {hasUnsavedChanges && (
             <button onClick={saveSettings} className="save-button">
@@ -466,98 +482,210 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
               <div className="video-categories">
                 <div className="video-category">
-                  <h3>🌤️ Weather & Clothing Video</h3>
+                  <h3>🌤️ Weather & Clothing Videos</h3>
                   <div className="video-selection">
                     <select
-                      value={settings.videos.weather || ''}
-                      onChange={(e) => updateSettings('videos', { weather: e.target.value || null })}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const selectedVideo = availableVideos.find(v => v.id === e.target.value);
+                          if (selectedVideo) {
+                            const newVideo = {
+                              id: selectedVideo.id,
+                              name: selectedVideo.name,
+                              url: (selectedVideo as any).url || ''
+                            };
+                            updateSettings('videos', { 
+                              weatherClothing: [...settings.videos.weatherClothing, newVideo]
+                            });
+                          }
+                        }
+                      }}
                       className="video-select"
                     >
-                      <option value="">No video selected</option>
+                      <option value="">Add weather video...</option>
                       {getTaggedVideos(['weather', 'clothing', 'seasons']).map(video => (
                         <option key={video.id} value={video.id}>{video.name}</option>
                       ))}
                     </select>
-                    {settings.videos.weather && (
-                      <button 
-                        onClick={() => playVideo(settings.videos.weather)}
-                        className="preview-button"
-                      >
-                        ▶️ Preview
-                      </button>
-                    )}
+                  </div>
+                  <div className="selected-videos">
+                    {settings.videos.weatherClothing.map((video, index) => (
+                      <div key={index} className="selected-video">
+                        <span>{video.name}</span>
+                        <button 
+                          onClick={() => window.open(video.url, '_blank')}
+                          className="preview-button"
+                        >
+                          ▶️ Preview
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newVideos = settings.videos.weatherClothing.filter((_, i) => i !== index);
+                            updateSettings('videos', { weatherClothing: newVideos });
+                          }}
+                          className="remove-button"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div className="video-category">
-                  <h3>🍂 Seasonal Learning Video</h3>
+                  <h3>🍂 Seasonal Learning Videos</h3>
                   <div className="video-selection">
                     <select
-                      value={settings.videos.seasonal || ''}
-                      onChange={(e) => updateSettings('videos', { seasonal: e.target.value || null })}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const selectedVideo = availableVideos.find(v => v.id === e.target.value);
+                          if (selectedVideo) {
+                            const newVideo = {
+                              id: selectedVideo.id,
+                              name: selectedVideo.name,
+                              url: (selectedVideo as any).url || ''
+                            };
+                            updateSettings('videos', { 
+                              seasonalLearning: [...settings.videos.seasonalLearning, newVideo]
+                            });
+                          }
+                        }
+                      }}
                       className="video-select"
                     >
-                      <option value="">No video selected</option>
+                      <option value="">Add seasonal video...</option>
                       {getTaggedVideos(['seasonal', 'activities']).map(video => (
                         <option key={video.id} value={video.id}>{video.name}</option>
                       ))}
                     </select>
-                    {settings.videos.seasonal && (
-                      <button 
-                        onClick={() => playVideo(settings.videos.seasonal)}
-                        className="preview-button"
-                      >
-                        ▶️ Preview
-                      </button>
-                    )}
+                  </div>
+                  <div className="selected-videos">
+                    {settings.videos.seasonalLearning.map((video, index) => (
+                      <div key={index} className="selected-video">
+                        <span>{video.name}</span>
+                        <button 
+                          onClick={() => window.open(video.url, '_blank')}
+                          className="preview-button"
+                        >
+                          ▶️ Preview
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newVideos = settings.videos.seasonalLearning.filter((_, i) => i !== index);
+                            updateSettings('videos', { seasonalLearning: newVideos });
+                          }}
+                          className="remove-button"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div className="video-category">
-                  <h3>💪 Behavior Expectations Video</h3>
+                  <h3>💪 Behavior Expectations Videos</h3>
                   <div className="video-selection">
                     <select
-                      value={settings.videos.behavior || ''}
-                      onChange={(e) => updateSettings('videos', { behavior: e.target.value || null })}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const selectedVideo = availableVideos.find(v => v.id === e.target.value);
+                          if (selectedVideo) {
+                            const newVideo = {
+                              id: selectedVideo.id,
+                              name: selectedVideo.name,
+                              url: (selectedVideo as any).url || ''
+                            };
+                            updateSettings('videos', { 
+                              behaviorCommitments: [...settings.videos.behaviorCommitments, newVideo]
+                            });
+                          }
+                        }
+                      }}
                       className="video-select"
                     >
-                      <option value="">No video selected</option>
+                      <option value="">Add behavior video...</option>
                       {getTaggedVideos(['behavior', 'social-skills']).map(video => (
                         <option key={video.id} value={video.id}>{video.name}</option>
                       ))}
                     </select>
-                    {settings.videos.behavior && (
-                      <button 
-                        onClick={() => playVideo(settings.videos.behavior)}
-                        className="preview-button"
-                      >
-                        ▶️ Preview
-                      </button>
-                    )}
+                  </div>
+                  <div className="selected-videos">
+                    {settings.videos.behaviorCommitments.map((video, index) => (
+                      <div key={index} className="selected-video">
+                        <span>{video.name}</span>
+                        <button 
+                          onClick={() => window.open(video.url, '_blank')}
+                          className="preview-button"
+                        >
+                          ▶️ Preview
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newVideos = settings.videos.behaviorCommitments.filter((_, i) => i !== index);
+                            updateSettings('videos', { behaviorCommitments: newVideos });
+                          }}
+                          className="remove-button"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div className="video-category">
-                  <h3>📅 Calendar Math Video</h3>
+                  <h3>📅 Calendar Math Videos</h3>
                   <div className="video-selection">
                     <select
-                      value={settings.videos.calendarMath || ''}
-                      onChange={(e) => updateSettings('videos', { calendarMath: e.target.value || null })}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const selectedVideo = availableVideos.find(v => v.id === e.target.value);
+                          if (selectedVideo) {
+                            const newVideo = {
+                              id: selectedVideo.id,
+                              name: selectedVideo.name,
+                              url: (selectedVideo as any).url || ''
+                            };
+                            updateSettings('videos', { 
+                              calendarMath: [...settings.videos.calendarMath, newVideo]
+                            });
+                          }
+                        }
+                      }}
                       className="video-select"
                     >
-                      <option value="">No video selected</option>
+                      <option value="">Add calendar math video...</option>
                       {getTaggedVideos(['calendar', 'math', 'numbers']).map(video => (
                         <option key={video.id} value={video.id}>{video.name}</option>
                       ))}
                     </select>
-                    {settings.videos.calendarMath && (
-                      <button 
-                        onClick={() => playVideo(settings.videos.calendarMath)}
-                        className="preview-button"
-                      >
-                        ▶️ Preview
-                      </button>
-                    )}
+                  </div>
+                  <div className="selected-videos">
+                    {settings.videos.calendarMath.map((video, index) => (
+                      <div key={index} className="selected-video">
+                        <span>{video.name}</span>
+                        <button 
+                          onClick={() => window.open(video.url, '_blank')}
+                          className="preview-button"
+                        >
+                          ▶️ Preview
+                        </button>
+                        <button
+                          onClick={() => {
+                            const newVideos = settings.videos.calendarMath.filter((_, i) => i !== index);
+                            updateSettings('videos', { calendarMath: newVideos });
+                          }}
+                          className="remove-button"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1000,6 +1128,43 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         .preview-button:hover {
           background: rgba(255, 193, 7, 0.3);
           transform: translateY(-2px);
+        }
+
+        .selected-videos {
+          margin-top: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .selected-video {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+          padding: 0.75rem;
+          gap: 1rem;
+        }
+
+        .selected-video span {
+          flex: 1;
+          font-weight: 500;
+        }
+
+        .remove-button {
+          background: rgba(220, 53, 69, 0.2);
+          border: 2px solid rgba(220, 53, 69, 0.4);
+          border-radius: 6px;
+          padding: 0.5rem;
+          color: white;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.9rem;
+        }
+
+        .remove-button:hover {
+          background: rgba(220, 53, 69, 0.3);
         }
 
         .no-videos-message {
