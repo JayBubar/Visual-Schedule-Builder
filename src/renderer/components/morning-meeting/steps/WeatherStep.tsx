@@ -176,6 +176,12 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
   // Initialize weather data
   useEffect(() => {
+    console.log('🌤️ DEBUG WeatherStep hubSettings:', hubSettings);
+    console.log('🌤️ DEBUG Custom vocabulary:', hubSettings?.customVocabulary?.weather);
+    console.log('🌤️ DEBUG Videos:', hubSettings?.videos?.weatherClothing);
+  }, [hubSettings]);
+
+  useEffect(() => {
     if (!currentWeather) {
       // Check if API is enabled and has key
       if (hubSettings?.weatherAPI?.enabled && hubSettings?.weatherAPI?.apiKey) {

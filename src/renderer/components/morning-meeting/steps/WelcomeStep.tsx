@@ -33,6 +33,11 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   const classInfo = getClassInfo();
 
   useEffect(() => {
+    console.log('👋 DEBUG WelcomeStep hubSettings:', hubSettings);
+    console.log('👋 DEBUG Welcome message:', hubSettings?.welcomePersonalization?.customMessage);
+  }, [hubSettings]);
+
+  useEffect(() => {
     // Auto-start greeting animation
     const timer = setTimeout(() => {
       setShowGreeting(true);

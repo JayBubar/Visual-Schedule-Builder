@@ -4,6 +4,16 @@ import { MorningMeetingStepProps } from './types/morningMeetingTypes';
 import UnifiedDataService from '../../services/unifiedDataService';
 
 interface HubSettings {
+  welcomePersonalization?: {
+    schoolName: string;
+    teacherName: string;
+    className: string;
+    customMessage?: string;
+  };
+  customVocabulary?: {
+    weather: string[];
+    seasonal: string[];
+  };
   videos: {
     calendarMath: Array<{ id: string; name: string; url: string; }>;
     weatherClothing: Array<{ id: string; name: string; url: string; }>;
@@ -294,11 +304,15 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
           padding: '0.5rem',
           borderRadius: '8px',
           fontSize: '0.7rem',
-          zIndex: 2000
+          zIndex: 2000,
+          maxWidth: '300px'
         }}>
           <div>Step: {currentStepKey}</div>
           <div>Videos: {hubSettings?.videos?.[getVideoKey(currentStepKey)]?.length || 0}</div>
           <div>Students: {students.filter(s => s.present === true).length} present</div>
+          <div>Welcome: {hubSettings?.welcomePersonalization?.customMessage || 'DEFAULT'}</div>
+          <div>Behaviors: {hubSettings?.behaviorStatements?.statements?.length || 0}</div>
+          <div>Vocab: {hubSettings?.customVocabulary?.weather?.length || 0}</div>
         </div>
       )}
     </div>

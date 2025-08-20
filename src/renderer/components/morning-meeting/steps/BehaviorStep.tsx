@@ -103,6 +103,11 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   const presentStudents = students.filter((student: any) => student.present === true);
 
   useEffect(() => {
+    console.log('💪 DEBUG BehaviorStep hubSettings:', hubSettings);
+    console.log('💪 DEBUG Behavior statements:', hubSettings?.behaviorStatements?.statements);
+  }, [hubSettings]);
+
+  useEffect(() => {
     const stepDataUpdate: any = {
       selectedCommitments,
       studentCommitments,

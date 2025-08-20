@@ -243,6 +243,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   const loadSettings = () => {
     try {
       const morningMeetingSettings = UnifiedDataService.getSettings()?.morningMeeting || {};
+      console.log('🔧 DEBUG: Raw MM settings from UnifiedDataService:', morningMeetingSettings);
       
       const mergedSettings: HubSettings = {
         ...DEFAULT_HUB_SETTINGS,
@@ -301,6 +302,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         }
       };
       
+      console.log('🔧 DEBUG: Processed Hub settings:', mergedSettings);
       setSettings(mergedSettings);
     } catch (error) {
       console.error('Error loading Morning Meeting settings:', error);
@@ -341,14 +343,19 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
   const saveSettings = () => {
     try {
+      console.log('💾 DEBUG: Saving settings:', settings);
+      
       // Convert hub settings back to the format expected by Settings.tsx
       const morningMeetingSettings = {
         welcomeSettings: settings.welcomePersonalization,
+        customVocabulary: settings.customVocabulary,
         selectedVideos: settings.videos,
         behaviorCommitments: settings.behaviorStatements,
         celebrations: settings.celebrations,
         checkInFlow: settings.flowCustomization.enabledSteps
       };
+
+      console.log('💾 DEBUG: Converted to MM format:', morningMeetingSettings);
 
       // Get current settings and update just the morningMeeting section
       const currentSettings = UnifiedDataService.getSettings();
@@ -360,8 +367,15 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         }
       };
 
+      console.log('💾 DEBUG: Final settings to save:', updatedSettings);
       UnifiedDataService.updateSettings(updatedSettings);
       setHasUnsavedChanges(false);
+      
+      // Verify it was saved
+      setTimeout(() => {
+        const verifySettings = UnifiedDataService.getSettings();
+        console.log('✅ DEBUG: Verification - settings after save:', verifySettings.morningMeeting);
+      }, 100);
       
       // Dispatch event for other components
       window.dispatchEvent(new CustomEvent('morningMeetingSettingsChanged', {
@@ -370,7 +384,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
       
       console.log('Morning Meeting settings saved successfully');
     } catch (error) {
-      console.error('Error saving Morning Meeting settings:', error);
+      console.error('❌ DEBUG: Error saving settings:', error);
     }
   };
 
@@ -402,6 +416,23 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         <div className="header-actions">
           <button onClick={onClose} className="home-button">
             ← Close
+          </button>
+          <button
+            onClick={() => {
+              console.log('🔍 FULL DEBUG: Current Hub Settings:', settings);
+              console.log('🔍 FULL DEBUG: Raw UnifiedDataService:', UnifiedDataService.getSettings());
+            }}
+            style={{
+              background: '#ff6b6b',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              margin: '1rem'
+            }}
+          >
+            🐛 Debug Data Flow
           </button>
           {hasUnsavedChanges && (
             <button onClick={saveSettings} className="save-button">
