@@ -1029,8 +1029,23 @@ useEffect(() => {
       // Import and render MorningMeetingFlow
       return (
         <MorningMeetingFlow
-          students={realStudents}
-          staff={realStaff}
+          hubSettings={{
+            videos: {
+              calendarMath: [],
+              weatherClothing: [],
+              seasonalLearning: [],
+              behaviorCommitments: []
+            },
+            behaviorStatements: {
+              enabled: false,
+              statements: [],
+              allowCustom: false
+            },
+            celebrations: {},
+            flowCustomization: {
+              enabledSteps: {}
+            }
+          }}
           onComplete={() => {
             // Handle completion - could advance to next activity or return to schedule
             console.log('🌅 Morning Meeting completed in SmartboardDisplay');
@@ -1041,7 +1056,7 @@ useEffect(() => {
               onNavigateHome?.();
             }
           }}
-          onNavigateHome={() => {
+          onBack={() => {
             // Handle navigation back to schedule builder
             onNavigateHome?.();
           }}

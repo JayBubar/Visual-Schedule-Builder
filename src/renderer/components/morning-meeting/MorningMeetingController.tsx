@@ -42,10 +42,25 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
 
   return (
     <MorningMeetingFlow
-      students={students}
-      staff={staff}
+      hubSettings={{
+        videos: {
+          calendarMath: [],
+          weatherClothing: [],
+          seasonalLearning: [],
+          behaviorCommitments: []
+        },
+        behaviorStatements: {
+          enabled: false,
+          statements: [],
+          allowCustom: false
+        },
+        celebrations: {},
+        flowCustomization: {
+          enabledSteps: {}
+        }
+      }}
       onComplete={handleMorningMeetingComplete}
-      onNavigateHome={onNavigateHome}
+      onBack={handleBackToHub}
     />
   );
 };

@@ -27,6 +27,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
   const [showClothingSelection, setShowClothingSelection] = useState(false);
   const [showDiscussion, setShowDiscussion] = useState(false);
 
+  // Get selected videos for this step
+  const selectedVideos = hubSettings?.videos?.weatherClothing || [];
+
   // Get custom vocabulary from hub settings or use defaults
   const getSeasonalVocabulary = (): string[] => {
     // FIRST: Check Hub custom vocabulary
@@ -72,85 +75,67 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
     if (temp >= 75) {
       suggestions.push(
         { item: 'shorts', emoji: '🩳', reason: 'It\'s warm outside!' },
-        { item: 't-shirt', emoji: '👕', reason: 'Light clothes for hot weather' },
-        { item: 'sandals', emoji: '👡', reason: 'Keep your feet cool' },
-        { item: 'sunglasses', emoji: '🕶️', reason: 'Protect your eyes from sun' },
-        { item: 'hat', emoji: '🧢', reason: 'Shade from the sun' }
+        { item: 't-shirt', emoji: '👕', reason: 'Stay cool and comfortable' },
+        { item: 'sandals', emoji: '👡', reason: 'Let your feet breathe' }
       );
     } else if (temp >= 60) {
       suggestions.push(
-        { item: 'jeans', emoji: '👖', reason: 'Good for mild weather' },
-        { item: 'light jacket', emoji: '🧥', reason: 'In case it gets cool' },
-        { item: 'sneakers', emoji: '👟', reason: 'Comfortable for walking' },
-        { item: 'long sleeves', emoji: '👔', reason: 'Perfect for this temperature' }
+        { item: 'light jacket', emoji: '🧥', reason: 'Perfect for mild weather' },
+        { item: 'long pants', emoji: '👖', reason: 'Comfortable for this temperature' },
+        { item: 'sneakers', emoji: '👟', reason: 'Good for walking' }
       );
     } else if (temp >= 40) {
       suggestions.push(
-        { item: 'sweater', emoji: '🧶', reason: 'Stay warm and cozy' },
-        { item: 'jacket', emoji: '🧥', reason: 'Protection from cold air' },
-        { item: 'boots', emoji: '👢', reason: 'Keep feet warm and dry' },
-        { item: 'scarf', emoji: '🧣', reason: 'Extra warmth for your neck' }
+        { item: 'warm jacket', emoji: '🧥', reason: 'Keep warm outside' },
+        { item: 'long sleeves', emoji: '👔', reason: 'Cover your arms' },
+        { item: 'closed shoes', emoji: '👞', reason: 'Keep your feet warm' }
       );
     } else {
       suggestions.push(
-        { item: 'winter coat', emoji: '🧥', reason: 'Very cold outside!' },
-        { item: 'gloves', emoji: '🧤', reason: 'Keep hands warm' },
-        { item: 'winter hat', emoji: '🧢', reason: 'Protect your head from cold' },
-        { item: 'warm boots', emoji: '👢', reason: 'Essential for cold weather' },
-        { item: 'thermal clothes', emoji: '👕', reason: 'Extra layers for warmth' }
+        { item: 'heavy coat', emoji: '🧥', reason: 'Stay very warm!' },
+        { item: 'warm clothes', emoji: '🧣', reason: 'Layer up for cold weather' },
+        { item: 'warm boots', emoji: '🥾', reason: 'Keep your feet warm and dry' }
       );
     }
 
-    // Condition-based clothing
+    // Weather condition-based additions
     if (condition.includes('rain') || condition.includes('storm')) {
       suggestions.push(
-        { item: 'raincoat', emoji: '🧥', reason: 'Stay dry in the rain!' },
-        { item: 'umbrella', emoji: '☂️', reason: 'Keep the rain off you' },
-        { item: 'rain boots', emoji: '👢', reason: 'Waterproof feet' }
+        { item: 'umbrella', emoji: '☂️', reason: 'Stay dry in the rain!' },
+        { item: 'rain boots', emoji: '👢', reason: 'Waterproof your feet' }
       );
     }
 
     if (condition.includes('snow')) {
       suggestions.push(
-        { item: 'snow boots', emoji: '👢', reason: 'Walk safely in snow' },
-        { item: 'warm hat', emoji: '🧢', reason: 'Keep head warm in snow' },
-        { item: 'snow gloves', emoji: '🧤', reason: 'Protect hands from snow' }
+        { item: 'snow boots', emoji: '🥾', reason: 'Good grip in snow' },
+        { item: 'warm hat', emoji: '🧢', reason: 'Keep your head warm' },
+        { item: 'gloves', emoji: '🧤', reason: 'Protect your hands' }
       );
     }
 
-    if (condition.includes('wind')) {
+    if (condition.includes('sun') && temp > 70) {
       suggestions.push(
-        { item: 'windbreaker', emoji: '🧥', reason: 'Block the wind' },
-        { item: 'secure hat', emoji: '🧢', reason: 'Won\'t blow away in wind' }
+        { item: 'sunglasses', emoji: '🕶️', reason: 'Protect your eyes from sun' },
+        { item: 'hat', emoji: '👒', reason: 'Shade your face' }
       );
     }
 
-    return suggestions;
+    return suggestions.slice(0, 4); // Limit to top 4 suggestions
   };
 
-  // Get discussion questions based on weather
-  const getWeatherQuestions = (weather: WeatherData | null) => {
-    if (!weather) {
-      return [
-        'What do you think the weather is like today?',
-        'How should we dress for today?',
-        'What season do you think it is?'
-      ];
-    }
+  // Generate discussion questions
+  const getDiscussionQuestions = (weather: WeatherData | null) => {
+    if (!weather) return ['What do you think the weather is like today?'];
+    
+    const questions = [
+      `It's ${weather.temperature}°${weather.temperatureUnit} and ${weather.condition.toLowerCase()}. How does that make you feel?`,
+      'What activities would be fun to do in this weather?'
+    ];
 
-    const temp = weather.temperature;
-    const questions = [];
-
-    questions.push(
-      `It's ${temp}°${weather.temperatureUnit} today. Is that hot, warm, cool, or cold?`,
-      `The weather is ${weather.condition.toLowerCase()}. What should we wear?`,
-      `Look outside! Does the weather match what we're seeing here?`,
-      'How does this weather make you feel?'
-    );
-
-    if (temp > 80) {
+    if (weather.temperature > 80) {
       questions.push('What do we do to stay cool when it\'s this hot?');
-    } else if (temp < 40) {
+    } else if (weather.temperature < 40) {
       questions.push('How do we keep warm when it\'s this cold?');
     }
 
@@ -183,8 +168,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
     return {
       temperature,
       temperatureUnit: 'F',
-     condition: randomCondition.charAt(0).toUpperCase() + randomCondition.slice(1),
-  clothingRecommendations: [], // Add empty array, will be populated by getClothingSuggestions
+      condition: randomCondition.charAt(0).toUpperCase() + randomCondition.slice(1),
+      clothingRecommendations: [], // Add empty array, will be populated by getClothingSuggestions
       description: `${randomCondition} weather for ${season.name.toLowerCase()}`
     };
   };
@@ -215,107 +200,63 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       };
       onDataUpdate(stepData);
     }
-  }, [currentWeather, selectedClothing, customVocabulary, showDiscussion]);
-
-  const handleClothingSelect = (item: string) => {
-    if (selectedClothing.includes(item)) {
-      setSelectedClothing(prev => prev.filter(c => c !== item));
-    } else {
-      setSelectedClothing(prev => [...prev, item]);
-    }
-  };
-
-  const handleShowClothing = () => {
-    setShowClothingSelection(true);
-  };
-
-  const handleShowDiscussion = () => {
-    setShowDiscussion(true);
-  };
-
-  const handleNext = () => {
-    onNext();
-  };
+  }, [currentWeather, selectedClothing, showDiscussion, customVocabulary, onDataUpdate]);
 
   const season = getSeason(currentDate);
   const clothingSuggestions = getClothingSuggestions(currentWeather);
-  const discussionQuestions = getWeatherQuestions(currentWeather);
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  if (!currentWeather) {
-    return (
-      <div style={{
-        height: '100%',
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌤️</div>
-          <div style={{ fontSize: '1.5rem' }}>Loading weather...</div>
-        </div>
-      </div>
-    );
-  }
+  const discussionQuestions = getDiscussionQuestions(currentWeather);
 
   return (
     <div style={{
       height: '100%',
-      width: '100%',
-      overflow: 'hidden',
+      background: `linear-gradient(135deg, ${season.color}20 0%, ${season.color}40 100%)`,
       display: 'flex',
       flexDirection: 'column',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white'
+      overflow: 'hidden'
     }}>
-      {/* Video Section */}
-      {hubSettings?.videos?.weatherClothing && hubSettings.videos.weatherClothing.length > 0 && (
+      {/* VIDEO SECTION - Only show if videos are selected */}
+      {selectedVideos.length > 0 && (
         <div style={{
-          padding: '1rem 2rem',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
           display: 'flex',
+          justifyContent: 'center',
           gap: '1rem',
-          alignItems: 'center',
-          flexWrap: 'wrap'
+          marginBottom: '1.5rem',
+          flexShrink: 0,
+          padding: '1rem'
         }}>
-          <span style={{ fontWeight: '600', fontSize: '1rem' }}>🎬 Videos:</span>
-          {hubSettings.videos.weatherClothing.map((video, index) => (
+          {selectedVideos.map((video, index) => (
             <button
               key={index}
-              onClick={() => window.open(video.url, `weather-video-${index}`, 'width=800,height=600')}
+              onClick={() => window.open(video.url, `weather-video-${index}`, 'width=800,height=600,scrollbars=yes,resizable=yes')}
               style={{
-                background: 'rgba(34, 197, 94, 0.8)',
-                border: 'none',
-                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',
                 color: 'white',
-                padding: '0.5rem 1rem',
-                fontSize: '0.9rem',
+                border: '2px solid rgba(255,255,255,0.3)',
+                borderRadius: '12px',
+                padding: 'clamp(0.75rem, 1.5vh, 1rem) clamp(1.5rem, 3vw, 2rem)',
+                fontSize: 'clamp(1rem, 2vw, 1.2rem)',
                 fontWeight: '600',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 20px rgba(52, 152, 219, 0.3)',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                minWidth: 'clamp(160px, 20vw, 220px)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 6px 25px rgba(52, 152, 219, 0.4)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(52, 152, 219, 0.3)';
               }}
+              title={`Play: ${video.name || `Weather Video ${index + 1}`}`}
             >
-              Play Weather Video {index + 1}
+              <span style={{ fontSize: '1.3em' }}>🎬</span>
+              <span>Play Weather Video {selectedVideos.length > 1 ? ` ${index + 1}` : ''}</span>
             </button>
           ))}
         </div>
@@ -323,7 +264,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
       {/* Header */}
       <div style={{
-        padding: '2rem 2rem 1rem 2rem',
+        padding: '1.5rem 2rem 1rem 2rem',
         textAlign: 'center'
       }}>
         <h2 style={{
@@ -336,265 +277,174 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
           🌤️ Weather & Clothing
         </h2>
         <p style={{
-          fontSize: '1.2rem',
+          fontSize: '1.1rem',
           color: 'rgba(255,255,255,0.9)',
           marginBottom: '0.5rem'
         }}>
-          {formatDate(currentDate)}
+          {season.emoji} {season.name} Weather Check
         </p>
         <p style={{
-          fontSize: '1rem',
+          fontSize: '0.9rem',
           color: 'rgba(255,255,255,0.8)'
         }}>
-          What's the weather like? What should we wear?
+          What should we wear today?
         </p>
       </div>
 
-      {/* Main Content */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '1rem 2rem',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
+      {/* Content Area */}
+      <div style={{ flex: 1, padding: '0 2rem', overflow: 'auto' }}>
         {/* Weather Display */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '20px',
-          padding: '2rem',
-          backdropFilter: 'blur(10px)',
-          textAlign: 'center',
-          marginBottom: '2rem',
-          maxWidth: '600px',
-          width: '100%'
-        }}>
-          <div style={{
-            fontSize: '4rem',
-            marginBottom: '1rem'
-          }}>
-            {currentWeather.condition.toLowerCase().includes('sunny') ? '☀️' :
-             currentWeather.condition.toLowerCase().includes('cloudy') ? '☁️' :
-             currentWeather.condition.toLowerCase().includes('rain') ? '🌧️' :
-             currentWeather.condition.toLowerCase().includes('snow') ? '❄️' :
-             currentWeather.condition.toLowerCase().includes('windy') ? '💨' : '🌤️'}
-          </div>
-          <div style={{
-            fontSize: '3rem',
-            fontWeight: '700',
-            marginBottom: '0.5rem'
-          }}>
-            {currentWeather.temperature}°{currentWeather.temperatureUnit}
-          </div>
-          <div style={{
-            fontSize: '1.5rem',
-            marginBottom: '1rem',
-            textTransform: 'capitalize'
-          }}>
-            {currentWeather.condition}
-          </div>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '1rem',
-            fontSize: '1.2rem',
-            marginBottom: '1rem'
-          }}>
-            <span>{season.emoji}</span>
-            <span>{season.name}</span>
-          </div>
-        </div>
-
-        {/* Temperature Categories */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-          gap: '1rem',
-          marginBottom: '2rem',
-          maxWidth: '600px',
-          width: '100%'
-        }}>
-          <div style={{
-            background: currentWeather.temperature >= 75 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '1rem',
-            textAlign: 'center',
-            border: currentWeather.temperature >= 75 ? '2px solid #EF4444' : '2px solid rgba(255,255,255,0.2)'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔥</div>
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>Hot</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>75°F+</p>
-          </div>
-
-          <div style={{
-            background: (currentWeather.temperature >= 60 && currentWeather.temperature < 75) ? 'rgba(251, 191, 36, 0.3)' : 'rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '1rem',
-            textAlign: 'center',
-            border: (currentWeather.temperature >= 60 && currentWeather.temperature < 75) ? '2px solid #FBD024' : '2px solid rgba(255,255,255,0.2)'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>☀️</div>
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>Warm</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>60-74°F</p>
-          </div>
-
-          <div style={{
-            background: (currentWeather.temperature >= 40 && currentWeather.temperature < 60) ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '1rem',
-            textAlign: 'center',
-            border: (currentWeather.temperature >= 40 && currentWeather.temperature < 60) ? '2px solid #22C55E' : '2px solid rgba(255,255,255,0.2)'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🍃</div>
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>Cool</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>40-59°F</p>
-          </div>
-
-          <div style={{
-            background: currentWeather.temperature < 40 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            padding: '1rem',
-            textAlign: 'center',
-            border: currentWeather.temperature < 40 ? '2px solid #3B82F6' : '2px solid rgba(255,255,255,0.2)'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>❄️</div>
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>Cold</p>
-            <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>Below 40°F</p>
-          </div>
-        </div>
-
-        {/* Weather Learning */}
-        <div style={{
-          padding: '1rem',
-          background: 'rgba(255,255,255,0.1)',
-          borderRadius: '12px',
-          fontSize: '1.2rem',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          marginBottom: '2rem',
-          maxWidth: '600px'
-        }}>
-          Today is {currentWeather.temperature}°{currentWeather.temperatureUnit} - That's{' '}
-          {currentWeather.temperature >= 75 ? 'HOT! 🔥' :
-           currentWeather.temperature >= 60 ? 'WARM! ☀️' :
-           currentWeather.temperature >= 40 ? 'COOL! 🍃' : 'COLD! ❄️'}
-        </div>
-
-        {/* Clothing Suggestions */}
-        {(showClothingSelection || selectedClothing.length > 0) && (
+        {currentWeather && (
           <div style={{
             background: 'rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
-            padding: '1.5rem',
+            borderRadius: '20px',
+            padding: '2rem',
             marginBottom: '2rem',
-            maxWidth: '800px',
-            width: '100%'
+            textAlign: 'center',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)'
           }}>
+            <div style={{
+              fontSize: '3rem',
+              marginBottom: '1rem'
+            }}>
+              {getWeatherEmoji(currentWeather.condition)}
+            </div>
             <h3 style={{
               fontSize: '1.5rem',
               fontWeight: '600',
-              marginBottom: '1rem',
-              textAlign: 'center'
+              color: 'white',
+              marginBottom: '0.5rem'
             }}>
-              👕 What Should We Wear?
+              {currentWeather.temperature}°{currentWeather.temperatureUnit}
             </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '1rem'
+            <p style={{
+              fontSize: '1.2rem',
+              color: 'rgba(255,255,255,0.9)',
+              marginBottom: '1rem'
             }}>
-              {clothingSuggestions.map((suggestion, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleClothingSelect(suggestion.item)}
-                  style={{
-                    background: selectedClothing.includes(suggestion.item)
-                      ? 'rgba(34, 197, 94, 0.8)'
-                      : 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    border: selectedClothing.includes(suggestion.item) ? '2px solid white' : 'none'
-                  }}
-                >
-                  <div style={{
-                    fontSize: '2rem',
-                    marginBottom: '0.5rem',
-                    textAlign: 'center'
-                  }}>
-                    {suggestion.emoji}
-                  </div>
-                  <div style={{
-                    fontWeight: '600',
-                    fontSize: '1rem',
-                    marginBottom: '0.25rem',
-                    textAlign: 'center',
-                    textTransform: 'capitalize'
-                  }}>
-                    {suggestion.item}
-                  </div>
-                  <div style={{
-                    fontSize: '0.8rem',
-                    opacity: 0.9,
-                    textAlign: 'center',
-                    lineHeight: '1.3'
-                  }}>
-                    {suggestion.reason}
-                  </div>
-                  {selectedClothing.includes(suggestion.item) && (
-                    <div style={{
-                      textAlign: 'center',
-                      marginTop: '0.5rem',
-                      fontSize: '0.8rem',
-                      fontWeight: 'bold'
-                    }}>
-                      ✓ Selected!
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+              {currentWeather.condition}
+            </p>
+            <p style={{
+              fontSize: '0.9rem',
+              color: 'rgba(255,255,255,0.8)'
+            }}>
+              {currentWeather.description}
+            </p>
           </div>
         )}
 
-        {/* Discussion Questions */}
-        {showDiscussion && (
+        {/* Clothing Suggestions */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)'
+        }}>
+          <h3 style={{
+            fontSize: '1.3rem',
+            fontWeight: '600',
+            color: 'white',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
+          }}>
+            👗 What Should We Wear?
+          </h3>
           <div style={{
-            background: 'rgba(255, 255, 255, 0.15)',
-            borderRadius: '16px',
-            padding: '1.5rem',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '1rem'
+          }}>
+            {clothingSuggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  border: selectedClothing.includes(suggestion.item) 
+                    ? '2px solid rgba(255, 255, 255, 0.6)' 
+                    : '2px solid transparent'
+                }}
+                onClick={() => {
+                  setSelectedClothing(prev => 
+                    prev.includes(suggestion.item)
+                      ? prev.filter(item => item !== suggestion.item)
+                      : [...prev, suggestion.item]
+                  );
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                  {suggestion.emoji}
+                </div>
+                <div style={{
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  color: 'white',
+                  marginBottom: '0.5rem'
+                }}>
+                  {suggestion.item}
+                </div>
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: 'rgba(255,255,255,0.8)'
+                }}>
+                  {suggestion.reason}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Discussion Section */}
+        {showClothingSelection && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '20px',
+            padding: '2rem',
             marginBottom: '2rem',
-            maxWidth: '800px',
-            width: '100%'
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)'
           }}>
             <h3 style={{
-              fontSize: '1.5rem',
+              fontSize: '1.3rem',
               fontWeight: '600',
-              marginBottom: '1rem',
+              color: 'white',
+              marginBottom: '1.5rem',
               textAlign: 'center'
             }}>
-              💬 Let's Talk About Weather
+              💭 Let's Talk About Weather
             </h3>
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem'
+              gap: '1rem'
             }}>
               {discussionQuestions.map((question, index) => (
                 <div
                   key={index}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                    fontSize: '1rem',
-                    lineHeight: '1.4'
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    color: 'white',
+                    fontSize: '1rem'
                   }}
                 >
-                  <strong>Q{index + 1}:</strong> {question}
+                  <strong>Question {index + 1}:</strong> {question}
                 </div>
               ))}
             </div>
@@ -604,15 +454,15 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
       {/* Navigation */}
       <div style={{
-        padding: '1rem 2rem 2rem 2rem',
+        padding: '2rem',
         display: 'flex',
-        justifyContent: 'center',
-        gap: '1rem',
-        flexWrap: 'wrap'
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexShrink: 0
       }}>
-        {!showClothingSelection && (
+        {!showClothingSelection ? (
           <button
-            onClick={handleShowClothing}
+            onClick={() => setShowClothingSelection(true)}
             style={{
               background: 'rgba(34, 197, 94, 0.8)',
               border: 'none',
@@ -625,24 +475,14 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
               backdropFilter: 'blur(10px)',
               transition: 'all 0.3s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
           >
-            What Should We Wear? 👕
+            Choose Clothing →
           </button>
-        )}
-
-        {showClothingSelection && !showDiscussion && (
+        ) : !showDiscussion ? (
           <button
-            onClick={handleShowDiscussion}
+            onClick={() => setShowDiscussion(true)}
             style={{
-              background: 'rgba(59, 130, 246, 0.8)',
+              background: 'rgba(34, 197, 94, 0.8)',
               border: 'none',
               borderRadius: '12px',
               color: 'white',
@@ -653,32 +493,72 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
               backdropFilter: 'blur(10px)',
               transition: 'all 0.3s ease'
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(59, 130, 246, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(59, 130, 246, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
           >
-            Let's Talk About Weather 💬
+            Discuss Weather →
           </button>
-        )}
-
-        {showDiscussion && (
+        ) : (
           <button
-            onClick={handleNext}
+            onClick={onNext}
             style={{
               background: 'rgba(34, 197, 94, 0.8)',
               border: 'none',
               borderRadius: '12px',
               color: 'white',
-              padding: '1rem 3rem',
-              fontSize: '1.1rem',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            Continue to Seasonal Learning →
+          </button>
+        )}
+
+        {/* Always visible navigation buttons */}
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '1rem',
+          zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.8)',
+          borderRadius: '20px',
+          padding: '1rem 2rem',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        }}>
+          <button
+            onClick={onBack}
+            style={{
+              background: 'rgba(156, 163, 175, 0.8)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            ← Back
+          </button>
+          
+          <button
+            onClick={onNext}
+            style={{
+              background: 'rgba(34, 197, 94, 0.8)',
+              border: 'none',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
               fontWeight: '700',
               cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
               transition: 'all 0.3s ease'
             }}
             onMouseEnter={(e) => {
@@ -690,71 +570,25 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            Weather Complete! Continue →
+            Weather Complete! →
           </button>
-        )}
-
-      </div>
-
-      {/* ALWAYS VISIBLE NAVIGATION - QUICK FIX */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: '1rem',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.8)',
-        borderRadius: '20px',
-        padding: '1rem 2rem',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(156, 163, 175, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          ← Back
-        </button>
-        
-        <button
-          onClick={onNext}
-          style={{
-            background: 'rgba(34, 197, 94, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '700',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Weather Complete! →
-        </button>
+        </div>
       </div>
     </div>
   );
+};
+
+// Helper function to get weather emoji
+const getWeatherEmoji = (condition: string): string => {
+  const cond = condition.toLowerCase();
+  if (cond.includes('sun')) return '☀️';
+  if (cond.includes('rain')) return '🌧️';
+  if (cond.includes('snow')) return '❄️';
+  if (cond.includes('cloud')) return '☁️';
+  if (cond.includes('wind')) return '💨';
+  if (cond.includes('fog')) return '🌫️';
+  if (cond.includes('storm')) return '⛈️';
+  return '🌤️';
 };
 
 export default WeatherStep;

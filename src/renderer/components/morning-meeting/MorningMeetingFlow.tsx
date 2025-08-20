@@ -1,141 +1,220 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Student, StaffMember } from '../../types';
-import { 
-  WelcomeStep, 
-  AttendanceStep, 
-  BehaviorStep, 
-  CalendarMathStep, 
-  WeatherStep, 
-  SeasonalStep,
-  STEP_COMPONENTS,
-  DEFAULT_STEP_ORDER,
-  type StepKey,
-  MorningMeetingSettings,
-  DEFAULT_MORNING_MEETING_SETTINGS
-} from './steps';
+import React, { useState, useEffect } from 'react';
+import { STEP_COMPONENTS, getEnabledStepsInOrder, StepKey } from './steps';
+import { MorningMeetingStepProps } from './types/morningMeetingTypes';
 import UnifiedDataService from '../../services/unifiedDataService';
 
+interface HubSettings {
+  videos: {
+    calendarMath: Array<{ id: string; name: string; url: string; }>;
+    weatherClothing: Array<{ id: string; name: string; url: string; }>;
+    seasonalLearning: Array<{ id: string; name: string; url: string; }>;
+    behaviorCommitments: Array<{ id: string; name: string; url: string; }>;
+  };
+  behaviorStatements: {
+    enabled: boolean;
+    statements: string[];
+    allowCustom: boolean;
+  };
+  celebrations: any;
+  flowCustomization: {
+    enabledSteps: Record<string, boolean>;
+  };
+}
+
 interface MorningMeetingFlowProps {
-  students?: Student[];
-  staff?: StaffMember[];
-  onComplete?: () => void;
-  onNavigateHome?: () => void;
+  hubSettings: HubSettings;
+  onComplete: () => void;
+  onBack: () => void;
+}
+
+interface Student {
+  id: string;
+  name: string;
+  present?: boolean;
 }
 
 const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
-  students = [],
-  staff = [],
+  hubSettings,
   onComplete,
-  onNavigateHome
+  onBack
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepData, setStepData] = useState<Record<string, any>>({});
-  const [hubSettings, setHubSettings] = useState<MorningMeetingSettings>(DEFAULT_MORNING_MEETING_SETTINGS);
+  const [students, setStudents] = useState<Student[]>([]);
 
-  // Get enabled steps from Hub settings
-  const enabledSteps: StepKey[] = React.useMemo(() => {
-    // Get the step order from hub settings or use default
-    const stepOrder = hubSettings.flowCustomization.stepOrder?.length > 0 
-      ? hubSettings.flowCustomization.stepOrder 
-      : [...DEFAULT_STEP_ORDER]; // Convert readonly to mutable array
-    
-    // Filter the ordered steps to only include enabled ones
-    const orderedEnabledSteps = stepOrder.filter(stepKey => 
-      hubSettings.flowCustomization.enabledSteps[stepKey as StepKey] === true
-    ) as StepKey[];
-    
-    // Fallback to all steps if none are enabled (shouldn't happen, but safety)
-    return orderedEnabledSteps.length > 0 ? orderedEnabledSteps : [...DEFAULT_STEP_ORDER];
-  }, [hubSettings.flowCustomization.enabledSteps, hubSettings.flowCustomization.stepOrder]);
+  // Get enabled steps in order
+  const enabledSteps = getEnabledStepsInOrder(hubSettings.flowCustomization.enabledSteps);
+  const currentStepKey = enabledSteps[currentStepIndex];
+  const CurrentStepComponent = STEP_COMPONENTS[currentStepKey];
 
-  const totalSteps = enabledSteps.length;
+  // Load students data
+  useEffect(() => {
+    try {
+      const studentData = UnifiedDataService.getStudents();
+      setStudents(studentData || []);
+    } catch (error) {
+      console.error('Error loading students:', error);
+      setStudents([]);
+    }
+  }, []);
 
-  // Use useCallback to prevent infinite loops
-  const handleStepDataUpdate = useCallback((data: any) => {
-    const currentStepKey = enabledSteps[currentStepIndex];
+  // Debug log to verify hubSettings.videos is flowing through
+  useEffect(() => {
+    console.log('🎥 MorningMeetingFlow: hubSettings.videos:', hubSettings?.videos);
+    console.log('🎥 Current step:', currentStepKey);
+    console.log('🎥 Videos for current step:', hubSettings?.videos?.[getVideoKey(currentStepKey)]);
+  }, [hubSettings, currentStepKey]);
+
+  // Helper function to get video key for current step
+  const getVideoKey = (stepKey: StepKey): keyof typeof hubSettings.videos => {
+    const videoKeyMap: Record<StepKey, keyof typeof hubSettings.videos> = {
+      welcome: 'calendarMath',
+      attendance: 'calendarMath',
+      behavior: 'behaviorCommitments',
+      calendarMath: 'calendarMath',
+      weather: 'weatherClothing',
+      seasonal: 'seasonalLearning',
+      celebration: 'calendarMath',
+      dayReview: 'calendarMath'
+    };
+    return videoKeyMap[stepKey] || 'calendarMath';
+  };
+
+  const handleNext = () => {
+    if (currentStepIndex < enabledSteps.length - 1) {
+      setCurrentStepIndex(prev => prev + 1);
+    } else {
+      // Save final completion data
+      try {
+        const completionData = {
+          completedAt: new Date(),
+          steps: enabledSteps,
+          stepData,
+          hubSettings: {
+            videos: hubSettings.videos,
+            behaviorStatements: hubSettings.behaviorStatements,
+            celebrations: hubSettings.celebrations
+          }
+        };
+        UnifiedDataService.saveMorningMeetingSession(completionData);
+      } catch (error) {
+        console.error('Error saving Morning Meeting session:', error);
+      }
+      onComplete();
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(prev => prev - 1);
+    } else {
+      onBack();
+    }
+  };
+
+  const handleStepDataUpdate = (data: any) => {
     setStepData(prev => ({
       ...prev,
       [currentStepKey]: data
     }));
-    
-    // Save to UnifiedDataService
+
+    // Save step data to UnifiedDataService
     try {
-      const sessionKey = `morningMeeting_${new Date().toDateString()}_${currentStepKey}`;
-      UnifiedDataService.saveMorningMeetingStepData(sessionKey, data);
+      UnifiedDataService.saveMorningMeetingStepData(currentStepKey, data);
     } catch (error) {
-      console.warn('Failed to save step data:', error);
-    }
-  }, [enabledSteps, currentStepIndex]);
-
-  const handleNext = () => {
-    console.log('🔍 DEBUG handleNext:', { 
-      currentStepIndex, 
-      enabledStepsLength: enabledSteps.length, 
-      enabledSteps: enabledSteps,
-      condition: currentStepIndex < enabledSteps.length - 1 
-    });
-    
-    if (currentStepIndex < enabledSteps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    } else {
-      // Complete morning meeting
-      if (onComplete) {
-        onComplete();
-      }
+      console.error('Error saving step data:', error);
     }
   };
 
-  const handleBack = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
-  };
-
-  const renderCurrentStep = () => {
-    const currentStepKey = enabledSteps[currentStepIndex];
-    const StepComponent = STEP_COMPONENTS[currentStepKey];
-    
-    if (!StepComponent) {
-      return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100%',
-          color: 'white',
-          textAlign: 'center'
-        }}>
-          <h2>Step not found</h2>
-          <p>Please check your Morning Meeting configuration.</p>
-          <button onClick={() => setCurrentStepIndex(0)} style={{
-            background: 'rgba(255, 255, 255, 0.2)', 
-            color: 'white', 
-            padding: '1rem 2rem', 
-            borderRadius: '8px', 
-            border: 'none', 
-            cursor: 'pointer', 
-            marginTop: '1rem',
-            fontSize: '1rem',
-            fontWeight: '600'
-          }}>
-            Reset to First Step
-          </button>
-        </div>
-      );
-    }
-    
+  // Handle case where no steps are enabled
+  if (enabledSteps.length === 0) {
     return (
-      <StepComponent
-        students={students}
-        onNext={handleNext}
-        onBack={handleBack}
-        currentDate={new Date()}
-        hubSettings={hubSettings}
-        onDataUpdate={handleStepDataUpdate}
-        stepData={stepData[currentStepKey]}
-      />
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
+          No Steps Enabled
+        </h2>
+        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
+          Please enable at least one step in the Morning Meeting Hub settings.
+        </p>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back to Hub
+        </button>
+      </div>
     );
+  }
+
+  // Handle case where step component is not found
+  if (!CurrentStepComponent) {
+    return (
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
+          Step Not Found
+        </h2>
+        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
+          The step "{currentStepKey}" could not be loaded.
+        </p>
+        <button
+          onClick={onBack}
+          style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          ← Back to Hub
+        </button>
+      </div>
+    );
+  }
+
+  // Create step props with all necessary data
+  const stepProps: MorningMeetingStepProps = {
+    currentDate: new Date(),
+    onNext: handleNext,
+    onBack: handlePrevious,
+    onDataUpdate: handleStepDataUpdate,
+    stepData: stepData[currentStepKey],
+    hubSettings, // Pass complete hubSettings including videos
+    students
   };
 
   return (
@@ -143,121 +222,74 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       height: '100vh',
       width: '100vw',
       overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      position: 'relative'
     }}>
-      {/* Header */}
+      {/* Progress indicator */}
       <div style={{
-        height: '70px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0 2rem',
-        background: 'rgba(255, 255, 255, 0.1)',
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        borderRadius: '20px',
+        padding: '0.5rem 1rem',
         backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-        color: 'white'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
-            🌅 Morning Meeting
-          </h1>
-          <div style={{ fontSize: '1rem', opacity: 0.8 }}>
-            Step {currentStepIndex + 1} of {totalSteps}: {enabledSteps[currentStepIndex]}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {onNavigateHome && (
-            <button
-              onClick={onNavigateHome}
-              style={{
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                padding: '0.5rem 0.75rem',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              🏠 Home
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{
-        flex: 1,
         display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {renderCurrentStep()}
-      </div>
-
-      {/* Footer - Navigation */}
-      <div style={{
-        height: '60px',
-        display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '0 2rem',
-        background: 'rgba(255, 255, 255, 0.1)',
-        borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-        color: 'white'
+        gap: '1rem'
       }}>
-        <button
-          onClick={handleBack}
-          disabled={currentStepIndex === 0}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: currentStepIndex === 0 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.2)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '8px',
-            color: currentStepIndex === 0 ? 'rgba(255, 255, 255, 0.5)' : 'white',
-            cursor: currentStepIndex === 0 ? 'not-allowed' : 'pointer',
-            fontSize: '1rem',
-            fontWeight: '600',
-            opacity: currentStepIndex === 0 ? 0.5 : 1
-          }}
-        >
-          ← Back
-        </button>
-
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          {Array.from({ length: totalSteps }, (_, index) => (
-            <div
-              key={index}
-              style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: index <= currentStepIndex ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
-                transition: 'all 0.3s ease'
-              }}
-            />
-          ))}
+        <span style={{
+          color: 'white',
+          fontSize: '0.9rem',
+          fontWeight: '600'
+        }}>
+          Step {currentStepIndex + 1} of {enabledSteps.length}
+        </span>
+        <div style={{
+          width: '100px',
+          height: '4px',
+          background: 'rgba(255, 255, 255, 0.3)',
+          borderRadius: '2px',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            width: `${((currentStepIndex + 1) / enabledSteps.length) * 100}%`,
+            height: '100%',
+            background: 'linear-gradient(90deg, #34D399, #10B981)',
+            transition: 'width 0.3s ease'
+          }} />
         </div>
-
-        <button
-          onClick={handleNext}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '1px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '8px',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: '600'
-          }}
-        >
-          {currentStepIndex >= totalSteps - 1 ? 'Complete 🎉' : 'Next →'}
-        </button>
+        <span style={{
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '0.8rem',
+          textTransform: 'capitalize'
+        }}>
+          {currentStepKey.replace(/([A-Z])/g, ' $1').trim()}
+        </span>
       </div>
+
+      {/* Step Component */}
+      <CurrentStepComponent {...stepProps} />
+
+      {/* Debug info (remove in production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div style={{
+          position: 'fixed',
+          bottom: '10px',
+          right: '10px',
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '0.5rem',
+          borderRadius: '8px',
+          fontSize: '0.7rem',
+          zIndex: 2000
+        }}>
+          <div>Step: {currentStepKey}</div>
+          <div>Videos: {hubSettings?.videos?.[getVideoKey(currentStepKey)]?.length || 0}</div>
+          <div>Students: {students.filter(s => s.present === true).length} present</div>
+        </div>
+      )}
     </div>
   );
 };
