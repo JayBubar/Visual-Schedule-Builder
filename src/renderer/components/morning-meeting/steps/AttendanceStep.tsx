@@ -1,73 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 import { Student } from '../../../types';
 import UnifiedDataService from '../../../services/unifiedDataService';
-
-interface MorningMeetingStepProps {
-  students: Student[];
-  onNext: () => void;
-  onBack: () => void;
-  currentDate: Date;
-  hubSettings: any; // MorningMeetingSettings
-  onDataUpdate: (stepData: any) => void;
-  stepData?: any;
-}
 
 interface AttendanceState {
   presentStudents: Student[];
   absentStudents: Student[];
-  manuallyMarkedAbsent: Set<string>; // Track manual absent markings
+  manuallyMarkedAbsent: Set<string>;
 }
 
 const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
-  students,
   currentDate,
   onNext,
+  onBack,
   onDataUpdate,
-  stepData
+  stepData,
+  hubSettings,
+  students = []
 }) => {
   const [attendanceState, setAttendanceState] = useState<AttendanceState>({
-    presentStudents: stepData?.presentStudents || [],
-    absentStudents: stepData?.absentStudents || [],
-    manuallyMarkedAbsent: new Set(stepData?.manuallyMarkedAbsent || [])
+    presentStudents: [],
+    absentStudents: [],
+    manuallyMarkedAbsent: new Set()
   });
 
-  const [remainingStudents, setRemainingStudents] = useState<Student[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  // Get teacher name for dynamic title
+  const getTeacherName = (): string => {
+    return hubSettings?.welcomePersonalization?.teacherName || '';
+  };
 
-  // Initialize remaining students (those not yet marked)
+  const teacherName = getTeacherName();
+
+  // Create dynamic title
+  const getTitle = (): string => {
+    if (teacherName) {
+      return `Who's in ${teacherName}'s Class Today? 🏫`;
+    }
+    return "Who's at School Today? 🏫";
+  };
+
+  // Load existing attendance data on initial load
   useEffect(() => {
-    const marked = [...attendanceState.presentStudents, ...attendanceState.absentStudents];
-    const markedIds = new Set(marked.map(s => s.id));
-    const remaining = students.filter(s => !markedIds.has(s.id));
-    setRemainingStudents(remaining);
-    setIsComplete(remaining.length === 0);
-  }, [students, attendanceState]);
+    if (students.length > 0 && stepData) {
+      // Load from stepData if available (session state)
+      setAttendanceState({
+        presentStudents: stepData.presentStudents || [],
+        absentStudents: stepData.absentStudents || [],
+        manuallyMarkedAbsent: new Set(stepData.manuallyMarkedAbsent || [])
+      });
+    }
+  }, [students, stepData]);
 
-  // Save attendance data whenever state changes
+  // Calculate remaining students (not yet marked present or absent)
+  const remainingStudents = students.filter(student => 
+    !attendanceState.presentStudents.find(s => s.id === student.id) &&
+    !attendanceState.absentStudents.find(s => s.id === student.id)
+  );
+
+  // Update data whenever attendance changes
   useEffect(() => {
     const stepData = {
       presentStudents: attendanceState.presentStudents,
       absentStudents: attendanceState.absentStudents,
-      manuallyMarkedAbsent: Array.from(attendanceState.manuallyMarkedAbsent)
+      totalStudents: students.length,
+      completedAt: new Date()
     };
     onDataUpdate(stepData);
-  }, [attendanceState]);
+  }, [attendanceState, students.length, onDataUpdate]);
 
-  const markPresent = (student: Student) => {
-    // Save to data service
+  const markStudentPresent = useCallback((student: Student) => {
     const dateString = currentDate.toISOString().split('T')[0];
     UnifiedDataService.updateStudentAttendance(student.id, dateString, true);
     
-    // Update state - remove from any previous lists and add to present
+    // Update state - remove from remaining and add to present
     setAttendanceState(prev => ({
+      ...prev,
       presentStudents: [...prev.presentStudents.filter(s => s.id !== student.id), student],
-      absentStudents: prev.absentStudents.filter(s => s.id !== student.id),
-      manuallyMarkedAbsent: new Set([...prev.manuallyMarkedAbsent].filter(id => id !== student.id))
+      absentStudents: prev.absentStudents.filter(s => s.id !== student.id)
     }));
-  };
+  }, [currentDate]);
 
-  const markAbsent = (student: Student) => {
-    // Save to data service
+  const markStudentAbsent = useCallback((student: Student) => {
     const dateString = currentDate.toISOString().split('T')[0];
     UnifiedDataService.updateStudentAttendance(student.id, dateString, false);
     
@@ -77,51 +90,27 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       absentStudents: [...prev.absentStudents.filter(s => s.id !== student.id), student],
       manuallyMarkedAbsent: new Set([...prev.manuallyMarkedAbsent, student.id])
     }));
-  };
-
-  const markAllRemainingAbsent = () => {
-    const dateString = currentDate.toISOString().split('T')[0];
-    
-    // Save all remaining as absent
-    remainingStudents.forEach(student => {
-      UnifiedDataService.updateStudentAttendance(student.id, dateString, false);
-    });
-    
-    // Update state
-    setAttendanceState(prev => ({
-      ...prev,
-      absentStudents: [...prev.absentStudents, ...remainingStudents],
-      // Don't mark auto-absent students as manually marked
-    }));
-  };
-
-  const resetAttendance = () => {
-    if (window.confirm('Reset all attendance? This will mark everyone as not yet marked.')) {
-      setAttendanceState({
-        presentStudents: [],
-        absentStudents: [],
-        manuallyMarkedAbsent: new Set()
-      });
-    }
-  };
+  }, [currentDate]);
 
   const handleNext = () => {
     if (remainingStudents.length > 0) {
-      markAllRemainingAbsent();
+      // Mark all remaining as absent automatically
+      const dateString = currentDate.toISOString().split('T')[0];
+      
+      remainingStudents.forEach(student => {
+        UnifiedDataService.updateStudentAttendance(student.id, dateString, false);
+      });
+      
+      setAttendanceState(prev => ({
+        ...prev,
+        absentStudents: [...prev.absentStudents, ...remainingStudents]
+      }));
+      
       // Small delay to show the change before moving on
       setTimeout(onNext, 500);
     } else {
       onNext();
     }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
   };
 
   const getStudentStatus = (student: Student) => {
@@ -137,387 +126,473 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   const renderStudentCard = (student: Student, status: string) => {
     const isUnmarked = status === 'unmarked';
     const isPresent = status === 'present';
-    const isManuallyAbsent = status === 'manually-absent';
-    const isAutoAbsent = status === 'auto-absent';
 
     return (
       <div
         key={student.id}
         style={{
           background: isPresent 
-            ? 'rgba(34, 197, 94, 0.9)' 
-            : isManuallyAbsent 
-            ? 'rgba(239, 68, 68, 0.9)'
-            : isAutoAbsent
-            ? 'rgba(156, 163, 175, 0.7)'
+            ? 'linear-gradient(135deg, #22c55e, #16a34a)'
             : 'rgba(255, 255, 255, 0.9)',
-          borderRadius: '16px',
-          padding: '1rem',
+          borderRadius: '25px',
+          padding: '1.2rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           gap: '0.5rem',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
           cursor: isUnmarked ? 'pointer' : 'default',
-          border: isUnmarked ? '3px solid rgba(255, 255, 255, 0.5)' : 'none',
-          transform: isUnmarked ? 'scale(1.02)' : 'scale(1)',
-          opacity: isAutoAbsent ? 0.6 : 1
+          border: '3px solid rgba(255, 255, 255, 0.5)',
+          boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+          width: '140px',
+          height: '160px',
+          position: 'relative',
+          overflow: 'hidden',
+          color: isPresent ? 'white' : '#374151'
         }}
-        onClick={isUnmarked ? () => markPresent(student) : undefined}
+        onClick={() => {
+          if (isUnmarked) {
+            markStudentPresent(student);
+          }
+        }}
+        onMouseEnter={(e) => {
+          if (isUnmarked) {
+            e.currentTarget.style.transform = 'translateY(-10px) scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 15px 35px rgba(0,0,0,0.2)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (isUnmarked) {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+          }
+        }}
       >
-        {/* Student Photo */}
+        {/* Student Avatar */}
         <div style={{
-          width: '80px',
-          height: '80px',
+          width: '60px',
+          height: '60px',
           borderRadius: '50%',
           background: student.photo 
-            ? `url(${student.photo}) center/cover`
-            : 'linear-gradient(45deg, #667eea, #764ba2)',
+            ? `url(${student.photo})` 
+            : 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '2rem',
-          color: 'white',
-          fontWeight: 'bold'
+          fontSize: '1.8rem',
+          border: '3px solid rgba(255, 255, 255, 0.8)',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+          transition: 'all 0.3s ease',
+          transform: isPresent ? 'scale(1.1)' : 'scale(1)'
         }}>
-          {!student.photo && ((student as any).emoji || student.name.charAt(0).toUpperCase())}
+          {!student.photo && (student.name?.[0] || '👤')}
         </div>
 
         {/* Student Name */}
         <div style={{
-          fontWeight: '600',
+          fontWeight: '700',
           fontSize: '0.9rem',
-          color: isPresent ? 'white' : isManuallyAbsent ? 'white' : '#1f2937',
-          textAlign: 'center'
+          textAlign: 'center',
+          lineHeight: 1.2,
+          textShadow: isPresent ? '0 2px 4px rgba(0,0,0,0.3)' : 'none'
         }}>
-          {student.name}
+          {student.name || 'Student'}
         </div>
 
-        {/* Status Indicator */}
-        <div style={{
-          fontSize: '0.8rem',
-          fontWeight: '500',
-          color: isPresent ? 'rgba(255,255,255,0.9)' 
-            : isManuallyAbsent ? 'rgba(255,255,255,0.9)'
-            : isAutoAbsent ? 'rgba(156, 163, 175, 1)'
-            : '#6b7280'
-        }}>
-          {isPresent && '✅ Present'}
-          {isManuallyAbsent && '❌ Absent'}
-          {isAutoAbsent && '⏰ Auto-Absent'}
-          {isUnmarked && 'Tap when here!'}
-        </div>
-
-        {/* Action Buttons for Marked Students */}
-        {!isUnmarked && (
+        {/* Celebration effect for present students */}
+        {isPresent && (
           <div style={{
-            display: 'flex',
-            gap: '0.5rem',
-            marginTop: '0.5rem'
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            fontSize: '1.2rem',
+            animation: 'celebrationSpin 2s linear infinite'
           }}>
-            {!isPresent && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  markPresent(student);
-                }}
-                style={{
-                  background: 'rgba(34, 197, 94, 0.8)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: 'white',
-                  padding: '0.25rem 0.5rem',
-                  fontSize: '0.7rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Mark Present
-              </button>
-            )}
-            {!isManuallyAbsent && !isAutoAbsent && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  markAbsent(student);
-                }}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.8)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: 'white',
-                  padding: '0.25rem 0.5rem',
-                  fontSize: '0.7rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Mark Absent
-              </button>
-            )}
+            ✨
           </div>
         )}
       </div>
     );
   };
 
+  // CSS for animations
+  const animationStyles = `
+    @keyframes attendanceGradient {
+      0%, 100% { filter: hue-rotate(0deg) brightness(1.1); }
+      25% { filter: hue-rotate(15deg) brightness(1.2); }
+      50% { filter: hue-rotate(-10deg) brightness(1.15); }
+      75% { filter: hue-rotate(10deg) brightness(1.1); }
+    }
+    
+    @keyframes headerBounce {
+      0% { transform: translateY(-50px); opacity: 0; }
+      60% { transform: translateY(10px); opacity: 0.9; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    
+    @keyframes titleGlow {
+      0% { text-shadow: 0 0 20px rgba(255,255,255,0.6), 0 8px 16px rgba(0,0,0,0.3); }
+      100% { text-shadow: 0 0 30px rgba(255,255,255,0.9), 0 8px 16px rgba(0,0,0,0.3); }
+    }
+    
+    @keyframes countPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes celebrationSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes sparkleFloat {
+      0%, 100% { 
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+      10%, 90% {
+        opacity: 1;
+      }
+      50% { 
+        transform: translateY(-40px) rotate(180deg);
+        opacity: 0.8;
+      }
+    }
+  `;
+
   return (
-    <div style={{
-      height: '100%',
-      width: '100%',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white'
-    }}>
-      {/* Header */}
+    <>
+      {/* Inject CSS animations */}
+      <style>{animationStyles}</style>
+      
       <div style={{
-        padding: '2rem 2rem 1rem 2rem',
-        textAlign: 'center'
+        height: '100%',
+        background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 25%, #43e97b 50%, #38f9d7 75%, #ffecd2 100%)',
+        animation: 'attendanceGradient 20s ease-in-out infinite',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '2rem',
+        overflow: 'hidden',
+        position: 'relative'
       }}>
-        <h2 style={{
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          color: 'white',
-          marginBottom: '0.5rem',
-          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-        }}>
-          📋 Taking Attendance
-        </h2>
-        <p style={{
+        {/* Floating sparkles */}
+        <div style={{
+          position: 'absolute',
+          top: '15%',
+          left: '5%',
+          color: 'rgba(255, 255, 255, 0.8)',
           fontSize: '1.2rem',
-          color: 'rgba(255,255,255,0.9)',
-          marginBottom: '0.5rem'
-        }}>
-          {formatDate(currentDate)}
-        </p>
-        <p style={{
-          fontSize: '1rem',
-          color: 'rgba(255,255,255,0.8)'
-        }}>
-          Touch each student's face when they arrive!
-        </p>
-      </div>
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '0s'
+        }}>✨</div>
+        <div style={{
+          position: 'absolute',
+          top: '25%',
+          right: '8%',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '1.2rem',
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '1.5s'
+        }}>🌟</div>
+        <div style={{
+          position: 'absolute',
+          top: '45%',
+          left: '12%',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '1.2rem',
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '3s'
+        }}>⭐</div>
+        <div style={{
+          position: 'absolute',
+          top: '65%',
+          right: '15%',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '1.2rem',
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '4.5s'
+        }}>💫</div>
+        <div style={{
+          position: 'absolute',
+          top: '35%',
+          right: '25%',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '1.2rem',
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '6s'
+        }}>🎉</div>
+        <div style={{
+          position: 'absolute',
+          top: '75%',
+          left: '20%',
+          color: 'rgba(255, 255, 255, 0.8)',
+          fontSize: '1.2rem',
+          animation: 'sparkleFloat 8s ease-in-out infinite',
+          pointerEvents: 'none',
+          animationDelay: '7.5s'
+        }}>🌈</div>
 
-      {/* Stats */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '2rem',
-        padding: '0 2rem 1rem 2rem',
-        flexWrap: 'wrap'
-      }}>
+        {/* Header */}
         <div style={{
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '12px',
-          padding: '0.75rem 1.5rem',
-          backdropFilter: 'blur(10px)'
+          textAlign: 'center',
+          marginBottom: '2rem',
+          animation: 'headerBounce 2s ease-out'
         }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            {attendanceState.presentStudents.length}
-          </div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Present</div>
+          <h1 style={{
+            fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+            fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+            color: 'white',
+            textShadow: '0 0 20px rgba(255,255,255,0.6), 0 8px 16px rgba(0,0,0,0.3)',
+            marginBottom: '1rem',
+            animation: 'titleGlow 3s ease-in-out infinite alternate'
+          }}>
+            {getTitle()}
+          </h1>
+          <p style={{
+            fontSize: 'clamp(1.2rem, 3vw, 1.8rem)',
+            color: 'rgba(255,255,255,0.9)',
+            fontWeight: '600',
+            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+          }}>
+            Tap your friends when you see them! 👋
+          </p>
         </div>
-        <div style={{
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '12px',
-          padding: '0.75rem 1.5rem',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            {attendanceState.absentStudents.length}
-          </div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Absent</div>
-        </div>
-        <div style={{
-          background: 'rgba(255,255,255,0.2)',
-          borderRadius: '12px',
-          padding: '0.75rem 1.5rem',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            {remainingStudents.length}
-          </div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Remaining</div>
-        </div>
-      </div>
 
-      {/* Main Content Area - Student Grid */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '1rem 2rem',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Unmarked Students */}
-        {remainingStudents.length > 0 && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              color: 'white',
-              textAlign: 'center'
+        {/* Main attendance area */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '3rem',
+          flex: 1,
+          maxWidth: '1400px',
+          margin: '0 auto',
+          width: '100%',
+          overflow: 'hidden'
+        }}>
+          
+          {/* LEFT COLUMN: Remaining Students */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '2.5rem',
+            backdropFilter: 'blur(15px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '500px'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '2rem',
+              position: 'sticky',
+              top: 0,
+              zIndex: 5
             }}>
-              Students Not Yet Marked ({remainingStudents.length})
-            </h3>
+              <h2 style={{
+                fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+                fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+                color: 'white',
+                textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                marginBottom: '1rem'
+              }}>
+                Everyone 👨‍👩‍👧‍👦
+              </h2>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                borderRadius: '25px',
+                padding: '1.5rem 2rem',
+                backdropFilter: 'blur(10px)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
+                animation: 'countPulse 2s ease-in-out infinite'
+              }}>
+                <div style={{
+                  fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+                  fontSize: 'clamp(2rem, 5vw, 3rem)',
+                  color: 'white',
+                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  lineHeight: 1
+                }}>
+                  {remainingStudents.length}
+                </div>
+                <div style={{
+                  fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: '700',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  marginTop: '0.5rem'
+                }}>
+                  Still Coming
+                </div>
+              </div>
+            </div>
+            
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '1rem'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 140px))',
+              gap: '1rem',
+              justifyContent: 'center',
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1rem 0'
             }}>
               {remainingStudents.map(student => 
-                renderStudentCard(student, 'unmarked')
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Present Students */}
-        {attendanceState.presentStudents.length > 0 && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{
-              fontSize: '1.3rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              color: 'rgba(255,255,255,0.9)',
-              textAlign: 'center'
-            }}>
-              Present ({attendanceState.presentStudents.length})
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '1rem'
-            }}>
-              {attendanceState.presentStudents.map(student => 
-                renderStudentCard(student, 'present')
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Absent Students */}
-        {attendanceState.absentStudents.length > 0 && (
-          <div style={{ marginBottom: '2rem' }}>
-            <h3 style={{
-              fontSize: '1.3rem',
-              fontWeight: '600',
-              marginBottom: '1rem',
-              color: 'rgba(255,255,255,0.9)',
-              textAlign: 'center'
-            }}>
-              Absent ({attendanceState.absentStudents.length})
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '1rem'
-            }}>
-              {attendanceState.absentStudents.map(student => 
                 renderStudentCard(student, getStudentStatus(student))
               )}
             </div>
           </div>
-        )}
-      </div>
+          
+          {/* RIGHT COLUMN: Present Students */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '2.5rem',
+            backdropFilter: 'blur(15px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '500px'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '2rem',
+              position: 'sticky',
+              top: 0,
+              zIndex: 5
+            }}>
+              <h2 style={{
+                fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+                fontSize: 'clamp(1.8rem, 4vw, 2.5rem)',
+                color: 'white',
+                textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                marginBottom: '1rem'
+              }}>
+                Ready to Learn!
+              </h2>
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                borderRadius: '25px',
+                padding: '1.5rem 2rem',
+                backdropFilter: 'blur(10px)',
+                border: '2px solid rgba(255, 255, 255, 0.4)',
+                animation: 'countPulse 2s ease-in-out infinite'
+              }}>
+                <div style={{
+                  fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
+                  fontSize: 'clamp(2rem, 5vw, 3rem)',
+                  color: 'white',
+                  textShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                  lineHeight: 1
+                }}>
+                  {attendanceState.presentStudents.length}
+                </div>
+                <div style={{
+                  fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+                  color: 'rgba(255,255,255,0.9)',
+                  fontWeight: '700',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                  marginTop: '0.5rem'
+                }}>
+                  Here & Ready
+                </div>
+              </div>
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 140px))',
+              gap: '1rem',
+              justifyContent: 'center',
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1rem 0'
+            }}>
+              {attendanceState.presentStudents.map(student => 
+                renderStudentCard(student, getStudentStatus(student))
+              )}
+            </div>
+          </div>
+        </div>
 
-      {/* Action Buttons */}
-      <div style={{
-        padding: '1rem 2rem 2rem 2rem',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '1rem',
-        flexWrap: 'wrap'
-      }}>
-        {remainingStudents.length > 0 && (
+        {/* Navigation */}
+        <div style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: '1rem',
+          zIndex: 1000,
+          background: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '25px',
+          padding: '1.2rem 2.5rem',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)'
+        }}>
           <button
-            onClick={markAllRemainingAbsent}
+            onClick={onBack}
             style={{
-              background: 'rgba(239, 68, 68, 0.8)',
+              background: 'rgba(156, 163, 175, 0.8)',
               border: 'none',
-              borderRadius: '12px',
+              borderRadius: '15px',
               color: 'white',
               padding: '1rem 2rem',
               fontSize: '1rem',
               fontWeight: '600',
               cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              minHeight: '60px'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.background = 'rgba(156, 163, 175, 1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.background = 'rgba(156, 163, 175, 0.8)';
+            }}
+          >
+            ← Back
+          </button>
+          
+          <button
+            onClick={handleNext}
+            style={{
+              background: 'rgba(34, 197, 94, 0.9)',
+              border: 'none',
+              borderRadius: '15px',
+              color: 'white',
+              padding: '1rem 2rem',
+              fontSize: '1rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              minHeight: '60px'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
               e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
+              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.9)';
               e.currentTarget.style.transform = 'scale(1)';
             }}
           >
-            Mark Remaining as Absent ({remainingStudents.length})
+            Attendance Complete! →
           </button>
-        )}
-        
-        <button
-          onClick={resetAttendance}
-          style={{
-            background: 'rgba(156, 163, 175, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(156, 163, 175, 1)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(156, 163, 175, 0.8)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Reset All
-        </button>
-        
-        <button
-          onClick={handleNext}
-          disabled={!isComplete && remainingStudents.length > 0}
-          style={{
-            background: isComplete || remainingStudents.length === 0
-              ? 'rgba(34, 197, 94, 0.8)' 
-              : 'rgba(156, 163, 175, 0.5)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 3rem',
-            fontSize: '1.1rem',
-            fontWeight: '700',
-            cursor: isComplete || remainingStudents.length === 0 ? 'pointer' : 'not-allowed',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            if (isComplete || remainingStudents.length === 0) {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (isComplete || remainingStudents.length === 0) {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }
-          }}
-        >
-          {remainingStudents.length === 0 ? 'Continue →' : 'Complete Attendance First'}
-        </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

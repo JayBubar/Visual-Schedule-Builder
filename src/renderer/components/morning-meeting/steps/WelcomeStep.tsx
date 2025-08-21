@@ -209,23 +209,22 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
           animationDelay: '5s'
         }}>🎉</div>
 
-        {/* Date display - top right corner */}
+        {/* Date display - top right corner, smaller and moved left */}
         <div style={{
           position: 'absolute',
           top: '20px',
-          right: '20px',
+          right: '120px', // Moved left to avoid red X
           background: 'rgba(255, 255, 255, 0.2)',
-          borderRadius: '15px',
-          padding: '1rem',
+          borderRadius: '12px',
+          padding: '0.6rem 0.8rem', // 20% smaller
           backdropFilter: 'blur(10px)',
           border: '2px solid rgba(255, 255, 255, 0.3)',
-          fontSize: '1rem',
+          fontSize: '0.8rem', // 20% smaller
           fontWeight: '600',
           color: 'white',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)',
           zIndex: 10
         }}>
-          <span style={{ fontSize: '1.5rem', marginRight: '0.5rem' }}>📅</span>
           {formatDate(currentDate)}
         </div>
 
