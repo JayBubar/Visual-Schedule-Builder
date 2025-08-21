@@ -9,13 +9,15 @@ interface MorningMeetingControllerProps {
   staff?: StaffMember[];
   onClose: () => void;
   onNavigateHome?: () => void;
+  onNavigateToDisplay?: () => void;
 }
 
 const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
   students = [],
   staff = [],
   onClose,
-  onNavigateHome
+  onNavigateHome,
+  onNavigateToDisplay
 }) => {
   const [currentMode, setCurrentMode] = useState<'hub' | 'flow'>('hub');
   const [hubSettings, setHubSettings] = useState<any>(null);
@@ -128,8 +130,13 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
   };
 
   const handleMorningMeetingComplete = () => {
-    // Morning Meeting completed, close the controller
-    onClose();
+    // Morning Meeting completed, navigate to display view to show the schedule
+    if (onNavigateToDisplay) {
+      onNavigateToDisplay();
+    } else {
+      // Fallback to closing if no display navigation is provided
+      onClose();
+    }
   };
 
   const handleBackToHub = () => {

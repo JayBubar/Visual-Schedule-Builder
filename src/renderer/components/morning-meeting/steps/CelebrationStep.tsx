@@ -642,6 +642,9 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
           padding: 1.5rem 2rem;
           background: rgba(0, 0, 0, 0.2);
           backdrop-filter: blur(10px);
+          position: relative;
+          z-index: 1000;
+          margin-bottom: 80px; /* Add space to avoid overlap with Home button */
         }
 
         .nav-button {
@@ -654,6 +657,10 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
           cursor: pointer;
           transition: all 0.3s ease;
           backdrop-filter: blur(10px);
+          min-width: 120px;
+          text-align: center;
+          position: relative;
+          z-index: 1001;
         }
 
         .nav-button:hover {
@@ -662,9 +669,22 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
           box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
+        .nav-button.next {
+          background: rgba(40, 167, 69, 0.3);
+          border-color: rgba(40, 167, 69, 0.5);
+          margin-right: 100px; /* Add extra margin to avoid Home button overlap */
+        }
+
+        .nav-button.next:hover {
+          background: rgba(40, 167, 69, 0.4);
+        }
+
         .step-indicator {
           font-weight: 600;
           opacity: 0.8;
+          text-align: center;
+          flex: 1;
+          margin: 0 1rem;
         }
 
         @media (max-width: 768px) {

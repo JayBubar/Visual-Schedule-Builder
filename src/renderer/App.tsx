@@ -344,6 +344,7 @@ const App: React.FC = () => {
             staff={staffMembers}
             onClose={() => handleViewChange('builder')}
             onNavigateHome={handleBackToStart}
+            onNavigateToDisplay={() => handleViewChange('display')}
           />
       ) : (
 
