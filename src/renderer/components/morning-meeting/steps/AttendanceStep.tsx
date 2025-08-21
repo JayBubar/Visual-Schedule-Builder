@@ -57,7 +57,7 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
     !attendanceState.absentStudents.find(s => s.id === student.id)
   );
 
-  // Update data whenever attendance changes
+  // Update data whenever attendance changes (fixed dependencies)
   useEffect(() => {
     const stepData = {
       presentStudents: attendanceState.presentStudents,
@@ -66,7 +66,7 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       completedAt: new Date()
     };
     onDataUpdate(stepData);
-  }, [attendanceState, students.length, onDataUpdate]);
+  }, [attendanceState.presentStudents.length, attendanceState.absentStudents.length, students.length]); // ✅ Only trigger on actual changes
 
   const markStudentPresent = useCallback((student: Student) => {
     const dateString = currentDate.toISOString().split('T')[0];
