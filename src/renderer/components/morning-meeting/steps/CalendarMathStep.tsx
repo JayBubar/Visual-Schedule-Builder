@@ -103,7 +103,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     return dayNames[date.getDay()];
   };
 
-  // Save step data
+  // Save step data with proper dependencies
   useEffect(() => {
     const stepData: CalendarMathStepData = {
       currentDate: today,
@@ -117,7 +117,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       completedAt: completedQuestions.size === questions.length ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentQuestion, completedQuestions, timeSpentSeconds, today, onDataUpdate]);
+  }, [currentQuestion, completedQuestions, timeSpentSeconds]); // Fixed: removed circular dependencies
 
   // Handle month click
   const handleMonthClick = (monthIndex: number) => {
@@ -1027,7 +1027,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       )}
 
       {/* CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes celebrate {
           0% { 
             opacity: 0; 

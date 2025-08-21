@@ -1,247 +1,106 @@
-import React, { useState, useEffect } from 'react';
+// ========================================
+// 🍂 FIXED SEASONAL STEP - PART 1
+// File: src/renderer/components/morning-meeting/steps/SeasonalStep.tsx
+// CRITICAL FIX: Component named 'SeasonalStep' (not 'Enhanced...')
+// ========================================
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps, SeasonalStepData } from '../types/morningMeetingTypes';
 
-interface SeasonalActivity {
+// ========================================
+// 🎯 TYPES & INTERFACES
+// ========================================
+
+interface GameItem {
   id: string;
-  title: string;
-  description: string;
+  text: string;
   emoji: string;
-  category: 'vocabulary' | 'observation' | 'movement' | 'science' | 'art';
-  duration: string;
-  instructions: string[];
-}
-
-interface SeasonalTheme {
   season: string;
-  emoji: string;
-  colors: string[];
-  vocabulary: string[];
-  activities: SeasonalActivity[];
-  characteristics: string[];
+  type: 'activity' | 'season';
 }
 
-const SEASONAL_THEMES: { [key: string]: SeasonalTheme } = {
+interface SeasonData {
+  name: string;
+  emoji: string;
+  months: string[];
+  details: {
+    weather: string;
+    nature: string;
+    activities: string;
+    clothing: string;
+  };
+}
+
+// ========================================
+// 🌍 SEASON DATA CONFIGURATION
+// ========================================
+
+const SEASONS_DATA: { [key: string]: SeasonData } = {
   spring: {
-    season: 'Spring',
+    name: 'Spring',
     emoji: '🌸',
-    colors: ['#90EE90', '#98FB98'],
-    vocabulary: ['bloom', 'grow', 'rain', 'flowers', 'green', 'warm', 'birds', 'nest'],
-    characteristics: [
-      'Plants start to grow and bloom',
-      'Animals wake up from winter sleep',
-      'Days get longer and warmer',
-      'Rain helps plants grow'
-    ],
-    activities: [
-      {
-        id: 'spring-vocab',
-        title: 'Spring Words',
-        description: 'Learn new spring vocabulary words',
-        emoji: '🌱',
-        category: 'vocabulary',
-        duration: '3 minutes',
-        instructions: [
-          'Say each spring word together',
-          'Talk about what each word means',
-          'Look for spring things outside our window'
-        ]
-      },
-      {
-        id: 'spring-observation',
-        title: 'Spring Detective',
-        description: 'Look for signs of spring around us',
-        emoji: '🔍',
-        category: 'observation',
-        duration: '4 minutes',
-        instructions: [
-          'Look outside for signs of spring',
-          'What colors do you see?',
-          'Are there any flowers or new leaves?',
-          'Do you hear any birds singing?'
-        ]
-      },
-      {
-        id: 'spring-movement',
-        title: 'Growing Like Plants',
-        description: 'Move and grow like spring plants',
-        emoji: '🌿',
-        category: 'movement',
-        duration: '2 minutes',
-        instructions: [
-          'Start curled up like a seed',
-          'Slowly grow up toward the sun',
-          'Stretch your arms like branches',
-          'Sway gently in the spring breeze'
-        ]
-      }
-    ]
+    months: ['March', 'April', 'May'],
+    details: {
+      weather: 'Warm and rainy with gentle sunshine',
+      nature: 'Flowers bloom and trees grow new green leaves',
+      activities: 'Planting gardens, flying kites, nature walks',
+      clothing: 'Light jackets, rain boots, and colorful clothes'
+    }
   },
   summer: {
-    season: 'Summer',
+    name: 'Summer',
     emoji: '☀️',
-    colors: ['#FFD700', '#FF6347'],
-    vocabulary: ['hot', 'sunny', 'beach', 'swimming', 'vacation', 'ice cream', 'picnic', 'camping'],
-    characteristics: [
-      'The warmest time of the year',
-      'Long days and short nights',
-      'Time for outdoor activities',
-      'Many plants are fully grown'
-    ],
-    activities: [
-      {
-        id: 'summer-vocab',
-        title: 'Summer Fun Words',
-        description: 'Explore exciting summer vocabulary',
-        emoji: '🏖️',
-        category: 'vocabulary',
-        duration: '3 minutes',
-        instructions: [
-          'Say summer words with excitement',
-          'Talk about summer activities you love',
-          'Share your favorite summer memories'
-        ]
-      },
-      {
-        id: 'summer-science',
-        title: 'Staying Cool',
-        description: 'Learn how to stay cool in summer',
-        emoji: '🧊',
-        category: 'science',
-        duration: '4 minutes',
-        instructions: [
-          'Talk about what we do when it\'s very hot',
-          'Why do we wear light colors in summer?',
-          'How do animals stay cool?',
-          'What happens to ice in the sun?'
-        ]
-      },
-      {
-        id: 'summer-movement',
-        title: 'Summer Activities',
-        description: 'Move like summer fun',
-        emoji: '🏊',
-        category: 'movement',
-        duration: '2 minutes',
-        instructions: [
-          'Pretend to swim in a pool',
-          'March like you\'re hiking',
-          'Reach up to pick fruit from trees',
-          'Fan yourself to stay cool'
-        ]
-      }
-    ]
+    months: ['June', 'July', 'August'],
+    details: {
+      weather: 'Hot and sunny with warm temperatures',
+      nature: 'Trees are full of green leaves, flowers everywhere',
+      activities: 'Swimming, picnics, playing outside, beach days',
+      clothing: 'Shorts, t-shirts, sandals, and sun hats'
+    }
   },
   fall: {
-    season: 'Fall/Autumn',
+    name: 'Fall',
     emoji: '🍂',
-    colors: ['#FF8C00', '#DC143C'],
-    vocabulary: ['leaves', 'falling', 'harvest', 'pumpkin', 'orange', 'cool', 'acorns', 'cozy'],
-    characteristics: [
-      'Leaves change colors and fall',
-      'Weather gets cooler',
-      'Time to harvest crops',
-      'Animals prepare for winter'
-    ],
-    activities: [
-      {
-        id: 'fall-vocab',
-        title: 'Autumn Words',
-        description: 'Discover beautiful fall vocabulary',
-        emoji: '🍁',
-        category: 'vocabulary',
-        duration: '3 minutes',
-        instructions: [
-          'Say fall words with expression',
-          'Talk about what happens in autumn',
-          'Describe the colors you see outside'
-        ]
-      },
-      {
-        id: 'fall-observation',
-        title: 'Leaf Detective',
-        description: 'Observe how leaves change',
-        emoji: '🔍',
-        category: 'observation',
-        duration: '4 minutes',
-        instructions: [
-          'Look at trees outside our window',
-          'What colors do you see on the leaves?',
-          'Are any leaves falling?',
-          'Talk about why leaves change colors'
-        ]
-      },
-      {
-        id: 'fall-movement',
-        title: 'Falling Leaves',
-        description: 'Move like autumn leaves',
-        emoji: '🍃',
-        category: 'movement',
-        duration: '2 minutes',
-        instructions: [
-          'Stand tall like a tree',
-          'Sway gently in the autumn breeze',
-          'Flutter down like falling leaves',
-          'Curl up on the ground like a pile of leaves'
-        ]
-      }
-    ]
+    months: ['September', 'October', 'November'],
+    details: {
+      weather: 'Cool and crisp with colorful leaves falling',
+      nature: 'Leaves change to red, orange, and yellow colors',
+      activities: 'Jumping in leaf piles, pumpkin picking, hiking',
+      clothing: 'Sweaters, jeans, boots, and cozy scarves'
+    }
   },
   winter: {
-    season: 'Winter',
+    name: 'Winter',
     emoji: '❄️',
-    colors: ['#87CEEB', '#4682B4'],
-    vocabulary: ['cold', 'snow', 'ice', 'mittens', 'coat', 'hot chocolate', 'cozy', 'fireplace'],
-    characteristics: [
-      'The coldest time of the year',
-      'Some places get snow and ice',
-      'Animals stay warm in different ways',
-      'Days are shorter and nights are longer'
-    ],
-    activities: [
-      {
-        id: 'winter-vocab',
-        title: 'Winter Words',
-        description: 'Learn cozy winter vocabulary',
-        emoji: '⛄',
-        category: 'vocabulary',
-        duration: '3 minutes',
-        instructions: [
-          'Practice winter words together',
-          'Talk about staying warm in winter',
-          'Share what you like about cold weather'
-        ]
-      },
-      {
-        id: 'winter-science',
-        title: 'Staying Warm',
-        description: 'Learn how we stay warm in winter',
-        emoji: '🧥',
-        category: 'science',
-        duration: '4 minutes',
-        instructions: [
-          'Talk about winter clothes and why we wear them',
-          'Feel different materials - which ones are warmer?',
-          'Discuss how animals stay warm in winter',
-          'Think about warm activities we do inside'
-        ]
-      },
-      {
-        id: 'winter-movement',
-        title: 'Winter Fun',
-        description: 'Move like winter activities',
-        emoji: '⛷️',
-        category: 'movement',
-        duration: '2 minutes',
-        instructions: [
-          'Pretend to build a snowman',
-          'Slide and glide like ice skating',
-          'Shiver and then warm up by the fireplace',
-          'March in place to stay warm'
-        ]
-      }
-    ]
+    months: ['December', 'January', 'February'],
+    details: {
+      weather: 'Cold and snowy with frosty mornings',
+      nature: 'Trees are bare, some animals hibernate',
+      activities: 'Building snowmen, skiing, drinking hot cocoa',
+      clothing: 'Heavy coats, mittens, warm boots, and hats'
+    }
   }
 };
+
+// ========================================
+// 🎮 GAME CONFIGURATION
+// ========================================
+
+const GAME_ITEMS: GameItem[] = [
+  { id: 'skiing', text: '⛷️ Skiing', emoji: '⛷️', season: 'winter', type: 'activity' },
+  { id: 'swimming', text: '🏊‍♂️ Swimming', emoji: '🏊‍♂️', season: 'summer', type: 'activity' },
+  { id: 'leaf-jumping', text: '🍂 Leaf Jumping', emoji: '🍂', season: 'fall', type: 'activity' },
+  { id: 'planting', text: '🌱 Planting Flowers', emoji: '🌱', season: 'spring', type: 'activity' },
+  { id: 'spring-season', text: '🌸 Spring', emoji: '🌸', season: 'spring', type: 'season' },
+  { id: 'summer-season', text: '☀️ Summer', emoji: '☀️', season: 'summer', type: 'season' },
+  { id: 'fall-season', text: '🍂 Fall', emoji: '🍂', season: 'fall', type: 'season' },
+  { id: 'winter-season', text: '❄️ Winter', emoji: '❄️', season: 'winter', type: 'season' }
+];
+// ========================================
+// 🍂 FIXED SEASONAL STEP - PART 2
+// Component Definition & State Management
+// CRITICAL: Named 'SeasonalStep' to match existing imports
+// ========================================
 
 const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
@@ -251,614 +110,757 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings
 }) => {
-  const [currentActivity, setCurrentActivity] = useState<SeasonalActivity | null>(null);
-  const [completedActivities, setCompletedActivities] = useState<string[]>(
-    stepData?.completedActivities || []
-  );
-  const [learnedVocabulary, setLearnedVocabulary] = useState<string[]>(
-    stepData?.learnedVocabulary || []
-  );
-  const [currentSection, setCurrentSection] = useState<'characteristics' | 'vocabulary' | 'activities'>(
-    stepData?.currentSection || 'characteristics'
-  );
-  const [completedSections, setCompletedSections] = useState<string[]>(
-    stepData?.completedSections || []
-  );
+  // ========================================
+  // 🎯 STATE MANAGEMENT
+  // ========================================
+  const [currentSection, setCurrentSection] = useState<number>(1);
+  const [completedSections, setCompletedSections] = useState<number[]>([]);
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
+  const [revealedSeason, setRevealedSeason] = useState<boolean>(false);
+  const [selectedDetails, setSelectedDetails] = useState<string[]>([]);
+  const [gameState, setGameState] = useState<{
+    selectedItems: GameItem[];
+    matches: string[];
+    gameComplete: boolean;
+  }>({
+    selectedItems: [],
+    matches: [],
+    gameComplete: false
+  });
+  const [showCelebration, setShowCelebration] = useState<string>('');
 
-  // Determine current season based on date
-  const getCurrentSeason = (): string => {
+  // ========================================
+  // 🌍 SEASON DETECTION
+  // ========================================
+  const getCurrentSeason = useCallback((): string => {
     const month = currentDate.getMonth(); // 0-11
     
     if (month >= 2 && month <= 4) return 'spring'; // March, April, May
     if (month >= 5 && month <= 7) return 'summer'; // June, July, August  
     if (month >= 8 && month <= 10) return 'fall'; // September, October, November
     return 'winter'; // December, January, February
-  };
+  }, [currentDate]);
 
   const currentSeason = getCurrentSeason();
+  const currentSeasonData = SEASONS_DATA[currentSeason];
   
-  // Get vocabulary from hub settings or use defaults
-  const getSeasonalVocabulary = (season: string): string[] => {
-    // FIRST: Check Hub custom vocabulary
-    if (hubSettings?.customVocabulary?.seasonal?.length > 0) {
-      return hubSettings.customVocabulary.seasonal;
-    }
-    
-    // SECOND: Use seasonal theme defaults
-    return SEASONAL_THEMES[season]?.vocabulary || [];
-  };
+  // Get next season
+  const getNextSeason = useCallback((): string => {
+    const seasonOrder = ['winter', 'spring', 'summer', 'fall'];
+    const currentIndex = seasonOrder.indexOf(currentSeason);
+    return seasonOrder[(currentIndex + 1) % 4];
+  }, [currentSeason]);
 
-  const seasonalTheme = {
-    ...SEASONAL_THEMES[currentSeason],
-    vocabulary: getSeasonalVocabulary(currentSeason)
-  };
+  const nextSeason = getNextSeason();
+  const nextSeasonData = SEASONS_DATA[nextSeason];
 
-  // Save step data whenever state changes
+  // ========================================
+  // 💾 DATA PERSISTENCE (Compatible with existing system)
+  // ========================================
   useEffect(() => {
     const stepData: SeasonalStepData = {
       currentSeason,
-      currentSection,
-      completedSections,
-      completedActivities,
-      learnedVocabulary,
-      completedAt: completedSections.length >= 3 ? new Date() : undefined
+      currentSection: currentSection === 1 ? 'characteristics' : 
+                     currentSection === 2 ? 'vocabulary' : 'activities',
+      completedSections: completedSections.map(s => 
+        s === 1 ? 'characteristics' : s === 2 ? 'vocabulary' : 'activities'
+      ),
+      completedActivities: gameState.matches,
+      learnedVocabulary: selectedDetails,
+      completedAt: completedSections.length >= 4 ? new Date() : undefined
     };
     onDataUpdate(stepData);
-  }, [currentSeason, currentSection, completedSections, completedActivities, learnedVocabulary]);
-
-  const startActivity = (activity: SeasonalActivity) => {
-    setCurrentActivity(activity);
-  };
-
-  const completeActivity = (activityId: string) => {
-    if (!completedActivities.includes(activityId)) {
-      setCompletedActivities(prev => [...prev, activityId]);
+  }, [currentSection, completedSections, selectedDetails, gameState.matches, currentSeason, onDataUpdate]);
+  // ========================================
+  // 🎮 INTERACTION HANDLERS
+  // ========================================
+  const handleSeasonClick = useCallback((seasonKey: string) => {
+    if (!selectedSeasons.includes(seasonKey)) {
+      const newSelected = [...selectedSeasons, seasonKey];
+      setSelectedSeasons(newSelected);
+      
+      if (newSelected.length === 4) {
+        showCelebrationMessage('🎉 Perfect! Earth has 4 beautiful seasons! 🌍');
+        setTimeout(() => markSectionComplete(1), 2000);
+      }
     }
-    setCurrentActivity(null);
-  };
+  }, [selectedSeasons]);
 
-  const addToVocabulary = (word: string) => {
-    if (!learnedVocabulary.includes(word)) {
-      setLearnedVocabulary(prev => [...prev, word]);
+  const handleRevealSeason = useCallback(() => {
+    setRevealedSeason(true);
+    showCelebrationMessage(`🌞 Amazing! We're in ${currentSeasonData.name}! 🎉`);
+    setTimeout(() => markSectionComplete(2), 2000);
+  }, [currentSeasonData.name]);
+
+  const handleDetailClick = useCallback((detailKey: string) => {
+    if (!selectedDetails.includes(detailKey)) {
+      const newSelected = [...selectedDetails, detailKey];
+      setSelectedDetails(newSelected);
+      
+      if (newSelected.length === 4) {
+        showCelebrationMessage(`🌟 You learned everything about ${currentSeasonData.name}! Amazing! ☀️`);
+        setTimeout(() => markSectionComplete(3), 2000);
+      }
     }
-  };
+  }, [selectedDetails, currentSeasonData.name]);
 
-  // Section navigation functions
-  const handleSectionComplete = (section: string) => {
+  const handleGameItemClick = useCallback((item: GameItem) => {
+    if (gameState.matches.includes(item.id)) return; // Already matched
+    
+    const newSelected = [...gameState.selectedItems.filter(i => i.id !== item.id), item];
+    
+    if (newSelected.length === 2) {
+      const [item1, item2] = newSelected;
+      
+      if (item1.season === item2.season && item1.type !== item2.type) {
+        // Correct match!
+        const newMatches = [...gameState.matches, item1.id, item2.id];
+        setGameState({
+          selectedItems: [],
+          matches: newMatches,
+          gameComplete: newMatches.length === 8
+        });
+        
+        if (newMatches.length === 8) {
+          showCelebrationMessage('🏆 You won the Season Matching Game! Amazing! 🌟');
+          setTimeout(() => markSectionComplete(4), 2000);
+        } else {
+          showCelebrationMessage('🎉 Perfect match! Great job!');
+        }
+      } else {
+        // Wrong match
+        showCelebrationMessage('🤔 Try again! Think about when you would do that activity!');
+        setTimeout(() => {
+          setGameState(prev => ({ ...prev, selectedItems: [] }));
+        }, 1500);
+      }
+    } else {
+      setGameState(prev => ({ ...prev, selectedItems: newSelected }));
+    }
+  }, [gameState]);
+
+  const markSectionComplete = useCallback((section: number) => {
     if (!completedSections.includes(section)) {
       setCompletedSections(prev => [...prev, section]);
     }
+  }, [completedSections]);
 
-    // Auto-progress to next section
-    if (section === 'characteristics' && currentSection === 'characteristics') {
-      setCurrentSection('vocabulary');
-    } else if (section === 'vocabulary' && currentSection === 'vocabulary') {
-      setCurrentSection('activities');
+  const showCelebrationMessage = useCallback((message: string) => {
+    setShowCelebration(message);
+    setTimeout(() => setShowCelebration(''), 3000);
+  }, []);
+
+  const goToNextSection = useCallback(() => {
+    if (currentSection < 4) {
+      setCurrentSection(currentSection + 1);
+    } else {
+      onNext();
     }
-    // Don't auto-advance from activities - let user click Continue
-  };
+  }, [currentSection, onNext]);
 
-  const handleManualNavigation = (section: 'characteristics' | 'vocabulary' | 'activities') => {
-    setCurrentSection(section);
-  };
+  const goToPreviousSection = useCallback(() => {
+    if (currentSection > 1) {
+      setCurrentSection(currentSection - 1);
+    } else {
+      onBack();
+    }
+  }, [currentSection, onBack]);
+  // ========================================
+  // 🎨 MAIN RENDER - COMPLETE COMPONENT
+  // ========================================
+  return (
+    <div style={{
+      height: '100vh',
+      background: 'linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 25%, #45b7d1 50%, #f9ca24 75%, #f0932b 100%)',
+      backgroundSize: '400% 400%',
+      animation: 'gradientShift 8s ease-in-out infinite',
+      position: 'relative',
+      overflow: 'hidden',
+      color: 'white',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      {/* Floating magical particles */}
+      <div style={{ position: 'absolute', top: '10%', left: '10%', fontSize: '2rem', opacity: 0.7, animation: 'float 6s ease-in-out infinite' }}>🌸</div>
+      <div style={{ position: 'absolute', top: '20%', right: '15%', fontSize: '2rem', opacity: 0.7, animation: 'float 6s ease-in-out infinite 1s' }}>☀️</div>
+      <div style={{ position: 'absolute', bottom: '30%', left: '20%', fontSize: '2rem', opacity: 0.7, animation: 'float 6s ease-in-out infinite 2s' }}>🍂</div>
+      <div style={{ position: 'absolute', bottom: '15%', right: '25%', fontSize: '2rem', opacity: 0.7, animation: 'float 6s ease-in-out infinite 3s' }}>❄️</div>
 
-  // Section rendering functions
-  const renderCharacteristicsSection = () => (
-    <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
-        About {seasonalTheme.season}
-      </h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-        {seasonalTheme.characteristics.map((characteristic, index) => (
-          <div key={index} style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '12px',
-            padding: '1rem',
-            fontSize: '1.1rem',
-            lineHeight: '1.4'
-          }}>
-            • {characteristic}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderVocabularySection = () => (
-    <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
-        📚 {seasonalTheme.season} Words
-      </h3>
+      {/* Section Navigation */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-        gap: '1rem',
-        maxWidth: '600px',
-        margin: '0 auto'
-      }}>
-        {seasonalTheme.vocabulary.map((word, index) => (
-          <div
-            key={index}
-            onClick={() => addToVocabulary(word)}
-            style={{
-              background: learnedVocabulary.includes(word) 
-                ? 'rgba(34, 197, 94, 0.8)' 
-                : 'rgba(255, 255, 255, 0.3)',
-              borderRadius: '12px',
-              padding: '1rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              fontSize: '1rem',
-              fontWeight: '500',
-              border: learnedVocabulary.includes(word) ? '2px solid white' : 'none'
-            }}
-          >
-            {word}
-            {learnedVocabulary.includes(word) && (
-              <div style={{ fontSize: '0.8rem', marginTop: '0.5rem' }}>✓ Learned!</div>
-            )}
-          </div>
-        ))}
-      </div>
-      <p style={{ marginTop: '1rem', fontSize: '0.9rem', opacity: 0.9 }}>
-        Tap words to mark them as learned!
-      </p>
-    </div>
-  );
-
-  const renderActivitiesSection = () => (
-    <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <h3 style={{ fontSize: '2rem', marginBottom: '2rem' }}>
-        🎯 Choose an Activity
-      </h3>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '1rem',
-        maxWidth: '800px',
-        margin: '0 auto'
-      }}>
-        {seasonalTheme.activities.map((activity) => (
-          <div
-            key={activity.id}
-            onClick={() => startActivity(activity)}
-            style={{
-              background: completedActivities.includes(activity.id)
-                ? 'rgba(34, 197, 94, 0.8)'
-                : 'rgba(255, 255, 255, 0.3)',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              border: completedActivities.includes(activity.id) ? '2px solid white' : 'none'
-            }}
-          >
-            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
-              {activity.emoji}
-            </div>
-            <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-              {activity.title}
-            </div>
-            <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>
-              {activity.description}
-            </div>
-            {completedActivities.includes(activity.id) && (
-              <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                ✓ Completed!
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  // Get weather connection message
-  const getWeatherConnection = () => {
-    if (currentSeason === 'spring') {
-      return "Spring weather helps flowers grow! 🌧️🌸";
-    }
-    if (currentSeason === 'summer') {
-      return "Hot summer weather - great for outdoor fun! ☀️";
-    }
-    if (currentSeason === 'fall') {
-      return "Cool fall weather - leaves are changing! 🍂";
-    }
-    return "Cold winter weather - time to stay cozy! ❄️";
-  };
-
-  if (currentActivity) {
-    return (
-      <div style={{
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
+        position: 'absolute',
+        top: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex',
-        flexDirection: 'column',
-        background: `linear-gradient(135deg, ${seasonalTheme.colors[0]}, ${seasonalTheme.colors[1]})`,
-        color: 'white'
+        gap: '15px',
+        zIndex: 100
       }}>
-        {/* Activity Header */}
-        <div style={{
-          padding: '2rem 2rem 1rem 2rem',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            fontSize: '4rem',
-            marginBottom: '1rem'
-          }}>
-            {currentActivity.emoji}
-          </div>
-          <h2 style={{
-            fontSize: '2.5rem',
-            fontWeight: '700',
-            marginBottom: '0.5rem',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-          }}>
-            {currentActivity.title}
-          </h2>
-          <p style={{
-            fontSize: '1.2rem',
-            color: 'rgba(255,255,255,0.9)',
-            marginBottom: '0.5rem'
-          }}>
-            {currentActivity.description}
-          </p>
-          <div style={{
-            display: 'inline-block',
-            background: 'rgba(255,255,255,0.2)',
-            borderRadius: '20px',
-            padding: '0.5rem 1rem',
-            fontSize: '0.9rem',
-            backdropFilter: 'blur(10px)'
-          }}>
-            Duration: {currentActivity.duration} • {currentActivity.category}
-          </div>
-        </div>
+        {[
+          { num: 1, text: '🌍 Overview' },
+          { num: 2, text: '🤔 What Season?' },
+          { num: 3, text: `${currentSeasonData.emoji} Season Fun` },
+          { num: 4, text: '🔮 What\'s Next' }
+        ].map(({ num, text }) => (
+          <button
+            key={num}
+            onClick={() => setCurrentSection(num)}
+            style={{
+              background: currentSection === num ? '#ff6b6b' : 'rgba(255, 255, 255, 0.9)',
+              color: currentSection === num ? 'white' : '#333',
+              border: '3px solid #ff6b6b',
+              borderRadius: '20px',
+              padding: '15px 25px',
+              fontSize: '18px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.2)',
+              transform: currentSection === num ? 'scale(1.1)' : 'scale(1)',
+            }}
+          >
+            {text}
+            {completedSections.includes(num) && (
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '-10px',
+                background: '#22c55e',
+                borderRadius: '50%',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '16px'
+              }}>
+                🌟
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-        {/* Activity Instructions */}
-        <div style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: '1rem 2rem',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
+      {/* Main Content */}
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '120px 40px 40px'
+      }}>
+        {/* Section 1: Seasons Overview */}
+        {currentSection === 1 && (
           <div style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            borderRadius: '20px',
-            padding: '2rem',
-            backdropFilter: 'blur(10px)',
-            maxWidth: '600px',
-            width: '100%'
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '4rem',
+            backdropFilter: 'blur(20px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            maxWidth: '900px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            textAlign: 'center'
           }}>
-            <h3 style={{
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              marginBottom: '1.5rem',
-              textAlign: 'center'
-            }}>
-              Let's Do This Activity!
-            </h3>
+            <div style={{ fontSize: '1.5rem', color: '#ffd700', marginBottom: '1rem', fontWeight: '700' }}>
+              Question 1 of 4
+            </div>
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem'
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: '800',
+              marginBottom: '2rem',
+              lineHeight: '1.2',
+              textShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+              background: 'linear-gradient(45deg, #fff, #ffd700)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
             }}>
-              {currentActivity.instructions.map((instruction, index) => (
+              🌍 How many seasons does Earth have?
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '2rem',
+              margin: '2rem 0'
+            }}>
+              {Object.entries(SEASONS_DATA).map(([key, season]) => (
                 <div
-                  key={index}
+                  key={key}
+                  onClick={() => handleSeasonClick(key)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '12px',
-                    padding: '1rem',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '1rem'
+                    background: selectedSeasons.includes(key) 
+                      ? 'linear-gradient(45deg, #22c55e, #16a34a)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    color: selectedSeasons.includes(key) ? 'white' : '#333',
+                    borderRadius: '25px',
+                    padding: '2.5rem',
+                    border: '4px solid transparent',
+                    transition: 'all 0.4s ease',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: '0 15px 30px rgba(0,0,0,0.2)',
+                    transform: selectedSeasons.includes(key) ? 'scale(1.05)' : 'scale(1)'
                   }}
                 >
-                  <div style={{
-                    background: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '50%',
-                    width: '30px',
-                    height: '30px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.9rem',
-                    fontWeight: 'bold',
-                    flexShrink: 0
-                  }}>
-                    {index + 1}
+                  <span style={{ fontSize: '5rem', marginBottom: '1rem', display: 'block' }}>
+                    {season.emoji}
+                  </span>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem' }}>
+                    {season.name}
                   </div>
-                  <div style={{
-                    fontSize: '1.1rem',
-                    lineHeight: '1.4'
-                  }}>
-                    {instruction}
+                  <div style={{ fontSize: '1.3rem', fontWeight: '600', opacity: '0.8' }}>
+                    {season.months.join(' • ')}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Activity Navigation */}
-        <div style={{
-          padding: '1rem 2rem 2rem 2rem',
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '1rem'
-        }}>
-          <button
-            onClick={() => setCurrentActivity(null)}
-            style={{
-              background: 'rgba(156, 163, 175, 0.8)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 163, 175, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 163, 175, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            Back to Activities
-          </button>
-          
-          <button
-            onClick={() => completeActivity(currentActivity.id)}
-            style={{
-              background: 'rgba(34, 197, 94, 0.8)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            Activity Complete! ✓
-          </button>
-        </div>
-      </div>
-    );
-  }
+        {/* Section 2: Current Season Mystery */}
+        {currentSection === 2 && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '4rem',
+            backdropFilter: 'blur(20px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            maxWidth: '900px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '1.5rem', color: '#ffd700', marginBottom: '1rem', fontWeight: '700' }}>
+              Question 2 of 4
+            </div>
+            <div style={{
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: '800',
+              marginBottom: '2rem',
+              lineHeight: '1.2',
+              textShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+              background: 'linear-gradient(45deg, #fff, #ffd700)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              🤔 What season are we in right now?
+            </div>
+            
+            {!revealedSeason ? (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: '30px',
+                padding: '4rem',
+                border: '4px dashed rgba(255, 255, 255, 0.8)',
+                marginBottom: '3rem'
+              }}>
+                <div style={{ fontSize: '6rem', marginBottom: '2rem' }}>❓❓❓</div>
+                <p style={{ fontSize: '1.8rem', marginBottom: '2rem', fontWeight: '600' }}>
+                  It's {currentSeasonData.months[1]}... can you guess what season we're in?
+                </p>
+                <button
+                  onClick={handleRevealSeason}
+                  style={{
+                    background: 'linear-gradient(45deg, #ff6b6b, #ff8e53)',
+                    border: 'none',
+                    borderRadius: '20px',
+                    color: 'white',
+                    padding: '25px 50px',
+                    fontSize: '1.8rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  🔍 Reveal the Magic Season!
+                </button>
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(255, 215, 0, 0.3)',
+                borderRadius: '30px',
+                padding: '3rem',
+                border: '4px solid #ffd700'
+              }}>
+                <div style={{ fontSize: '6rem', marginBottom: '1.5rem' }}>{currentSeasonData.emoji}</div>
+                <h2 style={{ fontSize: '4rem', marginBottom: '1rem', color: '#ffd700', fontWeight: '800' }}>
+                  {currentSeasonData.name.toUpperCase()}!
+                </h2>
+                <p style={{ fontSize: '1.8rem', fontWeight: '600' }}>
+                  🎉 Amazing! {currentSeasonData.months[1]} is in {currentSeasonData.name.toLowerCase()}! 🌞
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
-  return (
-    <div style={{
-      height: '100%',
-      width: '100%',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      background: `linear-gradient(135deg, ${seasonalTheme.colors[0]}, ${seasonalTheme.colors[1]})`,
-      color: 'white'
-    }}>
-      {/* Video Section */}
-      {hubSettings?.videos?.seasonalLearning && hubSettings.videos.seasonalLearning.length > 0 && (
-        <div style={{
-          padding: '1rem 2rem',
-          background: 'rgba(255, 255, 255, 0.1)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.2)',
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}>
-          <span style={{ fontWeight: '600', fontSize: '1rem' }}>🎬 Videos:</span>
-          {hubSettings.videos.seasonalLearning.map((video, index) => (
-            <button
-              key={index}
-              onClick={() => window.open(video.url, `seasonal-video-${index}`, 'width=800,height=600')}
-              style={{
-                background: 'rgba(34, 197, 94, 0.8)',
-                border: 'none',
-                borderRadius: '8px',
-                color: 'white',
-                padding: '0.5rem 1rem',
-                fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              Play Seasonal Video {index + 1}
-            </button>
-          ))}
-        </div>
-      )}
+        {/* Section 3: Season Details */}
+        {currentSection === 3 && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '4rem',
+            backdropFilter: 'blur(20px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            maxWidth: '900px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '1.5rem', color: '#ffd700', marginBottom: '1rem', fontWeight: '700' }}>
+              Question 3 of 4
+            </div>
+            <div style={{
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: '800',
+              marginBottom: '2rem',
+              lineHeight: '1.2',
+              textShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+              background: 'linear-gradient(45deg, #fff, #ffd700)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              {currentSeasonData.emoji} What makes {currentSeasonData.name.toLowerCase()} so special?
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '2rem',
+              margin: '2rem 0'
+            }}>
+              {Object.entries(currentSeasonData.details).map(([key, detail]) => {
+                const icons = {
+                  weather: '🌡️',
+                  nature: '🌳',
+                  activities: '🏊‍♂️',
+                  clothing: '👕'
+                };
+                const titles = {
+                  weather: `${currentSeasonData.name} Weather!`,
+                  nature: 'Nature Changes!',
+                  activities: 'Fun Activities!',
+                  clothing: 'What We Wear!'
+                };
+                
+                return (
+                  <div
+                    key={key}
+                    onClick={() => handleDetailClick(key)}
+                    style={{
+                      background: selectedDetails.includes(key)
+                        ? 'linear-gradient(45deg, #22c55e, #16a34a)'
+                        : 'rgba(255, 255, 255, 0.9)',
+                      color: selectedDetails.includes(key) ? 'white' : '#333',
+                      borderRadius: '20px',
+                      padding: '2rem',
+                      border: '3px solid transparent',
+                      transition: 'all 0.4s ease',
+                      cursor: 'pointer',
+                      transform: selectedDetails.includes(key) ? 'translateY(-8px) scale(1.05)' : 'scale(1)',
+                      boxShadow: selectedDetails.includes(key) 
+                        ? '0 20px 40px rgba(0,0,0,0.3)' 
+                        : '0 10px 20px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <span style={{ fontSize: '4rem', marginBottom: '1rem', display: 'block' }}>
+                      {icons[key as keyof typeof icons]}
+                    </span>
+                    <div style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '1rem', color: selectedDetails.includes(key) ? 'white' : '#ff6b6b' }}>
+                      {titles[key as keyof typeof titles]}
+                    </div>
+                    <div style={{ fontSize: '1.3rem', lineHeight: '1.5', fontWeight: '500' }}>
+                      {detail}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-      {/* Header with section navigation */}
-      <div style={{ padding: '1rem 2rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-          <div style={{ fontSize: '3rem' }}>{seasonalTheme.emoji}</div>
-          <h2 style={{ fontSize: '2rem', fontWeight: '700', margin: '0.5rem 0' }}>
-            {seasonalTheme.season} Learning
-          </h2>
-        </div>
-        
-        {/* Section Navigation */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-          {(['characteristics', 'vocabulary', 'activities'] as const).map((section) => (
-            <button
-              key={section}
-              onClick={() => handleManualNavigation(section)}
-              style={{
-                background: currentSection === section
-                  ? 'rgba(255, 255, 255, 0.3)'
-                  : 'rgba(255, 255, 255, 0.1)',
-                border: currentSection === section ? '2px solid white' : '2px solid transparent',
-                borderRadius: '12px',
-                color: 'white',
-                padding: '0.75rem 1.5rem',
-                fontSize: '1rem',
-                fontWeight: '600',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                position: 'relative'
-              }}
-            >
-              {section.charAt(0).toUpperCase() + section.slice(1)}
-              {completedSections.includes(section) && (
-                <span style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  background: 'rgba(34, 197, 94, 1)',
-                  borderRadius: '50%',
-                  width: '20px',
-                  height: '20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.7rem'
+        {/* Section 4: Next Season + Game */}
+        {currentSection === 4 && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.15)',
+            borderRadius: '30px',
+            padding: '4rem',
+            backdropFilter: 'blur(20px)',
+            border: '3px solid rgba(255, 255, 255, 0.3)',
+            maxWidth: '900px',
+            width: '100%',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '1.5rem', color: '#ffd700', marginBottom: '1rem', fontWeight: '700' }}>
+              Question 4 of 4
+            </div>
+            <div style={{
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+              fontWeight: '800',
+              marginBottom: '2rem',
+              lineHeight: '1.2',
+              textShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+              background: 'linear-gradient(45deg, #fff, #ffd700)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>
+              🔮 What magical season comes next?
+            </div>
+            
+            {/* Next Season Teaser */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '30px',
+              padding: '3rem',
+              border: '3px solid rgba(255, 255, 255, 0.4)',
+              marginBottom: '2rem'
+            }}>
+              <div style={{ fontSize: '2rem', color: '#ffd700', marginBottom: '1rem', fontWeight: '700' }}>
+                {nextSeasonData.emoji} Coming Soon...
+              </div>
+              <div style={{
+                fontSize: '4rem',
+                marginBottom: '1.5rem',
+                fontWeight: '800',
+                background: 'linear-gradient(45deg, #fff, #ffd700, #ff6b6b)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                {nextSeasonData.name.toUpperCase()}!
+              </div>
+              <p style={{ fontSize: '1.6rem', marginBottom: '1.5rem', fontWeight: '600' }}>
+                After {currentSeasonData.name.toLowerCase()}, {nextSeasonData.details.nature.toLowerCase()}!
+              </p>
+              <div style={{ fontSize: '3rem' }}>
+                {nextSeasonData.emoji} {nextSeasonData.emoji} {nextSeasonData.emoji}
+              </div>
+            </div>
+            
+            {/* Season Matching Game */}
+            {!gameState.gameComplete ? (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: '25px',
+                padding: '2rem',
+                margin: '2rem 0',
+                border: '3px solid rgba(255, 255, 255, 0.4)'
+              }}>
+                <h3 style={{ fontSize: '2rem', marginBottom: '1.5rem', fontWeight: '700' }}>
+                  🎮 Season Matching Game!
+                </h3>
+                <p style={{ fontSize: '1.3rem', marginBottom: '2rem', fontWeight: '600' }}>
+                  Match each activity to the right season!
+                </p>
+                
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '2rem',
+                  maxWidth: '600px',
+                  margin: '0 auto'
                 }}>
-                  ✓
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+                  {/* Activities Column */}
+                  <div>
+                    <h4 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: '700' }}>🎯 Activities</h4>
+                    {GAME_ITEMS.filter(item => item.type === 'activity').map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleGameItemClick(item)}
+                        style={{
+                          background: gameState.matches.includes(item.id)
+                            ? 'linear-gradient(45deg, #22c55e, #16a34a)'
+                            : gameState.selectedItems.some(si => si.id === item.id)
+                            ? 'rgba(255, 107, 107, 0.9)'
+                            : 'rgba(255,255,255,0.9)',
+                          color: gameState.matches.includes(item.id) || gameState.selectedItems.some(si => si.id === item.id) ? 'white' : '#333',
+                          padding: '1rem',
+                          margin: '0.5rem 0',
+                          borderRadius: '12px',
+                          cursor: gameState.matches.includes(item.id) ? 'default' : 'pointer',
+                          textAlign: 'center',
+                          fontWeight: '600',
+                          transition: 'all 0.3s ease',
+                          border: gameState.selectedItems.some(si => si.id === item.id) ? '3px solid #ff6b6b' : 'none',
+                          transform: gameState.selectedItems.some(si => si.id === item.id) ? 'scale(1.05)' : 'scale(1)'
+                        }}
+                      >
+                        {item.text}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Seasons Column */}
+                  <div>
+                    <h4 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: '700' }}>🌍 Seasons</h4>
+                    {GAME_ITEMS.filter(item => item.type === 'season').map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleGameItemClick(item)}
+                        style={{
+                          background: gameState.matches.includes(item.id)
+                            ? 'linear-gradient(45deg, #22c55e, #16a34a)'
+                            : gameState.selectedItems.some(si => si.id === item.id)
+                            ? 'rgba(255, 107, 107, 0.9)'
+                            : item.season === 'spring' ? 'rgba(152,251,152,0.9)'
+                            : item.season === 'summer' ? 'rgba(255,215,0,0.9)'
+                            : item.season === 'fall' ? 'rgba(255,140,0,0.9)'
+                            : 'rgba(173,216,230,0.9)',
+                          color: gameState.matches.includes(item.id) || gameState.selectedItems.some(si => si.id === item.id) ? 'white' : '#333',
+                          padding: '1rem',
+                          margin: '0.5rem 0',
+                          borderRadius: '12px',
+                          cursor: gameState.matches.includes(item.id) ? 'default' : 'pointer',
+                          textAlign: 'center',
+                          fontWeight: '600',
+                          transition: 'all 0.3s ease',
+                          border: gameState.selectedItems.some(si => si.id === item.id) ? '3px solid #ff6b6b' : 'none',
+                          transform: gameState.selectedItems.some(si => si.id === item.id) ? 'scale(1.05)' : 'scale(1)'
+                        }}
+                      >
+                        {item.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Video Section - appears after game completion
+              <div style={{
+                background: 'rgba(0, 0, 0, 0.4)',
+                borderRadius: '25px',
+                padding: '2.5rem',
+                border: '3px dashed rgba(255, 255, 255, 0.8)',
+                marginTop: '2rem'
+              }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎬</div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: '600' }}>
+                  Watch an amazing video about seasons!
+                </div>
+                <button
+                  onClick={() => {
+                    // Video functionality will be handled by hub settings
+                    showCelebrationMessage('🎬 Time for an amazing season video! 📺');
+                  }}
+                  style={{
+                    background: 'linear-gradient(45deg, #4facfe, #00f2fe)',
+                    border: 'none',
+                    borderRadius: '15px',
+                    color: 'white',
+                    padding: '20px 40px',
+                    fontSize: '1.3rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  📺 Play Season Adventure!
+                </button>
+                <p style={{ fontSize: '1rem', marginTop: '1rem', opacity: '0.8' }}>
+                  (Teacher selects the perfect video from hub settings)
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Main Content */}
+      {/* Bottom Navigation */}
       <div style={{
-        flex: 1,
-        overflow: 'auto',
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        gap: '15px'
       }}>
-        {currentSection === 'characteristics' && renderCharacteristicsSection()}
-        {currentSection === 'vocabulary' && renderVocabularySection()}
-        {currentSection === 'activities' && renderActivitiesSection()}
-      </div>
-
-      {/* Section-specific navigation (for section progression) */}
-      {currentSection !== 'activities' && (
-        <div style={{
-          flexShrink: 0,
-          padding: '1rem 2rem',
-          display: 'flex',
-          justifyContent: 'center'
-        }}>
+        {currentSection > 1 && (
           <button
-            onClick={() => handleSectionComplete(currentSection)}
+            onClick={goToPreviousSection}
             style={{
-              background: 'rgba(34, 197, 94, 0.8)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '600',
+              background: 'rgba(255, 255, 255, 0.9)',
+              color: '#333',
+              border: '3px solid #ff6b6b',
+              borderRadius: '15px',
+              padding: '18px 30px',
+              fontSize: '1.2rem',
+              fontWeight: '700',
               cursor: 'pointer',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
             }}
           >
-            Continue to {currentSection === 'characteristics' ? 'Vocabulary' : 'Activities'} →
+            ← Back
           </button>
-        </div>
-      )}
-
-      {/* ALWAYS VISIBLE NAVIGATION - QUICK FIX */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        gap: '1rem',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.8)',
-        borderRadius: '20px',
-        padding: '1rem 2rem',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
-      }}>
+        )}
         <button
-          onClick={onBack}
+          onClick={goToNextSection}
           style={{
-            background: 'rgba(156, 163, 175, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
+            background: '#22c55e',
             color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          ← Back
-        </button>
-        
-        <button
-          onClick={onNext}
-          style={{
-            background: 'rgba(34, 197, 94, 0.8)',
-            border: 'none',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
+            border: '3px solid #22c55e',
+            borderRadius: '15px',
+            padding: '18px 30px',
+            fontSize: '1.2rem',
             fontWeight: '700',
             cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-            e.currentTarget.style.transform = 'scale(1)';
+            transition: 'all 0.3s ease',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
           }}
         >
-          Seasonal Learning Complete! →
+          {currentSection === 4 ? 'Finish Season Magic! ✨' : 'Continue Magic →'}
         </button>
       </div>
+
+      {/* Celebration Message */}
+      {showCelebration && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: '2.5rem',
+          fontWeight: '800',
+          background: 'linear-gradient(45deg, #22c55e, #16a34a)',
+          color: 'white',
+          padding: '2rem 3rem',
+          borderRadius: '25px',
+          zIndex: 1000,
+          boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+          animation: 'celebrate 3s ease-in-out'
+        }}>
+          {showCelebration}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes gradientShift {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          33% { transform: translateY(-20px) rotate(120deg); }
+          66% { transform: translateY(-10px) rotate(240deg); }
+        }
+        
+        @keyframes celebrate {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-10deg); }
+          20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+          80% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) rotate(0deg); }
+        }
+      `}</style>
     </div>
   );
 };
 
+// ========================================
+// 🚀 EXPORT - CRITICAL: Must match existing imports
+// ========================================
 export default SeasonalStep;
