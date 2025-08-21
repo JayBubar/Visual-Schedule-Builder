@@ -127,6 +127,11 @@ export interface WeatherStepData {
   };
   selectedClothing: string[];
   customVocabulary: string[];
+  sectionProgress?: {
+    weatherRevealed: boolean;
+    clothingGameComplete: boolean;
+    currentSection: number;
+  };
   completedAt?: Date;
 }
 
