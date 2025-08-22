@@ -412,53 +412,11 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
             </div>
           )}
 
-          {/* Start button */}
-          <button
-            onClick={() => {
-              // Add celebration effect here if needed
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #FF6B35, #FF8E9B)',
-              border: '4px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '25px',
-              color: 'white',
-              padding: '2rem 4rem',
-              fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-              fontWeight: '700',
-              fontFamily: "'Comic Sans MS', 'Trebuchet MS', cursive",
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 10px 30px rgba(255, 107, 53, 0.4)',
-              textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-              marginBottom: '3rem',
-              animation: 'buttonPulse 2s ease-in-out infinite',
-              minHeight: '80px' // Touch-friendly for small hands
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1) translateY(-5px)';
-              e.currentTarget.style.background = 'linear-gradient(135deg, #FF8E9B, #C8A8E9)';
-              e.currentTarget.style.boxShadow = '0 20px 50px rgba(255, 107, 53, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1) translateY(0)';
-              e.currentTarget.style.background = 'linear-gradient(135deg, #FF6B35, #FF8E9B)';
-              e.currentTarget.style.boxShadow = '0 10px 30px rgba(255, 107, 53, 0.4)';
-            }}
-            onMouseDown={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05) translateY(-2px)';
-            }}
-            onMouseUp={(e) => {
-              e.currentTarget.style.transform = 'scale(1.1) translateY(-5px)';
-            }}
-          >
-            Let's Start Our Day! 🚀
-          </button>
         </div>
 
         {/* Navigation Component */}
         <StepNavigation 
           navigation={navigation}
-          customNextText="Let's Take Attendance! →"
         />
       </div>
     </>
