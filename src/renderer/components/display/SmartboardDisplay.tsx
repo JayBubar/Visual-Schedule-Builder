@@ -1110,10 +1110,15 @@ useEffect(() => {
             // TEMPORARY FIX: Always go home
             onNavigateHome?.();
           }}
+          onExit={() => {
+            // Handle navigation back to schedule builder
+            onNavigateHome?.();
+          }}
           onBack={() => {
             // Handle navigation back to schedule builder
             onNavigateHome?.();
           }}
+          students={[]}
         />
       );
     }

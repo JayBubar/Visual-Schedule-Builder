@@ -156,7 +156,9 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
     <MorningMeetingFlow
       hubSettings={hubSettings}
       onComplete={handleMorningMeetingComplete}
+      onExit={handleBackToHub}
       onBack={handleBackToHub}
+      students={[]}
     />
   );
 };

@@ -101,11 +101,16 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     onExit();
   }, [onExit]);
 
+  // Memoize the onDataUpdate callback to prevent recreation on every render
+  const handleCurrentStepDataUpdate = useCallback((data: any) => {
+    handleStepDataUpdate(currentStepKey, data);
+  }, [handleStepDataUpdate, currentStepKey]);
+
   // Create step props - ensure all required props are present
   const stepProps = {
     onNext: goToNextStep,
     onBack: goToPreviousStep,
-    onDataUpdate: (data: any) => handleStepDataUpdate(currentStepKey, data),
+    onDataUpdate: handleCurrentStepDataUpdate,
     stepData: stepData[currentStepKey],
     hubSettings,
     students: students || [], // Always provide students array
