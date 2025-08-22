@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps, BehaviorStepData } from '../types/morningMeetingTypes';
 
 interface ClassroomRule {
@@ -63,8 +63,8 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   hubSettings,
   students = []
 }) => {
-  // Get classroom rules from hub settings or use defaults
-  const getClassroomRules = (): ClassroomRule[] => {
+  // Get classroom rules from hub settings or use defaults - memoized to prevent re-creation
+  const classroomRules = useMemo((): ClassroomRule[] => {
     if (hubSettings?.classroomRules?.rules?.length > 0) {
       return hubSettings.classroomRules.rules.map((rule: any, index: number) => ({
         id: rule.id || `custom-${index}`,
@@ -75,9 +75,7 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
       }));
     }
     return DEFAULT_CLASSROOM_RULES;
-  };
-
-  const classroomRules = getClassroomRules();
+  }, [hubSettings?.classroomRules?.rules]);
   
   const [currentRuleIndex, setCurrentRuleIndex] = useState<number>(
     stepData?.currentRuleIndex || 0

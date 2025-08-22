@@ -1,367 +1,365 @@
-import React, { useState, useEffect } from 'react';
-import { STEP_COMPONENTS, getEnabledStepsInOrder, StepKey } from './steps';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps } from './types/morningMeetingTypes';
-import UnifiedDataService from '../../services/unifiedDataService';
 
-interface HubSettings {
-  welcomePersonalization?: {
-    schoolName: string;
-    teacherName: string;
-    className: string;
-    customMessage?: string;
-  };
-  customVocabulary?: {
-    weather: string[];
-    seasonal: string[];
-  };
-  videos: {
-    calendarMath: Array<{ id: string; name: string; url: string; }>;
-    weatherClothing: Array<{ id: string; name: string; url: string; }>;
-    seasonalLearning: Array<{ id: string; name: string; url: string; }>;
-    behaviorCommitments: Array<{ id: string; name: string; url: string; }>;
-  };
-  behaviorStatements: {
-    enabled: boolean;
-    statements: string[];
-    allowCustom: boolean;
-  };
-  celebrations: any;
-  flowCustomization: {
-    enabledSteps: Record<string, boolean>;
-  };
-}
+// Import all step components
+import WelcomeStep from './steps/WelcomeStep';
+import AttendanceStep from './steps/AttendanceStep';
+import BehaviorStep from './steps/BehaviorStep';
+import CalendarMathStep from './steps/CalendarMathStep';
+import WeatherStep from './steps/WeatherStep';
+import SeasonalStep from './steps/SeasonalStep';
+import CelebrationStep from './steps/CelebrationStep';
+import DayReviewStep from './steps/DayReviewStep';
 
 interface MorningMeetingFlowProps {
-  hubSettings: HubSettings;
   onComplete: () => void;
-  onBack: () => void;
+  onExit: () => void;
+  onBack?: () => void; // Add this optional prop
+  students: any[];
+  hubSettings: any;
 }
 
-interface Student {
-  id: string;
-  name: string;
-  present?: boolean;
-}
+const STEP_ORDER = [
+  'welcome',
+  'attendance', 
+  'classroomRules',
+  'calendarMath',
+  'weather',
+  'seasonal',
+  'celebration',
+  'dayReview'
+] as const;
+
+const STEP_COMPONENTS = {
+  welcome: WelcomeStep,
+  attendance: AttendanceStep,
+  classroomRules: BehaviorStep,
+  calendarMath: CalendarMathStep,
+  weather: WeatherStep,
+  seasonal: SeasonalStep,
+  celebration: CelebrationStep,
+  dayReview: DayReviewStep
+};
+
+const STEP_TITLES = {
+  welcome: 'Welcome',
+  attendance: 'Attendance',
+  classroomRules: 'Classroom Rules',
+  calendarMath: 'Calendar Math',
+  weather: 'Weather',
+  seasonal: 'Seasonal Fun',
+  celebration: 'Celebration',
+  dayReview: 'Day Review'
+};
 
 const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
-  hubSettings,
   onComplete,
-  onBack
+  onExit,
+  students,
+  hubSettings
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepData, setStepData] = useState<Record<string, any>>({});
-  const [students, setStudents] = useState<Student[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Get enabled steps in order
-  const enabledSteps = getEnabledStepsInOrder(hubSettings.flowCustomization.enabledSteps);
-  const currentStepKey = enabledSteps[currentStepIndex];
-  const CurrentStepComponent = STEP_COMPONENTS[currentStepKey];
+  const currentStepKey = STEP_ORDER[currentStepIndex];
+  const CurrentStepComponent = STEP_COMPONENTS[currentStepKey] as React.FC<any>;
 
-  // Load students data - FIXED: removed dependency array to prevent loops
-  useEffect(() => {
-    try {
-      let allStudents = [];
-      if (typeof (UnifiedDataService as any).getAllStudents === 'function') {
-        allStudents = (UnifiedDataService as any).getAllStudents();
-      } else if (typeof (UnifiedDataService as any).getStudents === 'function') {
-        allStudents = (UnifiedDataService as any).getStudents();
-      } else {
-        allStudents = [];
-      }
-      setStudents(allStudents || []);
-    } catch (error) {
-      console.error('Error loading students:', error);
-      setStudents([]);
-    }
-  }, []); // FIXED: Empty dependency array
-
-  // Helper function to get video key for current step
-  const getVideoKey = (stepKey: StepKey): keyof typeof hubSettings.videos => {
-    const videoKeyMap: Record<StepKey, keyof typeof hubSettings.videos> = {
-      welcome: 'calendarMath',
-      attendance: 'calendarMath',
-      behavior: 'behaviorCommitments',
-      calendarMath: 'calendarMath',
-      weather: 'weatherClothing',
-      seasonal: 'seasonalLearning',
-      celebration: 'calendarMath',
-      dayReview: 'calendarMath'
-    };
-    return videoKeyMap[stepKey] || 'calendarMath';
-  };
-
-  const handleNext = () => {
-    if (currentStepIndex < enabledSteps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1);
-    } else {
-      // Save final completion data
-      try {
-        const completionData = {
-          completedAt: new Date(),
-          steps: enabledSteps,
-          stepData,
-          hubSettings: {
-            videos: hubSettings.videos,
-            behaviorStatements: hubSettings.behaviorStatements,
-            celebrations: hubSettings.celebrations
-          }
-        };
-        localStorage.setItem('morningMeetingSession', JSON.stringify(completionData));
-      } catch (error) {
-        console.error('Error saving Morning Meeting session:', error);
-      }
-      onComplete();
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    } else {
-      onBack();
-    }
-  };
-
-  // FIXED: Proper memoization to prevent infinite loops
-  const handleStepDataUpdate = React.useCallback((data: any) => {
+  // Handle step data updates
+  const handleStepDataUpdate = useCallback((stepKey: string, data: any) => {
     setStepData(prev => ({
       ...prev,
-      [currentStepKey]: data
+      [stepKey]: data
     }));
+  }, []);
 
-    // Save step data to localStorage
-    try {
-      const stepDataKey = `morningMeetingStep_${currentStepKey}`;
-      localStorage.setItem(stepDataKey, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error saving step data:', error);
+  // Navigation functions
+  const goToNextStep = useCallback(() => {
+    if (currentStepIndex < STEP_ORDER.length - 1) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentStepIndex(prev => prev + 1);
+        setIsTransitioning(false);
+      }, 200);
+    } else {
+      // Complete Morning Meeting
+      onComplete();
     }
-  }, [currentStepKey]); // FIXED: Only depend on currentStepKey
+  }, [currentStepIndex, onComplete]);
 
-  // Handle case where no steps are enabled
-  if (enabledSteps.length === 0) {
-    return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        textAlign: 'center',
-        padding: '2rem'
-      }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-          No Steps Enabled
-        </h2>
-        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
-          Please enable at least one step in the Morning Meeting Hub settings.
-        </p>
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          ← Back to Hub
-        </button>
-      </div>
-    );
-  }
+  const goToPreviousStep = useCallback(() => {
+    if (currentStepIndex > 0) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentStepIndex(prev => prev - 1);
+        setIsTransitioning(false);
+      }, 200);
+    }
+  }, [currentStepIndex]);
 
-  // Handle case where step component is not found
-  if (!CurrentStepComponent) {
-    return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        textAlign: 'center',
-        padding: '2rem'
-      }}>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem' }}>
-          Step Not Found
-        </h2>
-        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
-          The step "{currentStepKey}" could not be loaded.
-        </p>
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-        >
-          ← Back to Hub
-        </button>
-      </div>
-    );
-  }
+  const handleGoHome = useCallback(() => {
+    onExit();
+  }, [onExit]);
 
-  // Create step props with all necessary data
-  const stepProps: any = {
-    currentDate: new Date(),
-    onNext: handleNext,
-    onBack: handlePrevious,
-    onDataUpdate: handleStepDataUpdate, // FIXED: Now properly memoized
+  // Create step props - ensure all required props are present
+  const stepProps = {
+    onNext: goToNextStep,
+    onBack: goToPreviousStep,
+    onDataUpdate: (data: any) => handleStepDataUpdate(currentStepKey, data),
     stepData: stepData[currentStepKey],
-    hubSettings, // Pass complete hubSettings including videos, welcomePersonalization, customVocabulary
-    students
+    hubSettings,
+    students: students || [], // Always provide students array
+    currentDate: new Date(),
+    // Add any other props that might be needed by specific steps
+    staff: [] // Some steps might need staff
   };
 
   return (
     <div style={{
-      height: '100vh',
-      width: '100vw',
+      width: '100%',
+      height: '100%',
+      position: 'relative',
       overflow: 'hidden',
-      position: 'relative'
+      background: '#000'
     }}>
-      {/* Progress indicator */}
+      {/* 🏠 HOME BUTTON - TOP LEFT ONLY */}
       <div style={{
         position: 'absolute',
         top: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.8)',
-        borderRadius: '20px',
-        padding: '0.5rem 1rem',
-        backdropFilter: 'blur(10px)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem'
+        left: '20px',
+        zIndex: 100
       }}>
-        <span style={{
-          color: 'white',
-          fontSize: '0.9rem',
-          fontWeight: '600'
-        }}>
-          Step {currentStepIndex + 1} of {enabledSteps.length}
-        </span>
-        <div style={{
-          width: '100px',
-          height: '4px',
-          background: 'rgba(255, 255, 255, 0.3)',
-          borderRadius: '2px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${((currentStepIndex + 1) / enabledSteps.length) * 100}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, #34D399, #10B981)',
-            transition: 'width 0.3s ease'
-          }} />
-        </div>
-        <span style={{
-          color: 'rgba(255, 255, 255, 0.8)',
-          fontSize: '0.8rem',
-          textTransform: 'capitalize'
-        }}>
-          {currentStepKey.replace(/([A-Z])/g, ' $1').trim()}
-        </span>
+        <button
+          onClick={handleGoHome}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.5rem',
+            background: 'rgba(255, 255, 255, 0.2)',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '12px',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.3)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+          }}
+        >
+          🏠 Home
+        </button>
       </div>
 
-      {/* Exit Button - FIXED: Added proper exit mechanism */}
-      <button
-        onClick={onBack}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          zIndex: 1001,
-          background: 'rgba(220, 53, 69, 0.8)',
-          border: 'none',
-          borderRadius: '50%',
-          width: '50px',
-          height: '50px',
-          color: 'white',
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+      {/* 📍 STEP INDICATOR - TOP RIGHT (CLEAN & MINIMAL) */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        zIndex: 100
+      }}>
+        <div style={{
+          background: 'rgba(0, 0, 0, 0.4)',
           backdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(220, 53, 69, 1)';
-          e.currentTarget.style.transform = 'scale(1.1)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(220, 53, 69, 0.8)';
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        title="Exit Morning Meeting"
-      >
-        ×
-      </button>
-
-      {/* Step Component */}
-      <CurrentStepComponent {...stepProps} />
-
-      {/* Home Button - FIXED: Added home functionality */}
-      <button
-        onClick={() => {
-          // Close Morning Meeting and return to main app
-          if (typeof window !== 'undefined' && (window as any).electronAPI) {
-            (window as any).electronAPI.send('navigate-home');
-          }
-          onBack();
-        }}
-        style={{
-          position: 'absolute',
-          bottom: '20px',
-          right: '20px',
-          zIndex: 1001,
-          background: 'rgba(52, 152, 219, 0.8)',
-          border: '2px solid rgba(255, 255, 255, 0.3)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
           borderRadius: '12px',
-          color: 'white',
           padding: '0.75rem 1.5rem',
-          fontSize: '1rem',
-          fontWeight: '600',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-          backdropFilter: 'blur(10px)',
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+          color: 'white',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          textAlign: 'center',
+          opacity: 0.9
+        }}>
+          Step {currentStepIndex + 1} of {STEP_ORDER.length}
+          <div style={{
+            fontSize: '0.8rem',
+            opacity: 0.8,
+            marginTop: '0.25rem'
+          }}>
+            {STEP_TITLES[currentStepKey]}
+          </div>
+        </div>
+      </div>
+
+      {/* 🎭 MAIN STEP CONTENT */}
+      <div style={{
+        width: '100%',
+        height: '100%',
+        opacity: isTransitioning ? 0.7 : 1,
+        transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
+        transition: 'all 0.2s ease',
+        position: 'relative'
+      }}>
+        <CurrentStepComponent {...stepProps} />
+      </div>
+
+      {/* 🧭 BOTTOM NAVIGATION - PREVIOUS/NEXT ONLY */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2rem',
+        zIndex: 100
+      }}>
+        <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '0.5rem'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(52, 152, 219, 1)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(52, 152, 219, 0.8)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
-        title="Return to Bloom Classroom Home"
-      >
-        🏠 Home
-      </button>
+          gap: '1.5rem',
+          background: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(15px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '20px',
+          padding: '1rem 2rem',
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)'
+        }}>
+          {/* Previous Button */}
+          {currentStepIndex > 0 && (
+            <button
+              onClick={goToPreviousStep}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.75rem 1.5rem',
+                background: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                border: '2px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '1rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+            >
+              ← Previous
+            </button>
+          )}
+
+          {/* Step Progress Dots (Minimal) */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            {STEP_ORDER.map((_, index) => (
+              <div
+                key={index}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: index === currentStepIndex 
+                    ? 'rgba(255, 255, 255, 0.9)' 
+                    : index < currentStepIndex 
+                      ? 'rgba(76, 175, 80, 0.8)'
+                      : 'rgba(255, 255, 255, 0.3)',
+                  transition: 'all 0.3s ease',
+                  transform: index === currentStepIndex ? 'scale(1.3)' : 'scale(1)'
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={goToNextStep}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              background: currentStepIndex === STEP_ORDER.length - 1
+                ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
+                : 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(10px)',
+              border: '2px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '12px',
+              color: 'white',
+              fontSize: '1rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              if (currentStepIndex === STEP_ORDER.length - 1) {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)';
+              } else {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+              }
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseOut={(e) => {
+              if (currentStepIndex === STEP_ORDER.length - 1) {
+                e.currentTarget.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+              } else {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+              }
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            {currentStepIndex === STEP_ORDER.length - 1 ? 'Complete! 🎉' : 'Next →'}
+          </button>
+        </div>
+      </div>
+
+      {/* CSS for enhanced animations */}
+      <style>{`
+        /* Smooth transitions for all interactive elements */
+        button {
+          user-select: none;
+        }
+        
+        /* Glassmorphism enhancement */
+        .glassmorphism {
+          background: rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Accessibility focus styles */
+        button:focus {
+          outline: 3px solid rgba(255, 215, 0, 0.6);
+          outline-offset: 2px;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+          button {
+            border: 2px solid white !important;
+          }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation: none !important;
+            transition: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
