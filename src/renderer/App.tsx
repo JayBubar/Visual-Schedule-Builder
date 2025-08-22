@@ -188,33 +188,9 @@ const App: React.FC = () => {
   };
 
   const handleStartMyDay = () => {
-    // Create a schedule with Morning Meeting activity using the built-in activity ID
-    const morningMeetingSchedule = {
-      id: 'start-my-day',
-      name: 'Start My Day',
-      type: 'daily' as const,
-      startTime: '08:00',
-      activities: [
-        {
-          id: 'morning-meeting-builtin',
-          name: 'Morning Meeting',
-          icon: '🌅',
-          duration: 30,
-          category: 'routine' as const,
-          type: 'activity' as const,
-          description: 'Daily morning meeting routine'
-        }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Set this as the selected schedule
-    setSelectedSchedule(morningMeetingSchedule);
-    
-    // Close start screen and go directly to display mode
+    // FIX: Go to Morning Meeting Hub first instead of directly to display
     setShowStartScreen(false);
-    setCurrentView('display'); // This will open SmartboardDisplay with MM
+    setCurrentView('calendar'); // This will open MorningMeetingController (Hub)
   };
 
   const handleManageClassroom = () => {

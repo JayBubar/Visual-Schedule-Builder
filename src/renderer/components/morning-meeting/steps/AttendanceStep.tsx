@@ -1,38 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
-// Standardized Navigation Component
+// Navigation Component (reused from existing code)
 const StepNavigation: React.FC<{
   navigation: any;
   customNextText?: string;
-  showProgress?: boolean;
-}> = ({ navigation, customNextText, showProgress = true }) => {
+}> = ({ navigation, customNextText }) => {
+  if (!navigation) return null;
+
   return (
     <div style={{
-      position: 'absolute',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
+      position: 'fixed',
+      bottom: '30px',
+      right: '30px',
       display: 'flex',
-      alignItems: 'center',
-      gap: '2rem',
-      zIndex: 50,
-      background: 'rgba(0, 0, 0, 0.4)',
-      backdropFilter: 'blur(15px)',
-      border: '2px solid rgba(255, 255, 255, 0.2)',
-      borderRadius: '20px',
-      padding: '1rem 2rem',
-      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)'
+      gap: '15px',
+      zIndex: 1000
     }}>
-      {/* Previous Button */}
-      {!navigation.isFirstStep && (
+      {navigation.canGoBack && (
         <button
-          onClick={navigation.onBack}
+          onClick={navigation.goBack}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem 1.5rem',
+            padding: '12px 24px',
             background: 'rgba(255, 255, 255, 0.15)',
             backdropFilter: 'blur(10px)',
             border: '2px solid rgba(255, 255, 255, 0.2)',
@@ -52,32 +41,15 @@ const StepNavigation: React.FC<{
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          ← Previous
+          ← Back
         </button>
       )}
 
-      {/* Progress Indicator */}
-      {showProgress && (
-        <div style={{
-          color: 'white',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          textAlign: 'center',
-          opacity: 0.9
-        }}>
-          Step {navigation.currentStep} of {navigation.totalSteps}
-        </div>
-      )}
-
-      {/* Next Button */}
       <button
-        onClick={navigation.onNext}
+        onClick={navigation.goNext}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          padding: '0.75rem 1.5rem',
-          background: navigation.isLastStep
+          padding: '12px 24px',
+          background: navigation.isLastStep 
             ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
             : 'rgba(255, 255, 255, 0.15)',
           backdropFilter: 'blur(10px)',
@@ -136,6 +108,26 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   students = [],
   navigation
 }) => {
+  // 🔧 DEBUG: Add console logging to diagnose the issue
+  console.log('🚀 AttendanceStep Debug Info:');
+  console.log('📊 Students prop:', students);
+  console.log('📏 Students length:', students?.length || 0);
+  console.log('🎯 Students type:', typeof students, Array.isArray(students));
+  
+  // 🔧 SAFETY CHECK: Ensure students is always an array
+  const safeStudents: Student[] = React.useMemo(() => {
+    if (!students) {
+      console.warn('⚠️ Students prop is null/undefined, using empty array');
+      return [];
+    }
+    if (!Array.isArray(students)) {
+      console.warn('⚠️ Students prop is not an array:', typeof students);
+      return [];
+    }
+    console.log('✅ Students processed successfully:', students.length, 'students');
+    return students as Student[];
+  }, [students]);
+
   // Initialize from stepData or defaults
   const [presentStudents, setPresentStudents] = useState<string[]>(
     stepData?.presentStudents || []
@@ -145,11 +137,19 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   );
   const [showCelebration, setShowCelebration] = useState(false);
 
-  // Calculate counts
-  const totalCount = students.length;
+  // Calculate counts - use safeStudents instead of students
+  const totalCount = safeStudents.length;
   const presentCount = presentStudents.length;
   const absentCount = absentStudents.length;
   const isComplete = presentCount + absentCount === totalCount && totalCount > 0;
+
+  // 🔧 DEBUG: Log the counts
+  console.log('📈 Calculated counts:', {
+    total: totalCount,
+    present: presentCount,
+    absent: absentCount,
+    isComplete
+  });
 
   // Get teacher name from hub settings
   const teacherName = hubSettings?.welcomePersonalization?.teacherName || 'Teacher';
@@ -166,47 +166,49 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
         absentCount,
         completedAt: isComplete ? new Date().toISOString() : undefined
       };
-      onDataUpdate(stepDataUpdate);
+      
+      console.log('📤 Updating step data:', stepDataUpdate);
+      onDataUpdate?.(stepDataUpdate);
     }
   }, [presentStudents, absentStudents, totalCount, presentCount, absentCount, isComplete, onDataUpdate]);
 
-  // 🔧 FIX: Only call data update when attendance state actually changes
+  // Update parent when attendance changes
   useEffect(() => {
     handleDataUpdate();
   }, [handleDataUpdate]);
 
-  // Show celebration when attendance is complete
-  useEffect(() => {
-    if (isComplete && !showCelebration) {
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3000);
-    }
-  }, [isComplete, showCelebration]);
+  // Handle student status toggle
+  const toggleStudentStatus = (studentId: string) => {
+    const wasPresent = presentStudents.includes(studentId);
+    const wasAbsent = absentStudents.includes(studentId);
 
-  const toggleStudentAttendance = (studentId: string) => {
-    if (presentStudents.includes(studentId)) {
-      // Move from present to absent
+    if (wasPresent) {
+      // Present → Absent
       setPresentStudents(prev => prev.filter(id => id !== studentId));
       setAbsentStudents(prev => [...prev, studentId]);
-      // Student marked absent
-    } else if (absentStudents.includes(studentId)) {
-      // Move from absent to present
+    } else if (wasAbsent) {
+      // Absent → Unmarked
       setAbsentStudents(prev => prev.filter(id => id !== studentId));
-      setPresentStudents(prev => [...prev, studentId]);
-      // Student marked present
     } else {
-      // First time marking - default to present
+      // Unmarked → Present
       setPresentStudents(prev => [...prev, studentId]);
-      // Student marked present
+      
+      // Show celebration after a brief delay
+      setTimeout(() => setShowCelebration(true), 100);
+      setTimeout(() => setShowCelebration(false), 1500);
     }
   };
 
+  // Quick action: Mark all present
   const markAllPresent = () => {
-    const allStudentIds = students.map(student => student.id);
+    const allStudentIds = safeStudents.map(s => s.id);
     setPresentStudents(allStudentIds);
     setAbsentStudents([]);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 2000);
   };
 
+  // Quick action: Reset attendance
   const resetAttendance = () => {
     setPresentStudents([]);
     setAbsentStudents([]);
@@ -214,285 +216,202 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
 
   return (
     <div style={{
-      height: '100%',
-      background: 'linear-gradient(135deg, #FF6B35 0%, #FF8E9B 50%, #C8A8E9 100%)',
-      display: 'flex',
-      flexDirection: 'column',
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
+      padding: '2rem',
       position: 'relative',
-      overflow: 'hidden'
+      display: 'flex',
+      flexDirection: 'column'
     }}>
-      {/* Floating Sparkles */}
-      <div style={{
-        position: 'absolute',
-        top: '15%',
-        left: '8%',
-        fontSize: '2rem',
-        animation: 'float 4s ease-in-out infinite',
-        opacity: 0.6,
-        pointerEvents: 'none',
-        zIndex: 1
-      }}>✨</div>
-      <div style={{
-        position: 'absolute',
-        top: '25%',
-        right: '12%',
-        fontSize: '2rem',
-        animation: 'float 4s ease-in-out infinite 1s',
-        opacity: 0.6,
-        pointerEvents: 'none',
-        zIndex: 1
-      }}>⭐</div>
-      <div style={{
-        position: 'absolute',
-        bottom: '20%',
-        left: '15%',
-        fontSize: '2rem',
-        animation: 'float 4s ease-in-out infinite 2s',
-        opacity: 0.6,
-        pointerEvents: 'none',
-        zIndex: 1
-      }}>🌟</div>
-
-      {/* Celebration Overlay */}
-      {showCelebration && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(0, 0, 0, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          animation: 'fadeIn 0.3s ease-out'
-        }}>
-          <div style={{
-            textAlign: 'center',
-            color: 'white',
-            animation: 'scaleIn 0.5s ease-out'
-          }}>
-            <div style={{
-              fontSize: '4rem',
-              marginBottom: '1rem',
-              animation: 'bounce 1s ease-in-out infinite'
-            }}>🎉</div>
-            <h2 style={{
-              fontSize: '2.5rem',
-              margin: '0 0 0.5rem 0',
-              fontWeight: 700
-            }}>
-              Everyone Ready to Learn!
-            </h2>
-            <p style={{
-              fontSize: '1.3rem',
-              margin: 0,
-              opacity: 0.9,
-              fontWeight: 500
-            }}>
-              {presentCount} amazing students present today! ✨
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div style={{
-        padding: '2rem',
         textAlign: 'center',
-        background: 'rgba(255, 255, 255, 0.15)',
-        backdropFilter: 'blur(15px)',
-        borderBottom: '3px solid rgba(255, 255, 255, 0.3)'
+        marginBottom: '2rem'
       }}>
         <h1 style={{
-          fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+          fontSize: '3rem',
           fontWeight: 800,
-          textShadow: '3px 3px 6px rgba(0, 0, 0, 0.3)',
-          marginBottom: '0.5rem',
-          animation: 'glow 3s ease-in-out infinite'
+          margin: 0,
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+          background: 'linear-gradient(45deg, #FFD93D, #FF6B6B)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent'
         }}>
-          🎊 Let's Count Our Friends!
+          📋 Let's Count Our Friends!
         </h1>
-        <div style={{
+        <p style={{
           fontSize: '1.3rem',
-          color: 'rgba(255, 255, 255, 0.9)',
+          margin: '1rem 0 0 0',
+          opacity: 0.9,
           fontWeight: 600
         }}>
-          Who's here learning with {teacherName} today?
-        </div>
+          {teacherName}'s Class Attendance
+        </p>
       </div>
 
-      {/* Main Content - Two Column Layout */}
+      {/* 🔧 DEBUG INFO - Remove this after fixing */}
+      <div style={{
+        background: 'rgba(255, 255, 0, 0.1)',
+        border: '2px solid rgba(255, 255, 0, 0.3)',
+        borderRadius: '10px',
+        padding: '1rem',
+        marginBottom: '2rem',
+        fontSize: '0.9rem'
+      }}>
+        <strong>🔧 Debug Info:</strong><br/>
+        Students Array Length: {safeStudents.length}<br/>
+        Students Data: {safeStudents.map(s => s.name).join(', ')}<br/>
+        Present: {presentCount} | Absent: {absentCount} | Total: {totalCount}
+      </div>
+
       <div style={{
         flex: 1,
-        display: 'grid',
-        gridTemplateColumns: '1fr 300px',
-        gap: '2rem',
-        padding: '2rem',
-        overflow: 'hidden'
+        display: 'flex',
+        gap: '2rem'
       }}>
-        {/* Left Column - Student Grid */}
+        {/* Student Grid */}
         <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
+          flex: 2,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem',
+          alignContent: 'start'
         }}>
-          <h2 style={{
-            fontSize: '1.8rem',
-            fontWeight: 700,
-            marginBottom: '1rem',
-            textAlign: 'center',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
-          }}>
-            👥 Click Each Friend!
-          </h2>
-
-          {students.length > 0 ? (
+          {safeStudents.length === 0 ? (
+            // 🔧 ENHANCED ERROR STATE
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: '1rem',
-              overflow: 'auto',
-              padding: '0.5rem'
-            }}>
-              {students.map((student: Student) => {
-                const isPresent = presentStudents.includes(student.id);
-                const isAbsent = absentStudents.includes(student.id);
-                const isUnmarked = !isPresent && !isAbsent;
-
-                return (
-                  <div
-                    key={student.id}
-                    onClick={() => toggleStudentAttendance(student.id)}
-                    style={{
-                      background: isPresent 
-                        ? 'rgba(76, 175, 80, 0.4)' 
-                        : isAbsent 
-                          ? 'rgba(244, 67, 54, 0.4)' 
-                          : 'rgba(255, 255, 255, 0.15)',
-                      borderRadius: '16px',
-                      padding: '1.5rem 1rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      border: isPresent
-                        ? '3px solid rgba(76, 175, 80, 0.8)'
-                        : isAbsent
-                          ? '3px solid rgba(244, 67, 54, 0.8)'
-                          : '3px solid rgba(255, 255, 255, 0.3)',
-                      textAlign: 'center',
-                      position: 'relative',
-                      backdropFilter: 'blur(10px)',
-                      transform: isPresent ? 'scale(1.02)' : 'scale(1)'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = isPresent ? 'scale(1.05)' : 'scale(1.03)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = isPresent ? 'scale(1.02)' : 'scale(1)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    {/* Status Icon */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      fontSize: '1.2rem'
-                    }}>
-                      {isPresent ? '✅' : isAbsent ? '❌' : '❓'}
-                    </div>
-
-                    {/* Student Photo */}
-                    <div style={{
-                      width: '50px',
-                      height: '50px',
-                      borderRadius: '50%',
-                      background: student.photo 
-                        ? `url(${student.photo}) center/cover`
-                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      margin: '0 auto 0.75rem auto',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '1.2rem',
-                      fontWeight: 700,
-                      color: 'white',
-                      border: '2px solid rgba(255, 255, 255, 0.4)'
-                    }}>
-                      {!student.photo && student.name.charAt(0).toUpperCase()}
-                    </div>
-
-                    {/* Student Name */}
-                    <div style={{
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      marginBottom: '0.25rem',
-                      lineHeight: '1.2'
-                    }}>
-                      {student.name}
-                    </div>
-
-                    {/* Status Text */}
-                    <div style={{
-                      fontSize: '0.8rem',
-                      opacity: 0.9,
-                      fontWeight: 500
-                    }}>
-                      {isPresent ? 'Here! ✅' : isAbsent ? 'Absent ❌' : 'Tap me!'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderRadius: '20px',
-              backdropFilter: 'blur(15px)',
-              border: '3px solid rgba(255, 255, 255, 0.2)',
+              gridColumn: '1 / -1',
+              background: 'rgba(255, 0, 0, 0.2)',
+              border: '2px solid rgba(255, 0, 0, 0.5)',
+              borderRadius: '15px',
+              padding: '2rem',
               textAlign: 'center'
             }}>
-              <div>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>No Students Found</h3>
-                <p style={{ fontSize: '1.1rem', opacity: 0.9 }}>
-                  Add students to your classroom to take attendance!
-                </p>
-              </div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+              <h3 style={{ margin: '0 0 1rem 0' }}>No Students Found!</h3>
+              <p style={{ margin: 0, opacity: 0.9 }}>
+                Check that students are properly loaded from Hub Settings.
+                <br/>
+                Students prop type: {typeof students}
+                <br/>
+                Is array: {Array.isArray(students) ? 'Yes' : 'No'}
+              </p>
             </div>
+          ) : (
+            safeStudents.map((student) => {
+              const isPresent = presentStudents.includes(student.id);
+              const isAbsent = absentStudents.includes(student.id);
+              
+              return (
+                <div
+                  key={student.id}
+                  onClick={() => toggleStudentStatus(student.id)}
+                  style={{
+                    background: isPresent 
+                      ? 'rgba(76, 175, 80, 0.4)' 
+                      : isAbsent 
+                        ? 'rgba(244, 67, 54, 0.4)'
+                        : 'rgba(255, 255, 255, 0.15)',
+                    border: isPresent 
+                      ? '3px solid #4CAF50' 
+                      : isAbsent 
+                        ? '3px solid #f44336'
+                        : '3px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '20px',
+                    padding: '1.5rem',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    backdropFilter: 'blur(10px)',
+                    position: 'relative',
+                    transition: 'all 0.3s ease',
+                    transform: isPresent ? 'scale(1.02)' : 'scale(1)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = isPresent ? 'scale(1.05)' : 'scale(1.03)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.2)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = isPresent ? 'scale(1.02)' : 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {/* Status Icon */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    fontSize: '1.2rem'
+                  }}>
+                    {isPresent ? '✅' : isAbsent ? '❌' : '❓'}
+                  </div>
+
+                  {/* Student Photo */}
+                  <div style={{
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: student.photo 
+                      ? `url(${student.photo}) center/cover`
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    margin: '0 auto 0.75rem auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.2rem',
+                    fontWeight: 700,
+                    color: 'white',
+                    border: '2px solid rgba(255, 255, 255, 0.4)'
+                  }}>
+                    {!student.photo && student.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Student Name */}
+                  <div style={{
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    marginBottom: '0.25rem',
+                    lineHeight: '1.2'
+                  }}>
+                    {student.name}
+                  </div>
+
+                  {/* Status Text */}
+                  <div style={{
+                    fontSize: '0.8rem',
+                    opacity: 0.9,
+                    fontWeight: 500
+                  }}>
+                    {isPresent ? 'Here! ✅' : isAbsent ? 'Absent ❌' : 'Tap me!'}
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
 
-        {/* Right Column - Math Magic & Controls */}
+        {/* Stats Panel */}
         <div style={{
+          flex: 1,
+          minWidth: '300px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.5rem'
+          gap: '1rem'
         }}>
-          {/* Math Magic Display */}
           <div style={{
             background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(15px)',
             borderRadius: '20px',
             padding: '2rem',
-            backdropFilter: 'blur(15px)',
-            border: '3px solid rgba(255, 255, 255, 0.2)',
-            textAlign: 'center'
+            border: '2px solid rgba(255, 255, 255, 0.2)'
           }}>
             <h3 style={{
-              fontSize: '1.5rem',
+              margin: '0 0 1.5rem 0',
+              fontSize: '1.4rem',
               fontWeight: 700,
-              marginBottom: '1.5rem',
-              color: '#FFD93D',
-              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
+              textAlign: 'center'
             }}>
-              🧮 Math Magic!
+              📊 Attendance Count
             </h3>
 
             {/* Live Counting Display */}
@@ -580,25 +499,15 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
             padding: '1.5rem',
             textAlign: 'center',
             border: isComplete 
-              ? '3px solid rgba(76, 175, 80, 0.6)' 
-              : '3px solid rgba(255, 255, 255, 0.2)',
+              ? '2px solid rgba(76, 175, 80, 0.6)'
+              : '2px solid rgba(255, 255, 255, 0.2)',
             backdropFilter: 'blur(10px)'
           }}>
             {isComplete ? (
               <div>
-                <div style={{
-                  fontSize: '2rem',
-                  marginBottom: '0.5rem',
-                  animation: 'bounce 1s ease-in-out infinite'
-                }}>
-                  🎉
-                </div>
-                <div style={{
-                  fontSize: '1.2rem',
-                  fontWeight: 700,
-                  color: '#4CAF50'
-                }}>
-                  Everyone → Ready to Learn!
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🎉</div>
+                <div style={{ fontSize: '1rem', fontWeight: 600 }}>
+                  Great job counting!
                 </div>
               </div>
             ) : (
@@ -669,45 +578,33 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       </div>
 
+      {/* Celebration Animation */}
+      {showCelebration && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: '4rem',
+          animation: 'bounce 1s ease-out',
+          zIndex: 9999,
+          pointerEvents: 'none'
+        }}>
+          🎉
+        </div>
+      )}
+
       {/* Navigation Component */}
       <StepNavigation 
         navigation={navigation}
         customNextText="Time for Classroom Rules! →"
       />
 
-      {/* CSS Animations */}
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-          50% { transform: translateY(-20px) rotate(180deg) scale(1.1); }
-        }
-        
-        @keyframes glow {
-          0%, 100% { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3); }
-          50% { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.3); }
-        }
-        
         @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-          from { transform: scale(0.8); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-          .main-content {
-            grid-template-columns: 1fr !important;
-            grid-template-rows: 1fr auto !important;
-          }
+          0%, 20%, 60%, 100% { transform: translate(-50%, -50%) translateY(0); }
+          40% { transform: translate(-50%, -50%) translateY(-30px); }
+          80% { transform: translate(-50%, -50%) translateY(-15px); }
         }
       `}</style>
     </div>
