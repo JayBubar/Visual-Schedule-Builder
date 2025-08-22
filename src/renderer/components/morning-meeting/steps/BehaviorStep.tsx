@@ -92,27 +92,21 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
 
   // Memoized data update function with error handling
   const handleDataUpdate = useCallback(() => {
-    if (typeof onDataUpdate === 'function') {
+    // Only update when we have meaningful progress
+    if (currentRuleIndex > 0 || learnedRules.size > 0) {
       const stepDataUpdate: BehaviorStepData = {
         currentRuleIndex,
         learnedRules: Array.from(learnedRules),
         completedAt: learnedRules.size === classroomRules.length ? new Date() : undefined,
         totalRules: classroomRules.length
       };
-      try {
-        onDataUpdate(stepDataUpdate);
-      } catch (error) {
-        console.warn('Error calling onDataUpdate:', error);
-      }
+      onDataUpdate(stepDataUpdate);
     }
   }, [currentRuleIndex, learnedRules, classroomRules.length, onDataUpdate]);
 
-  // Update data when state changes
   useEffect(() => {
-    if (typeof onDataUpdate === 'function') {
-      handleDataUpdate();
-    }
-  }, [currentRuleIndex, learnedRules, handleDataUpdate]);
+    handleDataUpdate();
+  }, [handleDataUpdate]);
 
   // Check for completion
   useEffect(() => {

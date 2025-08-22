@@ -57,14 +57,17 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
 
   // Save data callback
   const saveStepData = useCallback(() => {
-    const data: CelebrationStepData = {
-      currentSection,
-      discoveredBirthdays,
-      selectedCelebrations,
-      wiggleCelebrationCompleted,
-      completedAt: new Date()
-    };
-    onDataUpdate(data);
+    // Only update when we have meaningful progress
+    if (currentSection > 1 || discoveredBirthdays.length > 0 || selectedCelebrations.length > 0) {
+      const data: CelebrationStepData = {
+        currentSection,
+        discoveredBirthdays,
+        selectedCelebrations,
+        wiggleCelebrationCompleted,
+        completedAt: new Date()
+      };
+      onDataUpdate(data);
+    }
   }, [currentSection, discoveredBirthdays, selectedCelebrations, wiggleCelebrationCompleted, onDataUpdate]);
 
   // Initialize celebrations on mount

@@ -120,7 +120,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
   // 💾 DATA PERSISTENCE - Enhanced with section tracking
   const handleDataUpdate = useCallback(() => {
-    if (currentWeather) {
+    // Only update when we have meaningful progress
+    if (currentSection > 0 || selectedClothing.length > 0 || weatherRevealed) {
       const stepData: WeatherStepData = {
         currentWeather,
         selectedClothing,
@@ -137,12 +138,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
     }
   }, [currentWeather, selectedClothing, currentSection, weatherRevealed, clothingGameComplete, customVocabulary, onDataUpdate]);
 
-  // 🔄 DATA UPDATE TRIGGER - Optimized to prevent infinite loops
   useEffect(() => {
-    if (currentWeather && (selectedClothing.length > 0 || weatherRevealed || currentSection > 0)) {
-      handleDataUpdate();
-    }
-  }, [currentWeather, selectedClothing, weatherRevealed, currentSection, handleDataUpdate]);
+    handleDataUpdate();
+  }, [handleDataUpdate]);
 
   // Continue to Part 2...
 // 🌤️ WEATHERSTEP TRANSFORMATION - PART 2: WEATHER LOGIC & CLOTHING DATABASE

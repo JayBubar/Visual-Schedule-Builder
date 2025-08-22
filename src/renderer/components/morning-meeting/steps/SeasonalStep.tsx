@@ -157,20 +157,27 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   // ========================================
   // 💾 DATA PERSISTENCE (Compatible with existing system)
   // ========================================
-  useEffect(() => {
-    const stepData: SeasonalStepData = {
-      currentSeason,
-      currentSection: currentSection === 1 ? 'characteristics' : 
-                     currentSection === 2 ? 'vocabulary' : 'activities',
-      completedSections: completedSections.map(s => 
-        s === 1 ? 'characteristics' : s === 2 ? 'vocabulary' : 'activities'
-      ),
-      completedActivities: gameState.matches,
-      learnedVocabulary: selectedDetails,
-      completedAt: completedSections.length >= 4 ? new Date() : undefined
-    };
-    onDataUpdate(stepData);
+  const handleDataUpdate = useCallback(() => {
+    // Only update when we have meaningful progress
+    if (currentSection > 1 || completedSections.length > 0 || selectedDetails.length > 0) {
+      const stepData: SeasonalStepData = {
+        currentSeason,
+        currentSection: currentSection === 1 ? 'characteristics' : 
+                       currentSection === 2 ? 'vocabulary' : 'activities',
+        completedSections: completedSections.map(s => 
+          s === 1 ? 'characteristics' : s === 2 ? 'vocabulary' : 'activities'
+        ),
+        completedActivities: gameState.matches,
+        learnedVocabulary: selectedDetails,
+        completedAt: completedSections.length >= 4 ? new Date() : undefined
+      };
+      onDataUpdate(stepData);
+    }
   }, [currentSection, completedSections, selectedDetails, gameState.matches, currentSeason, onDataUpdate]);
+
+  useEffect(() => {
+    handleDataUpdate();
+  }, [handleDataUpdate]);
   // ========================================
   // 🎮 INTERACTION HANDLERS
   // ========================================
