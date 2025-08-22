@@ -61,23 +61,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
   // 🎬 VIDEO INTEGRATION - Maintained from original
   const selectedVideos = hubSettings?.videos?.weatherClothing || [];
 
-  // 📚 CUSTOM VOCABULARY - Enhanced logic from original
-  const getSeasonalVocabulary = (): string[] => {
-    // FIRST: Check Hub custom vocabulary (new pattern)
-    if (hubSettings?.customVocabulary?.weather?.length > 0) {
-      return hubSettings.customVocabulary.weather;
-    }
-    
-    // SECOND: Check weather API custom vocabulary (legacy support)
-    if (hubSettings?.weatherAPI?.customVocabulary?.length > 0) {
-      return hubSettings.weatherAPI.customVocabulary;
-    }
-    
-    // THIRD: Use enhanced defaults
-    return ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy', 'partly cloudy', 'stormy'];
-  };
-
-  const customVocabulary = getSeasonalVocabulary();
+  // 📚 CUSTOM VOCABULARY - Removed to prevent infinite loop (moved to handleDataUpdate)
 
   // 🌱 SEASON DETECTION - Enhanced from original with gradients
   const getSeason = (date: Date): SeasonInfo => {
@@ -122,10 +106,21 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
   const handleDataUpdate = useCallback(() => {
     // Only update when we have meaningful progress
     if (currentSection > 0 || selectedClothing.length > 0 || weatherRevealed) {
+      // Calculate vocabulary inside callback to avoid dependency issues
+      const getCustomVocabulary = (): string[] => {
+        if (hubSettings?.customVocabulary?.weather?.length > 0) {
+          return hubSettings.customVocabulary.weather;
+        }
+        if (hubSettings?.weatherAPI?.customVocabulary?.length > 0) {
+          return hubSettings.weatherAPI.customVocabulary;
+        }
+        return ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy', 'partly cloudy', 'stormy'];
+      };
+
       const stepData: WeatherStepData = {
         currentWeather,
         selectedClothing,
-        customVocabulary,
+        customVocabulary: getCustomVocabulary(),
         completedAt: currentSection === 2 ? new Date().toISOString() : undefined,
         // ✨ NEW: Track section progress
         sectionProgress: {
@@ -136,7 +131,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       };
       onDataUpdate(stepData);
     }
-  }, [currentWeather, selectedClothing, currentSection, weatherRevealed, clothingGameComplete, customVocabulary, onDataUpdate]);
+  }, [currentWeather, selectedClothing, currentSection, weatherRevealed, clothingGameComplete, hubSettings, onDataUpdate]);
 
   useEffect(() => {
     handleDataUpdate();
