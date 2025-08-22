@@ -64,7 +64,6 @@ export interface HubSettings {
   celebrations: {
     enabled: boolean;
     showBirthdayPhotos: boolean;
-    customCelebrations: Celebration[];
   };
   flowCustomization: {
     enabledSteps: Record<string, boolean>;

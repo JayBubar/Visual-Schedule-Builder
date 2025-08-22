@@ -35,7 +35,7 @@ interface CelebrationStepData {
   discoveredBirthdays: string[];
   selectedCelebrations: string[];
   wiggleCelebrationCompleted: boolean;
-  completedAt?: Date;
+  completedAt?: string;  // Make sure this is string, not Date
 }
 
 const CelebrationStep: React.FC<CelebrationStepProps> = ({
