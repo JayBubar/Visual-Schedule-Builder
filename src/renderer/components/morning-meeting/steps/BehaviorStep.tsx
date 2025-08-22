@@ -1,6 +1,117 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps, BehaviorStepData } from '../types/morningMeetingTypes';
 
+// Standardized Navigation Component
+const StepNavigation: React.FC<{
+  navigation: any;
+  customNextText?: string;
+  showProgress?: boolean;
+}> = ({ navigation, customNextText, showProgress = true }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2rem',
+      zIndex: 50,
+      background: 'rgba(0, 0, 0, 0.4)',
+      backdropFilter: 'blur(15px)',
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      borderRadius: '20px',
+      padding: '1rem 2rem',
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)'
+    }}>
+      {/* Previous Button */}
+      {!navigation.isFirstStep && (
+        <button
+          onClick={navigation.onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.5rem',
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          ← Previous
+        </button>
+      )}
+
+      {/* Progress Indicator */}
+      {showProgress && (
+        <div style={{
+          color: 'white',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          textAlign: 'center',
+          opacity: 0.9
+        }}>
+          Step {navigation.currentStep} of {navigation.totalSteps}
+        </div>
+      )}
+
+      {/* Next Button */}
+      <button
+        onClick={navigation.onNext}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.75rem 1.5rem',
+          background: navigation.isLastStep
+            ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
+            : 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseOver={(e) => {
+          if (navigation.isLastStep) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)';
+          } else {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+          }
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseOut={(e) => {
+          if (navigation.isLastStep) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+          } else {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+          }
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {navigation.isLastStep ? 'Complete! ✨' : customNextText || 'Next →'}
+      </button>
+    </div>
+  );
+};
+
 interface ClassroomRule {
   id: string;
   title: string;
@@ -61,7 +172,8 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   onDataUpdate,
   stepData,
   hubSettings,
-  students = []
+  students = [],
+  navigation
 }) => {
   // Get classroom rules from hub settings or use defaults - memoized to prevent re-creation
   const classroomRules = useMemo((): ClassroomRule[] => {
@@ -606,78 +718,11 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
           )}
         </div>
 
-        {/* NAVIGATION */}
-        <div style={{
-          position: 'fixed',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '1rem',
-          zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.8)',
-          borderRadius: '20px',
-          padding: '1rem 2rem'
-        }}>
-          <button
-            onClick={onBack}
-            style={{
-              background: 'rgba(156, 163, 175, 0.8)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 163, 175, 1)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(156, 163, 175, 0.8)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            ← Back
-          </button>
-          <button
-            onClick={onNext}
-            disabled={learnedRules.size < classroomRules.length}
-            style={{
-              background: learnedRules.size === classroomRules.length 
-                ? 'rgba(34, 197, 94, 0.8)' 
-                : 'rgba(156, 163, 175, 0.5)',
-              border: 'none',
-              borderRadius: '12px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1rem',
-              fontWeight: '700',
-              cursor: learnedRules.size === classroomRules.length ? 'pointer' : 'not-allowed',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (learnedRules.size === classroomRules.length) {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 1)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (learnedRules.size === classroomRules.length) {
-                e.currentTarget.style.background = 'rgba(34, 197, 94, 0.8)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }
-            }}
-          >
-            {learnedRules.size === classroomRules.length 
-              ? 'Rules Complete! →' 
-              : `Learn ${classroomRules.length - learnedRules.size} More Rules`
-            }
-          </button>
-        </div>
+        {/* Navigation Component */}
+        <StepNavigation 
+          navigation={navigation}
+          customNextText="Calendar Math Time! →"
+        />
 
         {/* Confetti Elements */}
         {confettiElements}

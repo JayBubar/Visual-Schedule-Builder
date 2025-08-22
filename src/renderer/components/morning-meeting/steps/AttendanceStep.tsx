@@ -1,6 +1,117 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
+// Standardized Navigation Component
+const StepNavigation: React.FC<{
+  navigation: any;
+  customNextText?: string;
+  showProgress?: boolean;
+}> = ({ navigation, customNextText, showProgress = true }) => {
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '2rem',
+      zIndex: 50,
+      background: 'rgba(0, 0, 0, 0.4)',
+      backdropFilter: 'blur(15px)',
+      border: '2px solid rgba(255, 255, 255, 0.2)',
+      borderRadius: '20px',
+      padding: '1rem 2rem',
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)'
+    }}>
+      {/* Previous Button */}
+      {!navigation.isFirstStep && (
+        <button
+          onClick={navigation.onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.75rem 1.5rem',
+            background: 'rgba(255, 255, 255, 0.15)',
+            backdropFilter: 'blur(10px)',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          ← Previous
+        </button>
+      )}
+
+      {/* Progress Indicator */}
+      {showProgress && (
+        <div style={{
+          color: 'white',
+          fontSize: '0.9rem',
+          fontWeight: 600,
+          textAlign: 'center',
+          opacity: 0.9
+        }}>
+          Step {navigation.currentStep} of {navigation.totalSteps}
+        </div>
+      )}
+
+      {/* Next Button */}
+      <button
+        onClick={navigation.onNext}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.75rem 1.5rem',
+          background: navigation.isLastStep
+            ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
+            : 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseOver={(e) => {
+          if (navigation.isLastStep) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)';
+          } else {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+          }
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseOut={(e) => {
+          if (navigation.isLastStep) {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+          } else {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+          }
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {navigation.isLastStep ? 'Complete! ✨' : customNextText || 'Next →'}
+      </button>
+    </div>
+  );
+};
+
 interface Student {
   id: string;
   name: string;
@@ -22,7 +133,8 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   onDataUpdate,
   stepData,
   hubSettings,
-  students = []
+  students = [],
+  navigation
 }) => {
   // Initialize from stepData or defaults
   const [presentStudents, setPresentStudents] = useState<string[]>(
@@ -557,81 +669,11 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       </div>
 
-      {/* Navigation */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '2rem',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.2)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '20px',
-        padding: '1rem 2rem',
-        minWidth: '300px'
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '16px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(10px)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          ← Back
-        </button>
-        
-        <button
-          onClick={onNext}
-          style={{
-            background: isComplete 
-              ? 'rgba(76, 175, 80, 0.8)' 
-              : 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '16px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1.1rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(10px)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = isComplete
-              ? 'rgba(76, 175, 80, 0.9)'
-              : 'rgba(255, 255, 255, 0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = isComplete
-              ? 'rgba(76, 175, 80, 0.8)'
-              : 'rgba(255, 255, 255, 0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          {isComplete ? 'Ready to Learn! →' : 'Continue →'}
-        </button>
-      </div>
+      {/* Navigation Component */}
+      <StepNavigation 
+        navigation={navigation}
+        customNextText="Time for Classroom Rules! →"
+      />
 
       {/* CSS Animations */}
       <style>{`

@@ -27,6 +27,14 @@ export interface MorningMeetingStepProps {
   hubSettings?: HubSettings;
   students?: Student[];
   staff?: StaffMember[];
+  navigation: {
+    currentStep: number;
+    totalSteps: number;
+    onNext: () => void;
+    onBack: () => void;
+    isFirstStep: boolean;
+    isLastStep: boolean;
+  };
 }
 
 // Hub Settings Interface

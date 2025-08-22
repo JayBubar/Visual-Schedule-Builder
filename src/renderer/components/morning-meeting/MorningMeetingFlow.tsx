@@ -106,6 +106,16 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     handleStepDataUpdate(currentStepKey, data);
   }, [handleStepDataUpdate, currentStepKey]);
 
+  // Create navigation props
+  const navigationProps = {
+    currentStep: currentStepIndex + 1,
+    totalSteps: STEP_ORDER.length,
+    onNext: goToNextStep,
+    onBack: goToPreviousStep,
+    isFirstStep: currentStepIndex === 0,
+    isLastStep: currentStepIndex === STEP_ORDER.length - 1
+  };
+
   // Create step props - ensure all required props are present
   const stepProps = {
     onNext: goToNextStep,
@@ -116,7 +126,8 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     students: students || [], // Always provide students array
     currentDate: new Date(),
     // Add any other props that might be needed by specific steps
-    staff: [] // Some steps might need staff
+    staff: [], // Some steps might need staff
+    navigation: navigationProps
   };
 
   return (
@@ -167,35 +178,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         </button>
       </div>
 
-      {/* 📍 STEP INDICATOR - TOP RIGHT (CLEAN & MINIMAL) */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-        zIndex: 100
-      }}>
-        <div style={{
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '12px',
-          padding: '0.75rem 1.5rem',
-          color: 'white',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          textAlign: 'center',
-          opacity: 0.9
-        }}>
-          Step {currentStepIndex + 1} of {STEP_ORDER.length}
-          <div style={{
-            fontSize: '0.8rem',
-            opacity: 0.8,
-            marginTop: '0.25rem'
-          }}>
-            {STEP_TITLES[currentStepKey]}
-          </div>
-        </div>
-      </div>
 
       {/* 🎭 MAIN STEP CONTENT */}
       <div style={{
@@ -209,126 +191,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         <CurrentStepComponent {...stepProps} />
       </div>
 
-      {/* 🧭 BOTTOM NAVIGATION - PREVIOUS/NEXT ONLY */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '2rem',
-        zIndex: 100
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1.5rem',
-          background: 'rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(15px)',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '20px',
-          padding: '1rem 2rem',
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)'
-        }}>
-          {/* Previous Button */}
-          {currentStepIndex > 0 && (
-            <button
-              onClick={goToPreviousStep}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                background: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(10px)',
-                border: '2px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '12px',
-                color: 'white',
-                fontSize: '1rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              ← Previous
-            </button>
-          )}
-
-          {/* Step Progress Dots (Minimal) */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            {STEP_ORDER.map((_, index) => (
-              <div
-                key={index}
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: index === currentStepIndex 
-                    ? 'rgba(255, 255, 255, 0.9)' 
-                    : index < currentStepIndex 
-                      ? 'rgba(76, 175, 80, 0.8)'
-                      : 'rgba(255, 255, 255, 0.3)',
-                  transition: 'all 0.3s ease',
-                  transform: index === currentStepIndex ? 'scale(1.3)' : 'scale(1)'
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Next Button */}
-          <button
-            onClick={goToNextStep}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.75rem 1.5rem',
-              background: currentStepIndex === STEP_ORDER.length - 1
-                ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
-                : 'rgba(255, 255, 255, 0.15)',
-              backdropFilter: 'blur(10px)',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '12px',
-              color: 'white',
-              fontSize: '1rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseOver={(e) => {
-              if (currentStepIndex === STEP_ORDER.length - 1) {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)';
-              } else {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-              }
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseOut={(e) => {
-              if (currentStepIndex === STEP_ORDER.length - 1) {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
-              } else {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-              }
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            {currentStepIndex === STEP_ORDER.length - 1 ? 'Complete! 🎉' : 'Next →'}
-          </button>
-        </div>
-      </div>
 
       {/* CSS for enhanced animations */}
       <style>{`
