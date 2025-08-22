@@ -95,20 +95,20 @@ export interface WelcomeStepData {
     className: string;
   };
   showedGreeting: boolean;
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 export interface AttendanceStepData {
   presentStudents: string[];
   absentStudents: string[];
   attendanceNotes?: Record<string, string>;
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 export interface BehaviorStepData {
   currentRuleIndex?: number;
   learnedRules?: string[];
-  completedAt?: Date;
+  completedAt?: string;
   totalRules?: number;
 }
 
@@ -122,7 +122,7 @@ export interface CalendarMathStepData {
   currentLevel: 'day' | 'week' | 'month'; // ✅ ADDED: Current difficulty level
   completedLevels: string[]; // ✅ ADDED: Completed difficulty levels
   timeSpentSeconds: number; // ✅ ADDED: Time tracking
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 export interface WeatherStepData {
@@ -141,7 +141,7 @@ export interface WeatherStepData {
     clothingGameComplete: boolean;
     currentSection: number;
   };
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 export interface SeasonalStepData {
@@ -150,7 +150,7 @@ export interface SeasonalStepData {
   completedSections: string[];
   completedActivities: string[];
   learnedVocabulary: string[];
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 export interface CelebrationStepData {
@@ -158,7 +158,7 @@ export interface CelebrationStepData {
   customCelebrations: string[];
   celebrationMessages: Record<string, string>;
   showedCelebrations: boolean;
-  completedAt?: Date;
+  completedAt?: string;
 }
 
 // ✅ ADDED: DayReviewStep Data Interface

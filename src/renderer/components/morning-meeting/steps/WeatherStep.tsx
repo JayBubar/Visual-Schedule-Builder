@@ -1,7 +1,7 @@
 // 🌤️ WEATHERSTEP TRANSFORMATION - PART 1: CORE STRUCTURE
 // File: WeatherStep.tsx (Part 1 of 6)
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps, WeatherStepData } from '../types/morningMeetingTypes';
 
 // Enhanced interfaces for weather system
@@ -36,7 +36,7 @@ interface SeasonInfo {
 }
 
 const WeatherStep: React.FC<MorningMeetingStepProps> = ({
-  currentDate,
+  currentDate = new Date(),
   onNext,
   onBack,
   onDataUpdate,
@@ -63,9 +63,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
   // 📚 CUSTOM VOCABULARY - Removed to prevent infinite loop (moved to handleDataUpdate)
 
-  // 🌱 SEASON DETECTION - Enhanced from original with gradients
-  const getSeason = (date: Date): SeasonInfo => {
-    const month = date.getMonth() + 1;
+  // 🌱 SEASON DETECTION - Enhanced from original with gradients (memoized)
+  const season = useMemo((): SeasonInfo => {
+    const month = currentDate.getMonth() + 1;
     if (month >= 3 && month <= 5) return { 
       name: 'Spring', 
       emoji: '🌸', 
@@ -90,9 +90,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       color: '#3B82F6',
       bgGradient: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1E40AF 100%)'
     };
-  };
-
-  const season = getSeason(currentDate);
+  }, [currentDate]);
 
   // 🔧 DEBUG LOGGING - Maintained from original
   useEffect(() => {
@@ -122,7 +120,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
         selectedClothing,
         customVocabulary: getCustomVocabulary(),
         completedAt: currentSection === 2 ? new Date().toISOString() : undefined,
-        // ✨ NEW: Track section progress
+        // ✨ NEW: Track section progress (stable object)
         sectionProgress: {
           weatherRevealed,
           clothingGameComplete,
@@ -181,7 +179,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
 
   // ⚡ WEATHER DATA GENERATION - Enhanced from original with better seasonal logic
   const generateMockWeather = (): WeatherData => {
-    const conditions = customVocabulary;
+    const conditions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy', 'partly cloudy', 'stormy'];
     
     // 🎲 Smart seasonal condition selection
     let seasonalConditions = conditions;
