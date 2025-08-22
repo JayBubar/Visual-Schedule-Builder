@@ -74,6 +74,16 @@ export interface HubSettings {
     apiKey?: string;
     customVocabulary?: string[];
   };
+  classroomRules?: {
+    rules: Array<{
+      id: string;
+      title: string;
+      description: string;
+      emoji: string;
+      explanation: string;
+    }>;
+  };
+  dailyAnnouncements?: DailyAnnouncements[];
 }
 
 // Individual Step Data Interfaces
@@ -96,11 +106,10 @@ export interface AttendanceStepData {
 }
 
 export interface BehaviorStepData {
-  selectedCommitments: string[];
-  studentCommitments: Record<string, string[]>;
-  currentView: 'selection' | 'confirmation' | 'complete';
-  presentStudents: string[];
+  currentRuleIndex?: number;
+  learnedRules?: string[];
   completedAt?: Date;
+  totalRules?: number;
 }
 
 export interface CalendarMathStepData {
@@ -161,6 +170,15 @@ export interface DayReviewStepData {
 }
 
 // Supporting Types
+export interface DailyAnnouncements {
+  date: string; // toDateString() format
+  announcements: {
+    text: string;
+    icon?: string;
+    type?: 'info' | 'warning' | 'celebration';
+  }[];
+}
+
 export interface Celebration {
   id: string;
   name: string;
