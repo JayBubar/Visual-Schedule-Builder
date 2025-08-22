@@ -33,8 +33,7 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   const classInfo = getClassInfo();
 
   useEffect(() => {
-    console.log('👋 DEBUG WelcomeStep hubSettings:', hubSettings);
-    console.log('👋 DEBUG Welcome message:', hubSettings?.welcomePersonalization?.customMessage);
+    // Hub settings loaded
   }, [hubSettings]);
 
   useEffect(() => {
@@ -304,7 +303,6 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
           {/* Start button */}
           <button
             onClick={() => {
-              console.log('🎉 WelcomeStep - Let\'s Start Our Day button clicked!');
               // Add celebration effect here if needed
             }}
             style={{

@@ -76,16 +76,16 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       // Move from present to absent
       setPresentStudents(prev => prev.filter(id => id !== studentId));
       setAbsentStudents(prev => [...prev, studentId]);
-      console.log(`Attendance for student ${studentId} on ${new Date().toDateString()}: Absent`);
+      // Student marked absent
     } else if (absentStudents.includes(studentId)) {
       // Move from absent to present
       setAbsentStudents(prev => prev.filter(id => id !== studentId));
       setPresentStudents(prev => [...prev, studentId]);
-      console.log(`Attendance for student ${studentId} on ${new Date().toDateString()}: Present`);
+      // Student marked present
     } else {
       // First time marking - default to present
       setPresentStudents(prev => [...prev, studentId]);
-      console.log(`Attendance for student ${studentId} on ${new Date().toDateString()}: Present`);
+      // Student marked present
     }
   };
 

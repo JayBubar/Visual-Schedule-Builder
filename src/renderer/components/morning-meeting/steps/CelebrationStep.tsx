@@ -112,7 +112,6 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
 
       setTodaysCelebrations(celebrations);
     } catch (error) {
-      console.error('Error loading celebrations:', error);
       setTodaysCelebrations([]);
     }
   }, []);
@@ -223,7 +222,7 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
         };
       }
     } catch (error) {
-      console.error('Error getting custom celebration:', error);
+      // Error getting custom celebration
     }
     
     return null;

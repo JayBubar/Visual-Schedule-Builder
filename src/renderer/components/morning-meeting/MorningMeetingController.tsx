@@ -75,11 +75,10 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
         }
       };
 
-      console.log('🔧 DEBUG: Complete hubSettings being passed to Flow:', completeHubSettings);
+      // Complete hubSettings being passed to Flow
       setHubSettings(completeHubSettings);
       setCurrentMode('flow');
     } catch (error) {
-      console.error('Error loading Morning Meeting settings:', error);
       // Fallback to default settings
       setHubSettings({
         welcomePersonalization: {

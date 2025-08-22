@@ -92,12 +92,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
     };
   }, [currentDate]);
 
-  // 🔧 DEBUG LOGGING - Maintained from original
+  // Hub settings loaded
   useEffect(() => {
-    console.log('🌤️ DEBUG WeatherStep hubSettings:', hubSettings);
-    console.log('🌤️ DEBUG Custom vocabulary:', hubSettings?.customVocabulary?.weather);
-    console.log('🌤️ DEBUG Videos:', hubSettings?.videos?.weatherClothing);
-    console.log('🌤️ DEBUG Weather API:', hubSettings?.weatherAPI);
+    // Hub settings loaded
   }, [hubSettings]);
 
   // 💾 DATA PERSISTENCE - Enhanced with section tracking
@@ -287,7 +284,6 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
       if (hubSettings?.weatherAPI?.enabled && hubSettings?.weatherAPI?.apiKey) {
         // TODO: Implement actual API call here
         // For now, use enhanced mock data
-        console.log('🌐 Weather API enabled but using mock data for demo');
         setCurrentWeather(generateMockWeather());
       } else {
         // 🎲 Use enhanced mock weather data
@@ -1223,14 +1219,13 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
             <button
               key={index}
               onClick={() => {
-                console.log('🎬 Opening weather video:', video.url);
                 const newWindow = window.open(
                   video.url, 
                   `weather-video-${index}`, 
                   'width=800,height=600,scrollbars=yes,resizable=yes'
                 );
                 if (!newWindow) {
-                  console.error('Failed to open video window - popup blocker may be active');
+                  // Video window failed to open - likely due to popup blocker
                 }
               }}
               style={{
