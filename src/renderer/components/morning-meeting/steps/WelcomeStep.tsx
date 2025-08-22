@@ -53,7 +53,7 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
         welcomeMessage,
         classInfo,
         showedGreeting: showGreeting,
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
       };
       onDataUpdate(stepData);
     }

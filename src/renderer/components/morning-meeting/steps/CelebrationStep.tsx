@@ -64,7 +64,7 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
         discoveredBirthdays,
         selectedCelebrations,
         wiggleCelebrationCompleted,
-        completedAt: new Date()
+        completedAt: new Date().toISOString()
       };
       onDataUpdate(data);
     }

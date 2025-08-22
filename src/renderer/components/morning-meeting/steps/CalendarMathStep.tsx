@@ -114,7 +114,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       currentLevel: 'day',
       completedLevels: Array.from(completedQuestions).map(q => questions[q].id),
       timeSpentSeconds: timeSpentSeconds,
-      completedAt: completedQuestions.size === questions.length ? new Date() : undefined
+      completedAt: completedQuestions.size === questions.length ? new Date().toISOString() : undefined
     };
     onDataUpdate(stepData);
   }, [currentQuestion, completedQuestions, timeSpentSeconds]); // Fixed: removed circular dependencies

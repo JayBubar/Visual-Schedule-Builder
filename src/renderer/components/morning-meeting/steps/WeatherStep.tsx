@@ -126,7 +126,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({
         currentWeather,
         selectedClothing,
         customVocabulary,
-        completedAt: currentSection === 2 ? new Date() : undefined,
+        completedAt: currentSection === 2 ? new Date().toISOString() : undefined,
         // ✨ NEW: Track section progress
         sectionProgress: {
           weatherRevealed,

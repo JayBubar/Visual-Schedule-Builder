@@ -97,7 +97,7 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
       const stepDataUpdate: BehaviorStepData = {
         currentRuleIndex,
         learnedRules: Array.from(learnedRules),
-        completedAt: learnedRules.size === classroomRules.length ? new Date() : undefined,
+        completedAt: learnedRules.size === classroomRules.length ? new Date().toISOString() : undefined,
         totalRules: classroomRules.length
       };
       onDataUpdate(stepDataUpdate);

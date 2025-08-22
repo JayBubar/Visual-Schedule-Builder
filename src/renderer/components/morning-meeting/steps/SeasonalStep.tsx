@@ -169,7 +169,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
         ),
         completedActivities: gameState.matches,
         learnedVocabulary: selectedDetails,
-        completedAt: completedSections.length >= 4 ? new Date() : undefined
+        completedAt: completedSections.length >= 4 ? new Date().toISOString() : undefined
       };
       onDataUpdate(stepData);
     }
