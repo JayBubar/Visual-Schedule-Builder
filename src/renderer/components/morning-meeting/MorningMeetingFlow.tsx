@@ -31,7 +31,16 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isStepComplete, setIsStepComplete] = useState(true);
 
-  const steps = [WelcomeStep, AttendanceStep, WeatherStep, SeasonalStep, CalendarMathStep, DayReviewStep, BehaviorStep, CelebrationStep];
+  const steps = [
+    WelcomeStep,
+    AttendanceStep,
+    BehaviorStep,      // This was previously named ClassroomRulesStep in your code
+    CalendarMathStep,
+    WeatherStep,
+    SeasonalStep,
+    CelebrationStep,
+    DayReviewStep,
+  ];
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -66,6 +75,27 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
 
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative' }}>
+      {/* FIX: Add the Home button here */}
+      <button
+        onClick={onBackToHub}
+        style={{
+          position: 'absolute',
+          top: '2rem',
+          right: '2rem',
+          zIndex: 1000,
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          color: 'white',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          fontSize: '1rem',
+          fontWeight: 600
+        }}
+      >
+        🏠 Home
+      </button>
+
       {CurrentStepComponent && <CurrentStepComponent {...stepProps} />}
 
       <MorningMeetingNavigation

@@ -3,6 +3,7 @@ import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, Sched
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
 import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
+import { loadScheduleForDate } from './utils/schedulePersistence';
 import StartScreen from './components/common/StartScreen';
 import Navigation from './components/common/Navigation';
 import ScheduleBuilder from './components/builder/ScheduleBuilder';
@@ -23,9 +24,15 @@ const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('builder');
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleVariation | null>(null);
+  const [activeSchedule, setActiveSchedule] = useState<any[] | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
+
+  // Get hubSettings from UnifiedDataService
+  const hubSettings = useMemo(() => {
+    return UnifiedDataService.getSettings();
+  }, []);
 
   useEffect(() => {
     try {
@@ -187,10 +194,21 @@ const App: React.FC = () => {
     saveToStorage('vsb_activities', updatedActivities);
   };
 
-  const handleStartMyDay = () => {
-    // FIX: Go to Morning Meeting Hub first instead of directly to display
-    setShowStartScreen(false);
-    setCurrentView('calendar'); // This will open MorningMeetingController (Hub)
+  // FIX: Update the start day logic
+  const handleStartDay = async () => {
+    const today = new Date();
+    const savedSchedule = await loadScheduleForDate(today);
+
+    if (savedSchedule && savedSchedule.activities && savedSchedule.activities.length > 0) {
+      // If a schedule for today exists, load it
+      setActiveSchedule(savedSchedule.activities);
+      setShowStartScreen(false);
+      setCurrentView('display'); // Go directly to the smartboard display
+    } else {
+      // Otherwise, start with a fresh Morning Meeting
+      setShowStartScreen(false);
+      setCurrentView('calendar'); // This will open MorningMeetingController (Hub)
+    }
   };
 
   const handleManageClassroom = () => {
@@ -297,7 +315,7 @@ const App: React.FC = () => {
     }))}>
       {showStartScreen ? (
         <StartScreen
-          onStartMyDay={handleStartMyDay}
+          onStartMyDay={handleStartDay}
           onManageClassroom={handleManageClassroom}
         />
       ) : (
@@ -306,7 +324,11 @@ const App: React.FC = () => {
             isActive={true}
             students={students}
             staff={staffMembers}
-            currentSchedule={selectedSchedule ? {
+            currentSchedule={activeSchedule ? {
+              activities: activeSchedule,
+              startTime: '09:00',
+              name: 'Daily Schedule'
+            } : selectedSchedule ? {
               activities: selectedSchedule.activities,
               startTime: selectedSchedule.startTime,
               name: selectedSchedule.name

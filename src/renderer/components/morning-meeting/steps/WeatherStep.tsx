@@ -111,8 +111,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
       <div style={styles.leftColumn}>
         <h1 style={styles.leftTitle}>{season.emoji} Weather Adventure</h1>
         <div onClick={() => setInternalSection(0)} style={{...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {})}}>1. Discover</div>
-        <div onClick={() => setInternalSection(1)} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
-        <div onClick={() => setInternalSection(2)} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
+        <div onClick={() => { if(weatherRevealed) setInternalSection(1)}} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
+        <div onClick={() => { if(isClothingComplete) setInternalSection(2)}} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
       </div>
       <div style={styles.rightColumn}>
         {renderContent()}
@@ -124,26 +124,26 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
 
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { height: '100%', display: 'flex', gap: '2rem', padding: '2rem', background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', fontFamily: 'system-ui, sans-serif' },
-    leftColumn: { width: '300px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', color: '#333' },
+    leftColumn: { width: '300px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', color: 'white' },
     rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', position: 'relative' },
-    leftTitle: { fontSize: '2rem', fontWeight: 700, marginBottom: '2rem' },
+    leftTitle: { fontSize: '2rem', fontWeight: 700, marginBottom: '2rem', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.2)' },
     progressItem: { fontSize: '1.2rem', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 500, transition: 'all 0.3s ease', cursor: 'pointer' },
-    progressItemActive: { background: 'rgba(0, 123, 255, 0.1)', fontWeight: 700, color: '#0056b3' },
-    rightPanelTitle: { fontSize: '2.5rem', fontWeight: 700, color: '#333', textAlign: 'center' },
-    rightPanelSubtitle: { fontSize: '1.2rem', color: '#555', textAlign: 'center', marginBottom: '2rem' },
-    discoveryBox: { transition: 'all 0.5s ease', padding: '2rem', borderRadius: '16px', background: 'rgba(255,255,255,0.5)', textAlign: 'center' },
+    progressItemActive: { background: 'rgba(255, 255, 255, 0.3)', fontWeight: 700 },
+    rightPanelTitle: { fontSize: '2.5rem', fontWeight: 700, color: 'white', textShadow: '0 2px 5px rgba(0,0,0,0.3)', textAlign: 'center' },
+    rightPanelSubtitle: { fontSize: '1.2rem', color: 'white', opacity: 0.9, textAlign: 'center', marginBottom: '2rem' },
+    discoveryBox: { transition: 'all 0.5s ease', padding: '2rem', borderRadius: '16px', background: 'rgba(255,255,255,0.2)', textAlign: 'center', color: 'white' },
     weatherEmoji: { fontSize: '5rem' },
     weatherTemp: { fontSize: '4rem', fontWeight: 700 },
     weatherCondition: { fontSize: '1.5rem' },
-    actionButton: { marginTop: '2rem', padding: '1rem 2rem', fontSize: '1.2rem', background: '#007bff', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer' },
+    actionButton: { marginTop: '2rem', padding: '1rem 2rem', fontSize: '1.2rem', background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
     gridContainer: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '100%' },
-    card: { background: 'rgba(255, 255, 255, 0.8)', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s ease-in-out' },
+    card: { background: 'rgba(255, 255, 255, 0.7)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s ease-in-out', color: '#333' },
     cardSelected: { background: '#28a745', color: 'white', transform: 'scale(1.05)' },
     cardEmoji: { fontSize: '3rem' },
     cardTitle: { fontSize: '1.2rem', fontWeight: 600 },
     internalNavBar: { position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem' },
-    internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none' },
-    disabledButton: { background: '#6c757d', cursor: 'not-allowed' },
+    internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: 'rgba(0, 86, 179, 0.7)', color: 'white', border: '1px solid rgba(255,255,255,0.5)' },
+    disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
 };
 
 export default WeatherStep;

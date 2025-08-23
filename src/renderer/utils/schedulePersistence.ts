@@ -873,6 +873,16 @@ class SchedulePersistence {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
   }
+
+  // Load schedule for a specific date
+  loadScheduleForDate(date: Date): SavedSchedule | null {
+    const dateString = date.toISOString().split('T')[0];
+    const schedules = this.getSchedules();
+    
+    // Find schedule that matches the date
+    const schedule = schedules.find(s => s.date === dateString);
+    return schedule || null;
+  }
 }
 
 // Create singleton instance
@@ -892,4 +902,9 @@ export {
   DEFAULT_GROUP_TEMPLATES,
   upgradeActivityToEnhanced,
   loadScheduleWithMigration
+};
+
+// Export the loadScheduleForDate function
+export const loadScheduleForDate = (date: Date) => {
+  return schedulePersistence.loadScheduleForDate(date);
 };
