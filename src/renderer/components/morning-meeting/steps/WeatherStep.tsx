@@ -11,6 +11,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
   const [selectedClothing, setSelectedClothing] = useState<string[]>([]);
   const [weatherRevealed, setWeatherRevealed] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState('');
 
   const season = useMemo(() => {
       const month = currentDate.getMonth() + 1;
@@ -35,8 +37,15 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
       {emoji: '💧', title: 'Stay Hydrated', description: 'Drink lots of water!'},
       {emoji: '🧴', title: 'Use Sunscreen', description: 'Protect your skin.'},
   ], []);
+  
+  const triggerCelebration = useCallback((message: string) => {
+    setCelebrationMessage(message);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 2500);
+  }, []);
 
   useEffect(() => {
+    // Report completion to the main flow ONLY when the final section is reached.
     if (internalSection === 2) {
       onStepComplete?.();
     }
@@ -44,8 +53,19 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
 
   const handleInternalNext = () => { if (internalSection < 2) setInternalSection(internalSection + 1); };
   const handleInternalBack = () => { if (internalSection > 0) setInternalSection(internalSection - 1); };
-  const revealWeather = () => setWeatherRevealed(true);
-  const toggleClothing = (item: string) => setSelectedClothing(p => p.includes(item) ? p.filter(i => i !== item) : [...p, item]);
+  
+  const revealWeather = () => {
+    setWeatherRevealed(true);
+    triggerCelebration("You found the weather! ☀️");
+  };
+
+  const toggleClothing = (item: string) => {
+      const newSelection = selectedClothing.includes(item) ? selectedClothing.filter(i => i !== item) : [...selectedClothing, item];
+      setSelectedClothing(newSelection);
+      if (newSelection.length >= 2) {
+          triggerCelebration("Great choices! You're ready for the day!");
+      }
+  };
   const isClothingComplete = selectedClothing.length >= 2;
 
   const handleSectionSelect = (index: number) => {
@@ -107,7 +127,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
       return (
           <div style={styles.internalNavBar}>
               {internalSection > 0 && <button onClick={handleInternalBack} style={styles.internalNavButton}>Back</button>}
-              {internalSection < 2 && <button onClick={handleInternalNext} disabled={!canGoNext} style={{...styles.internalNavButton, ...(!canGoNext ? styles.disabledButton : {})}}>Next</button>}
+              {internalSection < 2 && <button onClick={handleInternalNext} disabled={!canGoNext} style={{...styles.internalNavButton, ...(!canGoNext ? styles.disabledButton : {})}}>Next Section</button>}
           </div>
       );
   };
@@ -116,25 +136,37 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
     <div style={styles.pageContainer}>
       <div style={styles.leftColumn}>
         <h1 style={styles.leftTitle}>{season.emoji} Weather Adventure</h1>
-        <div onClick={() => handleSectionSelect(0)} style={{...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {})}}>1. Discover</div>
-        <div onClick={() => handleSectionSelect(1)} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
-        <div onClick={() => handleSectionSelect(2)} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
+        <p style={styles.leftSubtitle}>Let's find out about today's weather!</p>
+        <div style={styles.divider}></div>
+        <div style={styles.progressList}>
+            <div onClick={() => handleSectionSelect(0)} style={{...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {})}}>1. Discover</div>
+            <div onClick={() => handleSectionSelect(1)} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
+            <div onClick={() => handleSectionSelect(2)} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
+        </div>
       </div>
       <div style={styles.rightColumn}>
         {renderContent()}
         {showInternalNav()}
       </div>
+       {showCelebration && (
+        <div style={styles.celebrationOverlay}>
+            <div style={styles.celebrationMessage}>{celebrationMessage}</div>
+        </div>
+       )}
     </div>
   );
 };
 
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { height: '100%', display: 'flex', gap: '2rem', padding: '2rem', background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', fontFamily: 'system-ui, sans-serif' },
-    leftColumn: { width: '300px', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', color: 'white' },
-    rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', position: 'relative' },
-    leftTitle: { fontSize: '2rem', fontWeight: 700, marginBottom: '2rem', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.2)' },
-    progressItem: { fontSize: '1.2rem', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 500, transition: 'all 0.3s ease', cursor: 'pointer' },
-    progressItemActive: { background: 'rgba(255, 255, 255, 0.3)', fontWeight: 700 },
+    leftColumn: { width: '300px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: '24px', padding: '2rem', color: 'white' },
+    rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', position: 'relative' },
+    leftTitle: { fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '0.5rem' },
+    leftSubtitle: { fontSize: '1.2rem', opacity: 0.9, marginBottom: '2rem' },
+    divider: { height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.3)', margin: '1rem 0 2rem 0' },
+    progressList: { flex: 1, overflowY: 'auto' },
+    progressItem: { fontSize: '1.2rem', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 500, transition: 'all 0.3s ease', cursor: 'pointer', opacity: 0.7 },
+    progressItemActive: { background: 'rgba(255, 255, 255, 0.3)', fontWeight: 700, opacity: 1 },
     rightPanelTitle: { fontSize: '2.5rem', fontWeight: 700, color: 'white', textShadow: '0 2px 5px rgba(0,0,0,0.3)', textAlign: 'center' },
     rightPanelSubtitle: { fontSize: '1.2rem', color: 'white', opacity: 0.9, textAlign: 'center', marginBottom: '2rem' },
     discoveryBox: { transition: 'all 0.5s ease', padding: '2rem', borderRadius: '16px', background: 'rgba(255,255,255,0.2)', textAlign: 'center', color: 'white' },
@@ -144,12 +176,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     actionButton: { marginTop: '2rem', padding: '1rem 2rem', fontSize: '1.2rem', background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 15px rgba(0,0,0,0.2)' },
     gridContainer: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '100%' },
     card: { background: 'rgba(255, 255, 255, 0.7)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s ease-in-out', color: '#333' },
-    cardSelected: { background: '#28a745', color: 'white', transform: 'scale(1.05)' },
+    cardSelected: { background: '#28a745', color: 'white', transform: 'scale(1.05)', boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)' },
     cardEmoji: { fontSize: '3rem' },
     cardTitle: { fontSize: '1.2rem', fontWeight: 600 },
     internalNavBar: { position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem' },
     internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: 'rgba(0, 86, 179, 0.7)', color: 'white', border: '1px solid rgba(255,255,255,0.5)' },
     disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
+    celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+    celebrationMessage: { padding: '2rem 4rem', background: 'linear-gradient(45deg, #28a745, #20c997)', color: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontSize: '2rem', fontWeight: 700, animation: 'celebrate 2.5s ease-in-out forwards' },
 };
 
 export default WeatherStep;
