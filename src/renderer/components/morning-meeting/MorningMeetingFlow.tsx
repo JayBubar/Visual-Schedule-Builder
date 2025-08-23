@@ -69,11 +69,10 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       {CurrentStepComponent && <CurrentStepComponent {...stepProps} />}
 
       <MorningMeetingNavigation
-        currentStep={currentStepIndex + 1}
-        totalSteps={steps.length}
         onNext={handleNext}
         onBack={handleBack}
         isNextDisabled={!isStepComplete}
+        isBackDisabled={currentStepIndex === 0}
       />
     </div>
   );

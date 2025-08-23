@@ -126,6 +126,23 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
     return false;
   };
 
+  // FIX: This effect checks the status of each internal section
+  // and calls onStepComplete() when the requirements are met.
+  useEffect(() => {
+    let isComplete = false;
+    switch (currentSection) {
+      case 1: isComplete = selectedSeasons.length === 4; break;
+      case 2: isComplete = revealedSeason; break;
+      case 3: isComplete = selectedDetails.length === 4; break;
+      case 4: isComplete = gameState.gameComplete; break;
+      default: isComplete = false;
+    }
+
+    if (isComplete) {
+      onStepComplete?.();
+    }
+  }, [currentSection, selectedSeasons, revealedSeason, selectedDetails, gameState.gameComplete, onStepComplete]);
+
   // ========================================
   // 🎨 RENDER LOGIC
   // ========================================
