@@ -132,7 +132,6 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation,
   onStepComplete
 }) => {
   // 🔧 FIX: Load students from UnifiedDataService instead of relying on props

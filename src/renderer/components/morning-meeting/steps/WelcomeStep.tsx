@@ -120,7 +120,6 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation,
   onStepComplete
 }) => {
   const [showGreeting, setShowGreeting] = useState(false);

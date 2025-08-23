@@ -61,7 +61,9 @@ export interface MorningMeetingStepProps {
 
 // Data types for each step
 export interface BehaviorStepData {
-  commitments: { studentId: string; statementId: string }[];
+  currentRuleIndex: number;
+  learnedRules: string[];
+  totalRules: number;
   completedAt?: string;
 }
 export interface WeatherStepData { /* ... */ }

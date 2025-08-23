@@ -173,7 +173,6 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation,
   onStepComplete
 }) => {
   // Get classroom rules from hub settings or use defaults - memoized to prevent re-creation
