@@ -33,21 +33,41 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Questions configuration
-  const questions = [
+  // Date calculations - MOVE TO TOP
+  const today = currentDate || new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Arrays defined BEFORE useMemo
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Format day name function - MOVE TO TOP
+  const formatDayName = (date: Date): string => {
+    return dayNames[date.getDay()];
+  };
+
+  // NOW the questions useMemo with correct dependencies
+  const questions = React.useMemo(() => [
     {
       id: 'months-in-year',
-      question: "How many months are in the year?",
+      question: "How many months are in a year?",
       interaction: 'count-months',
-      celebration: "Amazing! There are 12 months in a year! 🎉",
-      buttonText: "Let's Count!"
+      celebration: "Perfect! There are 12 months in a year! 🎉",
+      buttonText: "Count the Months!"
     },
     {
       id: 'current-month',
       question: "What month are we in?",
       interaction: 'highlight-current-month',
-      celebration: "Perfect! We're in August! 🌟",
-      buttonText: "Show Current Month!"
+      celebration: `Great job! We're in ${monthNames[today.getMonth()]}! 🌟`,
+      buttonText: "Show This Month!"
     },
     {
       id: 'days-in-week',
@@ -60,48 +80,29 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
       id: 'today',
       question: "And what is today?",
       interaction: 'highlight-today',
-      celebration: "That's right! Today is Wednesday! ⭐",
+      celebration: `Today is ${formatDayName(today)}! ⭐`,
       buttonText: "That's Today!"
     },
     {
       id: 'yesterday',
       question: "So what does that mean yesterday was?",
       interaction: 'show-yesterday',
-      celebration: "Smart thinking! Yesterday was Tuesday! 🧠",
+      celebration: `Smart thinking! Yesterday was ${formatDayName(yesterday)}! 🧠`,
       buttonText: "Show Yesterday!"
     },
     {
       id: 'tomorrow',
       question: "Then tomorrow must be!",
       interaction: 'show-tomorrow',
-      celebration: "Brilliant! Tomorrow will be Thursday! 🚀",
+      celebration: `Brilliant! Tomorrow will be ${formatDayName(tomorrow)}! 🚀`,
       buttonText: "Show Tomorrow!"
     }
-  ];
-
-  // Date calculations
-  const today = currentDate || new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  ], [today, yesterday, tomorrow]); // Remove monthNames from dependencies since it's static
 
   const monthEmojis = [
     '❄️', '💕', '🌸', '🌷', '🌺', '☀️',
     '🏖️', '🌻', '🍎', '🎃', '🦃', '🎄'
   ];
-
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-  // Format day name
-  const formatDayName = (date: Date): string => {
-    return dayNames[date.getDay()];
-  };
 
   // Save step data with proper dependencies
   useEffect(() => {
