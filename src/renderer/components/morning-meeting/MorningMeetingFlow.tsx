@@ -1,7 +1,7 @@
 // src/renderer/components/morning-meeting/MorningMeetingFlow.tsx
 
 import React, { useState } from 'react';
-import { HubSettings, Student } from '../../types';
+import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMeetingTypes';
 
 // Import all your step components
 import WelcomeStep from './steps/WelcomeStep';
@@ -13,10 +13,9 @@ import DayReviewStep from './steps/DayReviewStep';
 import BehaviorStep from './steps/BehaviorStep';
 import CelebrationStep from './steps/CelebrationStep';
 
-// Import the new navigation component
 import MorningMeetingNavigation from './common/MorningMeetingNavigation';
 
-interface MorningMeetingFlowProps {
+export interface MorningMeetingFlowProps {
   students: Student[];
   hubSettings: HubSettings;
   onComplete: () => void;
@@ -30,23 +29,14 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   onBackToHub,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [isStepComplete, setIsStepComplete] = useState(false);
+  const [isStepComplete, setIsStepComplete] = useState(true);
 
-  const steps = [
-    WelcomeStep,
-    AttendanceStep,
-    WeatherStep,
-    SeasonalStep,
-    CalendarMathStep,
-    DayReviewStep,
-    BehaviorStep,
-    CelebrationStep,
-  ];
+  const steps = [WelcomeStep, AttendanceStep, WeatherStep, SeasonalStep, CalendarMathStep, DayReviewStep, BehaviorStep, CelebrationStep];
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
-      setIsStepComplete(false); // Reset for the new step
+      setIsStepComplete(steps[currentStepIndex + 1] === CelebrationStep || steps[currentStepIndex + 1] === WelcomeStep); 
     } else {
       onComplete();
     }
@@ -55,7 +45,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const handleBack = () => {
     if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
-      setIsStepComplete(true); // Assume previous steps are always complete
+      setIsStepComplete(true);
     } else {
       onBackToHub();
     }
@@ -63,18 +53,20 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
 
   const CurrentStepComponent = steps[currentStepIndex];
 
+  // FIX: This object now correctly includes onNext and onBack to satisfy the type
+  const stepProps: MorningMeetingStepProps = {
+    students,
+    hubSettings,
+    currentDate: new Date(),
+    onDataUpdate: () => {},
+    onStepComplete: () => setIsStepComplete(true),
+    onNext: handleNext, // Pass the handler
+    onBack: handleBack,   // Pass the handler
+  };
+
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative' }}>
-      {CurrentStepComponent && (
-        <CurrentStepComponent
-          students={students}
-          hubSettings={hubSettings}
-          onDataUpdate={() => {}} // This can be used for data logging if needed
-          // The key change is here: pass the setIsStepComplete function
-          onStepComplete={() => setIsStepComplete(true)}
-          // Remove onNext and onBack from the step components themselves
-        />
-      )}
+      {CurrentStepComponent && <CurrentStepComponent {...stepProps} />}
 
       <MorningMeetingNavigation
         currentStep={currentStepIndex + 1}
@@ -82,8 +74,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         onNext={handleNext}
         onBack={handleBack}
         isNextDisabled={!isStepComplete}
-        isBackDisabled={currentStepIndex === 0 && !onBackToHub}
-        nextButtonText={currentStepIndex === steps.length - 1 ? 'Finish' : 'Next'}
       />
     </div>
   );

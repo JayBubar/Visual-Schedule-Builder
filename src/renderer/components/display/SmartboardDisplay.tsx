@@ -1096,7 +1096,11 @@ useEffect(() => {
               statements: [],
               allowCustom: false
             },
-            celebrations: {},
+            celebrations: {
+              enabled: true,
+              showBirthdayPhotos: true,
+              customCelebrations: []
+            },
             flowCustomization: {
               enabledSteps: {}
             }
@@ -1110,11 +1114,7 @@ useEffect(() => {
             // TEMPORARY FIX: Always go home
             onNavigateHome?.();
           }}
-          onExit={() => {
-            // Handle navigation back to schedule builder
-            onNavigateHome?.();
-          }}
-          onBack={() => {
+          onBackToHub={() => {
             // Handle navigation back to schedule builder
             onNavigateHome?.();
           }}

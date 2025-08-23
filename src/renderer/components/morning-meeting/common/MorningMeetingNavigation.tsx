@@ -7,6 +7,9 @@ interface MorningMeetingNavigationProps {
   onNext: () => void;
   isNextDisabled?: boolean;
   isBackDisabled?: boolean;
+  currentStep?: number;
+  totalSteps?: number;
+  nextButtonText?: string;
 }
 
 const MorningMeetingNavigation: React.FC<MorningMeetingNavigationProps> = ({
@@ -14,6 +17,9 @@ const MorningMeetingNavigation: React.FC<MorningMeetingNavigationProps> = ({
   onNext,
   isNextDisabled = false,
   isBackDisabled = false,
+  currentStep,
+  totalSteps,
+  nextButtonText,
 }) => {
   const styles: { [key: string]: React.CSSProperties } = {
     // Style for the individual buttons
@@ -50,6 +56,23 @@ const MorningMeetingNavigation: React.FC<MorningMeetingNavigationProps> = ({
       cursor: 'not-allowed',
       opacity: 0.5,
     },
+    // Style for the step indicator
+    navIndicator: {
+      position: 'absolute',
+      bottom: '2rem',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(255, 255, 255, 0.2)',
+      backdropFilter: 'blur(10px)',
+      border: '2px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '25px',
+      color: 'white',
+      padding: '12px 24px',
+      fontSize: '1.2rem',
+      fontWeight: 'bold',
+      textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+      whiteSpace: 'nowrap',
+    },
   };
 
   return (
@@ -64,6 +87,13 @@ const MorningMeetingNavigation: React.FC<MorningMeetingNavigationProps> = ({
         &#8249; {/* This is the HTML code for the < symbol */}
       </button>
 
+      {/* Step Counter */}
+      {currentStep && totalSteps && (
+        <div style={styles.navIndicator}>
+          Step {currentStep} of {totalSteps}
+        </div>
+      )}
+
       {/* Next Button */}
       <button
         onClick={onNext}
@@ -71,7 +101,7 @@ const MorningMeetingNavigation: React.FC<MorningMeetingNavigationProps> = ({
         style={{ ...styles.navButton, ...styles.nextButton, ...(isNextDisabled ? styles.disabledButton : {}) }}
         aria-label="Next Step"
       >
-        &#8250; {/* This is the HTML code for the > symbol */}
+        {nextButtonText ? nextButtonText : '&#8250;'} {/* Use custom text or default arrow */}
       </button>
     </>
   );
