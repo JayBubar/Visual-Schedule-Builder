@@ -48,6 +48,12 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
   const toggleClothing = (item: string) => setSelectedClothing(p => p.includes(item) ? p.filter(i => i !== item) : [...p, item]);
   const isClothingComplete = selectedClothing.length >= 2;
 
+  const handleSectionSelect = (index: number) => {
+      if (index === 0) setInternalSection(0);
+      if (index === 1 && weatherRevealed) setInternalSection(1);
+      if (index === 2 && isClothingComplete) setInternalSection(2);
+  };
+
   const renderContent = () => {
     switch (internalSection) {
       case 0:
@@ -110,9 +116,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
     <div style={styles.pageContainer}>
       <div style={styles.leftColumn}>
         <h1 style={styles.leftTitle}>{season.emoji} Weather Adventure</h1>
-        <div onClick={() => setInternalSection(0)} style={{...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {})}}>1. Discover</div>
-        <div onClick={() => { if(weatherRevealed) setInternalSection(1)}} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
-        <div onClick={() => { if(isClothingComplete) setInternalSection(2)}} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
+        <div onClick={() => handleSectionSelect(0)} style={{...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {})}}>1. Discover</div>
+        <div onClick={() => handleSectionSelect(1)} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
+        <div onClick={() => handleSectionSelect(2)} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
       </div>
       <div style={styles.rightColumn}>
         {renderContent()}
