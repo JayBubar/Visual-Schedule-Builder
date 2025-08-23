@@ -27,6 +27,7 @@ export interface MorningMeetingStepProps {
   hubSettings?: HubSettings;
   students?: Student[];
   staff?: StaffMember[];
+  onStepComplete?: () => void;
   navigation: {
     currentStep: number;
     totalSteps: number;
@@ -79,6 +80,7 @@ export interface HubSettings {
   weatherAPI?: {
     enabled: boolean;
     apiKey?: string;
+    zipCode?: string;
     customVocabulary?: string[];
   };
   classroomRules?: {

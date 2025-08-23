@@ -173,7 +173,8 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation
+  navigation,
+  onStepComplete
 }) => {
   // Get classroom rules from hub settings or use defaults - memoized to prevent re-creation
   const classroomRules = useMemo((): ClassroomRule[] => {
@@ -226,9 +227,13 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
       setTimeout(() => {
         setShowCompletion(true);
         createMassiveConfetti();
+        // Call onStepComplete after showing completion
+        setTimeout(() => {
+          onStepComplete?.();
+        }, 3000);
       }, 1000);
     }
-  }, [learnedRules.size, showCompletion, classroomRules.length]);
+  }, [learnedRules.size, showCompletion, classroomRules.length, onStepComplete]);
 
   const createConfetti = (count: number = 15) => {
     const confettiEmojis = ['🎉', '🎊', '⭐', '🌟', '✨', '💫'];
@@ -718,11 +723,6 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
           )}
         </div>
 
-        {/* Navigation Component */}
-        <StepNavigation 
-          navigation={navigation}
-          customNextText="Calendar Math Time! →"
-        />
 
         {/* Confetti Elements */}
         {confettiElements}

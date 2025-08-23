@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Gift, Calendar, Camera, Heart, Sparkles } from 'lucide-react';
 import UnifiedDataService from '../../../services/unifiedDataService';
+import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
 interface Student {
   id: string;
@@ -20,16 +21,6 @@ interface Celebration {
   createdAt?: string;
 }
 
-interface CelebrationStepProps {
-  students: Student[];
-  onNext: () => void;
-  onBack: () => void;
-  currentDate: Date;
-  hubSettings?: any;
-  onDataUpdate: (data: any) => void;
-  stepData?: any;
-}
-
 interface CelebrationStepData {
   currentSection: number;
   discoveredBirthdays: string[];
@@ -38,13 +29,15 @@ interface CelebrationStepData {
   completedAt?: string;  // Make sure this is string, not Date
 }
 
-const CelebrationStep: React.FC<CelebrationStepProps> = ({
-  students,
+const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
+  students = [],
   onNext,
   onBack,
   onDataUpdate,
   stepData,
-  hubSettings
+  hubSettings,
+  currentDate,
+  onStepComplete
 }) => {
   // State management
   const [currentSection, setCurrentSection] = useState<number>(stepData?.currentSection || 1);
@@ -262,9 +255,10 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
     if (currentSection < 3) {
       setCurrentSection(prev => prev + 1);
     } else {
-      onNext();
+      // Step is complete - call onStepComplete instead of onNext
+      onStepComplete?.();
     }
-  }, [currentSection, onNext]);
+  }, [currentSection, onStepComplete]);
 
   const handlePreviousSection = useCallback(() => {
     if (currentSection > 1) {
@@ -590,13 +584,6 @@ const CelebrationStep: React.FC<CelebrationStepProps> = ({
         <div className="step-indicator">
           Section {currentSection} of 3
         </div>
-        <button 
-          onClick={handleNextSection} 
-          className="nav-button next"
-          disabled={!canAdvanceFromSection(currentSection)}
-        >
-          {getNavigationText()}
-        </button>
       </div>
 
       {/* Styles */}

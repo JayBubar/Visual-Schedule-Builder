@@ -120,7 +120,8 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation
+  navigation,
+  onStepComplete
 }) => {
   const [showGreeting, setShowGreeting] = useState(false);
 
@@ -167,8 +168,13 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
         completedAt: new Date().toISOString()
       };
       onDataUpdate(stepData);
+      
+      // Auto-complete after showing greeting
+      setTimeout(() => {
+        onStepComplete?.();
+      }, 3000);
     }
-  }, [showGreeting]); // Only depend on showGreeting
+  }, [showGreeting, onStepComplete]); // Only depend on showGreeting
 
   // Format date for display
   const formatDate = (date: Date): string => {
@@ -414,10 +420,6 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
 
         </div>
 
-        {/* Navigation Component */}
-        <StepNavigation 
-          navigation={navigation}
-        />
       </div>
     </>
   );

@@ -36,7 +36,8 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   onDataUpdate,
   stepData,
   hubSettings,
-  students = []
+  students = [],
+  onStepComplete
 }) => {
   const [currentSection, setCurrentSection] = useState<number>(
     stepData?.currentSection || 1
@@ -98,7 +99,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   const handleComplete = () => {
     setShowCompletionAnimation(true);
     setTimeout(() => {
-      onNext();
+      onStepComplete?.();
     }, 3000);
   };
 
@@ -507,93 +508,6 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       </div>
 
-      {/* Navigation */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '2rem',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.2)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '20px',
-        padding: '1rem 2rem',
-        minWidth: '400px'
-      }}>
-        <button
-          onClick={goToPreviousSection}
-          style={{
-            background: 'rgba(255, 255, 255, 0.2)',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '16px',
-            color: 'white',
-            padding: '1rem 2rem',
-            fontSize: '1.1rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            backdropFilter: 'blur(10px)'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          ← Back
-        </button>
-        
-        <div style={{
-          fontWeight: 600,
-          opacity: 0.9,
-          textAlign: 'center'
-        }}>
-          Section {currentSection} of 3
-        </div>
-        
-        {currentSection < 3 ? (
-          <button
-            onClick={goToNextSection}
-            disabled={!canProceed()}
-            style={{
-              background: canProceed() ? 'rgba(255, 255, 255, 0.2)' : 'rgba(156, 163, 175, 0.5)',
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '16px',
-              color: 'white',
-              padding: '1rem 2rem',
-              fontSize: '1.1rem',
-              fontWeight: 600,
-              cursor: canProceed() ? 'pointer' : 'not-allowed',
-              transition: 'all 0.3s ease',
-              backdropFilter: 'blur(10px)',
-              opacity: canProceed() ? 1 : 0.5
-            }}
-            onMouseOver={(e) => {
-              if (canProceed()) {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
-                e.currentTarget.style.transform = 'scale(1.05)';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (canProceed()) {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.transform = 'scale(1)';
-              }
-            }}
-          >
-            {currentSection === 2 ? 'Finale →' : 'Next →'}
-          </button>
-        ) : (
-          <div style={{ width: '120px' }}></div>
-        )}
-      </div>
 
       {/* CSS Animations */}
       <style>{`

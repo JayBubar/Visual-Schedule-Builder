@@ -26,6 +26,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
   onBack,
+  onStepComplete,
 }) => {
   // ========================================
   // 🎯 STATE MANAGEMENT (Unchanged Logic)
@@ -107,7 +108,14 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
   // ========================================
   // 🧭 NAVIGATION
   // ========================================
-  const goToNextSection = () => currentSection < 4 ? setCurrentSection(currentSection + 1) : onNext();
+  const goToNextSection = () => {
+    if (currentSection < 4) {
+      setCurrentSection(currentSection + 1);
+    } else {
+      // Step is complete - call onStepComplete instead of onNext
+      onStepComplete?.();
+    }
+  };
   const goToPreviousSection = () => currentSection > 1 ? setCurrentSection(currentSection - 1) : onBack();
 
   const isSectionComplete = () => {
@@ -241,14 +249,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({
             </div>
         </div>
 
-      {/* Navigation Bar */}
-      <div style={styles.navBar}>
-        <button onClick={goToPreviousSection} style={styles.navButton}>Back</button>
-        <div style={styles.navIndicator}>Step {currentSection} of 4</div>
-        <button onClick={goToNextSection} disabled={!isSectionComplete()} style={{...styles.navButton, ...styles.navButtonNext, ...(!isSectionComplete() ? styles.navButtonDisabled : {})}}>
-          {currentSection === 4 ? 'Finish' : 'Next'}
-        </button>
-      </div>
 
       {/* Celebration Pop-up */}
       {showCelebration && (

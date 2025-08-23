@@ -132,7 +132,8 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   stepData,
   hubSettings,
   students = [],
-  navigation
+  navigation,
+  onStepComplete
 }) => {
   // 🔧 FIX: Load students from UnifiedDataService instead of relying on props
   const [loadedStudents, setLoadedStudents] = useState<Student[]>([]);
@@ -232,6 +233,17 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   useEffect(() => {
     handleDataUpdate();
   }, [handleDataUpdate]);
+
+  // Call onStepComplete when attendance is complete
+  useEffect(() => {
+    if (isComplete) {
+      // Add a small delay to allow for celebration animation
+      const timer = setTimeout(() => {
+        onStepComplete?.();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isComplete, onStepComplete]);
 
   // Handle student status toggle
   const toggleStudentStatus = (studentId: string) => {
@@ -630,13 +642,6 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       )}
 
-      {/* Navigation Component */}
-      <StepNavigation 
-        navigation={navigation}
-        onNext={onNext}
-        onBack={onBack}
-        customNextText="Time for Classroom Rules! →"
-      />
 
       <style>{`
         @keyframes bounce {
