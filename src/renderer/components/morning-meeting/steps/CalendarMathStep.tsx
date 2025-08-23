@@ -1,43 +1,23 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { MorningMeetingStepProps, CalendarMathStepData } from '../types/morningMeetingTypes';
+import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
-const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
-  currentDate,
-  onNext,
-  onBack,
-  onDataUpdate,
-  onStepComplete,
-}) => {
-  // ========================================
-  // 🎯 STATE MANAGEMENT (Unchanged Logic)
-  // ========================================
+const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onStepComplete }) => {
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
-  const [monthCount, setMonthCount] = useState<number>(0);
-  const [dayCount, setDayCount] = useState<number>(0);
   const [countedMonths, setCountedMonths] = useState<Set<number>>(new Set());
   const [countedDays, setCountedDays] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [celebrationMessage, setCelebrationMessage] = useState<string>('');
-  const [canProceed, setCanProceed] = useState<boolean>(false);
   const [completedQuestions, setCompletedQuestions] = useState<Set<number>>(new Set());
 
-  // ========================================
-  // 🗓️ DATE & TIME LOGIC (Unchanged)
-  // ========================================
   const today = currentDate || new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const monthNames = useMemo(() => [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ], []);
-
+  const monthNames = useMemo(() => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'], []);
   const dayNames = useMemo(() => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], []);
   const monthEmojis = useMemo(() => ['❄️', '💕', '🌸', '🌷', '🌺', '☀️', '🏖️', '🌻', '🍎', '🎃', '🦃', '🎄'], []);
-
   const formatDayName = useCallback((date: Date): string => dayNames[date.getDay()], [dayNames]);
 
   const questions = useMemo(() => [
@@ -49,28 +29,34 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     { id: 'tomorrow', question: "What will tomorrow be?", interaction: 'show-tomorrow', celebration: `Brilliant! Tomorrow is ${formatDayName(tomorrow)}! 🚀` }
   ], [today, monthNames, formatDayName, yesterday, tomorrow]);
 
-  // ========================================
-  // 🎮 INTERACTION HANDLERS (Unchanged Logic)
-  // ========================================
+  useEffect(() => {
+    if (completedQuestions.size === questions.length) {
+      onStepComplete?.();
+    }
+  }, [completedQuestions, questions.length, onStepComplete]);
+
   const triggerCelebration = useCallback((message: string) => {
     setCelebrationMessage(message);
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 2500);
   }, []);
+  
+  const advanceToNextQuestion = useCallback(() => {
+    if (completedQuestions.has(currentQuestion) && currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  }, [currentQuestion, questions.length, completedQuestions]);
 
-  const markQuestionComplete = (index: number, celebrationMessage: string) => {
+  const markQuestionComplete = useCallback((index: number, celebrationMessage: string) => {
     triggerCelebration(celebrationMessage);
-    setTimeout(() => {
-      setCanProceed(true);
-      setCompletedQuestions(prev => new Set(prev).add(index));
-    }, 2500);
-  };
+    setCompletedQuestions(prev => new Set(prev).add(index));
+    setTimeout(advanceToNextQuestion, 2600);
+  }, [triggerCelebration, advanceToNextQuestion]);
 
   const handleMonthClick = (monthIndex: number) => {
     if (countedMonths.has(monthIndex)) return;
     const newCounted = new Set(countedMonths).add(monthIndex);
     setCountedMonths(newCounted);
-    setMonthCount(newCounted.size);
     if (newCounted.size === 12) {
       markQuestionComplete(0, questions[0].celebration);
     }
@@ -80,37 +66,17 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
     if (countedDays.has(dayIndex)) return;
     const newCounted = new Set(countedDays).add(dayIndex);
     setCountedDays(newCounted);
-    setDayCount(newCounted.size);
     if (newCounted.size === 7) {
       markQuestionComplete(2, questions[2].celebration);
     }
   };
 
-  // ========================================
-  // 🧭 NAVIGATION
-  // ========================================
-  const nextQuestion = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
-      setCanProceed(completedQuestions.has(currentQuestion + 1));
-    } else {
-      // Step is complete - call onStepComplete instead of onNext
-      onStepComplete?.();
+  const handleQuestionSelect = (index: number) => {
+    if (index <= completedQuestions.size) {
+      setCurrentQuestion(index);
     }
   };
 
-  const prevQuestion = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-      setCanProceed(true);
-    } else {
-      onBack();
-    }
-  };
-
-  // ========================================
-  // 🎨 RENDER LOGIC
-  // ========================================
   const renderRightPanelContent = () => {
     const question = questions[currentQuestion];
     switch (question.interaction) {
@@ -142,7 +108,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
               </div>
           );
       case 'highlight-current-month':
-      case 'highlight-today': { // FIX: Added block scope
+      case 'highlight-today': {
           const isMonth = question.interaction === 'highlight-current-month';
           const isComplete = completedQuestions.has(currentQuestion);
           return (
@@ -156,7 +122,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
           );
       }
       case 'show-yesterday':
-      case 'show-tomorrow': { // FIX: Added block scope
+      case 'show-tomorrow': {
           const isYesterday = question.interaction === 'show-yesterday';
           const isComplete = completedQuestions.has(currentQuestion);
           return (
@@ -186,7 +152,6 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   return (
     <div style={styles.pageContainer}>
       <div style={styles.contentGrid}>
-        {/* Left Sidebar */}
         <div style={styles.leftColumn}>
           <h1 style={styles.leftTitle}>📅 Calendar Math</h1>
           <p style={styles.leftSubtitle}>Let's learn about months, weeks, and days!</p>
@@ -196,7 +161,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
               const isCompleted = completedQuestions.has(index);
               const isActive = currentQuestion === index;
               return (
-                <div key={q.id} style={{ ...styles.progressItem, ...(isActive ? styles.progressItemActive : {}), ...(isCompleted ? styles.progressItemCompleted : {}) }}>
+                <div key={q.id} onClick={() => handleQuestionSelect(index)} style={{ ...styles.progressItem, ...(isActive ? styles.progressItemActive : {}), ...(isCompleted ? styles.progressItemCompleted : {}) }}>
                   <span style={styles.progressCheck}>{isCompleted ? '✅' : '➡️'}</span>
                   {q.question}
                 </div>
@@ -204,16 +169,11 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
             })}
           </div>
         </div>
-
-        {/* Right Panel */}
         <div style={styles.rightColumn}>
             <h2 style={styles.rightPanelTitle}>{questions[currentQuestion].question}</h2>
             {renderRightPanelContent()}
         </div>
       </div>
-
-
-      {/* Celebration Pop-up */}
       {showCelebration && (
         <div style={styles.celebrationOverlay}>
             <div style={styles.celebrationMessage}>{celebrationMessage}</div>
@@ -223,9 +183,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({
   );
 };
 
-// ========================================
-// 🎨 STYLES OBJECT (Unchanged)
-// ========================================
+// Styles object from previous versions
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', fontFamily: 'system-ui, sans-serif', overflow: 'hidden', padding: '2rem' },
     contentGrid: { width: '100%', height: '100%', maxWidth: '1400px', display: 'flex', gap: '2rem' },
@@ -234,8 +192,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     leftTitle: { fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '0.5rem' },
     leftSubtitle: { fontSize: '1.2rem', opacity: 0.8, marginBottom: '2rem' },
     divider: { height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.3)', margin: '1rem 0 2rem 0' },
-    progressList: { flex: 1, overflowY: 'auto' },
-    progressItem: { fontSize: '1.1rem', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '0.5rem', fontWeight: 500, opacity: 0.6, display: 'flex', alignItems: 'center' },
+    progressList: { flex: 1, overflowY: 'auto', cursor: 'pointer' },
+    progressItem: { fontSize: '1.1rem', padding: '0.75rem 1rem', borderRadius: '8px', marginBottom: '0.5rem', fontWeight: 500, opacity: 0.6, display: 'flex', alignItems: 'center', transition: 'background-color 0.3s' },
     progressItemActive: { backgroundColor: 'rgba(255, 255, 255, 0.2)', opacity: 1, fontWeight: 600 },
     progressItemCompleted: { opacity: 1, textDecoration: 'line-through' },
     progressCheck: { marginRight: '0.75rem', fontSize: '1.2rem' },
@@ -257,11 +215,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     timelineBoxRevealed: { background: '#28a745', color: 'white' },
     timelineArrow: { fontSize: '3rem', color: 'white', opacity: 0.5 },
     timelineLabel: { fontSize: '1rem', position: 'absolute', bottom: '0.5rem', left: '50%', transform: 'translateX(-50%)', opacity: 0.8 },
-    navBar: { position: 'absolute', bottom: '2rem', width: 'calc(100% - 4rem)', maxWidth: '1400px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(10px)', borderRadius: '20px' },
-    navButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.2)', color: 'white' },
-    navButtonNext: { background: 'rgba(255,255,255,0.4)' },
-    navButtonDisabled: { background: 'rgba(0,0,0,0.2)', color: 'rgba(255,255,255,0.4)', cursor: 'not-allowed' },
-    navIndicator: { fontSize: '1rem', fontWeight: 500, color: 'white' },
     celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
     celebrationMessage: { padding: '2rem 4rem', background: 'linear-gradient(45deg, #28a745, #20c997)', color: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontSize: '2rem', fontWeight: 700, animation: 'celebrate 2.5s ease-in-out forwards' },
 };
