@@ -324,6 +324,7 @@ const App: React.FC = () => {
             isActive={true}
             students={students}
             staff={staffMembers}
+            hubSettings={hubSettings}
             currentSchedule={activeSchedule ? {
               activities: activeSchedule,
               startTime: '09:00',
@@ -340,6 +341,7 @@ const App: React.FC = () => {
           <MorningMeetingController
             students={students}
             staff={staffMembers}
+            hubSettings={hubSettings}
             onClose={() => handleViewChange('builder')}
             onNavigateHome={handleBackToStart}
             onNavigateToDisplay={() => handleViewChange('display')}

@@ -6,12 +6,12 @@ import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMe
 // Import all your step components
 import WelcomeStep from './steps/WelcomeStep';
 import AttendanceStep from './steps/AttendanceStep';
+import BehaviorStep from './steps/BehaviorStep';
+import CalendarMathStep from './steps/CalendarMathStep';
 import WeatherStep from './steps/WeatherStep';
 import SeasonalStep from './steps/SeasonalStep';
-import CalendarMathStep from './steps/CalendarMathStep';
-import DayReviewStep from './steps/DayReviewStep';
-import BehaviorStep from './steps/BehaviorStep';
 import CelebrationStep from './steps/CelebrationStep';
+import DayReviewStep from './steps/DayReviewStep';
 
 import MorningMeetingNavigation from './common/MorningMeetingNavigation';
 

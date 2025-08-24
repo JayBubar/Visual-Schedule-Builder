@@ -809,6 +809,7 @@ interface SmartboardDisplayProps {
   };
   staff?: StaffMember[];
   students?: Student[];
+  hubSettings?: any;
   onNavigateHome?: () => void;
   onNavigateToBuilder?: () => void;
 }
@@ -1087,8 +1088,8 @@ useEffect(() => {
           hubSettings={{
             videos: {
               calendarMath: [],
-              weather: [],
-              seasonal: [],
+              weather: [], // FIX: Changed from weatherClothing
+              seasonal: [], // FIX: Changed from seasonalLearning
               behaviorCommitments: []
             },
             behaviorStatements: {

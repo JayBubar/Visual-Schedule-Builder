@@ -7,6 +7,7 @@ import UnifiedDataService from '../../services/unifiedDataService';
 interface MorningMeetingControllerProps {
   students?: Student[];
   staff?: StaffMember[];
+  hubSettings?: any;
   onClose: () => void;
   onNavigateHome?: () => void;
   onNavigateToDisplay?: () => void;
@@ -15,6 +16,7 @@ interface MorningMeetingControllerProps {
 const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
   students = [],
   staff = [],
+  hubSettings: passedHubSettings,
   onClose,
   onNavigateHome,
   onNavigateToDisplay
@@ -42,8 +44,8 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
         },
         videos: {
           calendarMath: morningMeetingSettings.selectedVideos?.calendarMath || [],
-          weatherClothing: morningMeetingSettings.selectedVideos?.weatherClothing || [],
-          seasonalLearning: morningMeetingSettings.selectedVideos?.seasonalLearning || [],
+          weather: morningMeetingSettings.selectedVideos?.weather || [],
+          seasonal: morningMeetingSettings.selectedVideos?.seasonal || [],
           behaviorCommitments: morningMeetingSettings.selectedVideos?.behaviorCommitments || []
         },
         behaviorStatements: {
@@ -93,8 +95,8 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
         },
         videos: {
           calendarMath: [],
-          weatherClothing: [],
-          seasonalLearning: [],
+          weather: [],
+          seasonal: [],
           behaviorCommitments: []
         },
         behaviorStatements: {

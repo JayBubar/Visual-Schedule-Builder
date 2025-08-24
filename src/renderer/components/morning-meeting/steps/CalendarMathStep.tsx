@@ -60,14 +60,8 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
     triggerCelebration(celebrationMessage);
     const newCompleted = new Set(completedSteps).add(index);
     setCompletedSteps(newCompleted);
-
-    // Only auto-advance if the user is on the step that was just completed
-    setTimeout(() => {
-      if (currentStep === index) {
-        advanceStep();
-      }
-    }, 2600);
-  }, [triggerCelebration, advanceStep, completedSteps, currentStep]);
+    // FIX: REMOVED the auto-advancing setTimeout from here
+  }, [triggerCelebration, completedSteps]);
 
   useEffect(() => {
     if (completedSteps.size === steps.length) {
@@ -91,7 +85,16 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
       }
   };
 
-  const handleInternalNext = () => { if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1); };
+  const handleInternalNext = () => { 
+    // Mark the current step as complete if it's the days-in-month step
+    if (steps[currentStep].id === 'days-in-month') {
+      markStepComplete(3, `That's right, ${monthNames[today.getMonth()]} has ${new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()} days!`);
+    }
+    
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
   const handleInternalBack = () => { if (currentStep > 0) setCurrentStep(currentStep - 1); };
 
   const isStepTaskComplete = useCallback(() => {
@@ -102,15 +105,16 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
         case 'count-months': return selectedMonths.size === 12;
         case 'current-month': return monthRevealed;
         case 'days-in-month': 
-            markStepComplete(3, `That's right, ${monthNames[today.getMonth()]} has ${new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()} days!`);
-            return true;
+            // FIX: This step is informational, so it's always "complete"
+            // We'll mark it as such when the user clicks "Next Section"
+            return true; 
         case 'days-in-week': return selectedDays.size === 7;
         case 'today': return todayRevealed;
         case 'yesterday': return yesterdayRevealed;
         case 'tomorrow': return tomorrowRevealed;
         default: return false;
     }
-  }, [currentStep, steps, yearRevealed, selectedMonths, monthRevealed, selectedDays, todayRevealed, yesterdayRevealed, tomorrowRevealed, markStepComplete, today, monthNames]);
+  }, [currentStep, steps, yearRevealed, selectedMonths, monthRevealed, selectedDays, todayRevealed, yesterdayRevealed, tomorrowRevealed]);
 
   const getDaysInMonth = (year: number, month: number): Date[] => {
     const date = new Date(year, month, 1);
