@@ -1087,8 +1087,8 @@ useEffect(() => {
           hubSettings={{
             videos: {
               calendarMath: [],
-              weatherClothing: [],
-              seasonalLearning: [],
+              weather: [],
+              seasonal: [],
               behaviorCommitments: []
             },
             behaviorStatements: {
