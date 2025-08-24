@@ -10,8 +10,8 @@ export interface Student {
 export interface HubSettings {
   videos?: {
     calendarMath?: { name: string; url: string }[];
-    weatherClothing?: { name: string; url: string }[];
-    seasonalLearning?: { name: string; url: string }[];
+    weather?: { name: string; url: string }[];
+    seasonal?: { name: string; url: string }[];
     behaviorCommitments?: { name: string; url: string }[];
   };
   behaviorStatements?: {

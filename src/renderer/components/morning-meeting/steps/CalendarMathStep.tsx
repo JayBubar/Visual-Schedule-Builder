@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
-const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onStepComplete }) => {
+const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onStepComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
@@ -19,6 +19,8 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onSt
   const monthNames = useMemo(() => ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'], []);
   const dayNames = useMemo(() => ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], []);
   const monthEmojis = useMemo(() => ['❄️', '💕', '🌸', '🌷', '🌺', '☀️', '🏖️', '🌻', '🍎', '🎃', '🦃', '🎄'], []);
+  
+  const calendarVideos = useMemo(() => hubSettings?.videos?.calendarMath || [], [hubSettings]);
 
   const getOrdinalSuffix = (n: number) => {
     const s = ["th", "st", "nd", "rd"], v = n % 100;
@@ -44,12 +46,28 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onSt
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 2500);
   }, []);
+
+  const advanceStep = useCallback(() => {
+    // FIX: This now safely advances to the next step
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(prevStep => prevStep + 1);
+    }
+  }, [currentStep, steps.length]);
   
   const markStepComplete = useCallback((index: number, celebrationMessage: string) => {
-    if (completedSteps.has(index)) return;
+    if (completedSteps.has(index)) return; // Don't re-trigger
+    
     triggerCelebration(celebrationMessage);
-    setCompletedSteps(prev => new Set(prev).add(index));
-  }, [triggerCelebration, completedSteps]);
+    const newCompleted = new Set(completedSteps).add(index);
+    setCompletedSteps(newCompleted);
+
+    // Only auto-advance if the user is on the step that was just completed
+    setTimeout(() => {
+      if (currentStep === index) {
+        advanceStep();
+      }
+    }, 2600);
+  }, [triggerCelebration, advanceStep, completedSteps, currentStep]);
 
   useEffect(() => {
     if (completedSteps.size === steps.length) {
@@ -213,6 +231,13 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onSt
             </div>
           ))}
         </div>
+        
+        {/* Video Link Button */}
+        {calendarVideos.length > 0 && (
+          <button style={styles.videoButton} onClick={() => window.open(calendarVideos[0].url, '_blank')}>
+            🎬 Watch a Calendar Video
+          </button>
+        )}
       </div>
       <div style={styles.rightColumn}>
           <h2 style={styles.rightPanelTitle}>{steps[currentStep].question}</h2>
@@ -280,6 +305,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
     celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
     celebrationMessage: { padding: '2rem 4rem', background: 'linear-gradient(45deg, #28a745, #20c997)', color: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontSize: '2rem', fontWeight: 700 },
+    videoButton: {
+        marginTop: 'auto',
+        padding: '1rem',
+        fontSize: '1rem',
+        background: 'rgba(0, 86, 179, 0.7)',
+        color: 'white',
+        border: '1px solid rgba(255,255,255,0.5)',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        fontWeight: 600,
+    },
 };
 
 export default CalendarMathStep;

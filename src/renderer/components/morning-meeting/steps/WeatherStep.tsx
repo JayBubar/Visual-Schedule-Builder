@@ -6,7 +6,7 @@ interface WeatherData { temperature: number; condition: string; description: str
 interface ClothingItem { item: string; emoji: string; }
 interface WeatherSafetyTip { emoji: string; title: string; description: string; }
 
-const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), onStepComplete }) => {
+const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), hubSettings, onStepComplete }) => {
   const [internalSection, setInternalSection] = useState(0);
   const [currentWeather, setCurrentWeather] = useState<WeatherData | null>(null);
   const [selectedClothing, setSelectedClothing] = useState<string[]>([]);
@@ -37,6 +37,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
       {emoji: '💧', title: 'Stay Hydrated', description: 'Drink lots of water!'},
       {emoji: '🧴', title: 'Use Sunscreen', description: 'Protect your skin.'},
   ], []);
+  
+  const weatherVideos = useMemo(() => hubSettings?.videos?.weather || [], [hubSettings]);
   
   const triggerCelebration = useCallback((message: string) => {
     setCelebrationMessage(message);
@@ -143,6 +145,13 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
             <div onClick={() => handleSectionSelect(1)} style={{...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {})}}>2. Choose Clothing</div>
             <div onClick={() => handleSectionSelect(2)} style={{...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {})}}>3. Safety Tips</div>
         </div>
+        
+        {/* Video Link Button */}
+        {weatherVideos.length > 0 && (
+          <button style={styles.videoButton} onClick={() => window.open(weatherVideos[0].url, '_blank')}>
+            🎬 Watch a Weather Video
+          </button>
+        )}
       </div>
       <div style={styles.rightColumn}>
         {renderContent()}
@@ -184,6 +193,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
     celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
     celebrationMessage: { padding: '2rem 4rem', background: 'linear-gradient(45deg, #28a745, #20c997)', color: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontSize: '2rem', fontWeight: 700, animation: 'celebrate 2.5s ease-in-out forwards' },
+    videoButton: {
+        marginTop: 'auto',
+        padding: '1rem',
+        fontSize: '1rem',
+        background: 'rgba(0, 86, 179, 0.7)',
+        color: 'white',
+        border: '1px solid rgba(255,255,255,0.5)',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        fontWeight: 600,
+    },
 };
 
 export default WeatherStep;

@@ -16,7 +16,7 @@ const GAME_ITEMS: GameItem[] = [
   { id: 'skiing', text: '⛷️ Skiing', season: 'winter', type: 'activity' }, { id: 'swimming', text: '🏊‍♂️ Swimming', season: 'summer', type: 'activity' }, { id: 'leaf-jumping', text: '🍂 Leaf Jumping', season: 'fall', type: 'activity' }, { id: 'planting', text: '🌱 Planting Flowers', season: 'spring', type: 'activity' }, { id: 'spring-season', text: '🌸 Spring', season: 'spring', type: 'season' }, { id: 'summer-season', text: '☀️ Summer', season: 'summer', type: 'season' }, { id: 'fall-season', text: '🍂 Fall', season: 'fall', type: 'season' }, { id: 'winter-season', text: '❄️ Winter', season: 'winter', type: 'season' }
 ];
 
-const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onStepComplete }) => {
+const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onStepComplete }) => {
   const [currentSection, setCurrentSection] = useState<number>(1);
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [revealedSeason, setRevealedSeason] = useState<boolean>(false);
@@ -33,6 +33,8 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onStepCo
       return 'winter';
   }, [currentDate]);
   const currentSeasonData = useMemo(() => SEASONS_DATA[currentSeasonKey], [currentSeasonKey]);
+  
+  const seasonalVideos = useMemo(() => hubSettings?.videos?.seasonal || [], [hubSettings]);
 
   const showCelebrationMessage = useCallback((message: string) => {
     setShowCelebration(message);
@@ -193,6 +195,13 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, onStepCo
         <div style={{...styles.progressItem, ...(currentSection === 2 ? styles.progressItemActive : {})}} onClick={() => setCurrentSection(2)}>2. Current Season</div>
         <div style={{...styles.progressItem, ...(currentSection === 3 ? styles.progressItemActive : {})}} onClick={() => setCurrentSection(3)}>3. Season Details</div>
         <div style={{...styles.progressItem, ...(currentSection === 4 ? styles.progressItemActive : {})}} onClick={() => setCurrentSection(4)}>4. Matching Game</div>
+        
+        {/* Video Link Button */}
+        {seasonalVideos.length > 0 && (
+          <button style={styles.videoButton} onClick={() => window.open(seasonalVideos[0].url, '_blank')}>
+            🎬 Watch a Season Video
+          </button>
+        )}
       </div>
       <div style={styles.rightColumn}>
           {renderRightPanelContent()}
@@ -238,6 +247,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
     celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
     celebrationMessage: { padding: '2rem 4rem', background: 'linear-gradient(45deg, #28a745, #20c997)', color: 'white', borderRadius: '25px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', fontSize: '2rem', fontWeight: 700, animation: 'celebrate 2.5s ease-in-out forwards' },
+    videoButton: {
+        marginTop: 'auto',
+        padding: '1rem',
+        fontSize: '1rem',
+        background: 'rgba(0, 86, 179, 0.7)',
+        color: 'white',
+        border: '1px solid rgba(255,255,255,0.5)',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        fontWeight: 600,
+    },
 };
 
 export default SeasonalStep;
