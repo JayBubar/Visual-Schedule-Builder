@@ -29,6 +29,10 @@ interface HubSettings {
     statements: string[];
     allowCustom: boolean;
   };
+  todaysAnnouncements: {
+    enabled: boolean;
+    announcements: string[];
+  };
   celebrations: {
     enabled: boolean;
     showBirthdayPhotos: boolean;
@@ -76,6 +80,13 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
       'I will try my best in everything I do'
     ],
     allowCustom: true
+  },
+  todaysAnnouncements: {
+    enabled: true,
+    announcements: [
+      'Remember to turn in your library books today',
+      'We have gym class after lunch'
+    ]
   },
   celebrations: {
     enabled: true,
@@ -229,7 +240,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
   onClose
 }) => {
-  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'celebrations' | 'flow'>('welcome');
+  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'announcements' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
@@ -298,6 +309,10 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
             'I will try my best in everything I do'
           ],
           allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom || true
+        },
+        todaysAnnouncements: {
+          enabled: morningMeetingSettings.todaysAnnouncements?.enabled !== false,
+          announcements: morningMeetingSettings.todaysAnnouncements?.announcements || DEFAULT_HUB_SETTINGS.todaysAnnouncements.announcements
         },
         celebrations: {
           ...DEFAULT_HUB_SETTINGS.celebrations,
@@ -379,6 +394,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           calendarMath: settings.videos.calendarMath
         },
         behaviorCommitments: settings.behaviorStatements,
+        todaysAnnouncements: settings.todaysAnnouncements,
         celebrations: settings.celebrations,
         checkInFlow: settings.flowCustomization.enabledSteps
       };
@@ -430,6 +446,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
     { id: 'vocabulary', name: 'Vocabulary', icon: '📚', description: 'Customize learning words' },
     { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select educational videos' },
     { id: 'classroomRules', name: 'Classroom Rules', icon: '⭐', description: 'Manage classroom expectations' },
+    { id: 'announcements', name: 'Daily Announcements', icon: '📢', description: 'Today\'s important updates' },
     { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and special events' },
     { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize meeting steps' }
   ] as const;
@@ -925,6 +942,83 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
             </div>
           )}
 
+          {/* Daily Announcements */}
+          {activeSection === 'announcements' && (
+            <div className="hub-section">
+              <h2>📢 Daily Announcements</h2>
+              <p>Add important updates and reminders for today</p>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={settings.todaysAnnouncements?.enabled !== false}
+                    onChange={(e) => updateSettings('todaysAnnouncements', { 
+                      ...settings.todaysAnnouncements,
+                      enabled: e.target.checked 
+                    })}
+                  />
+                  Show announcements in Day Review
+                </label>
+              </div>
+
+              {(settings.todaysAnnouncements?.enabled !== false) && (
+                <div className="announcements-section">
+                  <h3>Today's Announcements</h3>
+                  {(settings.todaysAnnouncements?.announcements || []).map((announcement, index) => (
+                    <div key={index} className="statement-item">
+                      <input
+                        type="text"
+                        value={announcement}
+                        onChange={(e) => {
+                          const newAnnouncements = [...(settings.todaysAnnouncements?.announcements || [])];
+                          newAnnouncements[index] = e.target.value;
+                          updateSettings('todaysAnnouncements', { 
+                            ...settings.todaysAnnouncements,
+                            announcements: newAnnouncements 
+                          });
+                        }}
+                        placeholder="Enter announcement..."
+                        className="statement-input"
+                      />
+                      <button
+                        onClick={() => {
+                          const newAnnouncements = (settings.todaysAnnouncements?.announcements || []).filter((_, i) => i !== index);
+                          updateSettings('todaysAnnouncements', { 
+                            ...settings.todaysAnnouncements,
+                            announcements: newAnnouncements 
+                          });
+                        }}
+                        className="delete-statement-button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      const newAnnouncements = [...(settings.todaysAnnouncements?.announcements || []), ''];
+                      updateSettings('todaysAnnouncements', { 
+                        ...settings.todaysAnnouncements,
+                        announcements: newAnnouncements 
+                      });
+                    }}
+                    className="add-statement-button"
+                  >
+                    ➕ Add Announcement
+                  </button>
+                </div>
+              )}
+
+              <div className="form-tip">
+                <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '1rem', fontStyle: 'italic' }}>
+                  💡 Tip: Update these daily for fresh announcements, or leave them for recurring reminders
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Celebrations */}
           {activeSection === 'celebrations' && (
             <div className="hub-section">
@@ -1362,6 +1456,27 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           margin: 0 0 1rem 0;
           font-size: 1.2rem;
           font-weight: 600;
+        }
+
+        /* Announcements Section Styles */
+        .announcements-section {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .announcements-section h3 {
+          margin: 0 0 1rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
+        }
+
+        .form-tip {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+          padding: 1rem;
+          backdrop-filter: blur(5px);
         }
 
         .statement-item {

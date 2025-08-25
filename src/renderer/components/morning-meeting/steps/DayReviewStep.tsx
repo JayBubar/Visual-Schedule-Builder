@@ -12,7 +12,6 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   const [internalSection, setInternalSection] = useState(0);
 
   const classroomRules = useMemo(() => hubSettings?.behaviorStatements?.statements || [], [hubSettings]);
-  const dailyAnnouncements = useMemo(() => hubSettings?.dailyAnnouncements || [], [hubSettings]);
 
   const getOrdinalSuffix = (n: number) => {
     const s = ["th", "st", "nd", "rd"], v = n % 100;
@@ -67,9 +66,17 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
               </div>
               <div style={styles.summaryBox}>
                 <h4>📢 Announcements</h4>
-                {dailyAnnouncements.length > 0 ? (
-                  <ul>
-                    {dailyAnnouncements.map(ann => <li key={ann.id}>{ann.text}</li>)}
+                {/* Connect to Hub data using new property name */}
+                {hubSettings?.todaysAnnouncements?.enabled && hubSettings?.todaysAnnouncements?.announcements?.length > 0 ? (
+                  <ul style={{ textAlign: 'left', paddingLeft: '1rem' }}>
+                    {hubSettings.todaysAnnouncements.announcements
+                      .filter(announcement => announcement.trim()) // Filter out empty announcements
+                      .map((announcement, index) => (
+                        <li key={index} style={{ marginBottom: '0.5rem' }}>
+                          {announcement}
+                        </li>
+                      ))
+                    }
                   </ul>
                 ) : (
                   <p>No special announcements today!</p>

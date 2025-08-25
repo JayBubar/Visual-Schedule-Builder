@@ -44,7 +44,10 @@ export interface HubSettings {
   classroomRules?: {
     rules: { id: string; text: string; emoji: string }[];
   };
-  dailyAnnouncements?: { id: string; text: string; date: string }[];
+  todaysAnnouncements?: {
+    enabled: boolean;
+    announcements: string[];
+  };
 }
 
 // The single source of truth for step props
