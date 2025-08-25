@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UnifiedDataService } from '../services/UnifiedDataService';
+import UnifiedDataService from '../../../services/unifiedDataService';
 import './BehaviorStep.css';
 
 interface BehaviorStepProps {
@@ -38,8 +38,8 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate
 
   const loadBehaviorSettings = async () => {
     try {
-      const dataService = UnifiedDataService.getInstance();
-      const hubSettings = await dataService.getHubSettings();
+      const settings = UnifiedDataService.getSettings();
+      const hubSettings = settings?.morningMeeting;
       
       // Get custom behavior commitments from hub or use defaults
       const customCommitments = hubSettings?.behaviorCommitments?.commitments || [];
@@ -92,12 +92,23 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate
     localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(selectedCommitments));
     
     // Also save to UnifiedDataService for Visual Schedule integration
-    const dataService = UnifiedDataService.getInstance();
-    const selectedTexts = commitments
-      .filter(c => selectedCommitments.includes(c.id))
-      .map(c => c.text);
-    
-    dataService.saveBehaviorCommitments(currentDate, selectedTexts);
+    try {
+      const selectedTexts = commitments
+        .filter(c => selectedCommitments.includes(c.id))
+        .map(c => c.text);
+      
+      // Save each selected commitment using the UnifiedDataService API
+      selectedTexts.forEach(text => {
+        UnifiedDataService.addBehaviorCommitment({
+          studentId: 'morning-meeting', // Generic ID for morning meeting commitments
+          commitment: text,
+          date: currentDate.toISOString().split('T')[0],
+          status: 'pending'
+        });
+      });
+    } catch (error) {
+      console.error('Error saving behavior commitments to UnifiedDataService:', error);
+    }
     
     onNext();
   };
