@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment } from './types';
+import { ViewType, ScheduleVariation, Student, Staff, ActivityLibraryItem, ScheduleActivity, EnhancedActivity, GroupAssignment, Schedule } from './types';
 import { loadFromStorage, saveToStorage } from './utils/storage';
 import UnifiedDataService from './services/unifiedDataService';
 import { ResourceScheduleProvider } from './services/ResourceScheduleManager';
@@ -24,7 +24,7 @@ const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>('builder');
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleVariation | null>(null);
-  const [activeSchedule, setActiveSchedule] = useState<any[] | null>(null);
+  const [activeSchedule, setActiveSchedule] = useState<Schedule | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
@@ -200,7 +200,10 @@ const App: React.FC = () => {
 
     if (savedSchedule && savedSchedule.activities && savedSchedule.activities.length > 0) {
       // If a schedule for today exists, load it into state
-      setActiveSchedule(savedSchedule.activities);
+      setActiveSchedule({
+        ...savedSchedule,
+        updatedAt: savedSchedule.updatedAt || savedSchedule.createdAt
+      }); // Save the whole schedule object
       setShowStartScreen(false);
       setCurrentView('display'); // Go directly to the smartboard display
     } else {
@@ -315,21 +318,17 @@ const App: React.FC = () => {
     }))}>
       {currentView === 'display' ? (
         <SmartboardDisplay
+          isActive={true}
           students={students}
           staff={staffMembers}
           hubSettings={hubSettings}
-          currentSchedule={activeSchedule ? {
-            activities: activeSchedule,
-            startTime: '09:00',
-            name: 'Daily Schedule'
-          } : selectedSchedule ? {
-            activities: selectedSchedule.activities,
-            startTime: selectedSchedule.startTime,
-            name: selectedSchedule.name
-          } : undefined}
+          currentSchedule={activeSchedule || (selectedSchedule ? {
+            ...selectedSchedule,
+            updatedAt: selectedSchedule.lastUsed || selectedSchedule.createdAt
+          } : undefined)}
           onNavigateHome={handleBackToStart}
           onNavigateToBuilder={() => handleViewChange('builder')}
-        />  
+        />
       ) : currentView === 'calendar' ? (
         <MorningMeetingController
           students={students}
