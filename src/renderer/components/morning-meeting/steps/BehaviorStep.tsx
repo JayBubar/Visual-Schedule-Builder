@@ -5,6 +5,7 @@ import './BehaviorStep.css';
 interface BehaviorStepProps {
   onNext: () => void;
   onBack: () => void;
+  onStepComplete: () => void;
   currentDate: Date;
 }
 
@@ -15,7 +16,7 @@ interface BehaviorCommitment {
   selected: boolean;
 }
 
-const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate }) => {
+const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepComplete, currentDate }) => {
   const [commitments, setCommitments] = useState<BehaviorCommitment[]>([]);
   const [selectedCommitments, setSelectedCommitments] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +64,12 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate
       const todayKey = currentDate.toDateString();
       const savedSelections = localStorage.getItem(`behaviorCommitments_${todayKey}`);
       if (savedSelections) {
-        setSelectedCommitments(JSON.parse(savedSelections));
+        const parsedSelections = JSON.parse(savedSelections);
+        setSelectedCommitments(parsedSelections);
+        // If there are already selections, enable the global navigation
+        if (parsedSelections.length > 0) {
+          onStepComplete();
+        }
       }
 
       setIsLoading(false);
@@ -84,34 +90,45 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate
     // Save to localStorage immediately
     const todayKey = currentDate.toDateString();
     localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(newSelected));
+    
+    // Enable the global navigation when at least one commitment is selected
+    if (newSelected.length > 0) {
+      onStepComplete();
+    }
   };
 
-  const handleNext = () => {
-    // Ensure data is saved before proceeding
-    const todayKey = currentDate.toDateString();
-    localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(selectedCommitments));
-    
-    // Also save to UnifiedDataService for Visual Schedule integration
-    try {
-      const selectedTexts = commitments
-        .filter(c => selectedCommitments.includes(c.id))
-        .map(c => c.text);
-      
-      // Save each selected commitment using the UnifiedDataService API
-      selectedTexts.forEach(text => {
-        UnifiedDataService.addBehaviorCommitment({
-          studentId: 'morning-meeting', // Generic ID for morning meeting commitments
-          commitment: text,
-          date: currentDate.toISOString().split('T')[0],
-          status: 'pending'
-        });
-      });
-    } catch (error) {
-      console.error('Error saving behavior commitments to UnifiedDataService:', error);
-    }
-    
-    onNext();
-  };
+  // This effect will be called by the global navigation when moving to next step
+  useEffect(() => {
+    const handleDataSave = () => {
+      if (selectedCommitments.length > 0) {
+        // Ensure data is saved before proceeding
+        const todayKey = currentDate.toDateString();
+        localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(selectedCommitments));
+        
+        // Also save to UnifiedDataService for Visual Schedule integration
+        try {
+          const selectedTexts = commitments
+            .filter(c => selectedCommitments.includes(c.id))
+            .map(c => c.text);
+          
+          // Save each selected commitment using the UnifiedDataService API
+          selectedTexts.forEach(text => {
+            UnifiedDataService.addBehaviorCommitment({
+              studentId: 'morning-meeting', // Generic ID for morning meeting commitments
+              commitment: text,
+              date: currentDate.toISOString().split('T')[0],
+              status: 'pending'
+            });
+          });
+        } catch (error) {
+          console.error('Error saving behavior commitments to UnifiedDataService:', error);
+        }
+      }
+    };
+
+    // Save data whenever selections change
+    handleDataSave();
+  }, [selectedCommitments, commitments, currentDate]);
 
   if (isLoading) {
     return (
@@ -174,18 +191,6 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, currentDate
         )}
       </div>
 
-      <div className="step-navigation">
-        <button onClick={onBack} className="nav-button secondary">
-          ← Back
-        </button>
-        <button 
-          onClick={handleNext} 
-          className="nav-button primary"
-          disabled={selectedCommitments.length === 0}
-        >
-          {selectedCommitments.length === 0 ? 'Choose at least one goal' : 'Continue →'}
-        </button>
-      </div>
     </div>
   );
 };
