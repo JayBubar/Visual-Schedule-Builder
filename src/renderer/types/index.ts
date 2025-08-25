@@ -1,5 +1,5 @@
 // ===== VIEW TYPES =====
-// ✅ FIXED: Added 'reports' and 'iep-goals' to ViewType enum
+// ✅ FIXED: Added 'reports', 'iep-goals', and 'start' to ViewType enum
 export type ViewType = 
   | 'builder' 
   | 'display' 
@@ -11,7 +11,8 @@ export type ViewType =
   | 'data-collection' 
   | 'reports'        // ✅ ADDED - this was missing!
   | 'smart-groups'  
-  | 'settings';
+  | 'settings'
+  | 'start';         // ✅ ADDED - Start screen view
 
 // Schedule category type
 export type ScheduleCategory = 'academic' | 'social' | 'break' | 'special' | 'routine' | 'therapy' | 'custom' | 'creative' | 'movement' | 'holiday' | 'mixed' | 'resource' | 'transition' | 'sensory' | 'system';
@@ -55,7 +56,7 @@ export interface Student {
   allergies?: string[];
   isActive?: boolean;
   skillLevel?: 'low' | 'medium' | 'high' | 'emerging' | 'developing' | 'proficient' | 'advanced';
-  workingStyle?: 'independent' | 'collaborative' | 'guided' | 'needs-support';
+  workingStyle: string;
   preferredPartners?: string[];
   avoidPartners?: string[];
   iep?: boolean;
@@ -250,7 +251,7 @@ export interface Schedule {
   activities: SavedActivity[];
   templateId?: string;
   notes?: string;
-  status: 'draft' | 'active' | 'completed' | 'archived';
+  status?: 'draft' | 'active' | 'completed' | 'archived'; // Changed to optional
   createdAt: string;
   updatedAt: string;
   description?: string;
@@ -997,4 +998,29 @@ export interface EnhancedCalendarSettings extends CalendarSettings {
   behaviorCommitments: BehaviorCommitmentSettings;
   welcomeSettings: WelcomeSettings;
   checkInFlow: CheckInFlowSettings;
+}
+
+// HubSettings interface - Ensure it's exported from this main types file
+export interface HubSettings {
+  videos?: {
+    calendarMath?: { name: string; url: string }[];
+    weather?: { name: string; url: string }[];
+    seasonal?: { name: string; url: string }[];
+    behaviorCommitments?: { name: string; url: string }[];
+  };
+  behaviorStatements?: {
+    enabled: boolean;
+    statements: BehaviorStatement[];
+    allowCustom: boolean;
+  };
+  celebrations?: {
+    enabled: boolean;
+    showBirthdayPhotos: boolean;
+    customCelebrations: CustomCelebration[];
+  };
+  flowCustomization?: {
+    enabledSteps: { [stepId: string]: boolean };
+  };
+  dailyCheckIn?: EnhancedCalendarSettings;
+  [key: string]: any;
 }

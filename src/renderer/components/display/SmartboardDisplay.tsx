@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HubSettings, Student, ScheduleActivity } from '../types';
+import { HubSettings, Student, ScheduleActivity } from '../../types';
 import MorningMeetingController from '../morning-meeting/MorningMeetingController';
 
 // A placeholder for displaying regular activities. You can build this out further.
@@ -15,6 +15,7 @@ const ActivityDisplay: React.FC<{ activity: ScheduleActivity, onComplete: () => 
 
 interface SmartboardDisplayProps {
     students: Student[];
+    staff?: any[]; // Add staff prop to match App.tsx usage
     hubSettings: HubSettings;
     currentSchedule?: {
         activities: ScheduleActivity[];
@@ -22,6 +23,7 @@ interface SmartboardDisplayProps {
         name: string;
     };
     onNavigateHome: () => void;
+    onNavigateToBuilder?: () => void; // Add onNavigateToBuilder prop to match App.tsx usage
 }
 
 const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
@@ -58,8 +60,9 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       <MorningMeetingController
         students={students}
         hubSettings={hubSettings}
-        onComplete={handleActivityComplete} // When MM is done, this advances the schedule
-        onBackToHub={onNavigateHome}   // The "Home" button will end the schedule
+        onClose={handleActivityComplete} // When MM is done, this advances the schedule
+        onNavigateHome={onNavigateHome}   // The "Home" button will end the schedule
+        onNavigateToDisplay={handleActivityComplete} // Alternative completion handler
       />
     );
   }

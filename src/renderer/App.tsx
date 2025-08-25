@@ -320,7 +320,6 @@ const App: React.FC = () => {
       ) : (
         currentView === 'display' ? (
           <SmartboardDisplay
-            isActive={true}
             students={students}
             staff={staffMembers}
             hubSettings={hubSettings}
@@ -335,7 +334,7 @@ const App: React.FC = () => {
             } : undefined}
             onNavigateHome={handleBackToStart}
             onNavigateToBuilder={() => handleViewChange('builder')}
-          />  
+          />
         ) : currentView === 'calendar' ? (
           <MorningMeetingController
             students={students}
