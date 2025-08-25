@@ -33,6 +33,9 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
 
   const [revealedSeason, setRevealedSeason] = useState<boolean>(false);
   
+  // NEW: State to dynamically control the header for the first step
+  const [step1Header, setStep1Header] = useState("I can name the four seasons.");
+  
   const seasonalVideos = useMemo(() => hubSettings?.videos?.seasonal || [], [hubSettings]);
 
   const currentSeasonKey = useMemo(() => {
@@ -45,9 +48,9 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
   }, [currentDate]);
   const currentSeasonData = useMemo(() => SEASONS_DATA[currentSeasonKey], [currentSeasonKey]);
 
-  // MODIFICATION: Updated the first step's question and standard per your request
+  // MODIFICATION: Reverted first step text and combined standards
   const steps = useMemo(() => [
-    { id: 'name-seasons', question: "I can say seasons happen in a circle, again and again!", standard: "Science K.E.3A.3" },
+    { id: 'name-seasons', question: "I can name the four seasons.", standard: "Science K.E.3A.2 & K.E.3A.3" },
     { id: 'match-weather', question: "I can tell what the weather is usually like.", standard: "Science K.E.3A.2" },
     { id: 'current-season', question: "I can name the season we are in now.", standard: "Science K.E.3A.2" }
   ], []);
@@ -83,6 +86,8 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     if (newSelected.length === 4) {
         showCelebrationMessage('🎉 Great job!');
         markStepComplete(0);
+        // NEW: Change the header text when the task is complete
+        setStep1Header("I can say seasons happen in a circle, again and again!");
     }
   }, [selectedSeasons, showCelebrationMessage, markStepComplete]);
 
@@ -118,7 +123,8 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         const arrowsVisible = completedSteps.has(0);
         return (
           <>
-            <h2 style={styles.rightPanelTitle}>{step.question}</h2>
+            {/* MODIFICATION: Header now uses the dynamic state variable */}
+            <h2 style={styles.rightPanelTitle}>{step1Header}</h2>
             <div style={styles.gridContainer}>
               {SEASON_ORDER.map(key => {
                   let arrowEmoji = '';
