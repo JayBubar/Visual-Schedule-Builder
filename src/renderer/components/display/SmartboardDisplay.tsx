@@ -820,10 +820,8 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   onNavigateHome,
   onNavigateToBuilder
 }) => {
-  // 🎯 CRITICAL: ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
-  // State management - MUST be at the top, always called
+  // ALL HOOKS AT THE TOP - NEVER CONDITIONALLY CALLED
   const [realStudents, setRealStudents] = useState<Student[]>(() => {
-    // Initialize with data immediately
     try {
       const legacyStudents = localStorage.getItem('students');
       if (legacyStudents) {
@@ -848,16 +846,195 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const [showBehaviorStatements, setShowBehaviorStatements] = useState(true);
   const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
 
-  // Get current pull-outs from resource schedule
+  // Custom hooks must be called at the top
   const { getCurrentPullOuts } = useResourceSchedule();
   const currentPullOuts = getCurrentPullOuts();
 
-  // Load behavior commitments at main component level
+  // Load behavior commitments
   useEffect(() => {
     setBehaviorCommitments(getTodaysBehaviorCommitments());
   }, []);
 
-  // Toggle function for behavior achievements at main component level
+  // Load schedule from localStorage with group preservation
+  useEffect(() => {
+    console.log('🖥️ SmartboardDisplay - Loading schedule data...');
+
+    if (!currentSchedule) {
+      console.log('📋 No currentSchedule provided, loading from localStorage...');
+
+      const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
+
+      for (const key of possibleKeys) {
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved) {
+            const schedules = JSON.parse(saved);
+            console.log(`📋 Found ${schedules.length} schedules in '${key}'`);
+
+            if (schedules.length > 0) {
+              const mostRecent = schedules
+                .filter((s: any) => s.lastUsed)
+                .sort((a: any, b: any) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())[0];
+
+              const scheduleToUse = mostRecent || schedules[0];
+              console.log('🎯 Using schedule:', scheduleToUse.name);
+
+              const loadedActivities = (scheduleToUse.activities || []).map((activity: any) => ({
+                ...activity,
+                groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
+              }));
+
+              console.log('📄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
+                name: a.name,
+                groupCount: a.groupAssignments?.length || 0,
+                groups: a.groupAssignments
+              })));
+
+              setFallbackSchedule({
+                activities: loadedActivities,
+                startTime: scheduleToUse.startTime || '09:00',
+                name: scheduleToUse.name || 'Untitled Schedule'
+              });
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Error loading from ${key}:`, error);
+        }
+      }
+    } else {
+      console.log('🔥 Using provided currentSchedule, preserving groups...');
+      const preservedActivities = (currentSchedule.activities || []).map((activity: any) => ({
+        ...activity,
+        groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
+      }));
+
+      console.log('📄 Preserved activities from props:', preservedActivities.map((a: any) => ({
+        name: a.name,
+        groupCount: a.groupAssignments?.length || 0
+      })));
+    }
+  }, [currentSchedule]);
+
+  // 🔧 FIX: Load student and staff data - ALWAYS called
+  useEffect(() => {
+    if (!isActive) return; // Early return INSIDE useEffect is safe
+
+    console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
+
+    const loadStudentData = async () => {
+      let studentsToUse: any[] = [];
+      let staffToUse: any[] = [];
+
+      try {
+        // Primary: Load from UnifiedDataService
+        const unifiedStudents = UnifiedDataService.getAllStudents();
+        const unifiedStaff = UnifiedDataService.getAllStaff();
+
+        console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
+        console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
+
+        if (unifiedStudents.length > 0) {
+          studentsToUse = unifiedStudents;
+        }
+        if (unifiedStaff.length > 0) {
+          staffToUse = unifiedStaff;
+        }
+      } catch (error) {
+        console.error('❌ Error loading from UnifiedDataService:', error);
+      }
+
+      // Fallback: Use props if UnifiedDataService fails
+      if (studentsToUse.length === 0 && students && students.length > 0) {
+        console.log('📚 Fallback: Using students from props:', students.length);
+        studentsToUse = students;
+      }
+
+      if (staffToUse.length === 0 && staff && staff.length > 0) {
+        console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
+        staffToUse = staff;
+      }
+
+      // Emergency fallback: Direct localStorage access
+      if (studentsToUse.length === 0) {
+        console.log('🆘 Emergency fallback: Reading directly from localStorage...');
+        try {
+          const legacyStudents = localStorage.getItem('students');
+          if (legacyStudents) {
+            const parsedStudents = JSON.parse(legacyStudents);
+            if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
+              console.log('🆘 Using emergency student data:', parsedStudents.length);
+              studentsToUse = parsedStudents;
+            }
+          }
+        } catch (error) {
+          console.error('🆘 Emergency fallback failed:', error);
+        }
+      }
+
+      // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
+      console.log('📄 Setting student state:', studentsToUse.length, 'students');
+
+      setTimeout(() => {
+        setRealStudents(studentsToUse);
+        setRealStaff(staffToUse);
+        console.log('✅ State set via setTimeout');
+      }, 0);
+    };
+
+    loadStudentData();
+  }, [isActive, students, staff]); // Safe to depend on isActive here
+
+  // Timer countdown effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (isRunning && timeRemaining > 0) {
+      interval = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            setIsRunning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, timeRemaining]);
+
+  // Set initial timer when activity changes - must be with other hooks
+  useEffect(() => {
+    const activeSchedule = currentSchedule || fallbackSchedule;
+    const currentActivity = activeSchedule?.activities[currentActivityIndex];
+    if (currentActivity && currentActivity.duration) {
+      setTimeRemaining(currentActivity.duration * 60);
+    }
+  }, [currentActivityIndex, currentSchedule, fallbackSchedule]);
+
+  // Load today's choice assignments when Choice Item Time is active - must be with other hooks  
+  useEffect(() => {
+    const activeSchedule = currentSchedule || fallbackSchedule;
+    const currentActivity = activeSchedule?.activities[currentActivityIndex];
+    const isChoiceItemTime = currentActivity?.name === 'Choice Item Time' ||
+                            (currentActivity?.category === 'system' && currentActivity?.name?.includes('Choice'));
+    
+    if (isChoiceItemTime) {
+      const choiceDataManager = ChoiceDataManager.getInstance();
+      const choices = choiceDataManager.getTodayChoices();
+      setTodayChoices(choices);
+      console.log(`🎯 Loaded ${choices.length} choice assignments for Choice Item Time`);
+    }
+  }, [currentActivityIndex, currentSchedule, fallbackSchedule]);
+
+  // AFTER ALL HOOKS: Now calculate derived values
+  const activeSchedule = currentSchedule || fallbackSchedule;
+  const currentActivity = activeSchedule?.activities[currentActivityIndex];
+
+  // Toggle function for behavior achievements - can be after hooks
   const toggleStudentAchievement = (studentId: string) => {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -889,7 +1066,6 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
           
           localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
           
-          // Update the local state
           setBehaviorCommitments((prev: any) => ({
             ...prev,
             [studentId]: {
@@ -907,172 +1083,12 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   };
 
   // Dynamic screen sizing - calculate available heights
-  const headerHeight = 70; // Reduced from 80px - more compact header
-  const controlsHeight = 60; // Reduced from 70px - more compact controls
-  const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 20; // Less padding
+  const headerHeight = 70;
+  const controlsHeight = 60;
+  const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 20;
 
-  // 🔧 CRITICAL FIX: Load schedule from localStorage with group preservation
-  useEffect(() => {
-    console.log('🖥️ SmartboardDisplay - Loading schedule data...');
-
-    if (!currentSchedule) {
-      console.log('📋 No currentSchedule provided, loading from localStorage...');
-
-      // Try multiple possible localStorage keys
-      const possibleKeys = ['scheduleVariations', 'saved_schedules', 'schedules'];
-
-      for (const key of possibleKeys) {
-        try {
-          const saved = localStorage.getItem(key);
-          if (saved) {
-            const schedules = JSON.parse(saved);
-            console.log(`📋 Found ${schedules.length} schedules in '${key}'`);
-
-            if (schedules.length > 0) {
-              // Use the most recent schedule
-              const mostRecent = schedules
-                .filter((s: any) => s.lastUsed)
-                .sort((a: any, b: any) => new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime())[0];
-
-              const scheduleToUse = mostRecent || schedules[0];
-              console.log('🎯 Using schedule:', scheduleToUse.name);
-
-              // 🎯 CRITICAL: Preserve groupAssignments when loading
-              const loadedActivities = (scheduleToUse.activities || []).map((activity: any) => ({
-                ...activity,
-                // Ensure groupAssignments are preserved
-                groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
-              }));
-
-              console.log('📄 Loaded activities with groups:', loadedActivities.map((a: any) => ({
-                name: a.name,
-                groupCount: a.groupAssignments?.length || 0,
-                groups: a.groupAssignments
-              })));
-
-              setFallbackSchedule({
-                activities: loadedActivities,
-                startTime: scheduleToUse.startTime || '09:00',
-                name: scheduleToUse.name || 'Untitled Schedule'
-              });
-              break;
-            }
-          }
-        } catch (error) {
-          console.error(`Error loading from ${key}:`, error);
-        }
-      }
-    } else {
-      // 🎯 CRITICAL: Also preserve groupAssignments from currentSchedule prop
-      console.log('🔥 Using provided currentSchedule, preserving groups...');
-      const preservedActivities = (currentSchedule.activities || []).map((activity: any) => ({
-        ...activity,
-        groupAssignments: activity.groupAssignments || activity.assignment?.groupAssignments || []
-      }));
-
-      console.log('📄 Preserved activities from props:', preservedActivities.map((a: any) => ({
-        name: a.name,
-        groupCount: a.groupAssignments?.length || 0
-      })));
-    }
-  }, [currentSchedule]);
-
-  // Replace the existing useEffect around line 117-208 with this:
-useEffect(() => {
-  console.log('🖥️ SmartboardDisplay - Loading student and staff data...');
-
-  const loadStudentData = async () => {
-    let studentsToUse: any[] = [];
-    let staffToUse: any[] = [];
-
-    try {
-      // Primary: Load from UnifiedDataService
-      const unifiedStudents = UnifiedDataService.getAllStudents();
-      const unifiedStaff = UnifiedDataService.getAllStaff();
-
-      console.log('📚 Loaded students from UnifiedDataService:', unifiedStudents.length);
-      console.log('👨‍🏫 Loaded staff from UnifiedDataService:', unifiedStaff.length);
-
-      if (unifiedStudents.length > 0) {
-        studentsToUse = unifiedStudents;
-      }
-      if (unifiedStaff.length > 0) {
-        staffToUse = unifiedStaff;
-      }
-    } catch (error) {
-      console.error('❌ Error loading from UnifiedDataService:', error);
-    }
-
-    // Fallback: Use props if UnifiedDataService fails
-    if (studentsToUse.length === 0 && students && students.length > 0) {
-      console.log('📚 Fallback: Using students from props:', students.length);
-      studentsToUse = students;
-    }
-
-    if (staffToUse.length === 0 && staff && staff.length > 0) {
-      console.log('👨‍🏫 Fallback: Using staff from props:', staff.length);
-      staffToUse = staff;
-    }
-
-    // Emergency fallback: Direct localStorage access
-    if (studentsToUse.length === 0) {
-      console.log('🆘 Emergency fallback: Reading directly from localStorage...');
-      try {
-        const legacyStudents = localStorage.getItem('students');
-        if (legacyStudents) {
-          const parsedStudents = JSON.parse(legacyStudents);
-          if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
-            console.log('🆘 Using emergency student data:', parsedStudents.length);
-            studentsToUse = parsedStudents;
-          }
-        }
-      } catch (error) {
-        console.error('🆘 Emergency fallback failed:', error);
-      }
-    }
-
-    // Update state with loaded data - USE SETTIMEOUT TO AVOID REACT BATCHING ISSUES
-    console.log('📄 Setting student state:', studentsToUse.length, 'students');
-
-    setTimeout(() => {
-      setRealStudents(studentsToUse);
-      setRealStaff(staffToUse);
-      console.log('✅ State set via setTimeout');
-    }, 0);
-  };
-
-  loadStudentData();
-}, [isActive]); // Depend on isActive instead of empty array
-
-
-  // Timer countdown effect (moved after hooks)
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isRunning && timeRemaining > 0) {
-      interval = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, timeRemaining]);
-
-  // 🎯 AFTER ALL HOOKS: Now calculate derived values
-  const activeSchedule = currentSchedule || fallbackSchedule;
-  const currentActivity = activeSchedule?.activities[currentActivityIndex];
-
-  // 🎯 MORNING MEETING DETECTION - Enhanced detection logic
+  // MORNING MEETING DETECTION - Enhanced detection logic
   const renderActivityContent = () => {
-    // Check if current activity is Morning Meeting
     if (currentActivity?.id === 'morning-meeting-placeholder' || 
         currentActivity?.name === "Morning Meeting" ||
         currentActivity?.description === 'Daily morning meeting routine' ||
@@ -1081,7 +1097,6 @@ useEffect(() => {
       
       console.log('🌅 SmartboardDisplay: Detected Morning Meeting activity');
       
-      // Use MorningMeetingController with correct props
       return (
         <MorningMeetingController
           students={realStudents}
@@ -1092,7 +1107,7 @@ useEffect(() => {
             if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
               setCurrentActivityIndex(currentActivityIndex + 1);
             } else {
-              onNavigateHome?.(); // Schedule is complete
+              onNavigateHome?.();
             }
           }}
           onNavigateHome={onNavigateHome}
@@ -1101,29 +1116,15 @@ useEffect(() => {
             if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
               setCurrentActivityIndex(currentActivityIndex + 1);
             } else {
-              onNavigateHome?.(); // Schedule is complete
+              onNavigateHome?.();
             }
           }}
         />
       );
     }
     
-    // Return null for regular activities (will be handled by existing logic)
     return null;
   };
-
-  // Check for Morning Meeting first
-  const morningMeetingContent = renderActivityContent();
-  if (morningMeetingContent) {
-    return morningMeetingContent;
-  }
-
-  // Set initial timer when activity changes
-  useEffect(() => {
-    if (currentActivity && currentActivity.duration) {
-      setTimeRemaining(currentActivity.duration * 60);
-    }
-  }, [currentActivityIndex, currentActivity]);
 
   // Timer control functions (moved after hooks)
   const onTimerControl = (action: string) => {
@@ -1201,19 +1202,9 @@ useEffect(() => {
      ['Movement Break', 'Brain Break', 'Transition Time', 'Get Ready', 'Clean Up Time']
      .includes(currentActivity.name));         // Fallback: known transition activity names
 
-  // 🎯 CHOICE ITEM TIME DETECTION
+  // CHOICE ITEM TIME DETECTION
   const isChoiceItemTime = currentActivity?.name === 'Choice Item Time' ||
                           (currentActivity?.category === 'system' && currentActivity?.name?.includes('Choice'));
-
-  // Load today's choice assignments when Choice Item Time is active
-  useEffect(() => {
-    if (isChoiceItemTime) {
-      const choiceDataManager = ChoiceDataManager.getInstance();
-      const choices = choiceDataManager.getTodayChoices();
-      setTodayChoices(choices);
-      console.log(`🎯 Loaded ${choices.length} choice assignments for Choice Item Time`);
-    }
-  }, [isChoiceItemTime, currentActivityIndex]);
 
   // Function to get selected videos from localStorage
   const getSelectedVideo = (slot: 'move1' | 'move2' | 'lesson1' | 'lesson2'): string | undefined => {
@@ -1232,6 +1223,12 @@ useEffect(() => {
   // 🎯 NOW SAFE TO HAVE EARLY RETURNS - All hooks have been called
   if (!isActive) {
     return null;
+  }
+
+  // Check for Morning Meeting AFTER isActive check
+  const morningMeetingContent = renderActivityContent();
+  if (morningMeetingContent) {
+    return morningMeetingContent;
   }
 
   // 🔧 ISOLATION FIX: Render transition in isolated container

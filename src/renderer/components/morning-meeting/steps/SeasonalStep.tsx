@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
+// Helper function to get video URL from various possible formats
+const getVideoUrl = (video: any): string | null => {
+  // Try multiple possible video URL locations
+  if (video?.videoData?.videoUrl) return video.videoData.videoUrl;
+  if (video?.url) return video.url;
+  if (typeof video === 'string') return video;
+  return null;
+};
+
 // Interfaces and Data
 interface GameItem { id: string; text: string; season: string; type: 'activity' | 'season'; }
 interface SeasonData { name: string; emoji: string; months: string[]; details: { weather: string; nature: string; activities: string; clothing: string; }; }
@@ -198,7 +207,20 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         
         {/* Video Link Button */}
         {seasonalVideos.length > 0 && (
-          <button style={styles.videoButton} onClick={() => window.open(seasonalVideos[0].url, '_blank')}>
+          <button style={styles.videoButton} onClick={() => {
+            const videoUrl = getVideoUrl(seasonalVideos[0]);
+            if (videoUrl) {
+              console.log('Opening seasonal video:', videoUrl);
+              const newWindow = window.open(videoUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+              if (!newWindow) {
+                console.error('Failed to open video window - popup blocked?');
+                alert('Unable to open video. Please check your popup blocker settings.');
+              }
+            } else {
+              console.error('Video URL not found for video:', seasonalVideos[0]);
+              alert('Video URL not available');
+            }
+          }}>
             🎬 Watch a Season Video
           </button>
         )}

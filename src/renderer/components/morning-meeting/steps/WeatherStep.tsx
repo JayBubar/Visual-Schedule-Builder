@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 
+// Helper function to get video URL from various possible formats
+const getVideoUrl = (video: any): string | null => {
+  // Try multiple possible video URL locations
+  if (video?.videoData?.videoUrl) return video.videoData.videoUrl;
+  if (video?.url) return video.url;
+  if (typeof video === 'string') return video;
+  return null;
+};
+
 // Interfaces
 interface WeatherData { temperature: number; condition: string; description: string; }
 interface ClothingItem { item: string; emoji: string; }
@@ -148,7 +157,20 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
         
         {/* Video Link Button */}
         {weatherVideos.length > 0 && (
-          <button style={styles.videoButton} onClick={() => window.open(weatherVideos[0].url, '_blank')}>
+          <button style={styles.videoButton} onClick={() => {
+            const videoUrl = getVideoUrl(weatherVideos[0]);
+            if (videoUrl) {
+              console.log('Opening weather video:', videoUrl);
+              const newWindow = window.open(videoUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+              if (!newWindow) {
+                console.error('Failed to open video window - popup blocked?');
+                alert('Unable to open video. Please check your popup blocker settings.');
+              }
+            } else {
+              console.error('Video URL not found for video:', weatherVideos[0]);
+              alert('Video URL not available');
+            }
+          }}>
             🎬 Watch a Weather Video
           </button>
         )}

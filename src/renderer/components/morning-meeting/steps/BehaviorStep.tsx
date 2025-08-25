@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps, BehaviorStepData } from '../types/morningMeetingTypes';
 
+// Helper function to get video URL from various possible formats
+const getVideoUrl = (video: any): string | null => {
+  // Try multiple possible video URL locations
+  if (video?.videoData?.videoUrl) return video.videoData.videoUrl;
+  if (video?.url) return video.url;
+  if (typeof video === 'string') return video;
+  return null;
+};
+
 // Standardized Navigation Component
 const StepNavigation: React.FC<{
   navigation: any;
@@ -406,7 +415,20 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
             {selectedVideos.map((video, index) => (
               <button
                 key={index}
-                onClick={() => window.open(video.url, `rules-video-${index}`, 'width=800,height=600')}
+                onClick={() => {
+                  const videoUrl = getVideoUrl(video);
+                  if (videoUrl) {
+                    console.log('Opening behavior video:', videoUrl);
+                    const newWindow = window.open(videoUrl, `rules-video-${index}`, 'width=800,height=600,scrollbars=yes,resizable=yes');
+                    if (!newWindow) {
+                      console.error('Failed to open video window - popup blocked?');
+                      alert('Unable to open video. Please check your popup blocker settings.');
+                    }
+                  } else {
+                    console.error('Video URL not found for video:', video);
+                    alert('Video URL not available');
+                  }
+                }}
                 style={{
                   background: 'rgba(255, 255, 255, 0.9)',
                   color: '#333333',

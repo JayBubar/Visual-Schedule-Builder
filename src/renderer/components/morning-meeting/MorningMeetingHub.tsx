@@ -322,11 +322,15 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   const loadAvailableVideos = () => {
     try {
       const activities = UnifiedDataService.getAllActivities();
+      console.log('🎬 All activities from UnifiedDataService:', activities.length);
+      
       const videos = activities.filter(activity => 
         (activity as any).contentType === 'video'
       );
+      console.log('🎬 Filtered videos:', videos.length, videos.map(v => ({ name: v.name, id: v.id, videoData: (v as any).videoData })));
       setAvailableVideos(videos);
     } catch (error) {
+      console.error('🎬 Error loading videos:', error);
       setAvailableVideos([]);
     }
   };
@@ -654,7 +658,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                             const newVideo = {
                               id: selectedVideo.id,
                               name: selectedVideo.name,
-                              url: (selectedVideo as any).url || ''
+                              url: (selectedVideo as any).videoData?.videoUrl || (selectedVideo as any).url || '',
+                              videoData: (selectedVideo as any).videoData || { videoUrl: (selectedVideo as any).url || '' }
                             };
                             updateSettings('videos', { 
                               weather: [...settings.videos.weather, newVideo]
@@ -706,7 +711,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                             const newVideo = {
                               id: selectedVideo.id,
                               name: selectedVideo.name,
-                              url: (selectedVideo as any).url || ''
+                              url: (selectedVideo as any).videoData?.videoUrl || (selectedVideo as any).url || '',
+                              videoData: (selectedVideo as any).videoData || { videoUrl: (selectedVideo as any).url || '' }
                             };
                             updateSettings('videos', { 
                               seasonal: [...settings.videos.seasonal, newVideo]
@@ -758,7 +764,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                             const newVideo = {
                               id: selectedVideo.id,
                               name: selectedVideo.name,
-                              url: (selectedVideo as any).url || ''
+                              url: (selectedVideo as any).videoData?.videoUrl || (selectedVideo as any).url || '',
+                              videoData: (selectedVideo as any).videoData || { videoUrl: (selectedVideo as any).url || '' }
                             };
                             updateSettings('videos', { 
                               behaviorCommitments: [...settings.videos.behaviorCommitments, newVideo]
@@ -810,7 +817,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                             const newVideo = {
                               id: selectedVideo.id,
                               name: selectedVideo.name,
-                              url: (selectedVideo as any).url || ''
+                              url: (selectedVideo as any).videoData?.videoUrl || (selectedVideo as any).url || '',
+                              videoData: (selectedVideo as any).videoData || { videoUrl: (selectedVideo as any).url || '' }
                             };
                             updateSettings('videos', { 
                               calendarMath: [...settings.videos.calendarMath, newVideo]
