@@ -229,7 +229,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
   onClose
 }) => {
-  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'behavior' | 'celebrations' | 'flow'>('welcome');
+  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
@@ -429,7 +429,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
     { id: 'welcome', name: 'Welcome', icon: '👋', description: 'Personalize your classroom greeting' },
     { id: 'vocabulary', name: 'Vocabulary', icon: '📚', description: 'Customize learning words' },
     { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select educational videos' },
-    { id: 'behavior', name: 'Behavior', icon: '⭐', description: 'Manage behavior expectations' },
+    { id: 'classroomRules', name: 'Classroom Rules', icon: '⭐', description: 'Manage classroom expectations' },
     { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and special events' },
     { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize meeting steps' }
   ] as const;
@@ -867,11 +867,11 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
             </div>
           )}
 
-          {/* Behavior Statements */}
-          {activeSection === 'behavior' && (
+          {/* Classroom Rules (renamed from Behavior) */}
+          {activeSection === 'classroomRules' && (
             <div className="hub-section">
-              <h2>⭐ Behavior Expectations</h2>
-              <p>Manage positive behavior expectations for your classroom</p>
+              <h2>⭐ Classroom Rules</h2>
+              <p>Manage classroom expectations and rules</p>
 
               <div className="form-group">
                 <label className="checkbox-label">
@@ -880,13 +880,13 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                     checked={settings.behaviorStatements.enabled}
                     onChange={(e) => updateSettings('behaviorStatements', { enabled: e.target.checked })}
                   />
-                  Enable Behavior Commitments in Morning Meeting
+                  Enable classroom rules in Morning Meeting
                 </label>
               </div>
 
               {settings.behaviorStatements.enabled && (
                 <div className="behavior-statements">
-                  <h3>Behavior Statements</h3>
+                  <h3>Classroom Rules</h3>
                   {settings.behaviorStatements.statements.map((statement, index) => (
                     <div key={index} className="statement-item">
                       <input
@@ -918,7 +918,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                     }}
                     className="add-statement-button"
                   >
-                    ➕ Add Statement
+                    ➕ Add Rule
                   </button>
                 </div>
               )}

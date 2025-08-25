@@ -11,7 +11,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
 }) => {
   const [internalSection, setInternalSection] = useState(0);
 
-  const classroomRules = useMemo(() => hubSettings?.classroomRules?.rules || [], [hubSettings]);
+  const classroomRules = useMemo(() => hubSettings?.behaviorStatements?.statements || [], [hubSettings]);
   const dailyAnnouncements = useMemo(() => hubSettings?.dailyAnnouncements || [], [hubSettings]);
 
   const getOrdinalSuffix = (n: number) => {
@@ -42,15 +42,16 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
           <>
             <h2 style={styles.rightPanelTitle}>Classroom Rules Review</h2>
             <div style={styles.rulesContainer}>
-              {classroomRules.length > 0 ? (
-                classroomRules.map(rule => (
-                  <div key={rule.id} style={styles.ruleItem}>
-                    <span style={styles.ruleEmoji}>{rule.emoji}</span>
-                    <span>{rule.text}</span>
+              {/* Use Hub data instead of hardcoded rules */}
+              {hubSettings?.behaviorStatements?.enabled && hubSettings?.behaviorStatements?.statements?.length > 0 ? (
+                hubSettings.behaviorStatements.statements.map((rule, index) => (
+                  <div key={index} style={styles.ruleItem}>
+                    <span style={styles.ruleEmoji}>⭐</span>
+                    <span>{rule}</span>
                   </div>
                 ))
               ) : (
-                <p style={styles.rightPanelSubtitle}>No classroom rules have been set.</p>
+                <p style={styles.rightPanelSubtitle}>No classroom rules have been configured in Morning Meeting Hub.</p>
               )}
             </div>
           </>

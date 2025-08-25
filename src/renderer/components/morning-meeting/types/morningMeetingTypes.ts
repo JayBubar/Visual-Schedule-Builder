@@ -16,7 +16,7 @@ export interface HubSettings {
   };
   behaviorStatements?: {
     enabled: boolean;
-    statements: { id: string; text: string; emoji: string }[];
+    statements: string[];
     allowCustom: boolean;
   };
   celebrations?: {
