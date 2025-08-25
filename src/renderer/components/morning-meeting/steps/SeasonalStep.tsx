@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
+import { styles } from './SeasonalStep.styles'; 
 
 // Helper function to get video URL
 const getVideoUrl = (video: any): string | null => {
@@ -20,20 +21,16 @@ const SEASONS_DATA: { [key: string]: SeasonData } = {
 const SEASON_ORDER = ['spring', 'summer', 'fall', 'winter'];
 
 const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onStepComplete }) => {
-  // MODIFICATION: Re-structured state for a 3-step flow
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState<string>('');
   
-  // State for Step 1
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   
-  // NEW: State for Step 2 (Quiz Game)
   const [quizItems, setQuizItems] = useState<{ key: string; data: SeasonData }[]>([]);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | ''>('');
 
-  // State for Step 3
   const [revealedSeason, setRevealedSeason] = useState<boolean>(false);
   
   const seasonalVideos = useMemo(() => hubSettings?.videos?.seasonal || [], [hubSettings]);
@@ -48,14 +45,13 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
   }, [currentDate]);
   const currentSeasonData = useMemo(() => SEASONS_DATA[currentSeasonKey], [currentSeasonKey]);
 
-  // MODIFICATION: New 3-step definition
+  // MODIFICATION: Added 'standard' property to each step
   const steps = useMemo(() => [
-    { id: 'name-seasons', question: "I can name the four seasons." },
-    { id: 'match-weather', question: "I can tell what the weather is usually like." },
-    { id: 'current-season', question: "I can name the season we are in now." }
+    { id: 'name-seasons', question: "I can name the four seasons.", standard: "Science K.E.3A.2" },
+    { id: 'match-weather', question: "I can tell what the weather is usually like.", standard: "Science K.E.3A.2" },
+    { id: 'current-season', question: "I can say that seasons happen in a circle.", standard: "Science K.E.3A.3" }
   ], []);
 
-  // Initialize the quiz game when entering Step 2
   useEffect(() => {
     if (currentStep === 1 && quizItems.length === 0) {
       const shuffled = [...SEASON_ORDER].sort(() => Math.random() - 0.5);
@@ -80,7 +76,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     return completedSteps.has(currentStep);
   };
 
-  // --- Step 1 Logic ---
   const handleSeasonClick = useCallback((seasonKey: string) => {
     if (selectedSeasons.includes(seasonKey)) return;
     const newSelected = [...selectedSeasons, seasonKey];
@@ -91,7 +86,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     }
   }, [selectedSeasons, showCelebrationMessage, markStepComplete]);
 
-  // --- Step 2 Logic (Quiz Game) ---
   const handleQuizAnswer = (selectedSeasonKey: string) => {
       const correctKey = quizItems[currentItemIndex].key;
       if (selectedSeasonKey === correctKey) {
@@ -111,7 +105,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
       }
   };
 
-  // --- Step 3 Logic ---
   const handleRevealSeason = useCallback(() => {
     setRevealedSeason(true);
     showCelebrationMessage(`It's ${currentSeasonData.name}! 🎉`);
@@ -122,26 +115,26 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     const step = steps[currentStep];
     switch (step.id) {
       case 'name-seasons':
+        const arrowsVisible = completedSteps.has(0);
         return (
           <>
             <h2 style={styles.rightPanelTitle}>{step.question}</h2>
-            <div style={styles.gridContainer}>
-              {SEASON_ORDER.map(key => (
-                  <div key={key} onClick={() => handleSeasonClick(key)} style={{...styles.card, ...(selectedSeasons.includes(key) ? styles.cardSelected : {})}}>
-                    <div style={styles.cardEmoji}>{SEASONS_DATA[key].emoji}</div>
-                    <div style={styles.cardTitle}>{SEASONS_DATA[key].name}</div>
-                  </div>
-              ))}
-            </div>
-            {/* NEW: Cyclical pattern display */}
-            {completedSteps.has(0) && (
-                <div style={styles.cycleContainer}>
-                    <p style={styles.cycleText}>Seasons happen in a circle, again and again!</p>
-                    <div style={styles.cycleGraphic}>
-                        <span>🌸</span> <span>➡️</span> <span>☀️</span> <span>➡️</span> <span>🍂</span> <span>➡️</span> <span>❄️</span> <span>🔄</span>
-                    </div>
+            {/* NEW: Container for the grid and arrows */}
+            <div style={styles.cycleGridContainer}>
+                <div style={styles.gridContainer}>
+                    {SEASON_ORDER.map(key => (
+                        <div key={key} onClick={() => handleSeasonClick(key)} style={{...styles.card, ...(selectedSeasons.includes(key) ? styles.cardSelected : {})}}>
+                            <div style={styles.cardEmoji}>{SEASONS_DATA[key].emoji}</div>
+                            <div style={styles.cardTitle}>{SEASONS_DATA[key].name}</div>
+                        </div>
+                    ))}
                 </div>
-            )}
+                {/* NEW: Arrows that appear when step is complete */}
+                <div style={{...styles.arrow, ...styles.arrowRight, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
+                <div style={{...styles.arrow, ...styles.arrowDown, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
+                <div style={{...styles.arrow, ...styles.arrowLeft, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
+                <div style={{...styles.arrow, ...styles.arrowUp, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
+            </div>
           </>
         );
       case 'match-weather':
@@ -166,14 +159,79 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         );
       case 'current-season':
         return (
-            <>
-                <h2 style={styles.rightPanelTitle}>{step.question}</h2>
-                <div style={styles.mysteryBox}>
-                  {!revealedSeason ? (
-                    <>
-                      <div style={{ fontSize: '6rem' }}>❓</div>
-                      <button onClick={handleRevealSeason} style={styles.actionButton}>Reveal the Season!</button>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: '6
+          <>
+            <h2 style={styles.rightPanelTitle}>What season is it now?</h2>
+            <div style={styles.mysteryBox}>
+              {!revealedSeason ? (
+                <>
+                  <div style={{ fontSize: '6rem' }}>❓</div>
+                  <button onClick={handleRevealSeason} style={styles.actionButton}>Reveal the Season!</button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '6rem' }}>{currentSeasonData.emoji}</div>
+                  <h3 style={{ fontSize: '3rem', margin: 0, color: 'white' }}>{currentSeasonData.name}</h3>
+                </>
+              )}
+            </div>
+          </>
+        );
+      default: return null;
+    }
+  };
+  
+  return (
+    <div style={styles.pageContainer}>
+      <div style={styles.leftColumn}>
+        <h1 style={styles.leftTitle}>🍂 Exploring Seasons</h1>
+        {/* MODIFICATION: Left panel now displays the standard */}
+        {steps.map((step, index) => (
+             <div key={step.id} onClick={() => setCurrentStep(index)} style={{...styles.progressItem, ...(currentStep === index ? styles.progressItemActive : {}), ...(completedSteps.has(index) ? styles.progressItemCompleted : {})}}>
+                <span style={styles.progressCheck}>{completedSteps.has(index) ? '✅' : '➡️'}</span>
+                <div>
+                  {step.question}
+                  <div style={styles.standardText}>Standard: {step.standard}</div>
+                </div>
+             </div>
+        ))}
+        {seasonalVideos.length > 0 && (
+          <button style={styles.videoButton} onClick={() => {
+            const videoUrl = getVideoUrl(seasonalVideos[0]);
+            if (videoUrl) window.open(videoUrl, '_blank', 'width=800,height=600');
+          }}>
+            🎬 Watch a Season Video
+          </button>
+        )}
+      </div>
+      <div style={styles.rightColumn}>
+          {renderRightPanelContent()}
+          <div style={styles.internalNavBar}>
+            {currentStep > 0 && <button onClick={handleInternalBack} style={styles.internalNavButton}>Back</button>}
+            
+            {currentStep < steps.length - 1 ? (
+                <button onClick={handleInternalNext} disabled={!isCurrentStepTaskComplete()} style={{...styles.internalNavButton, ...(!isCurrentStepTaskComplete() ? styles.disabledButton : {})}}>Next</button>
+            ) : (
+                <button onClick={onStepComplete} disabled={!isCurrentStepTaskComplete()} style={{...styles.finishButton, ...(!isCurrentStepTaskComplete() ? styles.disabledButton : {})}}>
+                    Finish Seasons ✔️
+                </button>
+            )}
+          </div>
+      </div>
+      {showCelebration && (
+        <div style={styles.celebrationOverlay}>
+            <div style={styles.celebrationMessage}>{showCelebration}</div>
+        </div>
+       )}
+       <style>{`
+        @keyframes shake {
+          10%, 90% { transform: translate3d(-1px, 0, 0); }
+          20%, 80% { transform: translate3d(2px, 0, 0); }
+          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+          40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default SeasonalStep;
