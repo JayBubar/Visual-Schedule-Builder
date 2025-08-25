@@ -9,21 +9,51 @@ export const styles: { [key: string]: React.CSSProperties } = {
     progressItemActive: { background: 'rgba(255, 255, 255, 0.3)', fontWeight: 700 },
     progressItemCompleted: { opacity: 1, textDecoration: 'line-through' },
     progressCheck: { marginRight: '0.75rem', fontSize: '1.2rem' },
-    standardText: { fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }, // Style for standard code
+    standardText: { fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }, 
     rightPanelTitle: { fontSize: '2.5rem', fontWeight: 700, color: 'white', textShadow: '0 2px 5px rgba(0,0,0,0.3)', textAlign: 'center', marginBottom: '1rem' },
     gridContainer: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', width: '80%', maxWidth: '600px' },
-    card: { background: 'rgba(255, 255, 255, 0.8)', border: '1px solid rgba(255, 255, 255, 0.5)', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s ease-in-out', color: '#333' },
+    // MODIFICATION: Card is now a positioning container for the arrow
+    card: { 
+        background: 'rgba(255, 255, 255, 0.8)', 
+        border: '1px solid rgba(255, 255, 255, 0.5)', 
+        borderRadius: '16px', 
+        padding: '1.5rem', 
+        textAlign: 'center', 
+        cursor: 'pointer', 
+        transition: 'all 0.2s ease-in-out', 
+        color: '#333',
+        position: 'relative', // ADDED: Allows absolute positioning of children
+        overflow: 'hidden'    // ADDED: Keeps corners clean
+    },
     cardSelected: { background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)', color: 'white', transform: 'scale(1.05)', boxShadow: '0 8px 25px rgba(0,0,0,0.1)' },
     cardEmoji: { fontSize: '3rem' },
     cardTitle: { fontSize: '1.2rem', fontWeight: 600 },
-    // Styles for arrow animation
-    cycleGridContainer: { position: 'relative', width: '80%', maxWidth: '600px' },
-    arrow: { position: 'absolute', fontSize: '4rem', color: 'white', opacity: 0, transform: 'scale(0.5)', transition: 'opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s' },
-    arrowVisible: { opacity: 1, transform: 'scale(1)' },
-    arrowRight: { top: '25%', left: '100%', transform: 'translate(-50%, -50%)' },
-    arrowDown: { top: '100%', left: '75%', transform: 'translate(-50%, -50%) rotate(90deg)' },
-    arrowLeft: { top: '75%', left: '0%', transform: 'translate(-50%, -50%) rotate(180deg)' },
-    arrowUp: { top: '0%', left: '25%', transform: 'translate(-50%, -50%) rotate(-90deg)' },
+    // MODIFICATION: Arrow styles updated for the new design
+    arrow: {
+        position: 'absolute',
+        fontSize: '2rem',
+        background: 'rgba(255, 255, 255, 0.9)',
+        color: '#3B82F6',
+        borderRadius: '8px',
+        width: '40px',
+        height: '40px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        opacity: 0,
+        transform: 'scale(0.5)',
+        transition: 'opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s'
+    },
+    arrowVisible: { 
+        opacity: 1, 
+        transform: 'scale(1)' 
+    },
+    // NEW: Corner positioning styles
+    arrowPositionBR: { bottom: '10px', right: '10px' }, // For Spring
+    arrowPositionBL: { bottom: '10px', left: '10px' },  // For Summer
+    arrowPositionTL: { top: '10px', left: '10px' },   // For Winter
+    arrowPositionTR: { top: '10px', right: '10px' },   // For Fall
     quizButtonContainer: { display: 'flex', gap: '1rem', marginBottom: '2rem' },
     quizButton: { padding: '1rem 2rem', fontSize: '1.2rem', background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.5)', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, color: '#333' },
     quizCard: { width: '80%', background: 'rgba(255,255,255,0.7)', padding: '2rem', borderRadius: '16px', textAlign: 'center', transition: 'all 0.3s ease' },

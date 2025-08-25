@@ -45,11 +45,11 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
   }, [currentDate]);
   const currentSeasonData = useMemo(() => SEASONS_DATA[currentSeasonKey], [currentSeasonKey]);
 
-  // MODIFICATION: Added 'standard' property to each step
+  // MODIFICATION: Updated the first step's question and standard per your request
   const steps = useMemo(() => [
-    { id: 'name-seasons', question: "I can name the four seasons.", standard: "Science K.E.3A.2" },
+    { id: 'name-seasons', question: "I can say seasons happen in a circle, again and again!", standard: "Science K.E.3A.3" },
     { id: 'match-weather', question: "I can tell what the weather is usually like.", standard: "Science K.E.3A.2" },
-    { id: 'current-season', question: "I can say that seasons happen in a circle.", standard: "Science K.E.3A.3" }
+    { id: 'current-season', question: "I can name the season we are in now.", standard: "Science K.E.3A.2" }
   ], []);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     const newSelected = [...selectedSeasons, seasonKey];
     setSelectedSeasons(newSelected);
     if (newSelected.length === 4) {
-        showCelebrationMessage('🎉 All 4 seasons!');
+        showCelebrationMessage('🎉 Great job!');
         markStepComplete(0);
     }
   }, [selectedSeasons, showCelebrationMessage, markStepComplete]);
@@ -119,21 +119,39 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         return (
           <>
             <h2 style={styles.rightPanelTitle}>{step.question}</h2>
-            {/* NEW: Container for the grid and arrows */}
-            <div style={styles.cycleGridContainer}>
-                <div style={styles.gridContainer}>
-                    {SEASON_ORDER.map(key => (
-                        <div key={key} onClick={() => handleSeasonClick(key)} style={{...styles.card, ...(selectedSeasons.includes(key) ? styles.cardSelected : {})}}>
-                            <div style={styles.cardEmoji}>{SEASONS_DATA[key].emoji}</div>
-                            <div style={styles.cardTitle}>{SEASONS_DATA[key].name}</div>
-                        </div>
-                    ))}
-                </div>
-                {/* NEW: Arrows that appear when step is complete */}
-                <div style={{...styles.arrow, ...styles.arrowRight, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
-                <div style={{...styles.arrow, ...styles.arrowDown, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
-                <div style={{...styles.arrow, ...styles.arrowLeft, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
-                <div style={{...styles.arrow, ...styles.arrowUp, ...(arrowsVisible ? styles.arrowVisible : {})}}>➡️</div>
+            <div style={styles.gridContainer}>
+              {SEASON_ORDER.map(key => {
+                  let arrowEmoji = '';
+                  let arrowPositionStyle = {};
+                  switch (key) {
+                      case 'spring':
+                          arrowEmoji = '➡️';
+                          arrowPositionStyle = styles.arrowPositionBR;
+                          break;
+                      case 'summer':
+                          arrowEmoji = '⬇️';
+                          arrowPositionStyle = styles.arrowPositionBL;
+                          break;
+                      case 'winter':
+                          arrowEmoji = '⬅️';
+                          arrowPositionStyle = styles.arrowPositionTL;
+                          break;
+                      case 'fall':
+                          arrowEmoji = '⬆️';
+                          arrowPositionStyle = styles.arrowPositionTR;
+                          break;
+                  }
+
+                  return (
+                      <div key={key} onClick={() => handleSeasonClick(key)} style={{...styles.card, ...(selectedSeasons.includes(key) ? styles.cardSelected : {})}}>
+                          <div style={styles.cardEmoji}>{SEASONS_DATA[key].emoji}</div>
+                          <div style={styles.cardTitle}>{SEASONS_DATA[key].name}</div>
+                          <div style={{...styles.arrow, ...arrowPositionStyle, ...(arrowsVisible ? styles.arrowVisible : {})}}>
+                              {arrowEmoji}
+                          </div>
+                      </div>
+                  );
+              })}
             </div>
           </>
         );
@@ -160,7 +178,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
       case 'current-season':
         return (
           <>
-            <h2 style={styles.rightPanelTitle}>What season is it now?</h2>
+            <h2 style={styles.rightPanelTitle}>{step.question}</h2>
             <div style={styles.mysteryBox}>
               {!revealedSeason ? (
                 <>
@@ -184,7 +202,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
     <div style={styles.pageContainer}>
       <div style={styles.leftColumn}>
         <h1 style={styles.leftTitle}>🍂 Exploring Seasons</h1>
-        {/* MODIFICATION: Left panel now displays the standard */}
         {steps.map((step, index) => (
              <div key={step.id} onClick={() => setCurrentStep(index)} style={{...styles.progressItem, ...(currentStep === index ? styles.progressItemActive : {}), ...(completedSteps.has(index) ? styles.progressItemCompleted : {})}}>
                 <span style={styles.progressCheck}>{completedSteps.has(index) ? '✅' : '➡️'}</span>
