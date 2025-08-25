@@ -1071,7 +1071,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                 {Object.entries({
                   welcome: { name: 'Welcome Message', icon: '👋' },
                   attendance: { name: 'Attendance', icon: '📋' },
-                  behavior: { name: 'Behavior Commitments', icon: '⭐' },
+                  behavior: { name: 'Classroom Rules', icon: '⭐' },
                   calendarMath: { name: 'Calendar Math', icon: '📅' },
                   weather: { name: 'Weather & Clothing', icon: '🌤️' },
                   seasonal: { name: 'Seasonal Learning', icon: '🍂' },

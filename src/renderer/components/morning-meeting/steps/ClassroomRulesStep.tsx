@@ -175,7 +175,7 @@ const DEFAULT_CLASSROOM_RULES: ClassroomRule[] = [
   }
 ];
 
-const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
+const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
   onNext,
   onBack,
   onDataUpdate,
@@ -744,7 +744,6 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
           )}
         </div>
 
-
         {/* Confetti Elements */}
         {confettiElements}
       </div>
@@ -752,4 +751,4 @@ const BehaviorStep: React.FC<MorningMeetingStepProps> = ({
   );
 };
 
-export default BehaviorStep;
+export default ClassroomRulesStep;

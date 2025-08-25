@@ -6,7 +6,7 @@ import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMe
 // Import all your step components
 import WelcomeStep from './steps/WelcomeStep';
 import AttendanceStep from './steps/AttendanceStep';
-import BehaviorStep from './steps/BehaviorStep';
+import ClassroomRulesStep from './steps/ClassroomRulesStep';
 import CalendarMathStep from './steps/CalendarMathStep';
 import WeatherStep from './steps/WeatherStep';
 import SeasonalStep from './steps/SeasonalStep';
@@ -35,7 +35,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const allSteps = [
     { key: 'welcome', component: WelcomeStep },
     { key: 'attendance', component: AttendanceStep },
-    { key: 'behavior', component: BehaviorStep },
+    { key: 'behavior', component: ClassroomRulesStep },
     { key: 'calendarMath', component: CalendarMathStep },
     { key: 'weather', component: WeatherStep },
     { key: 'seasonal', component: SeasonalStep },

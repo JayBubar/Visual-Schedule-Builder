@@ -3,7 +3,7 @@
 
 import WelcomeStep from './WelcomeStep';
 import AttendanceStep from './AttendanceStep';
-import BehaviorStep from './BehaviorStep';
+import ClassroomRulesStep from './ClassroomRulesStep';
 import CalendarMathStep from './CalendarMathStep';
 import WeatherStep from './WeatherStep';
 import SeasonalStep from './SeasonalStep';
@@ -14,7 +14,7 @@ import DayReviewStep from './DayReviewStep'; // ✅ ADDED BACK
 export {
   WelcomeStep,
   AttendanceStep,
-  BehaviorStep,
+  ClassroomRulesStep,
   CalendarMathStep,
   WeatherStep,
   SeasonalStep,
@@ -37,7 +37,7 @@ export type StepKey =
 export const STEP_COMPONENTS = {
   welcome: WelcomeStep,
   attendance: AttendanceStep,
-  behavior: BehaviorStep,
+  behavior: ClassroomRulesStep,
   calendarMath: CalendarMathStep,
   weather: WeatherStep,
   seasonal: SeasonalStep,
@@ -82,9 +82,9 @@ export const STEP_METADATA = {
     estimatedTime: '3 minutes'
   },
   behavior: {
-    name: 'Behavior Commitments',
+    name: 'Classroom Rules',
     icon: '⭐',
-    description: 'Set positive behavior expectations',
+    description: 'Learn classroom expectations and rules',
     estimatedTime: '4 minutes'
   },
   calendarMath: {
