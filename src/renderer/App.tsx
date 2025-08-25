@@ -194,20 +194,19 @@ const App: React.FC = () => {
     saveToStorage('vsb_activities', updatedActivities);
   };
 
-  // FIX: Update the start day logic
   const handleStartDay = async () => {
     const today = new Date();
     const savedSchedule = await loadScheduleForDate(today);
 
     if (savedSchedule && savedSchedule.activities && savedSchedule.activities.length > 0) {
-      // If a schedule for today exists, load it
+      // If a schedule for today exists, load it into state
       setActiveSchedule(savedSchedule.activities);
       setShowStartScreen(false);
       setCurrentView('display'); // Go directly to the smartboard display
     } else {
-      // Otherwise, start with a fresh Morning Meeting
+      // Otherwise, go to the standalone Morning Meeting Hub
       setShowStartScreen(false);
-      setCurrentView('calendar'); // This will open MorningMeetingController (Hub)
+      setCurrentView('calendar');
     }
   };
 

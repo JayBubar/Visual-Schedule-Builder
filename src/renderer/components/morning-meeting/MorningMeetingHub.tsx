@@ -19,8 +19,8 @@ interface HubSettings {
     seasonal: string[];
   };
   videos: {
-    weatherClothing: Array<{id: string, name: string, url: string}>;
-    seasonalLearning: Array<{id: string, name: string, url: string}>;
+    weather: Array<{id: string, name: string, url: string}>;
+    seasonal: Array<{id: string, name: string, url: string}>;
     behaviorCommitments: Array<{id: string, name: string, url: string}>;
     calendarMath: Array<{id: string, name: string, url: string}>;
   };
@@ -63,8 +63,8 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
     seasonal: ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
   },
   videos: {
-    weatherClothing: [],
-    seasonalLearning: [],
+    weather: [],
+    seasonal: [],
     behaviorCommitments: [],
     calendarMath: []
   },
@@ -261,19 +261,19 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         },
         // FIX: Ensure videos array structure with proper URLs
         videos: {
-          weatherClothing: Array.isArray(morningMeetingSettings.selectedVideos?.weatherClothing) 
-            ? morningMeetingSettings.selectedVideos.weatherClothing
-            : (morningMeetingSettings.selectedVideos?.weatherClothing ? [{
-                id: morningMeetingSettings.selectedVideos.weatherClothing,
+          weather: Array.isArray(morningMeetingSettings.selectedVideos?.weather) 
+            ? morningMeetingSettings.selectedVideos.weather
+            : (morningMeetingSettings.selectedVideos?.weather ? [{
+                id: morningMeetingSettings.selectedVideos.weather,
                 name: 'Selected Weather Video',
-                url: morningMeetingSettings.selectedVideos.weatherClothing
+                url: morningMeetingSettings.selectedVideos.weather
               }] : []),
-          seasonalLearning: Array.isArray(morningMeetingSettings.selectedVideos?.seasonalLearning) 
-            ? morningMeetingSettings.selectedVideos.seasonalLearning
-            : (morningMeetingSettings.selectedVideos?.seasonalLearning ? [{
-                id: morningMeetingSettings.selectedVideos.seasonalLearning,
+          seasonal: Array.isArray(morningMeetingSettings.selectedVideos?.seasonal) 
+            ? morningMeetingSettings.selectedVideos.seasonal
+            : (morningMeetingSettings.selectedVideos?.seasonal ? [{
+                id: morningMeetingSettings.selectedVideos.seasonal,
                 name: 'Selected Seasonal Video',
-                url: morningMeetingSettings.selectedVideos.seasonalLearning
+                url: morningMeetingSettings.selectedVideos.seasonal
               }] : []),
           behaviorCommitments: Array.isArray(morningMeetingSettings.selectedVideos?.behaviorCommitments) 
             ? morningMeetingSettings.selectedVideos.behaviorCommitments
@@ -369,8 +369,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           seasonal: settings.customVocabulary.seasonal
         },
         selectedVideos: {
-          weatherClothing: settings.videos.weatherClothing,
-          seasonalLearning: settings.videos.seasonalLearning,
+          weather: settings.videos.weather,
+          seasonal: settings.videos.seasonal,
           behaviorCommitments: settings.videos.behaviorCommitments,
           calendarMath: settings.videos.calendarMath
         },
@@ -657,7 +657,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                               url: (selectedVideo as any).url || ''
                             };
                             updateSettings('videos', { 
-                              weatherClothing: [...settings.videos.weatherClothing, newVideo]
+                              weather: [...settings.videos.weather, newVideo]
                             });
                           }
                         }
@@ -671,7 +671,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                     </select>
                   </div>
                   <div className="selected-videos">
-                    {settings.videos.weatherClothing.map((video, index) => (
+                    {settings.videos.weather.map((video, index) => (
                       <div key={index} className="selected-video">
                         <span>{video.name}</span>
                         <button 
@@ -682,8 +682,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            const newVideos = settings.videos.weatherClothing.filter((_, i) => i !== index);
-                            updateSettings('videos', { weatherClothing: newVideos });
+                            const newVideos = settings.videos.weather.filter((_, i) => i !== index);
+                            updateSettings('videos', { weather: newVideos });
                           }}
                           className="remove-button"
                         >
@@ -709,7 +709,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                               url: (selectedVideo as any).url || ''
                             };
                             updateSettings('videos', { 
-                              seasonalLearning: [...settings.videos.seasonalLearning, newVideo]
+                              seasonal: [...settings.videos.seasonal, newVideo]
                             });
                           }
                         }
@@ -723,7 +723,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                     </select>
                   </div>
                   <div className="selected-videos">
-                    {settings.videos.seasonalLearning.map((video, index) => (
+                    {settings.videos.seasonal.map((video, index) => (
                       <div key={index} className="selected-video">
                         <span>{video.name}</span>
                         <button 
@@ -734,8 +734,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            const newVideos = settings.videos.seasonalLearning.filter((_, i) => i !== index);
-                            updateSettings('videos', { seasonalLearning: newVideos });
+                            const newVideos = settings.videos.seasonal.filter((_, i) => i !== index);
+                            updateSettings('videos', { seasonal: newVideos });
                           }}
                           className="remove-button"
                         >
