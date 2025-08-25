@@ -216,7 +216,8 @@ const App: React.FC = () => {
   };
 
   const handleBackToStart = () => {
-    setShowStartScreen(true);
+    setCurrentView('builder');
+    setActiveSchedule(null); // Also clear any active schedule
   };
 
   const handleSmartGroupImplementation = (recommendation: any) => {
@@ -312,100 +313,91 @@ const App: React.FC = () => {
       grade: student.grade || '',
       resourceInfo: student.resourceInfo || undefined
     }))}>
-      {showStartScreen ? (
-        <StartScreen
-          onStartMyDay={handleStartDay}
-          onManageClassroom={handleManageClassroom}
+      {currentView === 'display' ? (
+        <SmartboardDisplay
+          students={students}
+          staff={staffMembers}
+          hubSettings={hubSettings}
+          currentSchedule={activeSchedule ? {
+            activities: activeSchedule,
+            startTime: '09:00',
+            name: 'Daily Schedule'
+          } : selectedSchedule ? {
+            activities: selectedSchedule.activities,
+            startTime: selectedSchedule.startTime,
+            name: selectedSchedule.name
+          } : undefined}
+          onNavigateHome={handleBackToStart}
+          onNavigateToBuilder={() => handleViewChange('builder')}
+        />  
+      ) : currentView === 'calendar' ? (
+        <MorningMeetingController
+          students={students}
+          staff={staffMembers}
+          hubSettings={hubSettings}
+          onClose={() => handleViewChange('builder')}
+          onNavigateHome={handleBackToStart}
+          onNavigateToDisplay={() => handleViewChange('display')}
         />
       ) : (
-        currentView === 'display' ? (
-          <SmartboardDisplay
-            students={students}
-            staff={staffMembers}
-            hubSettings={hubSettings}
-            currentSchedule={activeSchedule ? {
-              activities: activeSchedule,
-              startTime: '09:00',
-              name: 'Daily Schedule'
-            } : selectedSchedule ? {
-              activities: selectedSchedule.activities,
-              startTime: selectedSchedule.startTime,
-              name: selectedSchedule.name
-            } : undefined}
-            onNavigateHome={handleBackToStart}
-            onNavigateToBuilder={() => handleViewChange('builder')}
+        <div className="main-app-container">
+          <Navigation
+            currentView={currentView}
+            onViewChange={handleViewChange}
+            selectedSchedule={selectedSchedule}
+            onBackToStart={handleBackToStart}
           />
-        ) : currentView === 'calendar' ? (
-          <MorningMeetingController
-            students={students}
-            staff={staffMembers}
-            hubSettings={hubSettings}
-            onClose={() => handleViewChange('builder')}
-            onNavigateHome={handleBackToStart}
-            onNavigateToDisplay={() => handleViewChange('display')}
-          />
-      ) : (
+          <div className="main-content">
+            {currentView === 'builder' && (
+              <ScheduleBuilder
+                isActive={true}
+              />
+            )}
 
-          <div className="main-app-container">
-            <Navigation
-              currentView={currentView}
-              onViewChange={handleViewChange}
-              selectedSchedule={selectedSchedule}
-              onBackToStart={handleBackToStart}
-            />
+            {currentView === 'students' && (
+              <StudentManagement
+                isActive={true}
+              />
+            )}
 
-            <div className="main-content">
-              {currentView === 'builder' && (
-                <ScheduleBuilder
-                  isActive={true}
-                />
-              )}
+            {currentView === 'staff' && (
+              <StaffManagement
+                isActive={true}
+              />
+            )}
 
-              {currentView === 'students' && (
-                <StudentManagement
-                  isActive={true}
-                />
-              )}
+            {currentView === 'iep-goals' && (
+              <GoalManager />
+            )}
+            {currentView === 'library' && (
+              <ActivityLibrary
+                isActive={true}
+              />
+            )}
 
-              {currentView === 'staff' && (
-                <StaffManagement
-                  isActive={true}
-                />
-              )}
+            {currentView === 'reports' && (
+              <Reports
+                isActive={true}
+                students={students}
+                staff={staffMembers}
+                activities={activities}
+              />
+            )}
 
-              {currentView === 'iep-goals' && (
-                <GoalManager />
-              )}
-              {currentView === 'library' && (
-                <ActivityLibrary
-                  isActive={true}
-                />
-              )}
+            {currentView === 'settings' && (
+              <Settings
+                isActive={true}
+              />
+            )}
 
-              {currentView === 'reports' && (
-                <Reports
-                  isActive={true}
-                  students={students}
-                  staff={staffMembers}
-                  activities={activities}
-                />
-              )}
-
-              {currentView === 'settings' && (
-                <Settings
-                  isActive={true}
-                />
-              )}
-
-              {currentView === 'smart-groups' && (
-                <SmartGroups
-                  isActive={true}
-                  onRecommendationImplemented={handleSmartGroupImplementation}
-                />
-              )}
-            </div>
+            {currentView === 'smart-groups' && (
+              <SmartGroups
+                isActive={true}
+                onRecommendationImplemented={handleSmartGroupImplementation}
+              />
+            )}
           </div>
-        )
+        </div>
       )}
     </ResourceScheduleProvider>
   );

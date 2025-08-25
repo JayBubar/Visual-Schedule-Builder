@@ -7,13 +7,15 @@ interface AttendanceSystemProps {
   currentDate: Date;
   onAttendanceComplete: (presentStudents: Student[], absentStudents: Student[]) => void;
   onNext: () => void;
+  onNavigateHome?: () => void;
 }
 
 const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
   students,
   currentDate,
   onAttendanceComplete,
-  onNext
+  onNext,
+  onNavigateHome
 }) => {
   const [presentStudents, setPresentStudents] = useState<Student[]>([]);
   const [remainingStudents, setRemainingStudents] = useState<Student[]>(students);
@@ -252,41 +254,43 @@ const AttendanceSystem: React.FC<AttendanceSystemProps> = ({
       )}
 
       {/* Home Button */}
-      <div style={{
-        position: 'fixed',
-        top: '1rem',
-        left: '1rem',
-        zIndex: 1000
-      }}>
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: 'white',
-            padding: '0.75rem 1rem',
-            fontSize: '0.9rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            backdropFilter: 'blur(10px)',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          🏠 Home
-        </button>
-      </div>
+      {onNavigateHome && (
+        <div style={{
+          position: 'fixed',
+          top: '1rem',
+          left: '1rem',
+          zIndex: 1000
+        }}>
+          <button
+            onClick={onNavigateHome}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '2px solid rgba(255,255,255,0.3)',
+              borderRadius: '12px',
+              color: 'white',
+              padding: '0.75rem 1rem',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.3)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            🏠 Home
+          </button>
+        </div>
+      )}
 
       {/* Action Buttons */}
       <div style={{
