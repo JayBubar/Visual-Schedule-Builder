@@ -191,6 +191,28 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepCompl
         )}
       </div>
 
+      {/* TEMPORARY: Visual indicator for global navigation area */}
+      <div style={{
+        position: 'fixed',
+        bottom: '1rem',
+        left: '1rem',
+        right: '1rem',
+        height: '6rem',
+        background: 'rgba(255, 0, 0, 0.1)',
+        border: '2px dashed rgba(255, 0, 0, 0.5)',
+        borderRadius: '10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+        fontSize: '1rem',
+        fontWeight: 'bold',
+        zIndex: 999,
+        pointerEvents: 'none'
+      }}>
+        🚧 TEMPORARY: Global Navigation Area - Remove this box after testing 🚧
+      </div>
+
     </div>
   );
 };

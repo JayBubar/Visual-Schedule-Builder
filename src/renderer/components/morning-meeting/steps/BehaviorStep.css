@@ -4,9 +4,11 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 2rem;
+  padding-bottom: 8rem; /* TEMPORARY: Extra space for global navigation */
   color: white;
   position: relative;
   overflow-y: auto;
+  max-height: 100vh; /* TEMPORARY: Ensure scrolling works */
 }
 
 .behavior-step::before {
