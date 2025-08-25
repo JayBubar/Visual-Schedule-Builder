@@ -30,6 +30,9 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
       const settings = UnifiedDataService.getSettings();
       const morningMeetingSettings = settings?.morningMeeting || {};
       
+      console.log('🔧 Controller: Raw MM settings:', morningMeetingSettings);
+      console.log('🔧 Controller: checkInFlow from settings:', morningMeetingSettings.checkInFlow);
+      
       // Build complete hubSettings object
       const completeHubSettings = {
         welcomePersonalization: {
@@ -77,10 +80,14 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({
         }
       };
 
+      console.log('🔧 Controller: Complete hubSettings being passed to Flow:', completeHubSettings);
+      console.log('🔧 Controller: Flow customization enabledSteps:', completeHubSettings.flowCustomization.enabledSteps);
+
       // Complete hubSettings being passed to Flow
       setHubSettings(completeHubSettings);
       setCurrentMode('flow');
     } catch (error) {
+      console.error('🔧 Controller: Error loading settings:', error);
       // Fallback to default settings
       setHubSettings({
         welcomePersonalization: {

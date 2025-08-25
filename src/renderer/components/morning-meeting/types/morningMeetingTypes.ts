@@ -48,6 +48,10 @@ export interface HubSettings {
     enabled: boolean;
     announcements: string[];
   };
+  customVocabulary?: {
+    weather: string[];
+    seasonal: string[];
+  };
 }
 
 // The single source of truth for step props

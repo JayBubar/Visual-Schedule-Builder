@@ -370,7 +370,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
   const saveSettings = () => {
     try {
-      // Saving settings
+      console.log('🔧 Hub: Saving settings with flow customization:', settings.flowCustomization);
       
       // FIX: Convert hub settings back to the format expected by Settings.tsx
       // but ensure ALL properties are included
@@ -399,7 +399,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         checkInFlow: settings.flowCustomization.enabledSteps
       };
 
-      // Converted to MM format
+      console.log('🔧 Hub: Converted MM settings with checkInFlow:', morningMeetingSettings.checkInFlow);
 
       // Get current settings and update just the morningMeeting section
       const currentSettings = UnifiedDataService.getSettings();
@@ -411,14 +411,14 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         }
       };
 
-      // Final settings to save
+      console.log('🔧 Hub: Final settings to save:', updatedSettings.morningMeeting.checkInFlow);
       UnifiedDataService.updateSettings(updatedSettings);
       setHasUnsavedChanges(false);
       
       // Verify it was saved
       setTimeout(() => {
         const verifySettings = UnifiedDataService.getSettings();
-        // Settings verified after save
+        console.log('🔧 Hub: Verified saved settings:', verifySettings.morningMeeting?.checkInFlow);
       }, 100);
       
       // Dispatch event for other components
@@ -426,9 +426,9 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         detail: settings
       }));
       
-      // Morning Meeting settings saved successfully
+      console.log('🔧 Hub: Morning Meeting settings saved successfully');
     } catch (error) {
-      // Error saving settings
+      console.error('🔧 Hub: Error saving settings:', error);
     }
   };
 

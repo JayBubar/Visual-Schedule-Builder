@@ -31,16 +31,45 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isStepComplete, setIsStepComplete] = useState(true);
 
-  const steps = [
-    WelcomeStep,
-    AttendanceStep,
-    BehaviorStep,      // This was previously named ClassroomRulesStep in your code
-    CalendarMathStep,
-    WeatherStep,
-    SeasonalStep,
-    CelebrationStep,
-    DayReviewStep,
+  // Define all available steps with their keys
+  const allSteps = [
+    { key: 'welcome', component: WelcomeStep },
+    { key: 'attendance', component: AttendanceStep },
+    { key: 'behavior', component: BehaviorStep },
+    { key: 'calendarMath', component: CalendarMathStep },
+    { key: 'weather', component: WeatherStep },
+    { key: 'seasonal', component: SeasonalStep },
+    { key: 'celebration', component: CelebrationStep },
+    { key: 'dayReview', component: DayReviewStep },
   ];
+
+  // Filter steps based on hubSettings.flowCustomization.enabledSteps
+  const enabledSteps = React.useMemo(() => {
+    console.log('🔧 Flow: hubSettings received:', hubSettings);
+    console.log('🔧 Flow: flowCustomization:', hubSettings?.flowCustomization);
+    console.log('🔧 Flow: enabledSteps:', hubSettings?.flowCustomization?.enabledSteps);
+
+    if (!hubSettings?.flowCustomization?.enabledSteps) {
+      console.log('🔧 Flow: No flow customization found, using all steps');
+      return allSteps.map(step => step.component);
+    }
+
+    const filteredSteps = allSteps.filter(step => {
+      // Attendance is always required
+      if (step.key === 'attendance') {
+        return true;
+      }
+      
+      const isEnabled = hubSettings.flowCustomization.enabledSteps[step.key] !== false;
+      console.log(`🔧 Flow: Step ${step.key} enabled: ${isEnabled}`);
+      return isEnabled;
+    });
+
+    console.log('🔧 Flow: Filtered steps:', filteredSteps.map(step => step.key || 'unknown'));
+    return filteredSteps.map(step => step.component);
+  }, [hubSettings]);
+
+  const steps = enabledSteps;
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
