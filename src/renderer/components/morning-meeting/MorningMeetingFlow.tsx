@@ -6,7 +6,7 @@ import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMe
 // Import all your step components
 import WelcomeStep from './steps/WelcomeStep';
 import AttendanceStep from './steps/AttendanceStep';
-import ClassroomRulesStep from './steps/ClassroomRulesStep';
+import BehaviorStep from './steps/BehaviorStep';
 import CalendarMathStep from './steps/CalendarMathStep';
 import WeatherStep from './steps/WeatherStep';
 import SeasonalStep from './steps/SeasonalStep';
@@ -35,12 +35,15 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const allSteps = [
     { key: 'welcome', component: WelcomeStep },
     { key: 'attendance', component: AttendanceStep },
-    { key: 'behavior', component: ClassroomRulesStep },
+    { key: 'classroomRules', component: BehaviorStep },
+    { key: 'behaviorCommitments', component: BehaviorStep },
     { key: 'calendarMath', component: CalendarMathStep },
     { key: 'weather', component: WeatherStep },
     { key: 'seasonal', component: SeasonalStep },
-    { key: 'celebration', component: CelebrationStep },
-    { key: 'dayReview', component: DayReviewStep },
+    { key: 'announcements', component: DayReviewStep },
+    { key: 'celebrations', component: CelebrationStep },
+    { key: 'videos', component: DayReviewStep },
+    { key: 'flow', component: DayReviewStep },
   ];
 
   // Filter steps based on hubSettings.flowCustomization.enabledSteps
@@ -91,15 +94,15 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
 
   const CurrentStepComponent = steps[currentStepIndex];
 
-  // FIX: This object now correctly includes onNext and onBack to satisfy the type
-  const stepProps: MorningMeetingStepProps = {
+  // Create props for the current step
+  const stepProps = {
     students,
     hubSettings,
     currentDate: new Date(),
     onDataUpdate: () => {},
     onStepComplete: () => setIsStepComplete(true),
-    onNext: handleNext, // Pass the handler
-    onBack: handleBack,   // Pass the handler
+    onNext: handleNext,
+    onBack: handleBack,
   };
 
   return (
@@ -125,7 +128,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         🏠 Home
       </button>
 
-      {CurrentStepComponent && <CurrentStepComponent {...stepProps} />}
+      {CurrentStepComponent && <CurrentStepComponent {...stepProps as any} />}
 
       <MorningMeetingNavigation
         onNext={handleNext}
