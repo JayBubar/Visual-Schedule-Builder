@@ -29,6 +29,10 @@ interface HubSettings {
     statements: string[];
     allowCustom: boolean;
   };
+  behaviorCommitments?: {
+    enabled: boolean;
+    commitments: string[];
+  };
   todaysAnnouncements: {
     enabled: boolean;
     announcements: string[];
@@ -240,7 +244,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
   onClose
 }) => {
-  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'announcements' | 'celebrations' | 'flow'>('welcome');
+  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'behaviorCommitments' | 'announcements' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
@@ -441,11 +445,26 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
     }
   };
 
+  const navigationItems = [
+    { id: 'welcome', label: 'Welcome', icon: '👋' },
+    { id: 'attendance', label: 'Attendance', icon: '📋' },
+    { id: 'classroomRules', label: 'Classroom Rules', icon: '⭐' },
+    { id: 'behaviorCommitments', label: 'Behavior Goals', icon: '🎯' },
+    { id: 'calendar', label: 'Calendar & Math', icon: '📅' },
+    { id: 'weather', label: 'Weather', icon: '🌤️' },
+    { id: 'seasonal', label: 'Seasonal', icon: '🌸' },
+    { id: 'announcements', label: "Today's News", icon: '📰' },
+    { id: 'celebrations', label: 'Celebrations', icon: '🎉' },
+    { id: 'videos', label: 'Videos', icon: '🎬' },
+    { id: 'flow', label: 'Flow Setup', icon: '⚙️' }
+  ];
+
   const hubSections = [
     { id: 'welcome', name: 'Welcome', icon: '👋', description: 'Personalize your classroom greeting' },
     { id: 'vocabulary', name: 'Vocabulary', icon: '📚', description: 'Customize learning words' },
     { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select educational videos' },
     { id: 'classroomRules', name: 'Classroom Rules', icon: '⭐', description: 'Manage classroom expectations' },
+    { id: 'behaviorCommitments', name: 'Behavior Goals', icon: '🎯', description: 'Manage "I will..." statements' },
     { id: 'announcements', name: 'Daily Announcements', icon: '📢', description: 'Today\'s important updates' },
     { id: 'celebrations', name: 'Celebrations', icon: '🎉', description: 'Birthday and special events' },
     { id: 'flow', name: 'Flow', icon: '⚙️', description: 'Customize meeting steps' }
@@ -937,6 +956,98 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                   >
                     ➕ Add Rule
                   </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Behavior Commitments (NEW SECTION) */}
+          {activeSection === 'behaviorCommitments' && (
+            <div className="hub-section">
+              <h2>🎯 Behavior Goals</h2>
+              <p>Manage "I will..." statements for student behavior commitments</p>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={settings.behaviorCommitments?.enabled ?? true}
+                    onChange={(e) => updateSettings('behaviorCommitments', { 
+                      ...settings.behaviorCommitments,
+                      enabled: e.target.checked 
+                    })}
+                  />
+                  Enable behavior goals in Morning Meeting
+                </label>
+              </div>
+
+              {(settings.behaviorCommitments?.enabled ?? true) && (
+                <div className="behavior-commitments">
+                  <h3>"I will..." Statements</h3>
+                  <p className="section-description">
+                    Students will choose from these behavior goals during Morning Meeting. 
+                    Leave empty to use kid-friendly defaults.
+                  </p>
+                  
+                  {(settings.behaviorCommitments?.commitments || []).map((commitment, index) => (
+                    <div key={index} className="statement-item">
+                      <input
+                        type="text"
+                        value={commitment}
+                        onChange={(e) => {
+                          const newCommitments = [...(settings.behaviorCommitments?.commitments || [])];
+                          newCommitments[index] = e.target.value;
+                          updateSettings('behaviorCommitments', { 
+                            ...settings.behaviorCommitments,
+                            commitments: newCommitments 
+                          });
+                        }}
+                        className="statement-input"
+                        placeholder="I will..."
+                      />
+                      <button
+                        onClick={() => {
+                          const newCommitments = (settings.behaviorCommitments?.commitments || [])
+                            .filter((_, i) => i !== index);
+                          updateSettings('behaviorCommitments', { 
+                            ...settings.behaviorCommitments,
+                            commitments: newCommitments 
+                          });
+                        }}
+                        className="delete-statement-button"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                  
+                  <button
+                    onClick={() => {
+                      const newCommitments = [...(settings.behaviorCommitments?.commitments || []), ''];
+                      updateSettings('behaviorCommitments', { 
+                        ...settings.behaviorCommitments,
+                        commitments: newCommitments 
+                      });
+                    }}
+                    className="add-statement-button"
+                  >
+                    ➕ Add Behavior Goal
+                  </button>
+
+                  <div className="info-box">
+                    <h4>🌟 Default Behavior Goals</h4>
+                    <p>If you don't add custom goals, students will choose from these kid-friendly options:</p>
+                    <div className="default-commitments-preview">
+                      <span className="commitment-chip">👂 I will listen to my teacher</span>
+                      <span className="commitment-chip">💝 I will be kind to my friends</span>
+                      <span className="commitment-chip">✋ I will keep my hands to myself</span>
+                      <span className="commitment-chip">⭐ I will try my best</span>
+                      <span className="commitment-chip">🤝 I will help when I can</span>
+                      <span className="commitment-chip">🛡️ I will make safe choices</span>
+                      <span className="commitment-chip">🎈 I will share and take turns</span>
+                      <span className="commitment-chip">🎯 I will focus on my work</span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1537,6 +1648,61 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           opacity: 0.8;
           margin: 0 0 1rem 0;
           font-style: italic;
+        }
+
+        .section-description {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.95rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.4;
+        }
+
+        .info-box {
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 12px;
+          padding: 1.5rem;
+          margin-top: 2rem;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-box h4 {
+          color: #fff;
+          font-size: 1.1rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .info-box p {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+        }
+
+        .default-commitments-preview {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .commitment-chip {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 20px;
+          padding: 0.4rem 0.8rem;
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .behavior-commitments {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 1.5rem;
+          backdrop-filter: blur(10px);
+        }
+
+        .behavior-commitments h3 {
+          margin: 0 0 1rem 0;
+          font-size: 1.2rem;
+          font-weight: 600;
         }
 
         .vocabulary-list {
