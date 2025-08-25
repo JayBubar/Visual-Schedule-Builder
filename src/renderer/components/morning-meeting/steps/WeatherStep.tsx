@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { MorningMeetingStepProps, WeatherHistory, WeatherType } from '../../../types'; // Corrected import
+import { MorningMeetingStepProps } from '../types/morningMeetingTypes'; // Corrected import source
+import { WeatherHistory, WeatherType } from '../../../types'; 
 import { styles } from './WeatherStep.styles';
-import UnifiedDataService from '../../../services/unifiedDataService'; // Corrected import path
+import UnifiedDataService from '../../../services/unifiedDataService';
 
 // Data
 const WEATHER_OPTIONS: { type: WeatherType, emoji: string, label: string }[] = [
@@ -24,8 +25,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
 
     // Load history when component mounts
     useEffect(() => {
-        const dataService = new UnifiedDataService();
-        setWeatherHistory(dataService.getWeatherHistory());
+        // FIX: Called static method directly on the class
+        setWeatherHistory(UnifiedDataService.getWeatherHistory());
     }, []);
 
     const steps = useMemo(() => [
@@ -40,9 +41,9 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
 
     const handleNext = () => {
         if (currentStep === 0 && todaysWeather) {
-            const dataService = new UnifiedDataService();
             const dateKey = formatDateKey(currentDate);
-            dataService.saveWeatherForDate(dateKey, todaysWeather);
+            // FIX: Called static method directly on the class
+            UnifiedDataService.saveWeatherForDate(dateKey, todaysWeather);
             setWeatherHistory(prev => ({...prev, [dateKey]: todaysWeather}));
         }
         if (currentStep < steps.length - 1) {
@@ -62,7 +63,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
         }
     }, [currentStep, steps.length, onStepComplete]);
 
-    const renderRightPanelContent = () => {
+    // FIX: Renamed function to renderContent
+    const renderContent = () => {
         const step = steps[currentStep];
         switch (step.id) {
             case 'select-weather':
@@ -110,7 +112,6 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                     </>
                 );
             case 'analyze-graph':
-                // FIX: Added explicit typing to the reduce function's accumulator
                 const counts = Object.values(weatherHistory).reduce((acc, weather) => {
                     acc[weather] = (acc[weather] || 0) + 1;
                     return acc;
@@ -155,6 +156,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                 ))}
             </div>
             <div style={styles.rightColumn}>
+                {/* FIX: Updated function call to renderContent */}
                 {renderContent()}
                 <div style={styles.internalNavBar}>
                     {currentStep > 0 && <button onClick={handleBack} style={styles.internalNavButton}>Back</button>}
