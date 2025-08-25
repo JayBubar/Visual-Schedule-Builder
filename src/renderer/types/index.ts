@@ -1024,3 +1024,11 @@ export interface HubSettings {
   dailyCheckIn?: EnhancedCalendarSettings;
   [key: string]: any;
 }
+
+// Add this to the bottom of src/renderer/types.ts
+
+export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+
+export interface WeatherHistory {
+  [date: string]: WeatherType;
+}

@@ -7,7 +7,8 @@ import {
   Student, 
   EnhancedDataPoint, 
   SchoolYearPeriod, 
-  GoalInheritance 
+  GoalInheritance,
+  WeatherHistory 
 } from '../types';
 
 // Extended IEP Goal interface for backward compatibility
@@ -2176,7 +2177,7 @@ class UnifiedDataService {
     };
   }
 
-  // ===== MORNING MEETING DATA METHODS =====
+// ===== MORNING MEETING DATA METHODS =====
   
   // Save Morning Meeting step data
   static saveMorningMeetingStepData(sessionKey: string, data: any): void {
@@ -2195,6 +2196,101 @@ class UnifiedDataService {
     } catch (error) {
       console.warn('Failed to load Morning Meeting step data:', error);
       return null;
+    }
+  }
+
+  // ===== WEATHER HISTORY METHODS =====
+  
+  // Method to get all saved weather data
+  static getWeatherHistory(): WeatherHistory {
+    const unifiedData = this.getUnifiedData();
+    if (unifiedData?.settings?.weatherHistory) {
+      return unifiedData.settings.weatherHistory;
+    }
+    
+    // Fallback to direct localStorage access for backward compatibility
+    try {
+      const weatherData = localStorage.getItem('weatherHistory');
+      return weatherData ? JSON.parse(weatherData) : {};
+    } catch (error) {
+      console.error('Error reading weather history:', error);
+      return {};
+    }
+  }
+
+  // Method to save or update the weather for a specific day
+  static saveWeatherForDate(date: string, weather: string): void {
+    try {
+      // Update unified data structure
+      let unifiedData = this.getUnifiedData();
+      if (unifiedData) {
+        if (!unifiedData.settings.weatherHistory) {
+          unifiedData.settings.weatherHistory = {};
+        }
+        unifiedData.settings.weatherHistory[date] = weather as 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+        this.saveUnifiedData(unifiedData);
+      }
+      
+      // Also save to direct localStorage for backward compatibility
+      const currentWeatherHistory = this.getWeatherHistory();
+      currentWeatherHistory[date] = weather as 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+      localStorage.setItem('weatherHistory', JSON.stringify(currentWeatherHistory));
+      
+      console.log(`🌤️ Weather saved for ${date}: ${weather}`);
+    } catch (error) {
+      console.error('Error saving weather data:', error);
+    }
+  }
+
+  // Method to get weather for a specific date
+  static getWeatherForDate(date: string): 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy' | null {
+    const weatherHistory = this.getWeatherHistory();
+    return weatherHistory[date] || null;
+  }
+
+  // Method to get weather for today
+  static getTodayWeather(): 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy' | null {
+    const today = new Date().toISOString().split('T')[0];
+    return this.getWeatherForDate(today);
+  }
+
+  // Method to get weather for the past N days
+  static getRecentWeatherHistory(days: number = 7): { date: string; weather: string }[] {
+    const weatherHistory = this.getWeatherHistory();
+    const result: { date: string; weather: string }[] = [];
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      if (weatherHistory[dateStr]) {
+        result.push({
+          date: dateStr,
+          weather: weatherHistory[dateStr]
+        });
+      }
+    }
+    
+    return result.reverse(); // Return in chronological order
+  }
+
+  // Method to clear weather history (for maintenance)
+  static clearWeatherHistory(): void {
+    try {
+      // Clear from unified data
+      const unifiedData = this.getUnifiedData();
+      if (unifiedData) {
+        unifiedData.settings.weatherHistory = {};
+        this.saveUnifiedData(unifiedData);
+      }
+      
+      // Clear from direct localStorage
+      localStorage.removeItem('weatherHistory');
+      
+      console.log('🌤️ Weather history cleared');
+    } catch (error) {
+      console.error('Error clearing weather history:', error);
     }
   }
 }
