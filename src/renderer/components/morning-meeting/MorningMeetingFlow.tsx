@@ -161,60 +161,6 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         stepData={null}
         onDataUpdate={() => {}}
       />
-      
-      {/* SIMPLIFIED NAVIGATION - Remove the separate component for now */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '2rem',
-        zIndex: 1000,
-        background: 'rgba(0, 0, 0, 0.8)',
-        backdropFilter: 'blur(15px)',
-        border: '2px solid rgba(255, 255, 255, 0.3)',
-        borderRadius: '20px',
-        padding: '1rem 2rem'
-      }}>
-        <button
-          onClick={handleBack}
-          disabled={currentStepIndex === 0}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: currentStepIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderRadius: '12px',
-            color: currentStepIndex === 0 ? 'rgba(255,255,255,0.5)' : 'white',
-            fontSize: '1rem',
-            cursor: currentStepIndex === 0 ? 'not-allowed' : 'pointer',
-            opacity: currentStepIndex === 0 ? 0.5 : 1
-          }}
-        >
-          ← Back
-        </button>
-        
-        <span style={{ color: 'white', fontSize: '1rem', fontWeight: '600' }}>
-          {currentStep.key} ({currentStepIndex + 1}/{enabledSteps.length})
-        </span>
-        
-        <button
-          onClick={handleNext}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
-            border: '2px solid #4CAF50',
-            borderRadius: '12px',
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          {currentStepIndex === enabledSteps.length - 1 ? 'Complete' : 'Next →'}
-        </button>
-      </div>
     </div>
   );
 };
