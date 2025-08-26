@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMeetingTypes';
 
-// Import all your step components
+// Import all step components - CORRECTED
 import WelcomeStep from './steps/WelcomeStep';
 import AttendanceStep from './steps/AttendanceStep';
-import BehaviorStep from './steps/BehaviorStep';
+import ClassroomRulesStep from './steps/ClassroomRulesStep';
+import BehaviorStep from './steps/BehaviorStep'; // NEW - Import the behavior commitments step
 import CalendarMathStep from './steps/CalendarMathStep';
 import WeatherStep from './steps/WeatherStep';
 import SeasonalStep from './steps/SeasonalStep';
@@ -31,12 +32,12 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isStepComplete, setIsStepComplete] = useState(true);
 
-  // Define all available steps with their keys
+  // Define all available steps with CORRECT keys matching hub
   const allSteps = [
     { key: 'welcome', component: WelcomeStep },
     { key: 'attendance', component: AttendanceStep },
-    { key: 'classroomRules', component: BehaviorStep },
-    { key: 'behaviorCommitments', component: BehaviorStep }, // FIXED KEY
+    { key: 'classroomRules', component: ClassroomRulesStep }, // FIXED KEY
+    { key: 'behaviorCommitments', component: BehaviorStep }, // NEW STEP
     { key: 'calendarMath', component: CalendarMathStep },
     { key: 'weather', component: WeatherStep },
     { key: 'seasonal', component: SeasonalStep },
@@ -52,7 +53,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
 
     if (!hubSettings?.flowCustomization?.enabledSteps) {
       console.log('🔧 Flow: No flow customization found, using all steps');
-      return allSteps.map(step => step.component);
+      return allSteps;
     }
 
     const filteredSteps = allSteps.filter(step => {
@@ -66,68 +67,123 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       return isEnabled;
     });
 
-    console.log('🔧 Flow: Filtered steps:', filteredSteps.map(step => step.key || 'unknown'));
-    return filteredSteps.map(step => step.component);
+    console.log('🔧 Flow: Filtered steps:', filteredSteps.map(step => step.key));
+    return filteredSteps;
   }, [hubSettings]);
 
-  const steps = enabledSteps;
-
   const handleNext = () => {
-    if (currentStepIndex < steps.length - 1) {
+    console.log(`📍 Navigation: Moving from step ${currentStepIndex} to ${currentStepIndex + 1}`);
+    console.log(`📍 Current step: ${enabledSteps[currentStepIndex]?.key || 'unknown'}`);
+    
+    if (currentStepIndex < enabledSteps.length - 1) {
       setCurrentStepIndex(currentStepIndex + 1);
-      setIsStepComplete(steps[currentStepIndex + 1] === CelebrationStep || steps[currentStepIndex + 1] === WelcomeStep); 
+      console.log(`📍 Next step: ${enabledSteps[currentStepIndex + 1]?.key || 'unknown'}`);
     } else {
+      console.log('📍 Flow complete, calling onComplete');
       onComplete();
     }
   };
 
   const handleBack = () => {
+    console.log(`📍 Navigation: Moving back from step ${currentStepIndex} to ${currentStepIndex - 1}`);
+    
     if (currentStepIndex > 0) {
       setCurrentStepIndex(currentStepIndex - 1);
-      setIsStepComplete(true);
+      console.log(`📍 Previous step: ${enabledSteps[currentStepIndex - 1]?.key || 'unknown'}`);
     } else {
+      console.log('📍 At first step, going back to hub');
       onBackToHub();
     }
   };
 
-  const CurrentStepComponent = steps[currentStepIndex];
-
-  // Create props for the current step
-  const stepProps = {
-    students,
-    hubSettings,
-    currentDate: new Date(),
-    onDataUpdate: () => {},
-    onStepComplete: () => setIsStepComplete(true),
-    onNext: handleNext,
-    onBack: handleBack,
+  const handleStepComplete = () => {
+    setIsStepComplete(true);
   };
 
+  // Safety check
+  if (!enabledSteps || enabledSteps.length === 0) {
+    console.error('❌ No enabled steps found!');
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center'
+      }}>
+        <div>
+          <h2>⚠️ Configuration Error</h2>
+          <p>No steps are enabled. Please check your flow settings.</p>
+          <button onClick={onBackToHub} style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid white',
+            borderRadius: '10px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            marginTop: '1rem'
+          }}>
+            Back to Hub
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentStep = enabledSteps[currentStepIndex];
+  
+  if (!currentStep) {
+    console.error('❌ Current step not found!', { currentStepIndex, enabledStepsLength: enabledSteps.length });
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center'
+      }}>
+        <div>
+          <h2>⚠️ Navigation Error</h2>
+          <p>Step not found. Please restart Morning Meeting.</p>
+          <button onClick={onBackToHub} style={{
+            background: 'rgba(255,255,255,0.2)',
+            border: '2px solid white',
+            borderRadius: '10px',
+            color: 'white',
+            padding: '1rem 2rem',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            marginTop: '1rem'
+          }}>
+            Back to Hub
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const StepComponent = currentStep.component;
+  
+  console.log(`🎯 Rendering step: ${currentStep.key} (${currentStepIndex + 1}/${enabledSteps.length})`);
+
   return (
-    <div style={{ height: '100%', width: '100%', position: 'relative' }}>
-      {/* FIX: Add the Home button here */}
-      <button
-        onClick={onBackToHub}
-        style={{
-          position: 'absolute',
-          top: '2rem',
-          right: '2rem',
-          zIndex: 1000,
-          background: 'rgba(255, 255, 255, 0.2)',
-          border: '1px solid rgba(255, 255, 255, 0.3)',
-          color: 'white',
-          padding: '0.75rem 1.5rem',
-          borderRadius: '12px',
-          cursor: 'pointer',
-          fontSize: '1rem',
-          fontWeight: 600
-        }}
-      >
-        🏠 Home
-      </button>
-
-      {CurrentStepComponent && <CurrentStepComponent {...stepProps as any} />}
-
+    <div className="morning-meeting-flow">
+      <StepComponent
+        onNext={handleNext}
+        onBack={handleBack}
+        onStepComplete={handleStepComplete}
+        hubSettings={hubSettings}
+        students={students}
+        currentDate={new Date()}
+        stepData={null}
+        onDataUpdate={() => {}}
+      />
+      
       <MorningMeetingNavigation
         onNext={handleNext}
         onBack={handleBack}

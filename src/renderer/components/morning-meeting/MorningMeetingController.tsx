@@ -45,6 +45,65 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ stu
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const currentDate = new Date();
 
+  const handleStartMorningMeeting = () => {
+    console.log('🚀 Starting Morning Meeting...');
+    
+    // Default hub settings with CORRECT step keys
+    const defaultHubSettings = {
+      todaysAnnouncements: {
+        enabled: true,
+        announcements: []
+      },
+      customVocabulary: {
+        weather: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
+        seasonal: ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
+      },
+      videos: {
+        calendarMath: [],
+        weather: [],
+        seasonal: [],
+        behaviorCommitments: []
+      },
+      behaviorStatements: {
+        enabled: true,
+        statements: [
+          'I will use kind words with my friends',
+          'I will listen when my teacher is talking',
+          'I will try my best in everything I do'
+        ],
+        allowCustom: true
+      },
+      behaviorCommitments: { // ADD this section
+        enabled: true,
+        commitments: []
+      },
+      celebrations: {
+        enabled: true,
+        showBirthdayPhotos: true,
+        customCelebrations: []
+      },
+      flowCustomization: {
+        enabledSteps: {
+          welcome: true,
+          attendance: true,
+          classroomRules: true,      // FIXED KEY
+          behaviorCommitments: true, // FIXED KEY
+          calendarMath: true,
+          weather: true,
+          seasonal: true,
+          celebration: true,
+          dayReview: true
+        }
+      }
+    };
+    
+    console.log('🔧 Hub Settings:', defaultHubSettings);
+    console.log('🔧 Flow Configuration:', defaultHubSettings.flowCustomization.enabledSteps);
+    
+    // Note: In a real implementation, you would call setHubSettings and setCurrentMode here
+    // For now, we're just logging the debug information
+  };
+
   const handleStepComplete = () => {
     // Log the standards for the step that just finished
     const stepInfo = MEETING_STEPS[currentStepIndex];
