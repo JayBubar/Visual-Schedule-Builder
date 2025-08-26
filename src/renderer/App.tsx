@@ -364,6 +364,10 @@ const App: React.FC = () => {
           onClose={() => handleViewChange('builder')}
         />
       ) : currentView === 'calendar' && showMorningMeetingFlow ? (
+        (() => {
+          console.log('🔍 App: About to render MorningMeetingFlow with hubSettings:', getMorningMeetingHubSettings());
+          return null;
+        })(),
         <MorningMeetingFlow
           students={students}
           hubSettings={getMorningMeetingHubSettings()}
