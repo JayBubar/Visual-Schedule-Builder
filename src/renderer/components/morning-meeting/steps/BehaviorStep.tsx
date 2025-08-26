@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import UnifiedDataService from '../../../services/unifiedDataService';
+import StepNavigation from '../common/StepNavigation';
 import './BehaviorStep.css';
 
 interface BehaviorStepProps {
@@ -257,18 +258,13 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepCompl
         )}
       </div>
 
-      <div className="step-navigation">
-        <button onClick={onBack} className="nav-button secondary">
-          ← Back
-        </button>
-        <button 
-          onClick={handleNext} 
-          className="nav-button primary"
-          disabled={completedCount === 0}
-        >
-          {completedCount === 0 ? 'Select goals to continue' : `Continue (${completedCount} selected) →`}
-        </button>
-      </div>
+      {/* Standardized Navigation */}
+      <StepNavigation navigation={{
+        goNext: onNext,
+        goBack: onBack,
+        canGoBack: !!onBack,
+        isLastStep: false
+      }} />
     </div>
   );
 };

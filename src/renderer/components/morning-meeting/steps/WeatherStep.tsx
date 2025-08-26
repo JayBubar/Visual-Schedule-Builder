@@ -3,6 +3,7 @@ import { MorningMeetingStepProps } from '../types/morningMeetingTypes'; // Corre
 import { WeatherHistory, WeatherType } from '../../../types'; 
 import { styles } from './WeatherStep.styles';
 import UnifiedDataService from '../../../services/unifiedDataService';
+import StepNavigation from '../common/StepNavigation';
 
 // Data
 const WEATHER_OPTIONS: { type: WeatherType, emoji: string, label: string }[] = [
@@ -18,7 +19,7 @@ const formatDateKey = (date: Date): string => {
     return date.toISOString().split('T')[0];
 };
 
-const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), hubSettings, onStepComplete }) => {
+const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), hubSettings, onNext, onBack, onStepComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [todaysWeather, setTodaysWeather] = useState<WeatherType | null>(null);
     const [weatherHistory, setWeatherHistory] = useState<WeatherHistory>({});
@@ -166,6 +167,14 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                         </button>
                     )}
                 </div>
+
+                {/* Standardized Navigation */}
+                <StepNavigation navigation={{
+                    goNext: onNext,
+                    goBack: onBack,
+                    canGoBack: !!onBack,
+                    isLastStep: false
+                }} />
             </div>
         </div>
     );

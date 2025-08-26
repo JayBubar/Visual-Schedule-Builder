@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
-import { styles } from './SeasonalStep.styles'; 
+import { styles } from './SeasonalStep.styles';
+import StepNavigation from '../common/StepNavigation';
 
 // Helper function to get video URL
 const getVideoUrl = (video: any): string | null => {

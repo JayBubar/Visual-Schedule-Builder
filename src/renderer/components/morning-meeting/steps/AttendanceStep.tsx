@@ -1,114 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
 import UnifiedDataService from '../../../services/unifiedDataService';
-
-// Navigation Component (reused from existing code)
-const StepNavigation: React.FC<{
-  navigation?: any;
-  onNext?: () => void;
-  onBack?: () => void;
-  customNextText?: string;
-}> = ({ navigation, onNext, onBack, customNextText }) => {
-  // Handle both old navigation prop format and new direct prop format
-  const actualGoNext = navigation?.goNext || onNext;
-  const actualGoBack = navigation?.goBack || onBack;
-  const canGoBack = navigation?.canGoBack ?? (!!actualGoBack);
-  const isLastStep = navigation?.isLastStep ?? false;
-  
-  if (!actualGoNext) {
-    console.warn('⚠️ StepNavigation: No navigation function available');
-    return null;
-  }
-
-  return (
-    <div style={{
-      position: 'fixed',
-      bottom: '30px',
-      right: '30px',
-      display: 'flex',
-      gap: '15px',
-      zIndex: 1000
-    }}>
-      {canGoBack && (
-        <button
-          onClick={() => {
-            console.log('🔙 Back button clicked');
-            if (actualGoBack) {
-              actualGoBack();
-            } else {
-              console.error('❌ No back function available');
-            }
-          }}
-          style={{
-            padding: '12px 24px',
-            background: 'rgba(255, 255, 255, 0.15)',
-            backdropFilter: 'blur(10px)',
-            border: '2px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '12px',
-            color: 'white',
-            fontSize: '1rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          ← Back
-        </button>
-      )}
-
-      <button
-        onClick={() => {
-          console.log('🔄 Navigation button clicked - going to next step');
-          if (actualGoNext) {
-            actualGoNext();
-          } else {
-            console.error('❌ No next function available');
-          }
-        }}
-        style={{
-          padding: '12px 24px',
-          background: isLastStep 
-            ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
-            : 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(10px)',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '12px',
-          color: 'white',
-          fontSize: '1rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'all 0.3s ease'
-        }}
-        onMouseOver={(e) => {
-          if (isLastStep) {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #45a049 0%, #3d8b40 100%)';
-          } else {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-          }
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseOut={(e) => {
-          if (isLastStep) {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
-          } else {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-          }
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-      >
-        {isLastStep ? 'Complete! ✨' : customNextText || 'Next →'}
-      </button>
-    </div>
-  );
-};
+import StepNavigation from '../common/StepNavigation';
 
 interface Student {
   id: string;
@@ -279,6 +172,14 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   const resetAttendance = () => {
     setPresentStudents([]);
     setAbsentStudents([]);
+  };
+
+  // Create navigation object for StepNavigation component
+  const navigation = {
+    goNext: onNext,
+    goBack: onBack,
+    canGoBack: !!onBack,
+    isLastStep: false
   };
 
   return (
@@ -641,6 +542,8 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
         </div>
       )}
 
+      {/* Step Navigation */}
+      <StepNavigation navigation={navigation} />
 
       <style>{`
         @keyframes bounce {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // FIX: Corrected the import path to the central types file
 import { MorningMeetingStepProps, Student } from '../types/morningMeetingTypes';
+import StepNavigation from '../common/StepNavigation';
 
 interface Celebration {
   id: string;
@@ -13,6 +14,8 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
   students = [],
   hubSettings,
   currentDate,
+  onNext,
+  onBack,
   onStepComplete,
 }) => {
   const [internalSection, setInternalSection] = useState(0);
@@ -131,6 +134,14 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
           {internalSection < 1 && <button onClick={handleInternalNext} style={styles.internalNavButton}>Next Section</button>}
         </div>
       </div>
+      
+      {/* Step Navigation */}
+      <StepNavigation navigation={{
+        goNext: onNext,
+        goBack: onBack,
+        canGoBack: !!onBack,
+        isLastStep: false
+      }} />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
+import StepNavigation from '../common/StepNavigation';
 
 // Helper function to get video URL from various possible formats
 const getVideoUrl = (video: any): string | null => {
@@ -9,7 +10,7 @@ const getVideoUrl = (video: any): string | null => {
   return null;
 };
 
-const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onStepComplete }) => {
+const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onNext, onBack, onStepComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
@@ -273,6 +274,15 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
             <div style={styles.celebrationMessage} className="pop-in">{celebrationMessage}</div>
         </div>
        )}
+
+      {/* Standardized Navigation */}
+      <StepNavigation navigation={{
+        goNext: onNext,
+        goBack: onBack,
+        canGoBack: !!onBack,
+        isLastStep: false
+      }} />
+
        <style>{`.pop-in { animation: popIn 0.5s ease-out forwards; } @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }`}</style>
     </div>
   );

@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MorningMeetingStepProps } from '../types/morningMeetingTypes';
+import StepNavigation from '../common/StepNavigation';
 
 const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   hubSettings,
+  onNext,
+  onBack,
   onStepComplete,
 }) => {
   const [internalSection, setInternalSection] = useState(0);
@@ -109,6 +112,14 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
           {internalSection < 1 && <button onClick={handleInternalNext} style={styles.internalNavButton}>Next Section</button>}
         </div>
       </div>
+      
+      {/* Step Navigation */}
+      <StepNavigation navigation={{
+        goNext: onNext,
+        goBack: onBack,
+        canGoBack: !!onBack,
+        isLastStep: false
+      }} />
     </div>
   );
 };
