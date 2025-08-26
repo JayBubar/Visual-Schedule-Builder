@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Student, Staff, ActivityLibraryItem, ReportType } from '../../types';
 import UnifiedDataService, { UnifiedStudent, IEPGoal } from '../../services/unifiedDataService';
+import StandardsReport from './StandardsReport';
 
 interface ReportsProps {
   isActive: boolean;
@@ -89,6 +90,13 @@ const Reports: React.FC<ReportsProps> = ({
       description: 'Most used schedules and activity patterns',
       icon: '🗓️',
       category: 'schedule'
+    },
+    {
+      type: 'monthly-overview',
+      title: 'Educational Standards Report',
+      description: 'Track educational standards covered during Morning Meeting activities',
+      icon: '📚',
+      category: 'analytics'
     }
   ];
 
@@ -270,7 +278,10 @@ const Reports: React.FC<ReportsProps> = ({
 
   const handleReportSelect = (reportType: ReportType) => {
     setSelectedReportType(reportType);
-    generateReportData(reportType);
+    // Skip data generation for Standards Report as it handles its own data loading
+    if (reportType !== 'monthly-overview') {
+      generateReportData(reportType);
+    }
   };
 
   const getCurrentDateRange = () => {
@@ -382,6 +393,8 @@ const Reports: React.FC<ReportsProps> = ({
               <div className="loading-spinner"></div>
               <p>Generating report...</p>
             </div>
+          ) : selectedReportType === 'monthly-overview' ? (
+            <StandardsReport />
           ) : reportData ? (
             <div className="report-content">
               <div className="data-summary">

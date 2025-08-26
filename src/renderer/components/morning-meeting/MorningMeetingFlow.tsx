@@ -36,14 +36,12 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
     { key: 'welcome', component: WelcomeStep },
     { key: 'attendance', component: AttendanceStep },
     { key: 'classroomRules', component: BehaviorStep },
-    { key: 'behaviorCommitments', component: BehaviorStep },
+    { key: 'behaviorCommitments', component: BehaviorStep }, // FIXED KEY
     { key: 'calendarMath', component: CalendarMathStep },
     { key: 'weather', component: WeatherStep },
     { key: 'seasonal', component: SeasonalStep },
-    { key: 'announcements', component: DayReviewStep },
-    { key: 'celebrations', component: CelebrationStep },
-    { key: 'videos', component: DayReviewStep },
-    { key: 'flow', component: DayReviewStep },
+    { key: 'celebration', component: CelebrationStep },
+    { key: 'dayReview', component: DayReviewStep },
   ];
 
   // Filter steps based on hubSettings.flowCustomization.enabledSteps

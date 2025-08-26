@@ -961,7 +961,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
             </div>
           )}
 
-          {/* Behavior Commitments (NEW SECTION) */}
+          {/* Behavior Commitments (UPDATED SECTION) */}
           {activeSection === 'behaviorCommitments' && (
             <div className="hub-section">
               <h2>🎯 Behavior Goals</h2>
@@ -983,10 +983,9 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
               {(settings.behaviorCommitments?.enabled ?? true) && (
                 <div className="behavior-commitments">
-                  <h3>"I will..." Statements</h3>
+                  <h3>Custom "I will..." Statements (Optional)</h3>
                   <p className="section-description">
-                    Students will choose from these behavior goals during Morning Meeting. 
-                    Leave empty to use kid-friendly defaults.
+                    Add custom behavior goals here. If left empty, students will choose from 8 built-in kid-friendly options.
                   </p>
                   
                   {(settings.behaviorCommitments?.commitments || []).map((commitment, index) => (
@@ -1031,23 +1030,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                     }}
                     className="add-statement-button"
                   >
-                    ➕ Add Behavior Goal
+                    ➕ Add Custom Goal
                   </button>
-
-                  <div className="info-box">
-                    <h4>🌟 Default Behavior Goals</h4>
-                    <p>If you don't add custom goals, students will choose from these kid-friendly options:</p>
-                    <div className="default-commitments-preview">
-                      <span className="commitment-chip">👂 I will listen to my teacher</span>
-                      <span className="commitment-chip">💝 I will be kind to my friends</span>
-                      <span className="commitment-chip">✋ I will keep my hands to myself</span>
-                      <span className="commitment-chip">⭐ I will try my best</span>
-                      <span className="commitment-chip">🤝 I will help when I can</span>
-                      <span className="commitment-chip">🛡️ I will make safe choices</span>
-                      <span className="commitment-chip">🎈 I will share and take turns</span>
-                      <span className="commitment-chip">🎯 I will focus on my work</span>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -1182,10 +1166,11 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                 {Object.entries({
                   welcome: { name: 'Welcome Message', icon: '👋' },
                   attendance: { name: 'Attendance', icon: '📋' },
-                  behavior: { name: 'Classroom Rules', icon: '⭐' },
+                  classroomRules: { name: 'Classroom Rules', icon: '⭐' },
+                  behaviorCommitments: { name: 'Behavior Goals', icon: '🎯' },
                   calendarMath: { name: 'Calendar Math', icon: '📅' },
                   weather: { name: 'Weather & Clothing', icon: '🌤️' },
-                  seasonal: { name: 'Seasonal Learning', icon: '🍂' },
+                  seasonal: { name: 'Seasonal Learning', icon: '🌸' },
                   celebration: { name: 'Celebrations', icon: '🎉' },
                   dayReview: { name: 'Day Review & Goals', icon: '🎯' }
                 }).map(([stepKey, stepInfo]) => (

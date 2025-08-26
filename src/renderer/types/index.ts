@@ -1032,3 +1032,16 @@ export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
 export interface WeatherHistory {
   [date: string]: WeatherType;
 }
+
+// ===== DETAILED LOG ENTRY STRUCTURE =====
+
+export interface StandardLogEntry {
+  standard: string;
+  source: string; // e.g., 'CalendarMathStep', 'SeasonalStep'
+}
+
+export interface DailyLog {
+  [date: string]: {
+    standardsCovered: StandardLogEntry[];
+  };
+}

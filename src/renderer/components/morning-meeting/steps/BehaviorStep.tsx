@@ -9,40 +9,59 @@ interface BehaviorStepProps {
   currentDate: Date;
 }
 
+interface Student {
+  id: string;
+  name: string;
+  photo?: string;
+}
+
 interface BehaviorCommitment {
   id: string;
   text: string;
   icon: string;
-  selected: boolean;
+}
+
+interface StudentChoice {
+  studentId: string;
+  studentName: string;
+  commitmentId: string;
+  commitmentText: string;
+  timestamp: Date;
 }
 
 const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepComplete, currentDate }) => {
   const [commitments, setCommitments] = useState<BehaviorCommitment[]>([]);
-  const [selectedCommitments, setSelectedCommitments] = useState<string[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [studentChoices, setStudentChoices] = useState<{[studentId: string]: StudentChoice}>({});
+  const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [completedCount, setCompletedCount] = useState(0);
 
-  // Default behavior commitments - kid-friendly "I will" statements
+  // Default behavior commitments - clean, simple
   const defaultCommitments: BehaviorCommitment[] = [
-    { id: 'listen', text: 'I will listen to my teacher', icon: '👂', selected: false },
-    { id: 'kind', text: 'I will be kind to my friends', icon: '💝', selected: false },
-    { id: 'hands', text: 'I will keep my hands to myself', icon: '✋', selected: false },
-    { id: 'try', text: 'I will try my best', icon: '⭐', selected: false },
-    { id: 'help', text: 'I will help when I can', icon: '🤝', selected: false },
-    { id: 'safe', text: 'I will make safe choices', icon: '🛡️', selected: false },
-    { id: 'share', text: 'I will share and take turns', icon: '🎈', selected: false },
-    { id: 'focus', text: 'I will focus on my work', icon: '🎯', selected: false }
+    { id: 'listen', text: 'I will listen to my teacher', icon: '👂' },
+    { id: 'kind', text: 'I will be kind to my friends', icon: '💝' },
+    { id: 'hands', text: 'I will keep my hands to myself', icon: '✋' },
+    { id: 'try', text: 'I will try my best', icon: '⭐' },
+    { id: 'help', text: 'I will help when I can', icon: '🤝' },
+    { id: 'safe', text: 'I will make safe choices', icon: '🛡️' },
+    { id: 'share', text: 'I will share and take turns', icon: '🎈' },
+    { id: 'focus', text: 'I will focus on my work', icon: '🎯' }
   ];
 
   useEffect(() => {
-    loadBehaviorSettings();
-  }, []);
+    loadData();
+  }, [currentDate]);
 
-  const loadBehaviorSettings = async () => {
+  const loadData = async () => {
     try {
-      const settings = UnifiedDataService.getSettings();
-      const hubSettings = settings?.morningMeeting;
+      setIsLoading(true);
       
-      // Get custom behavior commitments from hub or use defaults
+      // Load settings from UnifiedDataService
+      const settings = UnifiedDataService.getSettings();
+      const hubSettings = settings?.morningMeeting?.hubSettings;
+      
+      // Get behavior commitments - use custom if available, otherwise defaults
       const customCommitments = hubSettings?.behaviorCommitments?.commitments || [];
       const enabled = hubSettings?.behaviorCommitments?.enabled ?? true;
 
@@ -51,91 +70,101 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepCompl
         const mappedCommitments = customCommitments.map((text: string, index: number) => ({
           id: `custom-${index}`,
           text: text.startsWith('I will') ? text : `I will ${text.toLowerCase()}`,
-          icon: defaultCommitments[index % defaultCommitments.length]?.icon || '⭐',
-          selected: false
+          icon: defaultCommitments[index % defaultCommitments.length]?.icon || '⭐'
         }));
         setCommitments(mappedCommitments);
       } else {
-        // Use default commitments
+        // Use defaults
         setCommitments([...defaultCommitments]);
       }
 
-      // Load any previously selected commitments for today
+      // Load students from attendance
       const todayKey = currentDate.toDateString();
-      const savedSelections = localStorage.getItem(`behaviorCommitments_${todayKey}`);
-      if (savedSelections) {
-        const parsedSelections = JSON.parse(savedSelections);
-        setSelectedCommitments(parsedSelections);
-        // If there are already selections, enable the global navigation
-        if (parsedSelections.length > 0) {
-          onStepComplete();
-        }
+      const attendanceData = localStorage.getItem(`attendance_${todayKey}`);
+      
+      if (attendanceData) {
+        const attendance = JSON.parse(attendanceData);
+        const presentStudents = attendance.students?.filter((s: any) => s.isPresent) || [];
+        setStudents(presentStudents);
+      } else {
+        // Fallback to all students if no attendance data
+        const allStudents = UnifiedDataService.getAllStudents();
+        setStudents(allStudents);
+      }
+
+      // Load any existing choices for today
+      const savedChoices = localStorage.getItem(`behaviorChoices_${todayKey}`);
+      if (savedChoices) {
+        const choices = JSON.parse(savedChoices);
+        setStudentChoices(choices);
+        setCompletedCount(Object.keys(choices).length);
       }
 
       setIsLoading(false);
     } catch (error) {
-      console.error('Error loading behavior settings:', error);
+      console.error('Error loading behavior step data:', error);
       setCommitments([...defaultCommitments]);
       setIsLoading(false);
     }
   };
 
-  const toggleCommitment = (commitmentId: string) => {
-    const newSelected = selectedCommitments.includes(commitmentId)
-      ? selectedCommitments.filter(id => id !== commitmentId)
-      : [...selectedCommitments, commitmentId];
+  const handleStudentSelect = (student: Student) => {
+    setSelectedStudent(student.id);
+  };
+
+  const handleCommitmentSelect = (commitment: BehaviorCommitment) => {
+    if (!selectedStudent) return;
+
+    const student = students.find(s => s.id === selectedStudent);
+    if (!student) return;
+
+    const choice: StudentChoice = {
+      studentId: selectedStudent,
+      studentName: student.name,
+      commitmentId: commitment.id,
+      commitmentText: commitment.text,
+      timestamp: new Date()
+    };
+
+    const newChoices = {
+      ...studentChoices,
+      [selectedStudent]: choice
+    };
+
+    setStudentChoices(newChoices);
+    setCompletedCount(Object.keys(newChoices).length);
     
-    setSelectedCommitments(newSelected);
-    
-    // Save to localStorage immediately
+    // Save to localStorage
     const todayKey = currentDate.toDateString();
-    localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(newSelected));
+    localStorage.setItem(`behaviorChoices_${todayKey}`, JSON.stringify(newChoices));
     
-    // Enable the global navigation when at least one commitment is selected
-    if (newSelected.length > 0) {
+    // Close selection modal
+    setSelectedStudent(null);
+
+    // Mark step complete if we want
+    if (onStepComplete) {
       onStepComplete();
     }
   };
 
-  // This effect will be called by the global navigation when moving to next step
-  useEffect(() => {
-    const handleDataSave = () => {
-      if (selectedCommitments.length > 0) {
-        // Ensure data is saved before proceeding
-        const todayKey = currentDate.toDateString();
-        localStorage.setItem(`behaviorCommitments_${todayKey}`, JSON.stringify(selectedCommitments));
-        
-        // Also save to UnifiedDataService for Visual Schedule integration
-        try {
-          const selectedTexts = commitments
-            .filter(c => selectedCommitments.includes(c.id))
-            .map(c => c.text);
-          
-          // Save each selected commitment using the UnifiedDataService API
-          selectedTexts.forEach(text => {
-            UnifiedDataService.addBehaviorCommitment({
-              studentId: 'morning-meeting', // Generic ID for morning meeting commitments
-              commitment: text,
-              date: currentDate.toISOString().split('T')[0],
-              status: 'pending'
-            });
-          });
-        } catch (error) {
-          console.error('Error saving behavior commitments to UnifiedDataService:', error);
-        }
-      }
-    };
+  const handleNext = () => {
+    // Save all choices before proceeding
+    const todayKey = currentDate.toDateString();
+    localStorage.setItem(`behaviorChoices_${todayKey}`, JSON.stringify(studentChoices));
+    
+    onNext();
+  };
 
-    // Save data whenever selections change
-    handleDataSave();
-  }, [selectedCommitments, commitments, currentDate]);
+  const getStudentChoice = (studentId: string): StudentChoice | null => {
+    return studentChoices[studentId] || null;
+  };
 
   if (isLoading) {
     return (
       <div className="step-container behavior-step">
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Loading behavior choices...</p>
+          <p>Loading behavior goals...</p>
         </div>
       </div>
     );
@@ -144,75 +173,102 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepCompl
   return (
     <div className="step-container behavior-step">
       <div className="step-header">
-        <h1>🌟 My Behavior Goals</h1>
-        <p className="step-subtitle">Choose how you want to be awesome today!</p>
+        <h1>🎯 Choose Your Behavior Goals</h1>
+        <p className="step-subtitle">Each student picks one goal to focus on today!</p>
       </div>
 
       <div className="behavior-content">
-        <div className="instruction-box">
-          <h3>🎯 Pick your goals for today</h3>
-          <p>Tap the ones you want to work on. You can choose as many as you want!</p>
+        {/* Progress indicator */}
+        <div className="progress-indicator">
+          <h3>📊 Progress: {completedCount} of {students.length} students</h3>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill" 
+              style={{ width: `${(completedCount / Math.max(students.length, 1)) * 100}%` }}
+            ></div>
+          </div>
         </div>
 
-        <div className="commitments-grid">
-          {commitments.map((commitment) => {
-            const isSelected = selectedCommitments.includes(commitment.id);
+        {/* Student Grid */}
+        <div className="students-grid">
+          {students.map((student) => {
+            const choice = getStudentChoice(student.id);
             return (
               <button
-                key={commitment.id}
-                className={`commitment-card ${isSelected ? 'selected' : ''}`}
-                onClick={() => toggleCommitment(commitment.id)}
-                aria-pressed={isSelected}
+                key={student.id}
+                className={`student-card ${choice ? 'completed' : 'pending'}`}
+                onClick={() => handleStudentSelect(student)}
               >
-                <div className="commitment-icon">{commitment.icon}</div>
-                <div className="commitment-text">{commitment.text}</div>
-                {isSelected && (
-                  <div className="selection-check">✅</div>
+                <div className="student-photo">
+                  {student.photo ? (
+                    <img src={student.photo} alt={student.name} />
+                  ) : (
+                    <div className="photo-placeholder">
+                      {student.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="student-name">{student.name}</div>
+                {choice && (
+                  <div className="student-choice">
+                    <div className="choice-icon">✅</div>
+                    <div className="choice-text">{choice.commitmentText}</div>
+                  </div>
+                )}
+                {!choice && (
+                  <div className="pending-indicator">
+                    Tap to choose goal
+                  </div>
                 )}
               </button>
             );
           })}
         </div>
 
-        {selectedCommitments.length > 0 && (
-          <div className="selected-summary">
-            <h4>🎉 My Goals for Today:</h4>
-            <div className="selected-list">
-              {commitments
-                .filter(c => selectedCommitments.includes(c.id))
-                .map(c => (
-                  <div key={c.id} className="selected-item">
-                    <span className="selected-icon">{c.icon}</span>
-                    <span className="selected-text">{c.text}</span>
-                  </div>
+        {/* Selection Modal */}
+        {selectedStudent && (
+          <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>
+                🎯 Choose a goal for {students.find(s => s.id === selectedStudent)?.name}
+              </h3>
+              
+              <div className="commitments-grid">
+                {commitments.map((commitment) => (
+                  <button
+                    key={commitment.id}
+                    className="commitment-option"
+                    onClick={() => handleCommitmentSelect(commitment)}
+                  >
+                    <div className="commitment-icon">{commitment.icon}</div>
+                    <div className="commitment-text">{commitment.text}</div>
+                  </button>
                 ))}
+              </div>
+              
+              <button 
+                className="modal-close"
+                onClick={() => setSelectedStudent(null)}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* TEMPORARY: Visual indicator for global navigation area */}
-      <div style={{
-        position: 'fixed',
-        bottom: '1rem',
-        left: '1rem',
-        right: '1rem',
-        height: '6rem',
-        background: 'rgba(255, 0, 0, 0.1)',
-        border: '2px dashed rgba(255, 0, 0, 0.5)',
-        borderRadius: '10px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-        fontSize: '1rem',
-        fontWeight: 'bold',
-        zIndex: 999,
-        pointerEvents: 'none'
-      }}>
-        🚧 TEMPORARY: Global Navigation Area - Remove this box after testing 🚧
+      <div className="step-navigation">
+        <button onClick={onBack} className="nav-button secondary">
+          ← Back
+        </button>
+        <button 
+          onClick={handleNext} 
+          className="nav-button primary"
+          disabled={completedCount === 0}
+        >
+          {completedCount === 0 ? 'Select goals to continue' : `Continue (${completedCount} selected) →`}
+        </button>
       </div>
-
     </div>
   );
 };

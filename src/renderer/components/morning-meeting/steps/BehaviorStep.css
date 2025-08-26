@@ -1,14 +1,13 @@
-/* BehaviorStep.css - Kid-friendly behavior commitment interface */
+/* BehaviorStep.css - Updated layout for new navigation system */
 
 .behavior-step {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 2rem;
-  padding-bottom: 8rem; /* TEMPORARY: Extra space for global navigation */
   color: white;
   position: relative;
   overflow-y: auto;
-  max-height: 100vh; /* TEMPORARY: Ensure scrolling works */
+  max-height: 100vh;
 }
 
 .behavior-step::before {
@@ -73,125 +72,212 @@
   margin: 0;
 }
 
-.commitments-grid {
+.students-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 3rem;
 }
 
-.commitment-card {
+.student-card {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  min-height: 140px;
+  transition: all 0.3s ease;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: inherit;
   color: white;
-  animation: slideInUp 0.6s ease-out calc(var(--index, 0) * 0.1s) both;
 }
 
-.commitment-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-}
-
-.commitment-card.selected {
+.student-card.completed {
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   border-color: #4CAF50;
+  transform: scale(1.02);
+}
+
+.student-card.pending:hover {
   transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 15px 30px rgba(76, 175, 80, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-.commitment-card.selected:hover {
-  transform: translateY(-8px) scale(1.08);
-}
-
-.commitment-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  display: block;
-  animation: pulse 2s infinite;
-}
-
-.commitment-text {
-  font-size: 1.2rem;
-  font-weight: 600;
-  line-height: 1.4;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-}
-
-.selection-check {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  font-size: 1.5rem;
-  background: #4CAF50;
+.student-photo {
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.student-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid white;
-  animation: checkBounce 0.5s ease-out;
-}
-
-.selected-summary {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 2.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: slideInUp 0.6s ease-out;
-}
-
-.selected-summary h4 {
   font-size: 2rem;
-  margin-bottom: 2rem;
+  font-weight: bold;
+  color: white;
+}
+
+.student-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.student-choice {
   text-align: center;
-  color: #fff;
 }
 
-.selected-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+.choice-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
-.selected-item {
+.choice-text {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  line-height: 1.3;
+}
+
+.pending-indicator {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.progress-indicator {
   background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
   border-radius: 15px;
-  padding: 1.5rem;
+  padding: 2rem;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.progress-indicator h3 {
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  transition: width 0.5s ease;
+  border-radius: 10px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 3rem;
+  max-width: 600px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.modal-content h3 {
+  color: white;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.5rem;
+}
+
+.commitments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  animation: slideInLeft 0.4s ease-out;
+  margin-bottom: 2rem;
 }
 
-.selected-icon {
+.commitment-option {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.commitment-option:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.commitment-icon {
   font-size: 2rem;
-  flex-shrink: 0;
 }
 
-.selected-text {
-  font-size: 1.1rem;
+.commitment-text {
+  font-size: 1rem;
   font-weight: 500;
+  line-height: 1.3;
 }
 
-/* Removed duplicate navigation styles - using global navigation instead */
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  color: white;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  display: block;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 
 .loading-spinner {
   display: flex;
@@ -311,16 +397,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Grid animation delays */
-.commitment-card:nth-child(1) { --index: 0; }
-.commitment-card:nth-child(2) { --index: 1; }
-.commitment-card:nth-child(3) { --index: 2; }
-.commitment-card:nth-child(4) { --index: 3; }
-.commitment-card:nth-child(5) { --index: 4; }
-.commitment-card:nth-child(6) { --index: 5; }
-.commitment-card:nth-child(7) { --index: 6; }
-.commitment-card:nth-child(8) { --index: 7; }
-
 /* Responsive Design */
 @media (max-width: 768px) {
   .behavior-step {
@@ -335,17 +411,17 @@
     font-size: 1.2rem;
   }
   
-  .commitments-grid {
+  .students-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
   
-  .commitment-card {
-    min-height: 120px;
+  .student-card {
+    min-height: 180px;
     padding: 1.5rem;
   }
   
-  .selected-list {
+  .commitments-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -361,14 +437,14 @@
 
 /* Touch device improvements */
 @media (hover: none) {
-  .commitment-card:hover {
+  .student-card.pending:hover {
     transform: none;
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: none;
   }
   
-  .commitment-card.selected:hover {
-    transform: translateY(-4px) scale(1.05);
+  .commitment-option:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.1);
   }
 }

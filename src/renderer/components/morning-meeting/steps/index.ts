@@ -26,35 +26,38 @@ export {
 export type StepKey = 
   | 'welcome'
   | 'attendance'
-  | 'behavior'
+  | 'classroomRules'
+  | 'behaviorCommitments' // FIXED KEY
   | 'calendarMath'
   | 'weather'
   | 'seasonal'
   | 'celebration'
-  | 'dayReview'; // ✅ ADDED BACK
+  | 'dayReview';
 
 // Step component mapping
 export const STEP_COMPONENTS = {
   welcome: WelcomeStep,
   attendance: AttendanceStep,
-  behavior: ClassroomRulesStep,
+  classroomRules: ClassroomRulesStep,
+  behaviorCommitments: ClassroomRulesStep, // FIXED KEY
   calendarMath: CalendarMathStep,
   weather: WeatherStep,
   seasonal: SeasonalStep,
   celebration: CelebrationStep,
-  dayReview: DayReviewStep // ✅ ADDED BACK
+  dayReview: DayReviewStep
 };
 
-// Default step order - Complete 8-step flow
+// Default step order - Complete 9-step flow
 export const DEFAULT_STEP_ORDER: StepKey[] = [
   'welcome',
   'attendance',
-  'behavior',
+  'classroomRules',
+  'behaviorCommitments', // FIXED KEY
   'calendarMath',
   'weather',
   'seasonal',
   'celebration',
-  'dayReview' // ✅ ADDED BACK - Final step
+  'dayReview'
 ];
 
 // Function to get enabled steps in order
@@ -81,10 +84,16 @@ export const STEP_METADATA = {
     description: 'Check who is here today',
     estimatedTime: '3 minutes'
   },
-  behavior: {
+  classroomRules: {
     name: 'Classroom Rules',
     icon: '⭐',
     description: 'Learn classroom expectations and rules',
+    estimatedTime: '4 minutes'
+  },
+  behaviorCommitments: {
+    name: 'Behavior Goals',
+    icon: '🎯',
+    description: 'Student behavior commitments and goals',
     estimatedTime: '4 minutes'
   },
   calendarMath: {
@@ -101,7 +110,7 @@ export const STEP_METADATA = {
   },
   seasonal: {
     name: 'Seasonal Learning',
-    icon: '🍂',
+    icon: '🌸',
     description: 'Season-specific activities and vocabulary',
     estimatedTime: '6 minutes'
   },
@@ -111,7 +120,7 @@ export const STEP_METADATA = {
     description: 'Birthdays and special recognition',
     estimatedTime: '3 minutes'
   },
-  dayReview: { // ✅ ADDED BACK
+  dayReview: {
     name: 'Day Review & Goals',
     icon: '🎯',
     description: 'Reflection and goal-setting for the day',

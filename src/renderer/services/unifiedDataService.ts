@@ -2293,6 +2293,69 @@ class UnifiedDataService {
       console.error('Error clearing weather history:', error);
     }
   }
+
+  // ===== DAILY LOGS METHODS =====
+  
+  // Method to get all daily logs with educational standards tracking
+  static getDailyLogs(): { [date: string]: { standardsCovered: { standard: string; source: string }[] } } {
+    const unifiedData = this.getUnifiedData();
+    if (unifiedData?.settings?.dailyLogs) {
+      return unifiedData.settings.dailyLogs;
+    }
+    
+    // Fallback to direct localStorage access for backward compatibility
+    try {
+      const dailyLogsData = localStorage.getItem('dailyLogs');
+      return dailyLogsData ? JSON.parse(dailyLogsData) : {};
+    } catch (error) {
+      console.error('Error reading daily logs:', error);
+      return {};
+    }
+  }
+
+  // Method to save educational standards for a specific date with duplicate prevention
+  static saveStandardsForDate(date: string, standards: { standard: string; source: string }[]): void {
+    try {
+      // Get existing standards for the date
+      const existingLogs = this.getDailyLogs();
+      const existingStandards = existingLogs[date]?.standardsCovered || [];
+      
+      // Prevent duplicate entries for the same standard from the same source
+      const newStandards = standards.filter(
+        (newStd) => !existingStandards.some(
+          (exStd) => exStd.standard === newStd.standard && exStd.source === newStd.source
+        )
+      );
+      
+      // Combine existing and new standards
+      const updatedStandards = [...existingStandards, ...newStandards];
+      
+      // Update unified data structure
+      let unifiedData = this.getUnifiedData();
+      if (unifiedData) {
+        if (!unifiedData.settings.dailyLogs) {
+          unifiedData.settings.dailyLogs = {};
+        }
+        if (!unifiedData.settings.dailyLogs[date]) {
+          unifiedData.settings.dailyLogs[date] = { standardsCovered: [] };
+        }
+        unifiedData.settings.dailyLogs[date].standardsCovered = updatedStandards;
+        this.saveUnifiedData(unifiedData);
+      }
+      
+      // Also save to direct localStorage for backward compatibility
+      const updatedLogs = { ...existingLogs };
+      if (!updatedLogs[date]) {
+        updatedLogs[date] = { standardsCovered: [] };
+      }
+      updatedLogs[date].standardsCovered = updatedStandards;
+      localStorage.setItem('dailyLogs', JSON.stringify(updatedLogs));
+      
+      console.log(`📚 Standards saved for ${date}: ${newStandards.length} new standards added (${updatedStandards.length} total)`);
+    } catch (error) {
+      console.error('Error saving standards for date:', error);
+    }
+  }
 }
 
 export default UnifiedDataService;
