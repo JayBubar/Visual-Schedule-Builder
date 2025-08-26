@@ -5,7 +5,6 @@ import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMe
 
 // Import all step components - CORRECTED
 import WelcomeStep from './steps/WelcomeStep';
-import TestStep from './steps/TestStep'; // TEMPORARY TEST
 import AttendanceStep from './steps/AttendanceStep';
 import ClassroomRulesStep from './steps/ClassroomRulesStep';
 import BehaviorStep from './steps/BehaviorStep'; // NEW - Import the behavior commitments step
