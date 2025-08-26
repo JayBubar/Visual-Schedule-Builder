@@ -168,14 +168,16 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                     )}
                 </div>
 
-                {/* Standardized Navigation */}
-                <StepNavigation navigation={{
-                    goNext: onNext,
-                    goBack: onBack,
-                    goHome: onHome,
-                    canGoBack: !!onBack,
-                    isLastStep: false
-                }} />
+                {/* Standardized Navigation - Higher z-index to appear above content */}
+                <div style={{ position: 'relative', zIndex: 1001 }}>
+                    <StepNavigation navigation={{
+                        goNext: onNext,
+                        goBack: onBack,
+                        goHome: onHome,
+                        canGoBack: !!onBack,
+                        isLastStep: false
+                    }} />
+                </div>
             </div>
         </div>
     );
