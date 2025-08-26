@@ -563,25 +563,6 @@ export interface Achievement {
   [key: string]: any;
 }
 
-export interface DailyCheckIn {
-  id: string;
-  date: string;
-  weatherData?: WeatherData;
-  weather?: WeatherData;
-  behaviorCommitments?: StudentBehaviorChoice[];
-  independentChoices?: string[];
-  dailyHighlights?: ActivityHighlight[];
-  achievements?: Achievement[];
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  yesterdayHighlights?: ActivityHighlight[];
-  studentChoices?: any[];
-  independentActivitiesSelected?: any[];
-  behaviorCommitmentsSelected?: any[];
-  dailyHighlightsSelected?: any[];
-  [key: string]: any;
-}
 
 export interface ChoiceFilter {
   category?: ScheduleCategory;
@@ -1021,7 +1002,6 @@ export interface HubSettings {
   flowCustomization?: {
     enabledSteps: { [stepId: string]: boolean };
   };
-  dailyCheckIn?: EnhancedCalendarSettings;
   [key: string]: any;
 }
 

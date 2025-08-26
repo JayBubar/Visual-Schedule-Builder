@@ -70,23 +70,22 @@ export const DataMigrationUtility = {
       // Create updated unified settings
       const updatedSettings = {
         ...currentSettings,
-        dailyCheckIn: {
-          ...currentSettings.dailyCheckIn,
-          behaviorCommitments: {
-            ...currentSettings.dailyCheckIn?.behaviorCommitments,
-            customStatements: [
-              ...(currentSettings.dailyCheckIn?.behaviorCommitments?.customStatements || []),
-              ...migratedBehaviorStatements
-            ]
-          },
-          celebrations: {
-            ...currentSettings.dailyCheckIn?.celebrations,
-            enabled: legacyData.celebrationsEnabled !== false,
-            customCelebrations: [
-              ...(currentSettings.dailyCheckIn?.celebrations?.customCelebrations || []),
-              ...migratedCelebrations
-            ]
-          }
+        // Note: DailyCheckIn functionality has been moved to Morning Meeting
+        // Legacy behavior commitments and celebrations are preserved in their new locations
+        behaviorCommitments: {
+          ...currentSettings.behaviorCommitments,
+          customStatements: [
+            ...(currentSettings.behaviorCommitments?.customStatements || []),
+            ...migratedBehaviorStatements
+          ]
+        },
+        celebrations: {
+          ...currentSettings.celebrations,
+          enabled: legacyData.celebrationsEnabled !== false,
+          customCelebrations: [
+            ...(currentSettings.celebrations?.customCelebrations || []),
+            ...migratedCelebrations
+          ]
         }
       };
 
@@ -187,32 +186,30 @@ export const DebugDataSources = {
     const currentSettings = UnifiedDataService.getSettings();
     const testSettings = {
       ...currentSettings,
-      dailyCheckIn: {
-        ...currentSettings.dailyCheckIn,
-        behaviorCommitments: {
-          ...currentSettings.dailyCheckIn?.behaviorCommitments,
-          customStatements: [
-            { id: 'test1', text: 'I will test my behavior statements', category: 'kindness', emoji: '🤝', isActive: true, isDefault: false, createdAt: new Date().toISOString() },
-            { id: 'test2', text: 'I will verify the fix works', category: 'respect', emoji: '👂', isActive: true, isDefault: false, createdAt: new Date().toISOString() }
-          ]
-        },
-        celebrations: {
-          ...currentSettings.dailyCheckIn?.celebrations,
-          enabled: true,
-          customCelebrations: [
-            {
-              id: 'test1',
-              name: 'Test Celebration Fix',
-              emoji: '🔧',
-              message: 'Testing that celebrations load correctly!',
-              date: new Date().toISOString().split('T')[0],
-              enabled: true,
-              isRecurring: false,
-              type: 'custom',
-              createdAt: new Date().toISOString()
-            }
-          ]
-        }
+      // Note: DailyCheckIn functionality has been moved to Morning Meeting
+      behaviorCommitments: {
+        ...currentSettings.behaviorCommitments,
+        customStatements: [
+          { id: 'test1', text: 'I will test my behavior statements', category: 'kindness', emoji: '🤝', isActive: true, isDefault: false, createdAt: new Date().toISOString() },
+          { id: 'test2', text: 'I will verify the fix works', category: 'respect', emoji: '👂', isActive: true, isDefault: false, createdAt: new Date().toISOString() }
+        ]
+      },
+      celebrations: {
+        ...currentSettings.celebrations,
+        enabled: true,
+        customCelebrations: [
+          {
+            id: 'test1',
+            name: 'Test Celebration Fix',
+            emoji: '🔧',
+            message: 'Testing that celebrations load correctly!',
+            date: new Date().toISOString().split('T')[0],
+            enabled: true,
+            isRecurring: false,
+            type: 'custom',
+            createdAt: new Date().toISOString()
+          }
+        ]
       }
     };
     

@@ -5,9 +5,6 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   hubSettings,
   onStepComplete,
-  // NOTE: You will need to pass the next activity's name from the parent component
-  // For now, we use a placeholder
-  nextActivityName = "Reading Time", 
 }) => {
   const [internalSection, setInternalSection] = useState(0);
 
@@ -26,12 +23,12 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
 
   useEffect(() => {
     // The DayReviewStep is complete when on the final slide
-    if (internalSection === 2) {
+    if (internalSection === 1) {
       onStepComplete?.();
     }
   }, [internalSection, onStepComplete]);
 
-  const handleInternalNext = () => { if (internalSection < 2) setInternalSection(internalSection + 1); };
+  const handleInternalNext = () => { if (internalSection < 1) setInternalSection(internalSection + 1); };
   const handleInternalBack = () => { if (internalSection > 0) setInternalSection(internalSection - 1); };
 
   const renderContent = () => {
@@ -89,19 +86,6 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
             </div>
           </>
         );
-      case 2: // Are We Ready?
-        return (
-          <>
-            <h2 style={styles.rightPanelTitle}>Morning Meeting is almost over!</h2>
-            <div style={styles.readyContainer}>
-                <p style={styles.readyText}>Are we ready for our next activity?</p>
-                <div style={styles.nextActivityBox}>
-                    <span>Up Next:</span>
-                    <strong>{nextActivityName}</strong>
-                </div>
-            </div>
-          </>
-        );
       default:
         return null;
     }
@@ -116,14 +100,13 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
         <div style={styles.progressList}>
           <div onClick={() => setInternalSection(0)} style={{ ...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {}) }}>1. Rules Review</div>
           <div onClick={() => setInternalSection(1)} style={{ ...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {}) }}>2. Today's Summary</div>
-          <div onClick={() => setInternalSection(2)} style={{ ...styles.progressItem, ...(internalSection === 2 ? styles.progressItemActive : {}) }}>3. Are We Ready?</div>
         </div>
       </div>
       <div style={styles.rightColumn}>
         {renderContent()}
         <div style={styles.internalNavBar}>
           {internalSection > 0 && <button onClick={handleInternalBack} style={styles.internalNavButton}>Back</button>}
-          {internalSection < 2 && <button onClick={handleInternalNext} style={styles.internalNavButton}>Next Section</button>}
+          {internalSection < 1 && <button onClick={handleInternalNext} style={styles.internalNavButton}>Next Section</button>}
         </div>
       </div>
     </div>
@@ -148,9 +131,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     ruleEmoji: { fontSize: '1.5rem' },
     summaryContainer: { width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' },
     summaryBox: { width: '100%', maxWidth: '600px', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '1.5rem', color: 'white', textAlign: 'center' },
-    readyContainer: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem' },
-    readyText: { fontSize: '2rem', fontWeight: 600, color: 'white' },
-    nextActivityBox: { background: 'rgba(255,255,255,0.8)', color: '#333', padding: '2rem', borderRadius: '24px', textAlign: 'center', fontSize: '1.5rem' },
     internalNavBar: { position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem' },
     internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)' },
 };

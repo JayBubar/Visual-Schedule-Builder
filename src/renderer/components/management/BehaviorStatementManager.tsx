@@ -32,7 +32,7 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
     try {
       setLoading(true);
       const data = await UnifiedDataService.getUnifiedData();
-      const customStatements = data?.settings?.dailyCheckIn?.behaviorCommitments?.customStatements;
+      const customStatements = data?.settings?.behaviorCommitments?.customStatements;
       
       if (customStatements && customStatements.length > 0) {
         setStatements(customStatements);
@@ -54,12 +54,9 @@ const BehaviorStatementManager: React.FC<BehaviorStatementManagerProps> = ({
         ...data,
         settings: {
           ...data.settings,
-          dailyCheckIn: {
-            ...data.settings?.dailyCheckIn,
-            behaviorCommitments: {
-              ...data.settings?.dailyCheckIn?.behaviorCommitments,
-              customStatements: statements
-            }
+          behaviorCommitments: {
+            ...data.settings?.behaviorCommitments,
+            customStatements: statements
           }
         }
       };

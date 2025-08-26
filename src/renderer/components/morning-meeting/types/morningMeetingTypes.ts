@@ -66,7 +66,6 @@ export interface MorningMeetingStepProps {
   onStepComplete?: () => void;
   onNext?: () => void;
   onBack?: () => void;
-  nextActivityName?: string;
 }
 
 // Data types for each step

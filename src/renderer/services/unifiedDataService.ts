@@ -156,14 +156,6 @@ export interface BehaviorCommitment {
   notes?: string;
 }
 
-export interface DailyHighlight {
-  id: string;
-  studentId: string;
-  highlight: string;
-  date: string;
-  category: 'achievement' | 'behavior' | 'social' | 'academic';
-  notes?: string;
-}
 
 export interface IndependentChoice {
   id: string;
@@ -191,7 +183,6 @@ export interface UnifiedData {
   attendance: AttendanceRecord[];
   calendar: {
     behaviorCommitments: BehaviorCommitment[];
-    dailyHighlights: DailyHighlight[];
     independentChoices: IndependentChoice[];
   };
   settings: {
@@ -506,7 +497,6 @@ class UnifiedDataService {
         attendance: [],
         calendar: {
           behaviorCommitments: [],
-          dailyHighlights: [],
           independentChoices: []
         },
         settings: {},
@@ -932,7 +922,6 @@ class UnifiedDataService {
       attendance: currentData?.attendance || [],
       calendar: currentData?.calendar || {
         behaviorCommitments: [],
-        dailyHighlights: [],
         independentChoices: []
       },
       settings: currentData?.settings || {},
@@ -1113,7 +1102,7 @@ class UnifiedDataService {
     const currentData = this.getUnifiedData();
     if (currentData) {
       if (!currentData.calendar) {
-        currentData.calendar = { behaviorCommitments: [], dailyHighlights: [], independentChoices: [] };
+        currentData.calendar = { behaviorCommitments: [], independentChoices: [] };
       }
       currentData.calendar.behaviorCommitments = commitments;
       this.saveUnifiedData(currentData);
@@ -1144,66 +1133,6 @@ class UnifiedDataService {
     return [];
   }
   
-  // Get daily highlights
-  static getDailyHighlights(studentId?: string): DailyHighlight[] {
-    const unifiedData = this.getUnifiedData();
-    const highlights = unifiedData?.calendar?.dailyHighlights || [];
-    
-    if (studentId) {
-      return highlights.filter(h => h.studentId === studentId);
-    }
-    
-    return highlights;
-  }
-  
-  // Add daily highlight
-  static addDailyHighlight(highlight: Omit<DailyHighlight, 'id'>): DailyHighlight {
-    const highlights = this.getDailyHighlights();
-    const newHighlight: DailyHighlight = {
-      ...highlight,
-      id: Date.now().toString()
-    };
-    
-    highlights.push(newHighlight);
-    this.saveDailyHighlights(highlights);
-    return newHighlight;
-  }
-  
-  // Save daily highlights
-  private static saveDailyHighlights(highlights: DailyHighlight[]): void {
-    const currentData = this.getUnifiedData();
-    if (currentData) {
-      if (!currentData.calendar) {
-        currentData.calendar = { behaviorCommitments: [], dailyHighlights: [], independentChoices: [] };
-      }
-      currentData.calendar.dailyHighlights = highlights;
-      this.saveUnifiedData(currentData);
-    }
-  }
-  
-  // Get legacy daily highlights
-  private static getLegacyDailyHighlights(): DailyHighlight[] {
-    try {
-      const legacy = localStorage.getItem('daily_highlights');
-      if (legacy) {
-        const data = JSON.parse(legacy);
-        return Object.entries(data).flatMap(([studentId, highlights]: [string, any]) =>
-          (highlights || []).map((h: any) => ({
-            id: h.id || Date.now().toString(),
-            studentId: studentId,
-            highlight: h.highlight || h.text || '',
-            date: h.date || new Date().toISOString().split('T')[0],
-            category: h.category || 'achievement',
-            notes: h.notes
-          }))
-        );
-      }
-    } catch (error) {
-      console.error('Error reading legacy daily highlights:', error);
-    }
-    
-    return [];
-  }
   
   // Get independent choices
   static getIndependentChoices(studentId?: string): IndependentChoice[] {
@@ -1235,7 +1164,7 @@ class UnifiedDataService {
     const currentData = this.getUnifiedData();
     if (currentData) {
       if (!currentData.calendar) {
-        currentData.calendar = { behaviorCommitments: [], dailyHighlights: [], independentChoices: [] };
+        currentData.calendar = { behaviorCommitments: [], independentChoices: [] };
       }
       currentData.calendar.independentChoices = choices;
       this.saveUnifiedData(currentData);
@@ -1495,7 +1424,6 @@ class UnifiedDataService {
           attendance: [],
           calendar: {
             behaviorCommitments: [],
-            dailyHighlights: [],
             independentChoices: []
           },
           settings: {},
@@ -1524,7 +1452,6 @@ class UnifiedDataService {
       
       // Migrate calendar data
       unifiedData.calendar.behaviorCommitments = this.getLegacyBehaviorCommitments();
-      unifiedData.calendar.dailyHighlights = this.getLegacyDailyHighlights();
       unifiedData.calendar.independentChoices = this.getLegacyIndependentChoices();
       
       // Migrate settings

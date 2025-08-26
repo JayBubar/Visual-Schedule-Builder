@@ -7,15 +7,13 @@ interface NavigationProps {
   onViewChange: (view: ViewType) => void;
   selectedSchedule?: ScheduleVariation | null;
   onBackToStart?: () => void; // NEW: Option to return to start screen
-  isInDailyCheckIn?: boolean; // NEW: Hide buttons during check-in
 }
 
 const Navigation: React.FC<NavigationProps> = ({ 
   currentView, 
   onViewChange, 
   selectedSchedule,
-  onBackToStart,
-  isInDailyCheckIn
+  onBackToStart
 }) => {
   const navItems = [
     { id: 'smart-groups', icon: Brain, label: 'Bloom Smart Groups', shortcut: 'Ctrl+1', description: 'AI-powered curriculum alignment and small group recommendations', color: 'text-indigo-600', bgColor: 'bg-indigo-50', borderColor: 'border-indigo-200', isNew: true },
@@ -56,18 +54,14 @@ const Navigation: React.FC<NavigationProps> = ({
         )}
       </div>
 
-      <div className={`nav-buttons ${isInDailyCheckIn ? 'daily-checkin-mode' : ''}`}>
+      <div className="nav-buttons">
         {navItems.map(item => {
-          // During Morning Meeting, only show the Morning Meeting button as active
-          const isHidden = isInDailyCheckIn && item.id !== 'calendar';
-          
           return (
             <button
               key={item.id}
-              onClick={() => !isHidden && onViewChange(item.id as ViewType)}
-              className={`nav-button ${currentView === item.id ? 'active' : ''} ${isHidden ? 'hidden-during-checkin' : ''}`}
-              title={isHidden ? 'Available after Morning Meeting' : `${item.label} (${item.shortcut})`}
-              disabled={isHidden}
+              onClick={() => onViewChange(item.id as ViewType)}
+              className={`nav-button ${currentView === item.id ? 'active' : ''}`}
+              title={`${item.label} (${item.shortcut})`}
             >
               <span className="nav-icon">
                 {typeof item.icon === 'string' ? item.icon : <item.icon size={16} />}
@@ -182,22 +176,6 @@ const Navigation: React.FC<NavigationProps> = ({
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        /* Morning Meeting Mode Styles */
-        .nav-button.hidden-during-checkin {
-          opacity: 0.3;
-          filter: blur(1px);
-          cursor: not-allowed;
-          pointer-events: none;
-        }
-
-        .nav-button.hidden-during-checkin:hover {
-          background: rgba(255, 255, 255, 0.1);
-          transform: none;
-        }
-
-        .daily-checkin-mode .nav-button:not(.hidden-during-checkin) {
-          box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-        }
 
         .nav-icon {
           font-size: 1rem;

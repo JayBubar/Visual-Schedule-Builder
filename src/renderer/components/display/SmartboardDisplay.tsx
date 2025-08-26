@@ -69,31 +69,9 @@ const VideoButton: React.FC<VideoButtonProps> = ({ label, videoUrl, icon, color 
 
 // Utility function to get today's behavior commitments
 const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const savedCheckIns = localStorage.getItem('dailyCheckIns');
-
-    if (savedCheckIns) {
-      const checkIns = JSON.parse(savedCheckIns);
-      const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-
-      if (todayCheckIn?.behaviorCommitments) {
-        // Return the full commitments object, keyed by studentId
-        const commitments: { [studentId: string]: any } = {};
-        todayCheckIn.behaviorCommitments.forEach((commitment: any) => {
-          if (commitment.studentId) {
-            commitments[commitment.studentId] = commitment;
-          }
-        });
-        return commitments;
-      }
-    }
-
-    return {};
-  } catch (error) {
-    console.error('Error loading behavior commitments:', error);
-    return {};
-  }
+  // Behavior commitments functionality has been moved to Morning Meeting
+  // This function now returns empty object as a placeholder
+  return {};
 };
 
 
@@ -106,34 +84,9 @@ const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId
   const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
-    const checkAchievement = () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const savedCheckIns = localStorage.getItem('dailyCheckIns');
-
-        if (savedCheckIns) {
-          const checkIns = JSON.parse(savedCheckIns);
-          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-
-          if (todayCheckIn?.behaviorCommitments) {
-            const studentCommitment = todayCheckIn.behaviorCommitments.find(
-              (commitment: any) => commitment.studentId === studentId
-            );
-
-            setIsAchieved(studentCommitment?.achieved || false);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking achievement:', error);
-      }
-    };
-
-    checkAchievement();
-
-    // Check for updates every 30 seconds
-    const interval = setInterval(checkAchievement, 30000);
-
-    return () => clearInterval(interval);
+    // Achievement functionality has been moved to Morning Meeting
+    // This is a placeholder to maintain component structure
+    setIsAchieved(false);
   }, [studentId]);
 
   if (!isAchieved) return null;
@@ -166,79 +119,16 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
   const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
-    // Get today's behavior commitment for this student
-    const getTodaysCommitment = () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const savedCheckIns = localStorage.getItem('dailyCheckIns');
-
-        if (savedCheckIns) {
-          const checkIns = JSON.parse(savedCheckIns);
-          const todayCheckIn = checkIns.find((checkin: any) => checkin.date === today);
-
-          if (todayCheckIn?.behaviorCommitments) {
-            const studentCommitment = todayCheckIn.behaviorCommitments.find(
-              (commitment: any) => commitment.studentId === student.id
-            );
-
-            if (studentCommitment?.commitment) {
-              setBehaviorCommitment(studentCommitment.commitment);
-              setIsAchieved(studentCommitment?.achieved || false);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading behavior commitment:', error);
-      }
-    };
-
-    getTodaysCommitment();
+    // Behavior commitment functionality has been moved to Morning Meeting
+    // This is a placeholder to maintain component structure
+    setBehaviorCommitment('');
+    setIsAchieved(false);
   }, [student.id]);
 
-  // Toggle achievement function
+  // Toggle achievement function - placeholder
   const toggleStudentAchievement = (studentId: string) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const savedCheckIns = localStorage.getItem('dailyCheckIns');
-
-      if (!savedCheckIns) return;
-
-      const checkIns = JSON.parse(savedCheckIns);
-      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-
-      if (todayCheckInIndex === -1) return;
-
-      const todayCheckIn = checkIns[todayCheckInIndex];
-
-      if (todayCheckIn.behaviorCommitments) {
-        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
-          (commitment: any) => commitment.studentId === studentId
-        );
-
-        if (commitmentIndex !== -1) {
-          // Toggle the achieved status
-          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus
-            ? new Date().toISOString()
-            : null;
-
-          // Update the check-in data
-          todayCheckIn.updatedAt = new Date().toISOString();
-          checkIns[todayCheckInIndex] = todayCheckIn;
-
-          // Save back to localStorage
-          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-
-          // Update local state
-          setIsAchieved(newAchievedStatus);
-
-          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${student.name}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling achievement:', error);
-    }
+    // Achievement functionality has been moved to Morning Meeting
+    console.log('Achievement functionality has been moved to Morning Meeting');
   };
 
   return (
@@ -441,51 +331,8 @@ const WholeClassDisplay: React.FC<{
   }, []);
 
   const toggleStudentAchievement = (studentId: string) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const savedCheckIns = localStorage.getItem('dailyCheckIns');
-      
-      if (!savedCheckIns) return;
-      
-      const checkIns = JSON.parse(savedCheckIns);
-      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-      
-      if (todayCheckInIndex === -1) return;
-      
-      const todayCheckIn = checkIns[todayCheckInIndex];
-      
-      if (todayCheckIn.behaviorCommitments) {
-        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
-          (commitment: any) => commitment.studentId === studentId
-        );
-        
-        if (commitmentIndex !== -1) {
-          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
-            ? new Date().toISOString() 
-            : null;
-          
-          todayCheckIn.updatedAt = new Date().toISOString();
-          checkIns[todayCheckInIndex] = todayCheckIn;
-          
-          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-          
-          // Update the local state
-          setBehaviorCommitments((prev: any) => ({
-            ...prev,
-            [studentId]: {
-              ...prev[studentId],
-              achieved: newAchievedStatus
-            }
-          }));
-          
-          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling achievement:', error);
-    }
+    // Achievement functionality has been moved to Morning Meeting
+    console.log('Achievement functionality has been moved to Morning Meeting');
   };
 
   return (
@@ -1032,50 +879,8 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
 
   // Toggle function for behavior achievements - can be after hooks
   const toggleStudentAchievement = (studentId: string) => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const savedCheckIns = localStorage.getItem('dailyCheckIns');
-      
-      if (!savedCheckIns) return;
-      
-      const checkIns = JSON.parse(savedCheckIns);
-      const todayCheckInIndex = checkIns.findIndex((checkin: any) => checkin.date === today);
-      
-      if (todayCheckInIndex === -1) return;
-      
-      const todayCheckIn = checkIns[todayCheckInIndex];
-      
-      if (todayCheckIn.behaviorCommitments) {
-        const commitmentIndex = todayCheckIn.behaviorCommitments.findIndex(
-          (commitment: any) => commitment.studentId === studentId
-        );
-        
-        if (commitmentIndex !== -1) {
-          const newAchievedStatus = !todayCheckIn.behaviorCommitments[commitmentIndex].achieved;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achieved = newAchievedStatus;
-          todayCheckIn.behaviorCommitments[commitmentIndex].achievedAt = newAchievedStatus 
-            ? new Date().toISOString() 
-            : null;
-          
-          todayCheckIn.updatedAt = new Date().toISOString();
-          checkIns[todayCheckInIndex] = todayCheckIn;
-          
-          localStorage.setItem('dailyCheckIns', JSON.stringify(checkIns));
-          
-          setBehaviorCommitments((prev: any) => ({
-            ...prev,
-            [studentId]: {
-              ...prev[studentId],
-              achieved: newAchievedStatus
-            }
-          }));
-          
-          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling achievement:', error);
-    }
+    // Achievement functionality has been moved to Morning Meeting
+    console.log('Achievement functionality has been moved to Morning Meeting');
   };
 
   // Dynamic screen sizing - calculate available heights

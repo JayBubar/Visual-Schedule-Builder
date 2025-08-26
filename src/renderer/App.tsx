@@ -78,15 +78,13 @@ const App: React.FC = () => {
           const currentSettings = UnifiedDataService.getSettings();
           const updatedSettings = {
             ...currentSettings,
-            dailyCheckIn: {
-              ...currentSettings.dailyCheckIn,
-              behaviorCommitments: {
-                customStatements: customStatements
-              },
-              celebrations: {
-                enabled: settings.celebrationsEnabled !== false,
-                customCelebrations: settings.customCelebrations || []
-              }
+            // Note: DailyCheckIn functionality has been moved to Morning Meeting
+            behaviorCommitments: {
+              customStatements: customStatements
+            },
+            celebrations: {
+              enabled: settings.celebrationsEnabled !== false,
+              customCelebrations: settings.customCelebrations || []
             }
           };
 
