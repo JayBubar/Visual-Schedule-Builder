@@ -7,6 +7,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   hubSettings,
   onNext,
   onBack,
+  onHome,
   onStepComplete,
 }) => {
   const [internalSection, setInternalSection] = useState(0);
@@ -117,6 +118,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
       <StepNavigation navigation={{
         goNext: onNext,
         goBack: onBack,
+        goHome: onHome,
         canGoBack: !!onBack,
         isLastStep: false
       }} />

@@ -68,6 +68,7 @@ const DEFAULT_CLASSROOM_RULES: ClassroomRule[] = [
 const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
   onNext,
   onBack,
+  onHome,
   onDataUpdate,
   stepData,
   hubSettings,
@@ -641,6 +642,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
         <StepNavigation navigation={{
           goNext: onNext,
           goBack: onBack,
+          goHome: onHome,
           canGoBack: !!onBack,
           isLastStep: false
         }} />

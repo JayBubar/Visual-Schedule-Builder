@@ -6,6 +6,7 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
   onBack,
+  onHome,
   onDataUpdate,
   stepData,
   hubSettings,
@@ -321,6 +322,7 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
         <StepNavigation navigation={{
           goNext: onNext,
           goBack: onBack,
+          goHome: onHome,
           canGoBack: !!onBack,
           isLastStep: false
         }} />

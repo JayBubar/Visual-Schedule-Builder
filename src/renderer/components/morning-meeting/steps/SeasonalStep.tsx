@@ -21,7 +21,7 @@ const SEASONS_DATA: { [key: string]: SeasonData } = {
 };
 const SEASON_ORDER = ['spring', 'summer', 'fall', 'winter'];
 
-const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onStepComplete }) => {
+const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onNext, onBack, onHome, onStepComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState<string>('');
@@ -246,6 +246,16 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
             <div style={styles.celebrationMessage}>{showCelebration}</div>
         </div>
        )}
+       
+       {/* Step Navigation */}
+       <StepNavigation navigation={{
+         goNext: onNext,
+         goBack: onBack,
+         goHome: onHome,
+         canGoBack: !!onBack,
+         isLastStep: false
+       }} />
+       
        <style>{`
         @keyframes shake {
           10%, 90% { transform: translate3d(-1px, 0, 0); }

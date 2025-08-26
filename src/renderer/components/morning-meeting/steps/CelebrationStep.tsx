@@ -16,6 +16,7 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
   currentDate,
   onNext,
   onBack,
+  onHome,
   onStepComplete,
 }) => {
   const [internalSection, setInternalSection] = useState(0);
@@ -139,6 +140,7 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
       <StepNavigation navigation={{
         goNext: onNext,
         goBack: onBack,
+        goHome: onHome,
         canGoBack: !!onBack,
         isLastStep: false
       }} />
