@@ -101,7 +101,8 @@ const DEFAULT_HUB_SETTINGS: HubSettings = {
     enabledSteps: {
       welcome: true,
       attendance: true,
-      behavior: true,
+      classroomRules: true,
+      behaviorCommitments: true,
       calendarMath: true,
       weather: true,
       seasonal: true,
