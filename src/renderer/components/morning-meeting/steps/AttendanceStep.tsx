@@ -21,6 +21,7 @@ interface AttendanceStepData {
 const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   onNext,
   onBack,
+  onHome,
   onDataUpdate,
   stepData,
   hubSettings,
@@ -178,6 +179,7 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   const navigation = {
     goNext: onNext,
     goBack: onBack,
+    goHome: onHome,
     canGoBack: !!onBack,
     isLastStep: false
   };

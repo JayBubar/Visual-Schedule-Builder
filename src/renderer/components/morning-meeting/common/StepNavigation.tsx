@@ -5,6 +5,7 @@ interface StepNavigationProps {
   navigation?: any;
   onNext?: () => void;
   onBack?: () => void;
+  onHome?: () => void;
   customNextText?: string;
 }
 
@@ -12,11 +13,13 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   navigation,
   onNext,
   onBack,
+  onHome,
   customNextText
 }) => {
   // Handle both navigation object and direct props
   const actualGoNext = navigation?.goNext || onNext;
   const actualGoBack = navigation?.goBack || onBack;
+  const actualGoHome = navigation?.goHome || onHome;
   const canGoBack = navigation?.canGoBack ?? (!!actualGoBack);
   const isLastStep = navigation?.isLastStep ?? false;
   
@@ -51,8 +54,48 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
     opacity: 0.5,
   };
 
+  const homeButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '2rem',
+    left: '2rem',
+    width: '60px',
+    height: '60px',
+    background: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(10px)',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '50%',
+    color: 'white',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    fontSize: '1.8rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+  };
+
   return (
     <>
+      {/* Home Button - Top Left */}
+      {actualGoHome && (
+        <button
+          onClick={actualGoHome}
+          style={homeButtonStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          aria-label="Back to Schedule Builder"
+          title="Back to Schedule Builder"
+        >
+          🏠
+        </button>
+      )}
+
       {/* Back Button - Bottom Left */}
       {canGoBack && (
         <button
