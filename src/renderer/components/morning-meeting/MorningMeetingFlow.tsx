@@ -154,6 +154,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
       <StepComponent
         onNext={handleNext}
         onBack={handleBack}
+        onHome={onBackToHub}
         onStepComplete={handleStepComplete}
         hubSettings={hubSettings}
         students={students}
