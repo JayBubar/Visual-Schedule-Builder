@@ -37,6 +37,31 @@ const App: React.FC = () => {
     return UnifiedDataService.getSettings();
   }, []);
 
+  const getMorningMeetingHubSettings = () => {
+    try {
+      console.log('🔧 App: getMorningMeetingHubSettings() called'); // ADD THIS LINE
+      
+      const allSettings = UnifiedDataService.getSettings();
+      const morningMeetingSettings = allSettings?.morningMeeting || {};
+      
+      console.log('🔧 App: Raw MM settings:', morningMeetingSettings); // ADD THIS LINE
+      console.log('🔧 App: welcomeSettings found:', morningMeetingSettings.welcomeSettings); // ADD THIS LINE
+      
+      // Build hubSettingsForFlow from morning meeting settings
+      const hubSettingsForFlow = {
+        ...allSettings,
+        morningMeeting: morningMeetingSettings
+      };
+      
+      console.log('✅ App: Final hubSettingsForFlow:', hubSettingsForFlow); // ADD THIS LINE BEFORE RETURN
+      return hubSettingsForFlow;
+      
+    } catch (error) {
+      console.error('❌ App: Error in getMorningMeetingHubSettings:', error);
+      return UnifiedDataService.getSettings(); // Fallback to regular settings
+    }
+  };
+
   useEffect(() => {
     try {
       const hasLegacyData = localStorage.getItem('calendarSettings') ||
@@ -341,7 +366,7 @@ const App: React.FC = () => {
       ) : currentView === 'calendar' && showMorningMeetingFlow ? (
         <MorningMeetingFlow
           students={students}
-          hubSettings={morningMeetingHubSettings || hubSettings}
+          hubSettings={getMorningMeetingHubSettings()}
           onComplete={() => {
             setShowMorningMeetingFlow(false);
             handleViewChange('display');
