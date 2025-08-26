@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import UnifiedDataService from '../../../services/unifiedDataService';
 import StepNavigation from '../common/StepNavigation';
-import './BehaviorStep.css';
 
 interface BehaviorStepProps {
   onNext: () => void;
@@ -163,62 +162,64 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
 
   if (isLoading) {
     return (
-      <div className="step-container behavior-step">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading behavior goals...</p>
+      <div style={styles.pageContainer}>
+        <div style={styles.loadingSpinner}>
+          <div style={styles.spinner}></div>
+          <p style={styles.loadingText}>Loading behavior goals...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="step-container behavior-step">
-      <div className="step-header">
-        <h1>🎯 Choose Your Behavior Goals</h1>
-        <p className="step-subtitle">Each student picks one goal to focus on today!</p>
+    <div style={styles.pageContainer}>
+      <div style={styles.stepHeader}>
+        <h1 style={styles.stepTitle}>🎯 Choose Your Behavior Goals</h1>
+        <p style={styles.stepSubtitle}>Each student picks one goal to focus on today!</p>
       </div>
 
-      <div className="behavior-content">
+      <div style={styles.behaviorContent}>
         {/* Progress indicator */}
-        <div className="progress-indicator">
-          <h3>📊 Progress: {completedCount} of {students.length} students</h3>
-          <div className="progress-bar">
+        <div style={styles.progressIndicator}>
+          <h3 style={styles.progressTitle}>📊 Progress: {completedCount} of {students.length} students</h3>
+          <div style={styles.progressBar}>
             <div 
-              className="progress-fill" 
-              style={{ width: `${(completedCount / Math.max(students.length, 1)) * 100}%` }}
+              style={{ 
+                ...styles.progressFill,
+                width: `${(completedCount / Math.max(students.length, 1)) * 100}%` 
+              }}
             ></div>
           </div>
         </div>
 
         {/* Student Grid */}
-        <div className="students-grid">
+        <div style={styles.studentsGrid}>
           {students.map((student) => {
             const choice = getStudentChoice(student.id);
             return (
               <button
                 key={student.id}
-                className={`student-card ${choice ? 'completed' : 'pending'}`}
+                style={choice ? styles.studentCardCompleted : styles.studentCard}
                 onClick={() => handleStudentSelect(student)}
               >
-                <div className="student-photo">
+                <div style={styles.studentPhoto}>
                   {student.photo ? (
-                    <img src={student.photo} alt={student.name} />
+                    <img src={student.photo} alt={student.name} style={styles.studentPhotoImg} />
                   ) : (
-                    <div className="photo-placeholder">
+                    <div style={styles.photoPlaceholder}>
                       {student.name.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
-                <div className="student-name">{student.name}</div>
+                <div style={styles.studentName}>{student.name}</div>
                 {choice && (
-                  <div className="student-choice">
-                    <div className="choice-icon">✅</div>
-                    <div className="choice-text">{choice.commitmentText}</div>
+                  <div style={styles.studentChoice}>
+                    <div style={styles.choiceIcon}>✅</div>
+                    <div style={styles.choiceText}>{choice.commitmentText}</div>
                   </div>
                 )}
                 {!choice && (
-                  <div className="pending-indicator">
+                  <div style={styles.pendingIndicator}>
                     Tap to choose goal
                   </div>
                 )}
@@ -229,27 +230,27 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
 
         {/* Selection Modal */}
         {selectedStudent && (
-          <div className="modal-overlay" onClick={() => setSelectedStudent(null)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>
+          <div style={styles.modalOverlay} onClick={() => setSelectedStudent(null)}>
+            <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <h3 style={styles.modalTitle}>
                 🎯 Choose a goal for {students.find(s => s.id === selectedStudent)?.name}
               </h3>
               
-              <div className="commitments-grid">
+              <div style={styles.commitmentsGrid}>
                 {commitments.map((commitment) => (
                   <button
                     key={commitment.id}
-                    className="commitment-option"
+                    style={styles.commitmentOption}
                     onClick={() => handleCommitmentSelect(commitment)}
                   >
-                    <div className="commitment-icon">{commitment.icon}</div>
-                    <div className="commitment-text">{commitment.text}</div>
+                    <div style={styles.commitmentIcon}>{commitment.icon}</div>
+                    <div style={styles.commitmentText}>{commitment.text}</div>
                   </button>
                 ))}
               </div>
               
               <button 
-                className="modal-close"
+                style={styles.modalClose}
                 onClick={() => setSelectedStudent(null)}
               >
                 Cancel
@@ -267,8 +268,256 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         canGoBack: !!onBack,
         isLastStep: false
       }} />
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
+};
+
+// Inline styles object
+const styles: { [key: string]: React.CSSProperties } = {
+  pageContainer: {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    minHeight: '100vh',
+    padding: '2rem 2rem 120px 2rem', // Added bottom padding for navigation
+    color: 'white',
+    position: 'relative',
+    overflowY: 'auto',
+    maxHeight: '100vh',
+    boxSizing: 'border-box'
+  },
+  stepHeader: {
+    textAlign: 'center',
+    marginBottom: '3rem',
+    position: 'relative',
+    zIndex: 1
+  },
+  stepTitle: {
+    fontSize: '3.5rem',
+    marginBottom: '1rem',
+    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+    fontWeight: 700
+  },
+  stepSubtitle: {
+    fontSize: '1.5rem',
+    opacity: 0.9,
+    margin: 0
+  },
+  behaviorContent: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    position: 'relative',
+    zIndex: 1
+  },
+  progressIndicator: {
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '15px',
+    padding: '2rem',
+    marginBottom: '3rem',
+    textAlign: 'center'
+  },
+  progressTitle: {
+    marginBottom: '1rem',
+    color: 'white',
+    fontSize: '1.5rem'
+  },
+  progressBar: {
+    width: '100%',
+    height: '20px',
+    background: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: '10px',
+    overflow: 'hidden'
+  },
+  progressFill: {
+    height: '100%',
+    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+    transition: 'width 0.5s ease',
+    borderRadius: '10px'
+  },
+  studentsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: '1.5rem',
+    marginBottom: '3rem'
+  },
+  studentCard: {
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    border: '2px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '20px',
+    padding: '1.5rem',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    minHeight: '200px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'inherit',
+    color: 'white'
+  },
+  studentCardCompleted: {
+    background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+    backdropFilter: 'blur(10px)',
+    border: '2px solid #4CAF50',
+    borderRadius: '20px',
+    padding: '1.5rem',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    minHeight: '200px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'inherit',
+    color: 'white',
+    transform: 'scale(1.02)'
+  },
+  studentPhoto: {
+    width: '80px',
+    height: '80px',
+    borderRadius: '50%',
+    overflow: 'hidden',
+    marginBottom: '1rem',
+    border: '3px solid rgba(255, 255, 255, 0.3)'
+  },
+  studentPhotoImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover'
+  },
+  photoPlaceholder: {
+    width: '100%',
+    height: '100%',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '2rem',
+    fontWeight: 'bold',
+    color: 'white'
+  },
+  studentName: {
+    fontSize: '1.2rem',
+    fontWeight: 600,
+    marginBottom: '0.5rem'
+  },
+  studentChoice: {
+    textAlign: 'center'
+  },
+  choiceIcon: {
+    fontSize: '1.5rem',
+    marginBottom: '0.5rem'
+  },
+  choiceText: {
+    fontSize: '0.9rem',
+    opacity: 0.9,
+    lineHeight: 1.3
+  },
+  pendingIndicator: {
+    fontSize: '0.9rem',
+    opacity: 0.7,
+    fontStyle: 'italic'
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000
+  },
+  modalContent: {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    borderRadius: '20px',
+    padding: '3rem',
+    maxWidth: '600px',
+    width: '90vw',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    border: '2px solid rgba(255, 255, 255, 0.3)'
+  },
+  modalTitle: {
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: '2rem',
+    fontSize: '1.5rem'
+  },
+  commitmentsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: '1rem',
+    marginBottom: '2rem'
+  },
+  commitmentOption: {
+    background: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(10px)',
+    border: '2px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '15px',
+    padding: '1.5rem',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    color: 'white',
+    fontFamily: 'inherit',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '1rem'
+  },
+  commitmentIcon: {
+    fontSize: '2rem'
+  },
+  commitmentText: {
+    fontSize: '1rem',
+    fontWeight: 500,
+    lineHeight: 1.3
+  },
+  modalClose: {
+    background: 'rgba(255, 255, 255, 0.2)',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '10px',
+    color: 'white',
+    padding: '1rem 2rem',
+    fontSize: '1rem',
+    cursor: 'pointer',
+    display: 'block',
+    margin: '0 auto',
+    transition: 'all 0.3s ease'
+  },
+  loadingSpinner: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',
+    gap: '2rem'
+  },
+  spinner: {
+    width: '60px',
+    height: '60px',
+    border: '6px solid rgba(255, 255, 255, 0.3)',
+    borderTop: '6px solid #fff',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite'
+  },
+  loadingText: {
+    fontSize: '1.3rem',
+    opacity: 0.9
+  }
 };
 
 export default BehaviorStep;
