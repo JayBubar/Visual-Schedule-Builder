@@ -1166,8 +1166,8 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                 {Object.entries({
                   welcome: { name: 'Welcome Message', icon: '👋' },
                   attendance: { name: 'Attendance', icon: '📋' },
-                  classroomRules: { name: 'Classroom Rules', icon: '⭐' },
-                  behaviorCommitments: { name: 'Behavior Goals', icon: '🎯' },
+                  classroomRules: { name: 'Classroom Rules', icon: '⭐' },         // FIXED KEY
+                  behaviorCommitments: { name: 'Behavior Goals', icon: '🎯' },    // FIXED KEY
                   calendarMath: { name: 'Calendar Math', icon: '📅' },
                   weather: { name: 'Weather & Clothing', icon: '🌤️' },
                   seasonal: { name: 'Seasonal Learning', icon: '🌸' },

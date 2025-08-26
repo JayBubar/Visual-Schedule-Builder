@@ -124,6 +124,14 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
 }) => {
   const [showGreeting, setShowGreeting] = useState(false);
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('📍 STEP DEBUG: WelcomeStep mounted');
+    console.log('📍 STEP DEBUG: hubSettings:', hubSettings);
+    console.log('📍 STEP DEBUG: onNext function:', typeof onNext);
+    console.log('📍 STEP DEBUG: onBack function:', typeof onBack);
+  }, []);
+
   // Get custom welcome message from hub settings
   const getWelcomeMessage = (): string => {
     if (hubSettings?.welcomePersonalization?.customMessage) {

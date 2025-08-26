@@ -46,17 +46,16 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ stu
   const currentDate = new Date();
 
   const handleStartMorningMeeting = () => {
-    console.log('🚀 Starting Morning Meeting...');
+    console.log('🚀 DEBUGGING: Starting Morning Meeting...');
     
-    // Default hub settings with CORRECT step keys
-    const defaultHubSettings = {
+    const debugHubSettings = {
       todaysAnnouncements: {
         enabled: true,
         announcements: []
       },
       customVocabulary: {
-        weather: ['sunny', 'cloudy', 'rainy', 'snowy', 'windy', 'foggy'],
-        seasonal: ['spring', 'summer', 'fall', 'winter', 'bloom', 'harvest']
+        weather: ['sunny', 'cloudy', 'rainy', 'snowy'],
+        seasonal: ['spring', 'summer', 'fall', 'winter']
       },
       videos: {
         calendarMath: [],
@@ -73,7 +72,7 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ stu
         ],
         allowCustom: true
       },
-      behaviorCommitments: { // ADD this section
+      behaviorCommitments: {
         enabled: true,
         commitments: []
       },
@@ -86,8 +85,8 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ stu
         enabledSteps: {
           welcome: true,
           attendance: true,
-          classroomRules: true,      // FIXED KEY
-          behaviorCommitments: true, // FIXED KEY
+          classroomRules: true,          // CORRECT KEY
+          behaviorCommitments: true,     // CORRECT KEY
           calendarMath: true,
           weather: true,
           seasonal: true,
@@ -97,8 +96,8 @@ const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ stu
       }
     };
     
-    console.log('🔧 Hub Settings:', defaultHubSettings);
-    console.log('🔧 Flow Configuration:', defaultHubSettings.flowCustomization.enabledSteps);
+    console.log('🔧 DEBUGGING: Hub settings being set:', debugHubSettings);
+    console.log('🔧 DEBUGGING: Flow steps enabled:', debugHubSettings.flowCustomization.enabledSteps);
     
     // Note: In a real implementation, you would call setHubSettings and setCurrentMode here
     // For now, we're just logging the debug information

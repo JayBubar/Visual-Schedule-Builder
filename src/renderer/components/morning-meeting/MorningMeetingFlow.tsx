@@ -5,6 +5,7 @@ import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMe
 
 // Import all step components - CORRECTED
 import WelcomeStep from './steps/WelcomeStep';
+import TestStep from './steps/TestStep'; // TEMPORARY TEST
 import AttendanceStep from './steps/AttendanceStep';
 import ClassroomRulesStep from './steps/ClassroomRulesStep';
 import BehaviorStep from './steps/BehaviorStep'; // NEW - Import the behavior commitments step
@@ -34,7 +35,7 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
 
   // Define all available steps with CORRECT keys matching hub
   const allSteps = [
-    { key: 'welcome', component: WelcomeStep },
+    { key: 'welcome', component: TestStep }, // TEMPORARY TEST
     { key: 'attendance', component: AttendanceStep },
     { key: 'classroomRules', component: ClassroomRulesStep }, // FIXED KEY
     { key: 'behaviorCommitments', component: BehaviorStep }, // NEW STEP
@@ -184,12 +185,59 @@ const MorningMeetingFlow: React.FC<MorningMeetingFlowProps> = ({
         onDataUpdate={() => {}}
       />
       
-      <MorningMeetingNavigation
-        onNext={handleNext}
-        onBack={handleBack}
-        isNextDisabled={!isStepComplete}
-        isBackDisabled={currentStepIndex === 0}
-      />
+      {/* SIMPLIFIED NAVIGATION - Remove the separate component for now */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '2rem',
+        zIndex: 1000,
+        background: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(15px)',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
+        borderRadius: '20px',
+        padding: '1rem 2rem'
+      }}>
+        <button
+          onClick={handleBack}
+          disabled={currentStepIndex === 0}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: currentStepIndex === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.3)',
+            borderRadius: '12px',
+            color: currentStepIndex === 0 ? 'rgba(255,255,255,0.5)' : 'white',
+            fontSize: '1rem',
+            cursor: currentStepIndex === 0 ? 'not-allowed' : 'pointer',
+            opacity: currentStepIndex === 0 ? 0.5 : 1
+          }}
+        >
+          ← Back
+        </button>
+        
+        <span style={{ color: 'white', fontSize: '1rem', fontWeight: '600' }}>
+          {currentStep.key} ({currentStepIndex + 1}/{enabledSteps.length})
+        </span>
+        
+        <button
+          onClick={handleNext}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
+            border: '2px solid #4CAF50',
+            borderRadius: '12px',
+            color: 'white',
+            fontSize: '1rem',
+            fontWeight: '600',
+            cursor: 'pointer'
+          }}
+        >
+          {currentStepIndex === enabledSteps.length - 1 ? 'Complete' : 'Next →'}
+        </button>
+      </div>
     </div>
   );
 };
