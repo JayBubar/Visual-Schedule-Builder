@@ -19,7 +19,7 @@ const formatDateKey = (date: Date): string => {
     return date.toISOString().split('T')[0];
 };
 
-const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), hubSettings, onNext, onBack, onStepComplete }) => {
+const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date(), hubSettings, onNext, onBack, onHome, onStepComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const [todaysWeather, setTodaysWeather] = useState<WeatherType | null>(null);
     const [weatherHistory, setWeatherHistory] = useState<WeatherHistory>({});
@@ -172,6 +172,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                 <StepNavigation navigation={{
                     goNext: onNext,
                     goBack: onBack,
+                    goHome: onHome,
                     canGoBack: !!onBack,
                     isLastStep: false
                 }} />

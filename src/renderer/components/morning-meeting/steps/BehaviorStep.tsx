@@ -6,6 +6,7 @@ import './BehaviorStep.css';
 interface BehaviorStepProps {
   onNext: () => void;
   onBack: () => void;
+  onHome: () => void;
   onStepComplete: () => void;
   currentDate: Date;
 }
@@ -30,7 +31,7 @@ interface StudentChoice {
   timestamp: Date;
 }
 
-const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepComplete, currentDate }) => {
+const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onStepComplete, currentDate }) => {
   const [commitments, setCommitments] = useState<BehaviorCommitment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentChoices, setStudentChoices] = useState<{[studentId: string]: StudentChoice}>({});
@@ -262,6 +263,7 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onStepCompl
       <StepNavigation navigation={{
         goNext: onNext,
         goBack: onBack,
+        goHome: onHome,
         canGoBack: !!onBack,
         isLastStep: false
       }} />

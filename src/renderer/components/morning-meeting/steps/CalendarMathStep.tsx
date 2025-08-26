@@ -10,7 +10,7 @@ const getVideoUrl = (video: any): string | null => {
   return null;
 };
 
-const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onNext, onBack, onStepComplete }) => {
+const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSettings, onNext, onBack, onHome, onStepComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showCelebration, setShowCelebration] = useState(false);
@@ -279,6 +279,7 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
       <StepNavigation navigation={{
         goNext: onNext,
         goBack: onBack,
+        goHome: onHome,
         canGoBack: !!onBack,
         isLastStep: false
       }} />
