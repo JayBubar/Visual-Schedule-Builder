@@ -14,6 +14,9 @@ interface MorningMeetingControllerProps {
   hubSettings: HubSettings;
   onComplete: () => void;
   onBackToHub: () => void;
+  onClose: () => void;
+  onNavigateHome?: () => void;
+  onNavigateToDisplay?: () => void;
 }
 
 // Helper to format date as YYYY-MM-DD
@@ -41,7 +44,7 @@ const MEETING_STEPS = [
     },
 ];
 
-const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ students, staff, hubSettings, onComplete, onBackToHub }) => {
+const MorningMeetingController: React.FC<MorningMeetingControllerProps> = ({ students, staff, hubSettings, onComplete, onBackToHub, onClose }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const currentDate = new Date();
 

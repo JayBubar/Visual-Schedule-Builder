@@ -1,5 +1,7 @@
 // src/renderer/components/morning-meeting/types/morningMeetingTypes.ts
 
+import { BehaviorStatement, CustomCelebration } from '../../../types';
+
 export interface Student {
   id: string;
   name: string;
@@ -16,13 +18,13 @@ export interface HubSettings {
   };
   behaviorStatements?: {
     enabled: boolean;
-    statements: string[];
+    statements: BehaviorStatement[];
     allowCustom: boolean;
   };
   celebrations?: {
     enabled: boolean;
     showBirthdayPhotos: boolean;
-    customCelebrations?: { id: string; name: string; message: string; emoji: string }[]; // Updated for CelebrationStep
+    customCelebrations?: CustomCelebration[];
   };
   weatherAPI?: {
     enabled: boolean;

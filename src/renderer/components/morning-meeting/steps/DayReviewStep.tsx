@@ -45,8 +45,8 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
               {hubSettings?.behaviorStatements?.enabled && hubSettings?.behaviorStatements?.statements?.length > 0 ? (
                 hubSettings.behaviorStatements.statements.map((rule, index) => (
                   <div key={index} style={styles.ruleItem}>
-                    <span style={styles.ruleEmoji}>⭐</span>
-                    <span>{rule}</span>
+                    <span style={styles.ruleEmoji}>{typeof rule === 'object' ? rule.emoji || '⭐' : '⭐'}</span>
+                    <span>{typeof rule === 'object' ? rule.text : rule}</span>
                   </div>
                 ))
               ) : (
