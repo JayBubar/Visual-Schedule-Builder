@@ -206,36 +206,91 @@ class UnifiedDataService {
   private static readonly LEGACY_STUDENT_KEY = 'students';
   
 
-  // Get all unified data
-  static getUnifiedData(): UnifiedData | null {
+  /**
+   * CRITICAL: Get all unified data from localStorage
+   * This is the foundation method that everything else depends on
+   */
+  static getUnifiedData(): any {
     try {
       const data = localStorage.getItem(this.UNIFIED_KEY);
-      if (!data) return null;
-      
-      const parsedData = JSON.parse(data);
-      
-      // Convert object structure to array structure if needed
-      if (parsedData.students && !Array.isArray(parsedData.students)) {
-        const studentsArray = Object.values(parsedData.students);
-        parsedData.students = studentsArray;
+      if (data) {
+        const parsedData = JSON.parse(data);
         
-        // Save the converted structure
-        this.saveUnifiedData(parsedData);
-      }
-      
-      // Convert staff object structure to array structure if needed
-      if (parsedData.staff && !Array.isArray(parsedData.staff)) {
-        parsedData.staff = Object.values(parsedData.staff);
+        // Convert object structure to array structure if needed
+        if (parsedData.students && !Array.isArray(parsedData.students)) {
+          const studentsArray = Object.values(parsedData.students);
+          parsedData.students = studentsArray;
+          
+          // Save the converted structure
+          this.saveUnifiedData(parsedData);
+        }
         
-        // Save the converted structure
-        this.saveUnifiedData(parsedData);
+        // Convert staff object structure to array structure if needed
+        if (parsedData.staff && !Array.isArray(parsedData.staff)) {
+          parsedData.staff = Object.values(parsedData.staff);
+          
+          // Save the converted structure
+          this.saveUnifiedData(parsedData);
+        }
+        
+        return parsedData;
+      } else {
+        // Create default structure if it doesn't exist
+        console.log('🔧 UDS: No unified data found, creating default structure');
+        return this.createDefaultUnifiedData();
       }
-      
-      return parsedData;
     } catch (error) {
-      console.error('Error reading unified data:', error);
-      return null;
+      console.error('UDS: Failed to get unified data:', error);
+      return this.createDefaultUnifiedData();
     }
+  }
+
+  /**
+   * CRITICAL: Create default data structure
+   * This ensures the app has a valid data structure to work with
+   */
+  static createDefaultUnifiedData(): any {
+    const defaultData = {
+      students: [],
+      staff: [],
+      activities: [],
+      attendance: [],
+      calendar: {
+        behaviorCommitments: [],
+        dailyHighlights: [],
+        independentChoices: []
+      },
+      settings: {},
+      metadata: {
+        version: '2.0',
+        migratedAt: new Date().toISOString(),
+        totalGoals: 0,
+        totalDataPoints: 0,
+        totalStaff: 0,
+        totalActivities: 0,
+        totalAttendanceRecords: 0
+      }
+    };
+    
+    // Save the default structure
+    this.saveUnifiedData(defaultData);
+    console.log('✅ UDS: Created default unified data structure');
+    return defaultData;
+  }
+
+  /**
+   * UTILITY: Check if legacy data exists
+   */
+  static hasLegacyData(): boolean {
+    const legacyKeys = [
+      'students',
+      'iepGoals', 
+      'iepDataPoints',
+      'visualScheduleBuilderSettings',
+      'calendarSettings'
+    ];
+    
+    return legacyKeys.some(key => localStorage.getItem(key) !== null);
   }
   
   // Save unified data
@@ -1381,19 +1436,18 @@ class UnifiedDataService {
 
   // ===== SETTINGS METHODS =====
   
-  // Get settings
+  /**
+   * CRITICAL: Get settings from unified data
+   * This is the method that Morning Meeting Hub is trying to call
+   */
   static getSettings(): any {
-    const unifiedData = this.getUnifiedData();
-    if (unifiedData?.settings) {
-      return unifiedData.settings;
-    }
-    
-    // Fallback to legacy settings
     try {
-      const legacySettings = localStorage.getItem('visualScheduleBuilderSettings');
-      return legacySettings ? JSON.parse(legacySettings) : {};
+      const unifiedData = this.getUnifiedData();
+      const settings = unifiedData?.settings || {};
+      console.log('📄 UDS: Retrieved settings:', Object.keys(settings));
+      return settings;
     } catch (error) {
-      console.error('Error reading legacy settings:', error);
+      console.error('❌ UDS: Failed to get settings:', error);
       return {};
     }
   }
@@ -2071,37 +2125,33 @@ class UnifiedDataService {
     return this.getUnifiedData() !== null;
   }
   
-  // Get system status
-  static getSystemStatus(): {
-    hasUnifiedData: boolean;
-    hasLegacyData: boolean;
-    totalStudents: number;
-    totalGoals: number;
-    totalDataPoints: number;
-  } {
-    const unifiedData = this.getUnifiedData();
-    const legacyStudents = localStorage.getItem('students');
-    
-    if (unifiedData) {
-      // Handle students as array within the unified data object
-      const studentCount = Array.isArray(unifiedData.students) ? unifiedData.students.length : 0;
-      
+  /**
+   * CRITICAL: System status check
+   * Helps diagnose data issues
+   */
+  static getSystemStatus(): any {
+    try {
+      const unifiedData = this.getUnifiedData();
       return {
-        hasUnifiedData: true,
-        hasLegacyData: legacyStudents !== null,
-        totalStudents: studentCount,
-        totalGoals: unifiedData.metadata?.totalGoals || 0,
-        totalDataPoints: unifiedData.metadata?.totalDataPoints || 0
+        hasUnifiedData: !!unifiedData,
+        totalStudents: unifiedData?.students?.length || 0,
+        totalStaff: unifiedData?.staff?.length || 0,
+        totalActivities: unifiedData?.activities?.length || 0,
+        totalGoals: unifiedData?.metadata?.totalGoals || 0,
+        totalDataPoints: unifiedData?.metadata?.totalDataPoints || 0,
+        dataVersion: unifiedData?.metadata?.version || 'unknown',
+        hasLegacyData: this.hasLegacyData()
+      };
+    } catch (error) {
+      console.error('❌ UDS: Failed to get system status:', error);
+      return {
+        hasUnifiedData: false,
+        totalStudents: 0,
+        totalStaff: 0,
+        totalActivities: 0,
+        error: error.message
       };
     }
-    
-    return {
-      hasUnifiedData: false,
-      hasLegacyData: legacyStudents !== null,
-      totalStudents: legacyStudents ? JSON.parse(legacyStudents).length : 0,
-      totalGoals: 0,
-      totalDataPoints: 0
-    };
   }
 
 // ===== MORNING MEETING DATA METHODS =====
@@ -2286,3 +2336,45 @@ class UnifiedDataService {
 }
 
 export default UnifiedDataService;
+
+// 🧪 TESTING FUNCTIONS (Add these for debugging)
+
+/**
+ * Test the UnifiedDataService to make sure it's working
+ * Run this in browser console: testUnifiedDataService()
+ */
+function testUnifiedDataService(): boolean {
+  console.log('🧪 Testing UnifiedDataService...');
+  
+  try {
+    // Test 1: Get system status
+    const status = UnifiedDataService.getSystemStatus();
+    console.log('✅ System Status:', status);
+    
+    // Test 2: Get settings (this is what was failing)
+    const settings = UnifiedDataService.getSettings();
+    console.log('✅ Settings Retrieved:', settings);
+    
+    // Test 3: Get students
+    const students = UnifiedDataService.getAllStudents();
+    console.log('✅ Students Retrieved:', students.length);
+    
+    // Test 4: Get unified data structure
+    const data = UnifiedDataService.getUnifiedData();
+    console.log('✅ Unified Data Structure:', {
+      hasStudents: !!data.students,
+      hasStaff: !!data.staff,
+      hasActivities: !!data.activities,
+      hasSettings: !!data.settings
+    });
+    
+    console.log('🎉 UnifiedDataService is working correctly!');
+    return true;
+  } catch (error) {
+    console.error('❌ UnifiedDataService test failed:', error);
+    return false;
+  }
+}
+
+// Make test function available globally
+(window as any).testUnifiedDataService = testUnifiedDataService;
