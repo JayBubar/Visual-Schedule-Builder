@@ -39,26 +39,95 @@ const App: React.FC = () => {
 
   const getMorningMeetingHubSettings = () => {
     try {
-      console.log('🔧 App: getMorningMeetingHubSettings() called'); // ADD THIS LINE
+      console.log('🔧 App: getMorningMeetingHubSettings() called');
       
       const allSettings = UnifiedDataService.getSettings();
       const morningMeetingSettings = allSettings?.morningMeeting || {};
       
-      console.log('🔧 App: Raw MM settings:', morningMeetingSettings); // ADD THIS LINE
-      console.log('🔧 App: welcomeSettings found:', morningMeetingSettings.welcomeSettings); // ADD THIS LINE
+      console.log('🔧 App: Raw MM settings:', morningMeetingSettings);
+      console.log('🔧 App: welcomeSettings found:', morningMeetingSettings.welcomeSettings);
       
-      // Build hubSettingsForFlow from morning meeting settings
+      // 🔧 FIX: Transform data to match what steps expect (NO MORE RAW SETTINGS!)
       const hubSettingsForFlow = {
-        ...allSettings,
-        morningMeeting: morningMeetingSettings
+        welcomePersonalization: {
+          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || '',
+          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || '',
+          className: morningMeetingSettings.welcomeSettings?.className || '',
+          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || 'Welcome to Our Classroom!'
+        },
+        customVocabulary: {
+          weather: morningMeetingSettings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy'],
+          seasonal: morningMeetingSettings.customVocabulary?.seasonal || ['spring', 'summer', 'fall', 'winter']
+        },
+        videos: {
+          weather: morningMeetingSettings.selectedVideos?.weather || [],
+          seasonal: morningMeetingSettings.selectedVideos?.seasonal || [],
+          behaviorCommitments: morningMeetingSettings.selectedVideos?.behaviorCommitments || [],
+          calendarMath: morningMeetingSettings.selectedVideos?.calendarMath || []
+        },
+        // 🔧 FIX: BehaviorStep expects behaviorStatements
+        behaviorStatements: {
+          enabled: morningMeetingSettings.behaviorCommitments?.enabled !== false,
+          statements: morningMeetingSettings.behaviorCommitments?.statements || [
+            'I will use kind words with my friends',
+            'I will listen when my teacher is talking',
+            'I will try my best in everything I do'
+          ],
+          allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom !== false
+        },
+        // 🔧 FIX: Also provide behaviorCommitments for compatibility
+        behaviorCommitments: {
+          enabled: morningMeetingSettings.behaviorCommitments?.enabled !== false,
+          commitments: morningMeetingSettings.behaviorCommitments?.statements || [],
+          allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom !== false
+        },
+        todaysAnnouncements: {
+          enabled: morningMeetingSettings.todaysAnnouncements?.enabled !== false,
+          announcements: morningMeetingSettings.todaysAnnouncements?.announcements || []
+        },
+        celebrations: {
+          enabled: morningMeetingSettings.celebrations?.enabled !== false,
+          showBirthdayPhotos: morningMeetingSettings.celebrations?.showBirthdayPhotos !== false,
+          customCelebrations: morningMeetingSettings.celebrations?.customCelebrations || []
+        },
+        flowCustomization: {
+          enabledSteps: morningMeetingSettings.checkInFlow || {
+            welcome: true,
+            attendance: true,
+            classroomRules: true,
+            behaviorCommitments: true,
+            calendarMath: true,
+            weather: true,
+            seasonal: true,
+            celebration: true,
+            dayReview: true
+          }
+        }
       };
       
-      console.log('✅ App: Final hubSettingsForFlow:', hubSettingsForFlow); // ADD THIS LINE BEFORE RETURN
+      console.log('✅ App: Clean formatted hubSettingsForFlow:', hubSettingsForFlow);
       return hubSettingsForFlow;
       
     } catch (error) {
       console.error('❌ App: Error in getMorningMeetingHubSettings:', error);
-      return UnifiedDataService.getSettings(); // Fallback to regular settings
+      return {
+        welcomePersonalization: {
+          schoolName: '',
+          teacherName: '',
+          className: '',
+          customMessage: 'Welcome to Our Classroom!'
+        },
+        customVocabulary: {
+          weather: ['sunny', 'cloudy', 'rainy', 'snowy'],
+          seasonal: ['spring', 'summer', 'fall', 'winter']
+        },
+        videos: { weather: [], seasonal: [], behaviorCommitments: [], calendarMath: [] },
+        behaviorStatements: { enabled: true, statements: [], allowCustom: true },
+        behaviorCommitments: { enabled: true, commitments: [], allowCustom: true },
+        todaysAnnouncements: { enabled: true, announcements: [] },
+        celebrations: { enabled: true, showBirthdayPhotos: true, customCelebrations: [] },
+        flowCustomization: { enabledSteps: { welcome: true, attendance: true, classroomRules: true, behaviorCommitments: true, calendarMath: true, weather: true, seasonal: true, celebration: true, dayReview: true } }
+      };
     }
   };
 
