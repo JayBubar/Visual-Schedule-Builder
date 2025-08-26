@@ -158,9 +158,10 @@ const WelcomeStep: React.FC<MorningMeetingStepProps> = ({
         justifyContent: 'center',
         alignItems: 'center',
         textAlign: 'center',
-        padding: '2rem',
+        padding: '2rem 2rem 120px 2rem', // Add bottom padding for navigation buttons
         overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
+        boxSizing: 'border-box'
       }}>
         {/* Floating sparkles */}
         <div style={{
