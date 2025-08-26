@@ -18,7 +18,8 @@ import GoalManager from './components/data-collection/GoalManager';
 import SmartGroups from './components/smart-groups/SmartGroups';
 import { SmartGroupsAIService } from './services/smartGroupsService';
 import { DataPrivacyService } from './services/dataPrivacyService';
-import MorningMeetingController from './components/morning-meeting';
+import MorningMeetingHub from './components/morning-meeting/MorningMeetingHub';
+import MorningMeetingFlow from './components/morning-meeting/MorningMeetingFlow';
 
 const App: React.FC = () => {
   const [showStartScreen, setShowStartScreen] = useState(true);
@@ -28,6 +29,8 @@ const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [activities, setActivities] = useState<ActivityLibraryItem[]>([]);
+  const [showMorningMeetingFlow, setShowMorningMeetingFlow] = useState(false);
+  const [morningMeetingHubSettings, setMorningMeetingHubSettings] = useState(null);
 
   // Get hubSettings from UnifiedDataService
   const hubSettings = useMemo(() => {
@@ -329,14 +332,25 @@ const App: React.FC = () => {
           onNavigateHome={handleBackToStart}
           onNavigateToBuilder={() => handleViewChange('builder')}
         />
-      ) : currentView === 'calendar' ? (
-        <MorningMeetingController
-          students={students}
-          staff={staffMembers}
-          hubSettings={hubSettings}
+      ) : currentView === 'calendar' && !showMorningMeetingFlow ? (
+        <MorningMeetingHub
+          onStartMorningMeeting={() => {
+            console.log('🚀 Starting Morning Meeting from Hub!');
+            setShowMorningMeetingFlow(true);
+          }}
           onClose={() => handleViewChange('builder')}
-          onNavigateHome={handleBackToStart}
-          onNavigateToDisplay={() => handleViewChange('display')}
+        />
+      ) : currentView === 'calendar' && showMorningMeetingFlow ? (
+        <MorningMeetingFlow
+          students={students}
+          hubSettings={morningMeetingHubSettings || hubSettings}
+          onComplete={() => {
+            setShowMorningMeetingFlow(false);
+            handleViewChange('display');
+          }}
+          onBackToHub={() => {
+            setShowMorningMeetingFlow(false);
+          }}
         />
       ) : (
         <div className="main-app-container">
