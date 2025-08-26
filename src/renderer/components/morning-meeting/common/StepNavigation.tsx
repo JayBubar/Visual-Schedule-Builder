@@ -29,7 +29,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   }
 
   const buttonStyle: React.CSSProperties = {
-    position: 'absolute',
+    position: 'fixed',
     bottom: '2rem',
     width: '80px',
     height: '80px',
@@ -45,6 +45,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
     alignItems: 'center',
     justifyContent: 'center',
     textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    zIndex: 1000,
   };
 
   const disabledStyle: React.CSSProperties = {
@@ -55,7 +56,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
   };
 
   const homeButtonStyle: React.CSSProperties = {
-    position: 'absolute',
+    position: 'fixed',
     top: '2rem',
     left: '2rem',
     width: '60px',
@@ -72,6 +73,7 @@ const StepNavigation: React.FC<StepNavigationProps> = ({
     alignItems: 'center',
     justifyContent: 'center',
     textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+    zIndex: 1000,
   };
 
   return (

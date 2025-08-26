@@ -246,16 +246,13 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         </div>
        )}
        
-       {/* Step Navigation - Higher z-index to appear above content */}
-       <div style={{ position: 'relative', zIndex: 1001 }}>
-         <StepNavigation navigation={{
-           goNext: onNext,
-           goBack: onBack,
-           goHome: onHome,
-           canGoBack: !!onBack,
-           isLastStep: false
-         }} />
-       </div>
+       <StepNavigation navigation={{
+         goNext: onNext,
+         goBack: onBack,
+         goHome: onHome,
+         canGoBack: !!onBack,
+         isLastStep: false
+       }} />
        
        <style>{`
         @keyframes shake {
@@ -275,7 +272,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         height: '100%', 
         display: 'flex', 
         gap: '2rem', 
-        padding: '2rem 2rem 120px 2rem', // Added bottom padding for navigation
+        padding: '2rem', 
         background: 'linear-gradient(135deg, #a8e063 0%, #56ab2f 100%)', 
         fontFamily: 'system-ui, sans-serif',
         boxSizing: 'border-box'
@@ -301,7 +298,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         background: 'rgba(255, 255, 255, 0.2)', 
         backdropFilter: 'blur(10px)', 
         borderRadius: '24px', 
-        padding: '2rem 2rem 120px 2rem', // Added bottom padding for navigation
+        padding: '2rem', 
         boxSizing: 'border-box'
     },
     leftTitle: { 

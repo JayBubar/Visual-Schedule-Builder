@@ -3,7 +3,7 @@ import React from 'react';
 export const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { height: '100%', display: 'flex', gap: '2rem', padding: '2rem', background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', fontFamily: 'system-ui, sans-serif' },
     leftColumn: { width: '350px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: '24px', padding: '2rem', display: 'flex', flexDirection: 'column', color: 'white' },
-    rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem 2rem 120px 2rem', position: 'relative', boxSizing: 'border-box' },
+    rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', position: 'relative', boxSizing: 'border-box' },
     leftTitle: { fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '0.5rem' },
     progressList: { flex: 1, overflowY: 'auto' },
     progressItem: { cursor: 'pointer', fontSize: '1.1rem', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 500, transition: 'all 0.3s ease', display: 'flex', alignItems: 'center' },

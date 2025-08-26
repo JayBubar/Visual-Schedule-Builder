@@ -260,16 +260,14 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         )}
       </div>
 
-      {/* Standardized Navigation - Higher z-index to appear above content */}
-      <div style={{ position: 'relative', zIndex: 1001 }}>
-        <StepNavigation navigation={{
-          goNext: onNext,
-          goBack: onBack,
-          goHome: onHome,
-          canGoBack: !!onBack,
-          isLastStep: false
-        }} />
-      </div>
+      {/* Standardized Navigation */}
+      <StepNavigation navigation={{
+        goNext: onNext,
+        goBack: onBack,
+        goHome: onHome,
+        canGoBack: !!onBack,
+        isLastStep: false
+      }} />
 
       {/* CSS Animations */}
       <style>{`
@@ -287,7 +285,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   pageContainer: {
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     minHeight: '100vh',
-    padding: '2rem 2rem 120px 2rem', // Added bottom padding for navigation
+    padding: '2rem',
     color: 'white',
     position: 'relative',
     overflowY: 'auto',
