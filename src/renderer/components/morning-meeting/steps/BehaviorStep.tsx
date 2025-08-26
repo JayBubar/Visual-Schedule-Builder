@@ -63,7 +63,7 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
       console.log('🎯 BehaviorStep: Loading settings...', settings);
       
       // Get behavior commitments - use custom if available, otherwise defaults
-      const behaviorCommitments = settings?.behaviorCommitments;
+      const behaviorCommitments = settings?.morningMeeting?.behaviorCommitments;
       console.log('🎯 BehaviorStep: Behavior commitments found:', behaviorCommitments);
 
       const customCommitments = behaviorCommitments?.goals || [];
