@@ -7,7 +7,6 @@ import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 import MorningMeetingFlow from '../morning-meeting/MorningMeetingFlow';
-import MorningMeetingController from '../morning-meeting/MorningMeetingController';
 
 // Video Button Component
 interface VideoButtonProps {
@@ -86,15 +85,13 @@ const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
             commitments[commitment.studentId] = commitment;
           }
         });
-        console.log('📊 Found behavior commitments for today:', commitments);
         return commitments;
       }
     }
 
-    console.log('ℹ️ No behavior commitments found for today');
     return {};
   } catch (error) {
-    console.error('❌ Error loading behavior commitments:', error);
+    console.error('Error loading behavior commitments:', error);
     return {};
   }
 };
@@ -827,12 +824,11 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       if (legacyStudents) {
         const students = JSON.parse(legacyStudents);
         if (Array.isArray(students)) {
-          console.log('🎯 INITIALIZED with students:', students.length);
           return students;
         }
       }
     } catch (error) {
-      console.error('🎯 Initialization failed:', error);
+      console.error('Initialization failed:', error);
     }
     return [];
   });
@@ -1087,37 +1083,24 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   const controlsHeight = 60;
   const availableContentHeight = window.innerHeight - headerHeight - controlsHeight - 20;
 
-  // MORNING MEETING DETECTION - Enhanced detection logic
+  // MORNING MEETING DETECTION - Simplified detection logic
   const renderActivityContent = () => {
-    if (currentActivity?.id === 'morning-meeting-placeholder' || 
-        currentActivity?.name === "Morning Meeting" ||
-        currentActivity?.description === 'Daily morning meeting routine' ||
-        currentActivity?.id === 'morning-meeting-builtin' ||
+    if (currentActivity?.name === "Morning Meeting" ||
         currentActivity?.category === 'routine') {
       
-      console.log('🌅 SmartboardDisplay: Detected Morning Meeting activity');
-      
       return (
-        <MorningMeetingController
+        <MorningMeetingFlow
           students={realStudents}
-          staff={realStaff}
-          hubSettings={hubSettings}
-          onClose={() => {
-            console.log('🔧 DEBUG: Morning Meeting closed, advancing to next activity');
+          hubSettings={hubSettings || {}}
+          onComplete={() => {
             if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
               setCurrentActivityIndex(currentActivityIndex + 1);
             } else {
               onNavigateHome?.();
             }
           }}
-          onNavigateHome={onNavigateHome}
-          onNavigateToDisplay={() => {
-            console.log('🔧 DEBUG: Morning Meeting completed, advancing to next activity');
-            if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
-              setCurrentActivityIndex(currentActivityIndex + 1);
-            } else {
-              onNavigateHome?.();
-            }
+          onBackToHub={() => {
+            onNavigateHome?.();
           }}
         />
       );
