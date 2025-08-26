@@ -60,11 +60,17 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
       
       // Load settings from UnifiedDataService
       const settings = UnifiedDataService.getSettings();
-      const hubSettings = settings?.morningMeeting?.hubSettings;
+      console.log('🎯 BehaviorStep: Loading settings...', settings);
       
       // Get behavior commitments - use custom if available, otherwise defaults
-      const customCommitments = hubSettings?.behaviorCommitments?.commitments || [];
-      const enabled = hubSettings?.behaviorCommitments?.enabled ?? true;
+      const behaviorCommitments = settings?.behaviorCommitments;
+      console.log('🎯 BehaviorStep: Behavior commitments found:', behaviorCommitments);
+
+      const customCommitments = behaviorCommitments?.goals || [];
+      const enabled = behaviorCommitments?.enabled ?? true;
+
+      console.log('🎯 BehaviorStep: Using commitments:', customCommitments);
+      console.log('🎯 BehaviorStep: Enabled:', enabled);
 
       if (enabled && customCommitments.length > 0) {
         // Use custom commitments from hub
