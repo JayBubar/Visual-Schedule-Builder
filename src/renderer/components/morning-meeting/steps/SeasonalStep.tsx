@@ -246,14 +246,16 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         </div>
        )}
        
-       {/* Step Navigation */}
-       <StepNavigation navigation={{
-         goNext: onNext,
-         goBack: onBack,
-         goHome: onHome,
-         canGoBack: !!onBack,
-         isLastStep: false
-       }} />
+       {/* Step Navigation - Higher z-index to appear above content */}
+       <div style={{ position: 'relative', zIndex: 1001 }}>
+         <StepNavigation navigation={{
+           goNext: onNext,
+           goBack: onBack,
+           goHome: onHome,
+           canGoBack: !!onBack,
+           isLastStep: false
+         }} />
+       </div>
        
        <style>{`
         @keyframes shake {

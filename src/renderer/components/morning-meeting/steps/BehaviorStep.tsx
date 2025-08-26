@@ -260,14 +260,16 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         )}
       </div>
 
-      {/* Standardized Navigation */}
-      <StepNavigation navigation={{
-        goNext: onNext,
-        goBack: onBack,
-        goHome: onHome,
-        canGoBack: !!onBack,
-        isLastStep: false
-      }} />
+      {/* Standardized Navigation - Higher z-index to appear above content */}
+      <div style={{ position: 'relative', zIndex: 1001 }}>
+        <StepNavigation navigation={{
+          goNext: onNext,
+          goBack: onBack,
+          goHome: onHome,
+          canGoBack: !!onBack,
+          isLastStep: false
+        }} />
+      </div>
 
       {/* CSS Animations */}
       <style>{`
@@ -345,7 +347,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
     gap: '1.5rem',
-    marginBottom: '3rem'
+    marginBottom: '1rem' // Reduced margin to prevent overlap with navigation
   },
   studentCard: {
     background: 'rgba(255, 255, 255, 0.1)',
