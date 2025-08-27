@@ -5,6 +5,10 @@ import React, { useState, useRef } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
 import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
+import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
+import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
+import GoalManager from '../data-collection/GoalManager';
+import IEPDataCollectionInterface from '../data-collection/IEPDataCollectionInterface';
 
 // FIXED: Use the same ExtendedStudent interface as StudentManagement
 interface ExtendedStudent {
@@ -69,6 +73,10 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [showQuickDataEntry, setShowQuickDataEntry] = useState(false);
   const [showProgressPanel, setShowProgressPanel] = useState(false);
+  const [showEnhancedDataEntry, setShowEnhancedDataEntry] = useState(false);
+  const [showPrintDataSheets, setShowPrintDataSheets] = useState(false);
+  const [showGoalManager, setShowGoalManager] = useState(false);
+  const [showIEPDataCollection, setShowIEPDataCollection] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
 
   const handlePhotoClick = () => {
@@ -108,21 +116,21 @@ const StudentCard: React.FC<StudentCardProps> = ({
     });
   };
 
-  // FIXED: Pass student parameter to handlers
+  // Updated handlers to show modals directly
   const handleDataEntry = () => {
-    onDataEntry(student);
+    setShowEnhancedDataEntry(true);
   };
 
   const handlePrintSheets = () => {
-    onPrintSheets(student);
+    setShowPrintDataSheets(true);
   };
 
   const handleGoalManagement = () => {
-    onGoalManagement(student);
+    setShowGoalManager(true);
   };
 
   const handleQuickDataEntry = () => {
-    onQuickDataEntry(student);
+    setShowQuickDataEntry(true);
   };
 
   return (
@@ -305,6 +313,120 @@ const StudentCard: React.FC<StudentCardProps> = ({
           setShowQuickDataEntry(true);
         }}
       />
+
+      {showEnhancedDataEntry && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <EnhancedDataEntry
+            selectedStudent={{
+              id: student.id,
+              name: student.name,
+              grade: student.grade,
+              photo: student.photo
+            }}
+            selectedGoal={
+              student.iepData?.goals?.[0] || {
+                id: 'temp-goal',
+                studentId: student.id,
+                title: 'Sample Goal',
+                description: 'Please create goals for this student',
+                domain: 'academic',
+                measurementType: 'percentage',
+                target: 80,
+                currentProgress: 0,
+                dataPoints: 0,
+                dateCreated: new Date().toISOString().split('T')[0]
+              }
+            }
+            onBack={() => setShowEnhancedDataEntry(false)}
+            onDataSaved={() => {
+              setShowEnhancedDataEntry(false);
+              onPhotoUpdate();
+            }}
+          />
+        </div>
+      )}
+
+      {showPrintDataSheets && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <PrintDataSheetSystem
+            students={[{
+              ...student,
+              dateCreated: student.dateCreated || new Date().toISOString().split('T')[0],
+              iepData: {
+                goals: student.iepData?.goals || [],
+                dataCollection: student.iepData?.dataCollection || []
+              }
+            }]}
+            goals={student.iepData?.goals || []}
+            onBack={() => setShowPrintDataSheets(false)}
+          />
+        </div>
+      )}
+
+      {showGoalManager && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <GoalManager
+            preSelectedStudentId={student.id}
+            onGoalSaved={() => {
+              setShowGoalManager(false);
+              onPhotoUpdate();
+            }}
+          />
+        </div>
+      )}
+
+      {showIEPDataCollection && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <IEPDataCollectionInterface
+            isActive={showIEPDataCollection}
+            preSelectedStudentId={student.id}
+          />
+        </div>
+      )}
     </div>
   );
 };
