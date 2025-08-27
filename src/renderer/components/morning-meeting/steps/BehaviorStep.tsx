@@ -78,18 +78,35 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         setCommitments([...defaultCommitments]);
       }
 
-      // Load students from attendance
+      // DEBUG: Load students from multiple sources
+      console.log('🎯 BehaviorStep: Loading students...');
+      
       const todayKey = currentDate.toDateString();
       const attendanceData = localStorage.getItem(`attendance_${todayKey}`);
       
+      let loadedStudents: Student[] = [];
+      
       if (attendanceData) {
+        console.log('🎯 BehaviorStep: Found attendance data');
         const attendance = JSON.parse(attendanceData);
         const presentStudents = attendance.students?.filter((s: any) => s.isPresent) || [];
-        setStudents(presentStudents);
+        loadedStudents = presentStudents;
+        console.log('🎯 BehaviorStep: Present students from attendance:', presentStudents.length);
       } else {
+        console.log('🎯 BehaviorStep: No attendance data, loading all students from UDS');
         const allStudents = UnifiedDataService.getAllStudents();
-        setStudents(allStudents);
+        loadedStudents = allStudents.map(student => ({
+          id: student.id,
+          name: student.name,
+          photo: student.photo
+        }));
+        console.log('🎯 BehaviorStep: All students from UDS:', loadedStudents.length);
       }
+      
+      console.log('🎯 BehaviorStep: Final students array:', loadedStudents);
+      console.log('🎯 BehaviorStep: Student names:', loadedStudents.map(s => s.name));
+      
+      setStudents(loadedStudents);
 
       // Load existing choices
       const savedChoices = localStorage.getItem(`behaviorChoices_${todayKey}`);
@@ -97,6 +114,7 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         const choices = JSON.parse(savedChoices);
         setStudentChoices(choices);
         setCompletedCount(Object.keys(choices).length);
+        console.log('🎯 BehaviorStep: Loaded existing choices:', Object.keys(choices).length);
       }
 
       setIsLoading(false);
@@ -246,15 +264,48 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
         </div>
       </div>
 
-      {/* Enhanced Student Grid - 2x6 format with better spacing */}
+      {/* Enhanced Student Grid - Debug info */}
       <div style={styles.studentsContainer}>
+        {/* DEBUG: Show student count */}
+        <div style={{
+          textAlign: 'center',
+          marginBottom: '1rem',
+          fontSize: '1rem',
+          opacity: 0.8,
+          background: 'rgba(255,255,255,0.1)',
+          padding: '0.5rem 1rem',
+          borderRadius: '10px',
+          display: 'inline-block'
+        }}>
+          Showing {students.length} students
+        </div>
+        
         <div style={styles.studentsGrid}>
-          {students.map((student) => {
+          {students.length === 0 ? (
+            // Show message when no students
+            <div style={{
+              gridColumn: '1 / -1',
+              textAlign: 'center',
+              padding: '3rem',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '20px',
+              border: '2px dashed rgba(255,255,255,0.3)'
+            }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👥</div>
+              <h3 style={{ margin: '0 0 1rem 0' }}>No Students Found</h3>
+              <p style={{ margin: 0, opacity: 0.9 }}>
+                Make sure students are added and marked present in attendance.
+              </p>
+            </div>
+          ) : (
+            students.map((student, index) => {
             const choice = getStudentChoice(student.id);
             const hasChoice = !!choice;
             const isAnimating = animatingCard === student.id;
             
-            return (
+              console.log(`🎯 Rendering student ${index + 1}:`, student.name);
+              
+              return (
               <div
                 key={student.id}
                 onClick={(e) => handleCardTap(student, e)}
@@ -320,8 +371,9 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
                   </div>
                 )}
               </div>
-            );
-          })}
+                          );
+            })
+          )}
         </div>
       </div>
 
@@ -511,36 +563,40 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   
   studentsContainer: {
-    maxWidth: '900px',
+    maxWidth: '1400px',                     // ✅ Wider for 6 columns
     margin: '0 auto',
-    position: 'relative'
+    position: 'relative',
+    padding: '0 2rem'                       // ✅ Side padding
   },
   
   studentsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '2rem',
-    alignContent: 'start',
-    minHeight: 'calc(100vh - 400px)',
-    // Let grid auto-create rows as needed instead of fixing to 6 rows
-    gridAutoRows: 'minmax(200px, auto)'
+    gridTemplateColumns: 'repeat(6, 1fr)',  // ✅ 6 columns instead of 2
+    gridTemplateRows: 'repeat(2, 1fr)',     // ✅ 2 rows max
+    gap: '1.5rem',                          // ✅ Slightly smaller gap
+    alignContent: 'center',
+    justifyContent: 'center',
+    minHeight: '400px',                     // ✅ Fixed height for 2 rows
+    maxHeight: '500px',                     // ✅ Prevent overflow
+    width: '100%'
   },
   
   studentCard: {
-    borderRadius: '25px',
-    padding: '2rem',
+    borderRadius: '20px',                   // ✅ Slightly smaller border radius
+    padding: '1.5rem',                      // ✅ 10% smaller padding (was 2rem)
     textAlign: 'center',
     cursor: 'pointer',
     backdropFilter: 'blur(15px)',
     position: 'relative',
     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-    minHeight: '200px',
+    minHeight: '160px',                     // ✅ 10% smaller (was 180px)
+    maxHeight: '180px',                     // ✅ Constrain height
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     border: '3px solid transparent',
-    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 6px 18px rgba(0, 0, 0, 0.1)', // ✅ Slightly smaller shadow
     overflow: 'hidden'
   },
   
@@ -589,37 +645,37 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   
   studentPhotoContainer: {
-    marginBottom: '1.5rem',
+    marginBottom: '1rem',                   // ✅ Smaller margin (was 1.5rem)
     position: 'relative'
   },
   
   studentPhoto: {
-    width: '80px',
-    height: '80px',
+    width: '65px',                          // ✅ 10% smaller (was 80px)
+    height: '65px',
     borderRadius: '50%',
     objectFit: 'cover',
-    border: '4px solid rgba(255, 255, 255, 0.4)',
-    boxShadow: '0 6px 15px rgba(0, 0, 0, 0.2)'
+    border: '3px solid rgba(255, 255, 255, 0.4)', // ✅ Thinner border
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'     // ✅ Smaller shadow
   },
   
   photoPlaceholder: {
-    width: '80px',
-    height: '80px',
+    width: '65px',                          // ✅ 10% smaller (was 80px)
+    height: '65px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '1.8rem',
+    fontSize: '1.5rem',                     // ✅ 10% smaller (was 1.8rem)
     fontWeight: 'bold',
     color: 'white',
-    border: '4px solid rgba(255, 255, 255, 0.4)',
-    boxShadow: '0 6px 15px rgba(0, 0, 0, 0.2)'
+    border: '3px solid rgba(255, 255, 255, 0.4)', // ✅ Thinner border
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'     // ✅ Smaller shadow
   },
   
   studentName: {
-    fontSize: '1.4rem',
+    fontSize: '1.2rem',                     // ✅ 10% smaller (was 1.4rem)
     fontWeight: 600,
-    marginBottom: '1rem',
+    marginBottom: '0.8rem',                 // ✅ Smaller margin
     textShadow: '0 2px 4px rgba(0,0,0,0.3)',
     lineHeight: '1.2'
   },
