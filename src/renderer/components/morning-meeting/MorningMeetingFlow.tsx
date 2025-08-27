@@ -1,4 +1,4 @@
-// src/renderer/components/morning-meeting/MorningMeetingFlow.tsx
+// src/renderer/components/morning-meeting/MorningMeetingFlow.tsx // Legacy Git Note
 
 import React, { useState } from 'react';
 import { HubSettings, Student, MorningMeetingStepProps } from './types/morningMeetingTypes';
