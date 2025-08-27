@@ -398,7 +398,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
           behaviorCommitments: settings.videos.behaviorCommitments,
           calendarMath: settings.videos.calendarMath
         },
-        behaviorCommitments: settings.behaviorStatements,
+        behaviorCommitments: settings.behaviorCommitments,
         todaysAnnouncements: settings.todaysAnnouncements,
         celebrations: settings.celebrations,
         checkInFlow: settings.flowCustomization.enabledSteps
