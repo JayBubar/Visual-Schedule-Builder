@@ -45,15 +45,15 @@ const App: React.FC = () => {
       const morningMeetingSettings = allSettings?.morningMeeting || {};
       
       console.log('🔧 App: Raw MM settings:', morningMeetingSettings);
-      console.log('🔧 App: welcomeSettings found:', morningMeetingSettings.welcomeSettings);
+      console.log('🔧 App: welcomePersonalization found:', morningMeetingSettings.welcomePersonalization);
       
       // 🔧 FIX: Transform data to match what steps expect (NO MORE RAW SETTINGS!)
       const hubSettingsForFlow = {
         welcomePersonalization: {
-          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || '',
-          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || '',
-          className: morningMeetingSettings.welcomeSettings?.className || '',
-          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || 'Welcome to Our Classroom!'
+          schoolName: morningMeetingSettings.welcomePersonalization?.schoolName || '',
+          teacherName: morningMeetingSettings.welcomePersonalization?.teacherName || '',
+          className: morningMeetingSettings.welcomePersonalization?.className || '',
+          customMessage: morningMeetingSettings.welcomePersonalization?.customMessage || 'Welcome to Our Classroom!'
         },
         customVocabulary: {
           weather: morningMeetingSettings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy'],
@@ -433,10 +433,6 @@ const App: React.FC = () => {
           onClose={() => handleViewChange('builder')}
         />
       ) : currentView === 'calendar' && showMorningMeetingFlow ? (
-        (() => {
-          console.log('🔍 App: About to render MorningMeetingFlow with hubSettings:', getMorningMeetingHubSettings());
-          return null;
-        })(),
         <MorningMeetingFlow
           students={students}
           hubSettings={getMorningMeetingHubSettings()}

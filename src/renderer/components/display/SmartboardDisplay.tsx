@@ -948,18 +948,127 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
     if (currentActivity?.name === "Morning Meeting" ||
         currentActivity?.category === 'routine') {
       
+      // Load Morning Meeting settings directly from UnifiedDataService
+      const getMorningMeetingSettings = () => {
+        try {
+          console.log('🔧 SmartboardDisplay: Loading Morning Meeting settings from UnifiedDataService');
+          
+          const allSettings = UnifiedDataService.getSettings();
+          const morningMeetingSettings = allSettings?.morningMeeting || {};
+          
+          console.log('🔧 SmartboardDisplay: Raw MM settings:', morningMeetingSettings);
+          
+          // Transform data to match what steps expect
+          const hubSettingsForFlow = {
+            welcomePersonalization: {
+              schoolName: morningMeetingSettings.welcomePersonalization?.schoolName || '',
+              teacherName: morningMeetingSettings.welcomePersonalization?.teacherName || '',
+              className: morningMeetingSettings.welcomePersonalization?.className || '',
+              customMessage: morningMeetingSettings.welcomePersonalization?.customMessage || 'Welcome to Our Classroom!'
+            },
+            customVocabulary: {
+              weather: morningMeetingSettings.customVocabulary?.weather || ['sunny', 'cloudy', 'rainy', 'snowy'],
+              seasonal: morningMeetingSettings.customVocabulary?.seasonal || ['spring', 'summer', 'fall', 'winter']
+            },
+            videos: {
+              weather: morningMeetingSettings.selectedVideos?.weather || [],
+              seasonal: morningMeetingSettings.selectedVideos?.seasonal || [],
+              behaviorCommitments: morningMeetingSettings.selectedVideos?.behaviorCommitments || [],
+              calendarMath: morningMeetingSettings.selectedVideos?.calendarMath || []
+            },
+            behaviorStatements: {
+              enabled: morningMeetingSettings.behaviorStatements?.enabled !== false,
+              statements: morningMeetingSettings.behaviorStatements?.statements || [
+                'I will use kind words with my friends',
+                'I will listen when my teacher is talking',
+                'I will try my best in everything I do'
+              ],
+              allowCustom: morningMeetingSettings.behaviorStatements?.allowCustom !== false
+            },
+            behaviorCommitments: {
+              enabled: morningMeetingSettings.behaviorCommitments?.enabled !== false,
+              commitments: morningMeetingSettings.behaviorCommitments?.commitments || [],
+              allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom !== false
+            },
+            todaysAnnouncements: {
+              enabled: morningMeetingSettings.todaysAnnouncements?.enabled !== false,
+              announcements: morningMeetingSettings.todaysAnnouncements?.announcements || []
+            },
+            celebrations: {
+              enabled: morningMeetingSettings.celebrations?.enabled !== false,
+              showBirthdayPhotos: morningMeetingSettings.celebrations?.showBirthdayPhotos !== false,
+              customCelebrations: morningMeetingSettings.celebrations?.customCelebrations || []
+            },
+            flowCustomization: {
+              enabledSteps: morningMeetingSettings.checkInFlow || {
+                welcome: true,
+                attendance: true,
+                classroomRules: true,
+                behaviorCommitments: true,
+                calendarMath: true,
+                weather: true,
+                seasonal: true,
+                celebration: true,
+                dayReview: true
+              }
+            }
+          };
+          
+          console.log('✅ SmartboardDisplay: Clean formatted hubSettingsForFlow:', hubSettingsForFlow);
+          return hubSettingsForFlow;
+          
+        } catch (error) {
+          console.error('❌ SmartboardDisplay: Error loading Morning Meeting settings:', error);
+          return {
+            welcomePersonalization: {
+              schoolName: '',
+              teacherName: '',
+              className: '',
+              customMessage: 'Welcome to Our Classroom!'
+            },
+            customVocabulary: {
+              weather: ['sunny', 'cloudy', 'rainy', 'snowy'],
+              seasonal: ['spring', 'summer', 'fall', 'winter']
+            },
+            videos: { weather: [], seasonal: [], behaviorCommitments: [], calendarMath: [] },
+            behaviorStatements: { enabled: true, statements: [], allowCustom: true },
+            behaviorCommitments: { enabled: true, commitments: [], allowCustom: true },
+            todaysAnnouncements: { enabled: true, announcements: [] },
+            celebrations: { enabled: true, showBirthdayPhotos: true, customCelebrations: [] },
+            flowCustomization: { enabledSteps: { welcome: true, attendance: true, classroomRules: true, behaviorCommitments: true, calendarMath: true, weather: true, seasonal: true, celebration: true, dayReview: true } }
+          };
+        }
+      };
+      
       return (
         <MorningMeetingFlow
           students={realStudents}
-          hubSettings={hubSettings || {}}
+          hubSettings={getMorningMeetingSettings()}
           onComplete={() => {
+            console.log('🎯 Morning Meeting completed! Moving to next activity...');
+            console.log('Current activity index:', currentActivityIndex);
+            console.log('Total activities:', activeSchedule?.activities.length);
+            
+            // Move to next activity in the schedule
             if (currentActivityIndex < (activeSchedule?.activities.length || 0) - 1) {
-              setCurrentActivityIndex(currentActivityIndex + 1);
+              const nextIndex = currentActivityIndex + 1;
+              const nextActivity = activeSchedule?.activities[nextIndex];
+              console.log('🎯 Moving to next activity:', nextActivity?.name);
+              
+              setCurrentActivityIndex(nextIndex);
+              
+              // Reset timer for next activity
+              if (nextActivity?.duration) {
+                setTimeRemaining(nextActivity.duration * 60);
+                setIsRunning(false);
+              }
             } else {
+              console.log('🎯 No more activities, going home');
               onNavigateHome?.();
             }
           }}
           onBackToHub={() => {
+            console.log('🎯 Morning Meeting cancelled, going home');
             onNavigateHome?.();
           }}
         />
