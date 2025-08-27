@@ -223,103 +223,15 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       <div style={{
         flex: 1,
         display: 'flex',
-        flexDirection: 'column',
-        gap: '1.5rem'
+        gap: '2rem'
       }}>
-        {/* Horizontal Attendance Counter */}
+        {/* Main Content Area */}
         <div style={{
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(15px)',
-          borderRadius: '20px',
-          padding: '1.5rem',
-          border: '2px solid rgba(255, 255, 255, 0.2)',
+          flex: 1,
           display: 'flex',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          gap: '2rem'
+          flexDirection: 'column',
+          gap: '1.5rem'
         }}>
-          {/* Total Count */}
-          <div style={{
-            background: 'rgba(255, 215, 0, 0.2)',
-            borderRadius: '15px',
-            padding: '1rem 1.5rem',
-            border: '2px solid rgba(255, 215, 0, 0.5)',
-            textAlign: 'center',
-            minWidth: '140px'
-          }}>
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 800,
-              marginBottom: '0.25rem',
-              color: '#FFD93D'
-            }}>
-              {totalCount}
-            </div>
-            <div style={{
-              fontSize: '1rem',
-              fontWeight: 600,
-              opacity: 0.9
-            }}>
-              Total Students
-            </div>
-          </div>
-
-          {/* Present Count */}
-          <div style={{
-            background: 'rgba(76, 175, 80, 0.3)',
-            borderRadius: '15px',
-            padding: '1rem 1.5rem',
-            border: '2px solid rgba(76, 175, 80, 0.6)',
-            textAlign: 'center',
-            minWidth: '140px'
-          }}>
-            <div style={{
-              fontSize: '2rem',
-              fontWeight: 700,
-              color: '#4CAF50',
-              marginBottom: '0.25rem'
-            }}>
-              {presentCount} ✅
-            </div>
-            <div style={{ fontSize: '1rem', opacity: 0.9, fontWeight: 600 }}>Present</div>
-          </div>
-
-          {/* Math Equation */}
-          {(presentCount > 0 || absentCount > 0) && (
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '15px',
-              padding: '1rem 1.5rem',
-              fontSize: '1.4rem',
-              fontWeight: 600,
-              border: '2px solid rgba(255, 255, 255, 0.3)',
-              textAlign: 'center',
-              minWidth: '160px'
-            }}>
-              {presentCount} + {absentCount} = {presentCount + absentCount}
-            </div>
-          )}
-
-          {/* Absent Count */}
-          <div style={{
-            background: 'rgba(244, 67, 54, 0.3)',
-            borderRadius: '15px',
-            padding: '1rem 1.5rem',
-            border: '2px solid rgba(244, 67, 54, 0.6)',
-            textAlign: 'center',
-            minWidth: '140px'
-          }}>
-            <div style={{
-              fontSize: '2rem',
-              fontWeight: 700,
-              color: '#f44336',
-              marginBottom: '0.25rem'
-            }}>
-              {absentCount} ❌
-            </div>
-            <div style={{ fontSize: '1rem', opacity: 0.9, fontWeight: 600 }}>Absent</div>
-          </div>
-        </div>
 
         {/* Status Message & Quick Actions Row */}
         <div style={{
@@ -405,15 +317,17 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
           </div>
         </div>
 
-        {/* Student Grid - 2 Rows, Up to 5 Across */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: '1rem',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          alignItems: 'end'
-        }}>
+          {/* Student Grid - 4x3 format (12 students max) */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateRows: 'repeat(3, 1fr)',
+            gap: '1.5rem',
+            maxWidth: '800px',
+            margin: '0 auto',
+            alignItems: 'center',
+            flex: 1
+          }}>
           {safeStudents.length === 0 ? (
             // 🔧 CLEAN ERROR STATE
             <div style={{
@@ -452,17 +366,18 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
                         ? '3px solid #f44336'
                         : '3px solid rgba(255, 255, 255, 0.3)',
                     borderRadius: '18px',
-                    padding: '1.25rem',
+                    padding: '2rem',
                     textAlign: 'center',
                     cursor: 'pointer',
                     backdropFilter: 'blur(10px)',
                     position: 'relative',
                     transition: 'all 0.3s ease',
                     transform: isPresent ? 'scale(1.02)' : 'scale(1)',
-                    minHeight: '140px',
+                    minHeight: '180px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    aspectRatio: '1'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.transform = isPresent ? 'scale(1.05)' : 'scale(1.03)';
@@ -485,29 +400,29 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
 
                   {/* Student Photo */}
                   <div style={{
-                    width: '45px',
-                    height: '45px',
+                    width: '60px',
+                    height: '60px',
                     borderRadius: '50%',
                     background: student.photo 
                       ? `url(${student.photo}) center/cover`
                       : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    margin: '0 auto 0.5rem auto',
+                    margin: '0 auto 1rem auto',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.1rem',
+                    fontSize: '1.4rem',
                     fontWeight: 700,
                     color: 'white',
-                    border: '2px solid rgba(255, 255, 255, 0.4)'
+                    border: '3px solid rgba(255, 255, 255, 0.4)'
                   }}>
                     {!student.photo && student.name.charAt(0).toUpperCase()}
                   </div>
 
                   {/* Student Name */}
                   <div style={{
-                    fontSize: '0.9rem',
+                    fontSize: '1.1rem',
                     fontWeight: 600,
-                    marginBottom: '0.25rem',
+                    marginBottom: '0.5rem',
                     lineHeight: '1.2'
                   }}>
                     {student.name}
@@ -525,6 +440,110 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
               );
             })
           )}
+          </div>
+        </div>
+
+        {/* Vertical Attendance Counter - Right Side */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(15px)',
+          borderRadius: '20px',
+          padding: '1.5rem',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1rem',
+          maxWidth: '300px',
+          marginLeft: 'auto',
+          marginRight: '2rem',
+          marginBottom: '2rem'
+        }}>
+          {/* Math Equation - TOP */}
+          {(presentCount > 0 || absentCount > 0) && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '15px',
+              padding: '1rem 1.5rem',
+              fontSize: '1.4rem',
+              fontWeight: 600,
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              textAlign: 'center',
+              width: '100%'
+            }}>
+              {presentCount} + {absentCount} = {presentCount + absentCount}
+            </div>
+          )}
+
+          {/* Total Count - SECOND */}
+          <div style={{
+            background: 'rgba(255, 215, 0, 0.2)',
+            borderRadius: '15px',
+            padding: '1rem 1.5rem',
+            border: '2px solid rgba(255, 215, 0, 0.5)',
+            textAlign: 'center',
+            width: '100%'
+          }}>
+            <div style={{
+              fontSize: '2.5rem',
+              fontWeight: 800,
+              marginBottom: '0.25rem',
+              color: '#FFD93D'
+            }}>
+              {totalCount}
+            </div>
+            <div style={{
+              fontSize: '1rem',
+              fontWeight: 600,
+              opacity: 0.9
+            }}>
+              Total Students
+            </div>
+          </div>
+
+          {/* At School - THIRD */}
+          <div style={{
+            background: 'rgba(76, 175, 80, 0.3)',
+            borderRadius: '15px',
+            padding: '1rem 1.5rem',
+            border: '2px solid rgba(76, 175, 80, 0.6)',
+            textAlign: 'center',
+            width: '100%'
+          }}>
+            <div style={{
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: '#4CAF50',
+              marginBottom: '0.25rem'
+            }}>
+              {presentCount} ✅
+            </div>
+            <div style={{ fontSize: '1rem', opacity: 0.9, fontWeight: 600 }}>
+              At School
+            </div>
+          </div>
+
+          {/* Not Here Today - FOURTH */}
+          <div style={{
+            background: 'rgba(244, 67, 54, 0.3)',
+            borderRadius: '15px',
+            padding: '1rem 1.5rem',
+            border: '2px solid rgba(244, 67, 54, 0.6)',
+            textAlign: 'center',
+            width: '100%'
+          }}>
+            <div style={{
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: '#f44336',
+              marginBottom: '0.25rem'
+            }}>
+              {absentCount} ❌
+            </div>
+            <div style={{ fontSize: '1rem', opacity: 0.9, fontWeight: 600 }}>
+              Not Here Today
+            </div>
+          </div>
         </div>
       </div>
 
