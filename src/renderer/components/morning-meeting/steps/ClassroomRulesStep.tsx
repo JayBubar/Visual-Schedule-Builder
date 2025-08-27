@@ -350,32 +350,20 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
 
         {/* HEADER */}
         <div style={{
-          padding: '2rem',
           textAlign: 'center',
-          background: 'rgba(255, 255, 255, 0.15)',
-          backdropFilter: 'blur(15px)',
-          borderBottom: '3px solid rgba(255, 255, 255, 0.3)'
+          marginBottom: '2rem'
         }}>
           <h1 style={{
-            fontSize: 'clamp(2.5rem, 6vw, 4rem)',
-            fontWeight: '800',
-            textShadow: '3px 3px 6px rgba(0, 0, 0, 0.3)',
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(45deg, #FFD700, #FF69B4, #32CD32)',
-            backgroundClip: 'text',
+            fontSize: '3rem',
+            fontWeight: 800,
+            margin: 0,
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+            background: 'linear-gradient(45deg, #FFD93D, #FF6B6B)',
             WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            animation: 'shimmer 3s ease-in-out infinite'
+            WebkitTextFillColor: 'transparent'
           }}>
-            🌟 Our Classroom Rules 🌟
+            ⭐ Our Classroom Rules
           </h1>
-          <div style={{
-            fontSize: '1.5rem',
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontWeight: '600'
-          }}>
-            Let's learn each rule together!
-          </div>
         </div>
 
         {/* MAIN CONTENT */}
