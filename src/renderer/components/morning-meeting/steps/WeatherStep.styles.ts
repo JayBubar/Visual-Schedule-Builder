@@ -1,14 +1,54 @@
 import React from 'react';
 
 export const styles: { [key: string]: React.CSSProperties } = {
-    pageContainer: { height: '100%', display: 'flex', gap: '2rem', padding: '2rem', background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', fontFamily: 'system-ui, sans-serif' },
-    leftColumn: { width: '350px', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.3)', borderRadius: '24px', padding: '2rem', display: 'flex', flexDirection: 'column', color: 'white' },
-    rightColumn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '24px', padding: '2rem', position: 'relative', boxSizing: 'border-box' },
+    pageContainer: { 
+        height: '100vh',
+        background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', 
+        display: 'flex', 
+        gap: '2rem', 
+        padding: '2rem',
+        boxSizing: 'border-box',
+        fontFamily: 'system-ui, sans-serif',
+        overflow: 'hidden'
+    },
+    leftColumn: { 
+        width: '350px', 
+        background: 'rgba(255, 255, 255, 0.2)', 
+        backdropFilter: 'blur(10px)', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '24px', 
+        padding: '2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        color: 'white',
+        height: 'fit-content',
+        maxHeight: '100%',
+        overflow: 'hidden'
+    },
+    rightColumn: { 
+        flex: 1, 
+        background: 'rgba(255, 255, 255, 0.2)', 
+        backdropFilter: 'blur(10px)', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '24px', 
+        padding: '2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'flex-start',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: '0'
+    },
     leftTitle: { fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '0.5rem' },
     progressList: { flex: 1, overflowY: 'auto' },
     progressItem: { cursor: 'pointer', fontSize: '1.1rem', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: 500, transition: 'all 0.3s ease', display: 'flex', alignItems: 'center' },
     progressItemActive: { background: 'rgba(255, 255, 255, 0.3)', fontWeight: 700 },
-    progressItemCompleted: { opacity: 1, textDecoration: 'line-through' },
+    progressItemCompleted: { 
+        opacity: 1, 
+        textDecoration: 'line-through',
+        background: 'rgba(40, 167, 69, 0.3)'
+    },
     progressCheck: { marginRight: '0.75rem', fontSize: '1.2rem' },
     standardText: { fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' },
     rightPanelTitle: { fontSize: '2.5rem', fontWeight: 700, color: 'white', textShadow: '0 2px 5px rgba(0,0,0,0.3)', textAlign: 'center' },
@@ -30,7 +70,15 @@ export const styles: { [key: string]: React.CSSProperties } = {
     bar: { width: '60%', background: 'linear-gradient(to top, #a1c4fd, #c2e9fb)', borderRadius: '8px 8px 0 0', transition: 'height 0.5s ease-out' },
     barLabel: { marginTop: '0.5rem', fontSize: '2rem' },
     barCount: { color: 'white', fontWeight: 'bold', fontSize: '1.5rem', marginBottom: '0.5rem' },
-    internalNavBar: { position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem' },
+    internalNavBar: { 
+        position: 'absolute', 
+        bottom: '2rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex', 
+        gap: '1rem',
+        zIndex: 10
+    },
     internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: 'rgba(0, 86, 179, 0.7)', color: 'white', border: '1px solid rgba(255,255,255,0.5)' },
     disabledButton: { background: 'rgba(108, 117, 125, 0.7)', cursor: 'not-allowed' },
     celebrationOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },

@@ -23,6 +23,7 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
     const [currentStep, setCurrentStep] = useState(0);
     const [todaysWeather, setTodaysWeather] = useState<WeatherType | null>(null);
     const [weatherHistory, setWeatherHistory] = useState<WeatherHistory>({});
+    const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
     // Load history when component mounts
     useEffect(() => {
@@ -46,6 +47,13 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
             // FIX: Called static method directly on the class
             UnifiedDataService.saveWeatherForDate(dateKey, todaysWeather);
             setWeatherHistory(prev => ({...prev, [dateKey]: todaysWeather}));
+            setCompletedSteps(prev => new Set(prev).add(0));
+        }
+        if (currentStep === 1) {
+            setCompletedSteps(prev => new Set(prev).add(1));
+        }
+        if (currentStep === 2) {
+            setCompletedSteps(prev => new Set(prev).add(2));
         }
         if (currentStep < steps.length - 1) {
             setCurrentStep(prev => prev + 1);
@@ -147,8 +155,8 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
             <div style={styles.leftColumn}>
                 <h1 style={styles.leftTitle}>🌦️ Weather Watchers</h1>
                 {steps.map((step, index) => (
-                    <div key={step.id} onClick={() => setCurrentStep(index)} style={{...styles.progressItem, ...(currentStep === index ? styles.progressItemActive : {})}}>
-                        <span style={styles.progressCheck}>➡️</span>
+                    <div key={step.id} onClick={() => setCurrentStep(index)} style={{...styles.progressItem, ...(currentStep === index ? styles.progressItemActive : {}), ...(completedSteps.has(index) ? styles.progressItemCompleted : {})}}>
+                        <span style={styles.progressCheck}>{completedSteps.has(index) ? '✅' : '➡️'}</span>
                         <div>
                             {step.question}
                             <div style={styles.standardText}>Standard: {step.standard}</div>

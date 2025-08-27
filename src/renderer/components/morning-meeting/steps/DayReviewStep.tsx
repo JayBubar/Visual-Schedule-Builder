@@ -128,9 +128,45 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
 
 // Styles
 const styles: { [key: string]: React.CSSProperties } = {
-    pageContainer: { height: '100%', display: 'flex', gap: '2rem', padding: '2rem', background: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)', fontFamily: 'system-ui, sans-serif' },
-    leftColumn: { width: '350px', background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', padding: '2rem', display: 'flex', flexDirection: 'column', color: 'white' },
-    rightColumn: { flex: 1, background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '24px', padding: '2rem 3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' },
+    pageContainer: { 
+        height: '100vh',
+        background: 'linear-gradient(135deg, #5ee7df 0%, #b490ca 100%)', 
+        display: 'flex', 
+        gap: '2rem', 
+        padding: '2rem',
+        boxSizing: 'border-box',
+        fontFamily: 'system-ui, sans-serif',
+        overflow: 'hidden'
+    },
+    leftColumn: { 
+        width: '350px', 
+        background: 'rgba(255, 255, 255, 0.2)', 
+        backdropFilter: 'blur(10px)', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '24px', 
+        padding: '2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        color: 'white',
+        height: 'fit-content',
+        maxHeight: '100%',
+        overflow: 'hidden'
+    },
+    rightColumn: { 
+        flex: 1, 
+        background: 'rgba(255, 255, 255, 0.2)', 
+        backdropFilter: 'blur(10px)', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '24px', 
+        padding: '2rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'flex-start',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: '0'
+    },
     leftTitle: { fontSize: '2.5rem', fontWeight: 700, textShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '0.5rem' },
     leftSubtitle: { fontSize: '1.2rem', opacity: 0.8, marginBottom: '2rem' },
     divider: { height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.3)', margin: '1rem 0 2rem 0' },
@@ -144,7 +180,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     ruleEmoji: { fontSize: '1.5rem' },
     summaryContainer: { width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' },
     summaryBox: { width: '100%', maxWidth: '600px', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '1.5rem', color: 'white', textAlign: 'center' },
-    internalNavBar: { position: 'absolute', bottom: '2rem', display: 'flex', gap: '1rem' },
+    internalNavBar: { 
+        position: 'absolute', 
+        bottom: '2rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex', 
+        gap: '1rem',
+        zIndex: 10
+    },
     internalNavButton: { padding: '0.8rem 2rem', fontSize: '1rem', fontWeight: 600, borderRadius: '12px', cursor: 'pointer', background: 'rgba(255, 255, 255, 0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.5)' },
 };
 

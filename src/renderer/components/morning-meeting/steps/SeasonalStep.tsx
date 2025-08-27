@@ -269,13 +269,14 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
 // Inline styles object
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { 
-        height: '100%', 
+        height: '100vh',
+        background: 'linear-gradient(135deg, #a8e063 0%, #56ab2f 100%)', 
         display: 'flex', 
         gap: '2rem', 
-        padding: '2rem', 
-        background: 'linear-gradient(135deg, #a8e063 0%, #56ab2f 100%)', 
+        padding: '2rem',
+        boxSizing: 'border-box',
         fontFamily: 'system-ui, sans-serif',
-        boxSizing: 'border-box'
+        overflow: 'hidden'
     },
     leftColumn: { 
         width: '350px', 
@@ -286,20 +287,25 @@ const styles: { [key: string]: React.CSSProperties } = {
         padding: '2rem', 
         display: 'flex', 
         flexDirection: 'column', 
-        color: 'white' 
+        color: 'white',
+        height: 'fit-content',
+        maxHeight: '100%',
+        overflow: 'hidden'
     },
     rightColumn: { 
         flex: 1, 
-        position: 'relative', 
+        background: 'rgba(255, 255, 255, 0.2)', 
+        backdropFilter: 'blur(10px)', 
+        border: '1px solid rgba(255, 255, 255, 0.2)', 
+        borderRadius: '24px', 
+        padding: '2rem', 
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
-        justifyContent: 'center', 
-        background: 'rgba(255, 255, 255, 0.2)', 
-        backdropFilter: 'blur(10px)', 
-        borderRadius: '24px', 
-        padding: '2rem', 
-        boxSizing: 'border-box'
+        justifyContent: 'flex-start',
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: '0'
     },
     leftTitle: { 
         fontSize: '2.5rem', 
@@ -460,9 +466,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     internalNavBar: { 
         position: 'absolute', 
-        bottom: '2rem', 
+        bottom: '2rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
         display: 'flex', 
-        gap: '1rem' 
+        gap: '1rem',
+        zIndex: 10
     },
     internalNavButton: { 
         padding: '0.8rem 2rem', 
