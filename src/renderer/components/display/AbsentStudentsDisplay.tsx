@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
+import React, { useState, useEffect, useCallback } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
 
 interface AbsentStudentsDisplayProps {
@@ -16,16 +15,32 @@ const EnhancedAbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
 
-  // Use robust data loading hook
-  const {
-    students: allStudents,
-    isLoading,
-    error
-  } = useRobustDataLoading({
-    loadStudents: true,
-    loadStaff: false,
-    dependencies: [absentStudents]
-  });
+  // Direct data loading with UnifiedDataService
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const loadedStudents = UnifiedDataService.getAllStudents();
+      
+      setAllStudents(loadedStudents);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setAllStudents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [absentStudents, loadData]);
 
   // Load student data
   useEffect(() => {

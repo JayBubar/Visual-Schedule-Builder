@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
-import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface AttendanceManagerProps {
   allStudents: any[];
@@ -13,11 +12,34 @@ const AttendanceManager: React.FC<AttendanceManagerProps> = ({
   isOpen, 
   onClose 
 }) => {
-  // Use robust data loading hook
-  const { students: loadedStudents, isLoading, error } = useRobustDataLoading(
-    { loadStudents: true, loadStaff: false, dependencies: [isOpen] },
-    allStudents
-  );
+  // Direct data loading with UnifiedDataService
+  const [loadedStudents, setLoadedStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const students = UnifiedDataService.getAllStudents();
+      
+      setLoadedStudents(students);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setLoadedStudents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadData();
+    }
+  }, [isOpen, loadData]);
 
   // Filter to only active students
   const students = loadedStudents.filter(student => student.isActive !== false);

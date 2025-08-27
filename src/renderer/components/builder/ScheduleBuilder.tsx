@@ -5,7 +5,6 @@ import ScheduleConflictDetector from './ScheduleConflictDetector';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import { Student as ProjectStudent, Staff, StudentGroup, Activity, ScheduleActivity, ActivityAssignment, ScheduleVariation, SavedActivity, StaffMember as ProjectStaffMember, ScheduleCategory } from '../../types';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
-import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 // Type aliases to avoid conflicts with enhanced components
 type BuilderStudent = ProjectStudent;
@@ -845,10 +844,38 @@ const SaveScheduleModal: React.FC<{
 };
 
 const ScheduleBuilder: React.FC<ScheduleBuilderProps> = ({ isActive, onScheduleUpdate }) => {
-  // Use robust data loading hook
-  const { students: loadedStudents, staff: loadedStaff, isLoading, error } = useRobustDataLoading(
-    { loadStudents: true, loadStaff: true, dependencies: [isActive] }
-  );
+  // Direct data loading with UnifiedDataService
+  const [loadedStudents, setLoadedStudents] = useState<any[]>([]);
+  const [loadedStaff, setLoadedStaff] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const students = UnifiedDataService.getAllStudents();
+      const staff = UnifiedDataService.getAllStaff();
+      
+      setLoadedStudents(students);
+      setLoadedStaff(staff);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setLoadedStudents([]);
+      setLoadedStaff([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isActive) {
+      loadData();
+    }
+  }, [isActive, loadData]);
 
   // State management
   const [schedule, setSchedule] = useState<EnhancedActivity[]>([]);

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { Download, FileText, Printer, Mail, Calendar, User, Target, TrendingUp } from 'lucide-react';
-import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
+import UnifiedDataService from '../../services/unifiedDataService';
 
 // Interface definitions
 interface ReportsExportSystemProps {
@@ -54,16 +54,34 @@ interface ReportConfig {
 }
 
 const ReportsExportSystem: React.FC<ReportsExportSystemProps> = ({ isActive }) => {
-  // Use robust data loading hook
-  const {
-    students,
-    isLoading,
-    error
-  } = useRobustDataLoading({
-    loadStudents: true,
-    loadStaff: false,
-    dependencies: [isActive]
-  });
+  // Direct data loading with UnifiedDataService
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const loadedStudents = UnifiedDataService.getAllStudents();
+      
+      setStudents(loadedStudents);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setStudents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isActive) {
+      loadData();
+    }
+  }, [isActive, loadData]);
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);

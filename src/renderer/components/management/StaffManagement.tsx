@@ -1,23 +1,40 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { StaffMember } from '../../types';
 import UnifiedDataService, { UnifiedStaff } from '../../services/unifiedDataService';
-import { useRobustDataLoading } from '../../hooks/useRobustDataLoading';
 
 interface StaffManagementProps {
   isActive: boolean;
 }
 
 const StaffManagement: React.FC<StaffManagementProps> = ({ isActive }) => {
-  // Use robust data loading hook
-  const {
-    staff,
-    isLoading,
-    error
-  } = useRobustDataLoading({
-    loadStudents: false,
-    loadStaff: true,
-    dependencies: [isActive]
-  });
+  // Direct data loading with UnifiedDataService
+  const [staff, setStaff] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const loadedStaff = UnifiedDataService.getAllStaff();
+      
+      setStaff(loadedStaff);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setStaff([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isActive) {
+      loadData();
+    }
+  }, [isActive, loadData]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<UnifiedStaff | null>(null);
