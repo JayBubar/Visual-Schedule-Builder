@@ -441,8 +441,7 @@ const App: React.FC = () => {
           students={students}
           hubSettings={getMorningMeetingHubSettings()}
           onComplete={() => {
-            setShowMorningMeetingFlow(false);
-            handleViewChange('display');
+            setCurrentView('display');
           }}
           onBackToHub={() => {
             setShowMorningMeetingFlow(false);

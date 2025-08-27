@@ -67,11 +67,36 @@ const VideoButton: React.FC<VideoButtonProps> = ({ label, videoUrl, icon, color 
   );
 };
 
-// Utility function to get today's behavior commitments
+// Replace the entire getTodaysBehaviorCommitments function:
 const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
-  // Behavior commitments functionality has been moved to Morning Meeting
-  // This function now returns empty object as a placeholder
-  return {};
+  try {
+    const today = new Date().toDateString();
+    const behaviorChoices = localStorage.getItem(`behaviorChoices_${today}`);
+    
+    if (behaviorChoices) {
+      const choices = JSON.parse(behaviorChoices);
+      const commitments: { [studentId: string]: any } = {};
+      
+      // Convert BehaviorStep format to SmartBoard expected format
+      Object.values(choices).forEach((choice: any) => {
+        commitments[choice.studentId] = {
+          commitment: choice.commitmentText,
+          achieved: false, // Default to false, can be toggled
+          achievedAt: null,
+          studentName: choice.studentName
+        };
+      });
+      
+      console.log('📊 Loaded behavior commitments from new format:', commitments);
+      return commitments;
+    }
+    
+    console.log('ℹ️ No behavior choices found for today');
+    return {};
+  } catch (error) {
+    console.error('Error loading behavior commitments:', error);
+    return {};
+  }
 };
 
 
@@ -879,8 +904,38 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
 
   // Toggle function for behavior achievements - can be after hooks
   const toggleStudentAchievement = (studentId: string) => {
-    // Achievement functionality has been moved to Morning Meeting
-    console.log('Achievement functionality has been moved to Morning Meeting');
+    try {
+      const today = new Date().toDateString();
+      const behaviorChoices = localStorage.getItem(`behaviorChoices_${today}`);
+      
+      if (!behaviorChoices) return;
+      
+      const choices = JSON.parse(behaviorChoices);
+      
+      if (choices[studentId]) {
+        // Toggle the achieved status
+        choices[studentId].achieved = !choices[studentId].achieved;
+        choices[studentId].achievedAt = choices[studentId].achieved 
+          ? new Date().toISOString() 
+          : null;
+        
+        // Save back to localStorage
+        localStorage.setItem(`behaviorChoices_${today}`, JSON.stringify(choices));
+        
+        // Update local state
+        setBehaviorCommitments((prev: any) => ({
+          ...prev,
+          [studentId]: {
+            ...prev[studentId],
+            achieved: choices[studentId].achieved
+          }
+        }));
+        
+        console.log(`${choices[studentId].achieved ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
   };
 
   // Dynamic screen sizing - calculate available heights
