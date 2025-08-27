@@ -259,23 +259,22 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   const loadSettings = () => {
     try {
       const morningMeetingSettings = UnifiedDataService.getSettings()?.morningMeeting || {};
-      // Raw MM settings loaded
+      console.log('🔧 Hub: Raw MM settings loaded:', morningMeetingSettings);
       
-      // FIX: Ensure all required properties are included in merged settings
+      // FIX: Ensure consistent property names when loading
       const mergedSettings: HubSettings = {
-        // FIX: Always include welcomePersonalization
+        // FIX: Use consistent property name for welcome data
         welcomePersonalization: {
-          schoolName: morningMeetingSettings.welcomeSettings?.schoolName || DEFAULT_HUB_SETTINGS.welcomePersonalization.schoolName,
-          teacherName: morningMeetingSettings.welcomeSettings?.teacherName || DEFAULT_HUB_SETTINGS.welcomePersonalization.teacherName,
-          className: morningMeetingSettings.welcomeSettings?.className || DEFAULT_HUB_SETTINGS.welcomePersonalization.className,
-          customMessage: morningMeetingSettings.welcomeSettings?.customMessage || DEFAULT_HUB_SETTINGS.welcomePersonalization.customMessage
+          schoolName: morningMeetingSettings.welcomePersonalization?.schoolName || DEFAULT_HUB_SETTINGS.welcomePersonalization.schoolName,
+          teacherName: morningMeetingSettings.welcomePersonalization?.teacherName || DEFAULT_HUB_SETTINGS.welcomePersonalization.teacherName,
+          className: morningMeetingSettings.welcomePersonalization?.className || DEFAULT_HUB_SETTINGS.welcomePersonalization.className,
+          customMessage: morningMeetingSettings.welcomePersonalization?.customMessage || DEFAULT_HUB_SETTINGS.welcomePersonalization.customMessage
         },
-        // FIX: Always include customVocabulary
         customVocabulary: {
           weather: morningMeetingSettings.customVocabulary?.weather || DEFAULT_HUB_SETTINGS.customVocabulary.weather,
           seasonal: morningMeetingSettings.customVocabulary?.seasonal || DEFAULT_HUB_SETTINGS.customVocabulary.seasonal
         },
-        // FIX: Ensure videos array structure with proper URLs
+        // Video loading logic (keep existing - it works)
         videos: {
           weather: Array.isArray(morningMeetingSettings.selectedVideos?.weather) 
             ? morningMeetingSettings.selectedVideos.weather
@@ -306,35 +305,36 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
                 url: morningMeetingSettings.selectedVideos.calendarMath
               }] : [])
         },
+        // Keep existing classroom rules behavior (already working)
         behaviorStatements: {
-          enabled: morningMeetingSettings.behaviorCommitments?.enabled || true,
-          statements: morningMeetingSettings.behaviorCommitments?.statements || [
-            'I will use kind words with my friends',
-            'I will listen when my teacher is talking',
-            'I will try my best in everything I do'
-          ],
-          allowCustom: morningMeetingSettings.behaviorCommitments?.allowCustom || true
+          enabled: morningMeetingSettings.behaviorStatements?.enabled ?? DEFAULT_HUB_SETTINGS.behaviorStatements.enabled,
+          statements: morningMeetingSettings.behaviorStatements?.statements || DEFAULT_HUB_SETTINGS.behaviorStatements.statements,
+          allowCustom: morningMeetingSettings.behaviorStatements?.allowCustom ?? DEFAULT_HUB_SETTINGS.behaviorStatements.allowCustom
+        },
+        // FIX: Load behavior commitments with correct structure
+        behaviorCommitments: {
+          enabled: morningMeetingSettings.behaviorCommitments?.enabled ?? true,
+          commitments: morningMeetingSettings.behaviorCommitments?.commitments || []  // ✅ Use 'commitments'
         },
         todaysAnnouncements: {
-          enabled: morningMeetingSettings.todaysAnnouncements?.enabled !== false,
+          enabled: morningMeetingSettings.todaysAnnouncements?.enabled ?? DEFAULT_HUB_SETTINGS.todaysAnnouncements.enabled,
           announcements: morningMeetingSettings.todaysAnnouncements?.announcements || DEFAULT_HUB_SETTINGS.todaysAnnouncements.announcements
         },
         celebrations: {
-          ...DEFAULT_HUB_SETTINGS.celebrations,
-          ...morningMeetingSettings.celebrations
+          enabled: morningMeetingSettings.celebrations?.enabled ?? DEFAULT_HUB_SETTINGS.celebrations.enabled,
+          showBirthdayPhotos: morningMeetingSettings.celebrations?.showBirthdayPhotos ?? DEFAULT_HUB_SETTINGS.celebrations.showBirthdayPhotos,
+          customCelebrations: morningMeetingSettings.celebrations?.customCelebrations || DEFAULT_HUB_SETTINGS.celebrations.customCelebrations
         },
         flowCustomization: {
-          ...DEFAULT_HUB_SETTINGS.flowCustomization,
-          enabledSteps: {
-            ...DEFAULT_HUB_SETTINGS.flowCustomization.enabledSteps,
-            ...morningMeetingSettings.checkInFlow
-          }
+          enabledSteps: morningMeetingSettings.checkInFlow || DEFAULT_HUB_SETTINGS.flowCustomization.enabledSteps
         }
       };
-      
-      // Hub settings processed
+
+      console.log('🔧 Hub: Merged settings with fixes:', mergedSettings);
       setSettings(mergedSettings);
+      setHasUnsavedChanges(false);
     } catch (error) {
+      console.error('🔧 Hub: Error loading settings:', error);
       setSettings(DEFAULT_HUB_SETTINGS);
     }
   };
@@ -377,34 +377,40 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
     try {
       console.log('🔧 Hub: Saving settings with flow customization:', settings.flowCustomization);
       
-      // FIX: Convert hub settings back to the format expected by Settings.tsx
-      // but ensure ALL properties are included
+      // FIX: Ensure consistent property names between save and load
       const morningMeetingSettings = {
-        // FIX: Save welcomePersonalization properly
-        welcomeSettings: {
+        // FIX #1: Use consistent property name for welcome data
+        welcomePersonalization: {  // ✅ Changed from 'welcomeSettings' to match loadSettings
           schoolName: settings.welcomePersonalization.schoolName,
           teacherName: settings.welcomePersonalization.teacherName,
           className: settings.welcomePersonalization.className,
           customMessage: settings.welcomePersonalization.customMessage
         },
-        // FIX: Save customVocabulary properly
+        // FIX #2: Keep customVocabulary consistent (already working)
         customVocabulary: {
           weather: settings.customVocabulary.weather,
           seasonal: settings.customVocabulary.seasonal
         },
+        // FIX #3: Keep selectedVideos consistent (already working)
         selectedVideos: {
           weather: settings.videos.weather,
           seasonal: settings.videos.seasonal,
           behaviorCommitments: settings.videos.behaviorCommitments,
           calendarMath: settings.videos.calendarMath
         },
-        behaviorCommitments: settings.behaviorCommitments,
+        // FIX #4: Save both legacy and new behavior data structures
+        behaviorStatements: settings.behaviorStatements, // For classroom rules (already working)
+        behaviorCommitments: {
+          enabled: settings.behaviorCommitments?.enabled ?? true,
+          commitments: settings.behaviorCommitments?.commitments ?? []  // ✅ Use 'commitments' not 'goals'
+        },
+        // FIX #5: Keep other properties consistent
         todaysAnnouncements: settings.todaysAnnouncements,
         celebrations: settings.celebrations,
         checkInFlow: settings.flowCustomization.enabledSteps
       };
 
-      console.log('🔧 Hub: Converted MM settings with checkInFlow:', morningMeetingSettings.checkInFlow);
+      console.log('🔧 Hub: Final settings to save (with fixes):', morningMeetingSettings);
 
       // Get current settings and update just the morningMeeting section
       const currentSettings = UnifiedDataService.getSettings();
@@ -416,14 +422,14 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
         }
       };
 
-      console.log('🔧 Hub: Final settings to save:', updatedSettings.morningMeeting.checkInFlow);
       UnifiedDataService.updateSettings(updatedSettings);
       setHasUnsavedChanges(false);
       
       // Verify it was saved
       setTimeout(() => {
         const verifySettings = UnifiedDataService.getSettings();
-        console.log('🔧 Hub: Verified saved settings:', verifySettings.morningMeeting?.checkInFlow);
+        console.log('🔧 Hub: Verified saved behavior commitments:', verifySettings.morningMeeting?.behaviorCommitments);
+        console.log('🔧 Hub: Verified saved welcome data:', verifySettings.morningMeeting?.welcomePersonalization);
       }, 100);
       
       // Dispatch event for other components

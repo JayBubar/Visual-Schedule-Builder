@@ -66,7 +66,8 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
       const behaviorCommitments = settings?.morningMeeting?.behaviorCommitments;
       console.log('🎯 BehaviorStep: Behavior commitments found:', behaviorCommitments);
 
-      const customCommitments = behaviorCommitments?.goals || [];
+      // FIX: Use 'commitments' property instead of 'goals'
+      const customCommitments = behaviorCommitments?.commitments || [];  // ✅ Changed from 'goals' to 'commitments'
       const enabled = behaviorCommitments?.enabled ?? true;
 
       console.log('🎯 BehaviorStep: Using commitments:', customCommitments);
