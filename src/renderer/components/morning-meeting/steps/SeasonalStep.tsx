@@ -48,7 +48,6 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
   }, [currentDate]);
   const currentSeasonData = useMemo(() => SEASONS_DATA[currentSeasonKey], [currentSeasonKey]);
 
-  // MODIFICATION: Reverted first step text and combined standards
   const steps = useMemo(() => [
     { id: 'name-seasons', question: "I can name the four seasons.", standard: "Science K.E.3A.2 & K.E.3A.3" },
     { id: 'match-weather', question: "I can tell what the weather is usually like.", standard: "Science K.E.3A.2" },
@@ -123,8 +122,9 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         const arrowsVisible = completedSteps.has(0);
         return (
           <>
-            {/* MODIFICATION: Header now uses the dynamic state variable */}
+            {/* FIXED: Header now uses the dynamic state variable */}
             <h2 style={styles.rightPanelTitle}>{step1Header}</h2>
+            {/* FIXED: New layout - single row with larger cards and better spacing */}
             <div style={styles.gridContainer}>
               {SEASON_ORDER.map(key => {
                   let arrowEmoji = '';
@@ -166,6 +166,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         return (
             <>
                 <h2 style={styles.rightPanelTitle}>{step.question}</h2>
+                {/* FIXED: Move quiz buttons to single horizontal line and make them larger */}
                 <div style={styles.quizButtonContainer}>
                     {SEASON_ORDER.map(key => (
                         <button key={key} onClick={() => handleQuizAnswer(key)} style={styles.quizButton}>
@@ -173,6 +174,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
                         </button>
                     ))}
                 </div>
+                {/* FIXED: Move the quiz card DOWN to make space for larger horizontal buttons */}
                 {currentQuizItem && (
                     <div style={{...styles.quizCard, ...(feedback === 'correct' ? styles.quizCardCorrect : {}), ...(feedback === 'incorrect' ? styles.quizCardIncorrect : {})}}>
                         <div style={styles.cardEmoji}>{currentQuizItem.data.emoji}</div>
@@ -291,7 +293,7 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
   );
 };
 
-// Inline styles object
+// FIXED STYLES - Single row layout with larger cards
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { 
         height: '100vh',
@@ -372,26 +374,39 @@ const styles: { [key: string]: React.CSSProperties } = {
         color: 'white', 
         textShadow: '0 2px 5px rgba(0,0,0,0.3)', 
         textAlign: 'center', 
-        marginBottom: '1rem' 
+        marginBottom: '2rem' 
     },
+    // FIXED: Keep 2x2 grid but make cards larger and better centered  
     gridContainer: { 
         display: 'grid', 
-        gridTemplateColumns: '1fr 1fr', 
-        gap: '1.5rem', 
-        width: '80%', 
-        maxWidth: '600px' 
+        gridTemplateColumns: 'repeat(2, 1fr)', // Back to 2x2 grid
+        gridTemplateRows: 'repeat(2, 1fr)',
+        gap: '2rem', // Larger gap for better spacing
+        width: '100%', 
+        maxWidth: '600px', // Reasonable max width for 2x2
+        marginTop: '1rem',
+        justifyItems: 'center', // Center items in grid cells
+        alignItems: 'center'
     },
+    // FIXED: Larger cards with better proportions but still 2x2
     card: { 
         background: 'rgba(255, 255, 255, 0.8)', 
         border: '1px solid rgba(255, 255, 255, 0.5)', 
-        borderRadius: '16px', 
-        padding: '1.5rem', 
+        borderRadius: '20px', // Larger border radius
+        padding: '2.5rem', // Increased padding more
         textAlign: 'center', 
         cursor: 'pointer', 
         transition: 'all 0.2s ease-in-out', 
         color: '#333',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: '200px', // Larger minimum height
+        minWidth: '200px',  // Minimum width for consistency
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%'
     },
     cardSelected: { 
         background: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)', 
@@ -399,11 +414,14 @@ const styles: { [key: string]: React.CSSProperties } = {
         transform: 'scale(1.05)', 
         boxShadow: '0 8px 25px rgba(0,0,0,0.1)' 
     },
+    // FIXED: Larger emoji for better visual impact
     cardEmoji: { 
-        fontSize: '3rem' 
+        fontSize: '4rem', // Increased from 3rem
+        marginBottom: '1rem'
     },
+    // FIXED: Larger title text
     cardTitle: { 
-        fontSize: '1.2rem', 
+        fontSize: '1.4rem', // Increased from 1.2rem
         fontWeight: 600 
     },
     arrow: {
@@ -426,24 +444,34 @@ const styles: { [key: string]: React.CSSProperties } = {
         opacity: 1, 
         transform: 'scale(1)' 
     },
-    arrowPositionBR: { bottom: '10px', right: '10px' },
-    arrowPositionBL: { bottom: '10px', left: '10px' },
-    arrowPositionTL: { top: '10px', left: '10px' },
-    arrowPositionTR: { top: '10px', right: '10px' },
+    arrowPositionBR: { bottom: '15px', right: '15px' },
+    arrowPositionBL: { bottom: '15px', left: '15px' },
+    arrowPositionTL: { top: '15px', left: '15px' },
+    arrowPositionTR: { top: '15px', right: '15px' },
+    // FIXED: Single horizontal line layout for quiz buttons (step 2)
     quizButtonContainer: { 
         display: 'flex', 
         gap: '1rem', 
-        marginBottom: '2rem' 
+        marginBottom: '3rem', // More space before quiz card
+        width: '100%',
+        justifyContent: 'center',
+        flexWrap: 'nowrap' // Keep in single line
     },
+    // FIXED: Larger quiz buttons for single horizontal line
     quizButton: { 
-        padding: '1rem 2rem', 
-        fontSize: '1.2rem', 
+        padding: '1.5rem 2rem', // Larger padding
+        fontSize: '1.4rem', // Larger font
         background: 'rgba(255,255,255,0.8)', 
         border: '1px solid rgba(255,255,255,0.5)', 
-        borderRadius: '12px', 
+        borderRadius: '16px', // Larger border radius
         cursor: 'pointer', 
         fontWeight: 600, 
-        color: '#333' 
+        color: '#333',
+        minWidth: '140px', // Minimum width for consistency
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '0.5rem'
     },
     quizCard: { 
         width: '80%', 
@@ -466,28 +494,6 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontSize: '1.5rem', 
         fontWeight: 500, 
         margin: '1rem 0 0 0' 
-    },
-    mysteryBox: { 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        background: 'rgba(0,0,0,0.1)', 
-        borderRadius: '16px', 
-        padding: '3rem', 
-        width: '80%', 
-        color: 'white' 
-    },
-    actionButton: { 
-        padding: '1rem 2rem', 
-        fontSize: '1.2rem', 
-        background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)', 
-        color: 'white', 
-        border: 'none', 
-        borderRadius: '12px', 
-        cursor: 'pointer', 
-        fontWeight: 600, 
-        marginTop: '2rem' 
     },
     internalNavBar: { 
         position: 'absolute', 

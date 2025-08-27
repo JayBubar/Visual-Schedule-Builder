@@ -19,6 +19,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
     return s[(v - 20) % 10] || s[v] || s[0];
   };
 
+  // FIXED: Full date format as requested
   const fullDate = useMemo(() => {
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -37,12 +38,11 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
 
   const renderContent = () => {
     switch (internalSection) {
-      case 0: // Classroom Rules
+      case 0: // Classroom Rules Review
         return (
           <>
             <h2 style={styles.rightPanelTitle}>Classroom Rules Review</h2>
             <div style={styles.rulesContainer}>
-              {/* Use Hub data instead of hardcoded rules */}
               {hubSettings?.behaviorStatements?.enabled && hubSettings?.behaviorStatements?.statements?.length > 0 ? (
                 hubSettings.behaviorStatements.statements.map((rule, index) => (
                   <div key={index} style={styles.ruleItem}>
@@ -56,22 +56,29 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
             </div>
           </>
         );
-      case 1: // Today's Summary
+      case 1: // FIXED: Today's Summary - Restructured content order
         return (
           <>
-            <h2 style={styles.rightPanelTitle}>Today's Summary</h2>
+            {/* REMOVED: "Today's Summary" header and calendar icon */}
+            {/* ADDED: Full date format as main header */}
+            <h2 style={styles.dateHeader}>{fullDate}</h2>
+            
+            {/* REORDERED: Content in new sequence */}
             <div style={styles.summaryContainer}>
+              
+              {/* 2. Next Activity */}
               <div style={styles.summaryBox}>
-                <h4>🗓️ Today's Date</h4>
-                <p>{fullDate}</p>
+                <h4>🎯 Next Activity</h4>
+                <p>Morning Meeting is finishing - get ready for our first learning activity!</p>
               </div>
+              
+              {/* 3. Announcements */}
               <div style={styles.summaryBox}>
                 <h4>📢 Announcements</h4>
-                {/* Connect to Hub data using new property name */}
                 {hubSettings?.todaysAnnouncements?.enabled && hubSettings?.todaysAnnouncements?.announcements?.length > 0 ? (
                   <ul style={{ textAlign: 'left', paddingLeft: '1rem' }}>
                     {hubSettings.todaysAnnouncements.announcements
-                      .filter(announcement => announcement.trim()) // Filter out empty announcements
+                      .filter(announcement => announcement.trim())
                       .map((announcement, index) => (
                         <li key={index} style={{ marginBottom: '0.5rem' }}>
                           {announcement}
@@ -83,10 +90,35 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
                   <p>No special announcements today!</p>
                 )}
               </div>
+              
+              {/* 4. Positive Message */}
               <div style={styles.summaryBox}>
                 <h4>💖 Positive Message</h4>
                 <p>"Let's have a wonderful day of learning and kindness!"</p>
               </div>
+              
+            </div>
+            
+            {/* ADDED: "Start the Day" transition button */}
+            <div style={styles.transitionButtonContainer}>
+              <button 
+                style={styles.startDayButton}
+                onClick={() => {
+                  // This will eventually link to 90-second transition functionality
+                  console.log('🚀 Starting the day! Transition to activities...');
+                  onNext?.(); // For now, proceed to next step
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(255, 193, 7, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(255, 193, 7, 0.3)';
+                }}
+              >
+                🌟 Start the Day! 🌟
+              </button>
             </div>
           </>
         );
@@ -103,7 +135,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
         <div style={styles.divider}></div>
         <div style={styles.progressList}>
           <div onClick={() => setInternalSection(0)} style={{ ...styles.progressItem, ...(internalSection === 0 ? styles.progressItemActive : {}) }}>1. Rules Review</div>
-          <div onClick={() => setInternalSection(1)} style={{ ...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {}) }}>2. Today's Summary</div>
+          <div onClick={() => setInternalSection(1)} style={{ ...styles.progressItem, ...(internalSection === 1 ? styles.progressItemActive : {}) }}>2. Ready to Start</div>
         </div>
       </div>
       <div style={styles.rightColumn}>
@@ -126,7 +158,7 @@ const DayReviewStep: React.FC<MorningMeetingStepProps> = ({
   );
 };
 
-// Styles
+// Enhanced styles with new transition button and date header
 const styles: { [key: string]: React.CSSProperties } = {
     pageContainer: { 
         height: '100vh',
@@ -175,11 +207,50 @@ const styles: { [key: string]: React.CSSProperties } = {
     progressItemActive: { backgroundColor: 'rgba(255, 255, 255, 0.2)', opacity: 1, fontWeight: 600 },
     rightPanelTitle: { fontSize: '3rem', fontWeight: 700, color: 'white', textShadow: '0 2px 5px rgba(0,0,0,0.3)', textAlign: 'center', marginBottom: '2rem' },
     rightPanelSubtitle: { fontSize: '1.5rem', color: 'white', opacity: 0.9, textAlign: 'center' },
+    
+    // FIXED: New date header style for full date format
+    dateHeader: { 
+        fontSize: '2.5rem', 
+        fontWeight: 700, 
+        color: 'white', 
+        textShadow: '0 2px 5px rgba(0,0,0,0.3)', 
+        textAlign: 'center', 
+        marginBottom: '2rem',
+        background: 'linear-gradient(45deg, #FFD93D, #FF6B6B)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        lineHeight: '1.2'
+    },
+    
     rulesContainer: { width: '100%', maxWidth: '700px', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '2rem' },
     ruleItem: { display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', color: 'white', fontSize: '1.2rem', fontWeight: 500 },
     ruleEmoji: { fontSize: '1.5rem' },
     summaryContainer: { width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' },
     summaryBox: { width: '100%', maxWidth: '600px', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '1.5rem', color: 'white', textAlign: 'center' },
+    
+    // ADDED: Transition button styles
+    transitionButtonContainer: {
+        marginTop: '2rem',
+        display: 'flex',
+        justifyContent: 'center',
+        width: '100%'
+    },
+    
+    startDayButton: {
+        background: 'linear-gradient(135deg, #FFD93D 0%, #FF8E53 100%)',
+        border: 'none',
+        borderRadius: '25px',
+        color: 'white',
+        padding: '1.5rem 3rem',
+        fontSize: '1.5rem',
+        fontWeight: '700',
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 10px 30px rgba(255, 193, 7, 0.3)',
+        textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+        minWidth: '200px'
+    },
+    
     internalNavBar: { 
         position: 'absolute', 
         bottom: '2rem',

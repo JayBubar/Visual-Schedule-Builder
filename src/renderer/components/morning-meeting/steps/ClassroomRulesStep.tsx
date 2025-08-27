@@ -265,13 +265,14 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
         `}
       </style>
       
+      {/* FIXED: Removed height: 100% and overflow: hidden to eliminate white space */}
       <div style={{
-        height: '100%',
+        minHeight: '100vh',
         background: 'linear-gradient(135deg, #FFD700 0%, #FF69B4 30%, #32CD32 60%, #87CEEB 100%)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative'
+        position: 'relative',
+        padding: '2rem 2rem 140px 2rem' // Added bottom padding for navigation
       }}>
         
         {/* Floating sparkles background */}
@@ -294,14 +295,15 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
           </div>
         ))}
 
-        {/* VIDEO SECTION */}
+        {/* VIDEO SECTION - FIXED: Reduced padding and margin */}
         {selectedVideos.length > 0 && (
           <div style={{
             display: 'flex',
             justifyContent: 'center',
             gap: '1rem',
-            padding: '1rem',
-            flexShrink: 0
+            padding: '1rem 0', // Reduced from '1rem'
+            flexShrink: 0,
+            marginBottom: '1rem' // Added small margin instead of relying on flex spacing
           }}>
             {selectedVideos.map((video, index) => (
               <button
@@ -348,10 +350,10 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
           </div>
         )}
 
-        {/* HEADER */}
+        {/* HEADER - FIXED: Reduced margin */}
         <div style={{
           textAlign: 'center',
-          marginBottom: '2rem'
+          marginBottom: '1.5rem' // Reduced from '2rem'
         }}>
           <h1 style={{
             fontSize: '3rem',
@@ -366,31 +368,31 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
           </h1>
         </div>
 
-        {/* MAIN CONTENT */}
+        {/* MAIN CONTENT - FIXED: Better flex management to eliminate white space */}
         <div style={{
           flex: 1,
-          padding: '2rem',
+          padding: '0 2rem', // Reduced from '2rem'
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          overflow: 'auto'
+          minHeight: '0' // Important for flex child
         }}>
           
           {!showCompletion && currentRule ? (
             <>
-              {/* Progress Indicator */}
+              {/* Progress Indicator - FIXED: Reduced margin */}
               <div style={{
                 fontSize: '1.5rem',
                 color: 'white',
                 fontWeight: '700',
-                marginBottom: '1rem',
+                marginBottom: '0.75rem', // Reduced from '1rem'
                 textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)'
               }}>
                 Rule {currentRuleIndex + 1} of {classroomRules.length}
               </div>
 
-              {/* Current Rule Card */}
+              {/* Current Rule Card - FIXED: Adjusted sizing and spacing */}
               <div
                 onClick={handleRuleClick}
                 style={{
@@ -399,7 +401,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                     : 'rgba(255, 255, 255, 0.95)',
                   color: isCurrentRuleLearned ? 'white' : '#333333',
                   borderRadius: '30px',
-                  padding: '3rem',
+                  padding: '2.5rem', // Reduced from '3rem'
                   textAlign: 'center',
                   cursor: isCurrentRuleLearned ? 'default' : 'pointer',
                   transition: 'all 0.4s ease',
@@ -413,7 +415,8 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                   transform: isCurrentRuleLearned ? 'scale(1.1)' : 'scale(1)',
                   boxShadow: isCurrentRuleLearned 
                     ? '0 25px 50px rgba(34, 197, 94, 0.3)' 
-                    : '0 20px 40px rgba(0, 0, 0, 0.2)'
+                    : '0 20px 40px rgba(0, 0, 0, 0.2)',
+                  marginBottom: '1rem' // Added margin for spacing
                 }}
                 onMouseEnter={(e) => {
                   if (!isCurrentRuleLearned) {
@@ -446,7 +449,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                 
                 <span style={{
                   fontSize: '6rem',
-                  marginBottom: '1.5rem',
+                  marginBottom: '1rem', // Reduced from '1.5rem'
                   display: 'block',
                   animation: isCurrentRuleLearned ? 'celebrateSpin 1s ease-in-out' : 'bounce 2s ease-in-out infinite'
                 }}>
@@ -456,7 +459,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                 <div style={{
                   fontSize: 'clamp(1.5rem, 4vw, 2rem)',
                   fontWeight: '800',
-                  marginBottom: '1.5rem',
+                  marginBottom: '1rem', // Reduced from '1.5rem'
                   lineHeight: '1.2'
                 }}>
                   {currentRule.title}
@@ -466,7 +469,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                   fontSize: 'clamp(1rem, 3vw, 1.3rem)',
                   color: isCurrentRuleLearned ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.7)',
                   lineHeight: '1.4',
-                  marginBottom: '1.5rem'
+                  marginBottom: '1rem' // Reduced from '1.5rem'
                 }}>
                   {currentRule.description}
                 </div>
@@ -476,8 +479,8 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                     fontSize: 'clamp(0.9rem, 2.5vw, 1.1rem)',
                     color: 'rgba(255, 255, 255, 0.8)',
                     fontStyle: 'italic',
-                    marginTop: '1rem',
-                    padding: '1rem',
+                    marginTop: '0.75rem', // Reduced from '1rem'
+                    padding: '0.75rem', // Reduced from '1rem'
                     background: 'rgba(255, 255, 255, 0.1)',
                     borderRadius: '15px'
                   }}>
@@ -490,7 +493,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                     fontSize: '1.2rem',
                     fontWeight: '600',
                     color: 'rgba(255, 215, 0, 0.9)',
-                    marginTop: '1rem',
+                    marginTop: '0.75rem', // Reduced from '1rem'
                     animation: 'pulse 2s ease-in-out infinite'
                   }}>
                     👆 Click to learn this rule!
@@ -498,7 +501,7 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                 )}
               </div>
 
-              {/* Next Rule Button */}
+              {/* Next Rule Button - FIXED: Reduced margin */}
               {isCurrentRuleLearned && currentRuleIndex < classroomRules.length - 1 && (
                 <button
                   onClick={handleNextRule}
@@ -511,7 +514,8 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                     fontSize: '1.3rem',
                     fontWeight: '700',
                     cursor: 'pointer',
-                    marginTop: '2rem',
+                    marginTop: '1rem', // Reduced from '2rem'
+                    marginBottom: '1rem',
                     transition: 'all 0.3s ease',
                     boxShadow: '0 10px 25px rgba(255, 105, 180, 0.3)'
                   }}
@@ -528,18 +532,18 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
                 </button>
               )}
 
-              {/* Progress Section */}
+              {/* Progress Section - FIXED: Adjusted spacing */}
               <div style={{ 
                 textAlign: 'center', 
                 width: '100%', 
                 maxWidth: '500px',
-                marginTop: '2rem'
+                marginTop: '1rem' // Reduced from '2rem'
               }}>
                 <div style={{
                   fontSize: '1.2rem',
                   fontWeight: '600',
                   textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
-                  marginBottom: '1rem',
+                  marginBottom: '0.75rem', // Reduced from '1rem'
                   color: 'white'
                 }}>
                   🌟 Progress: {learnedRules.size}/{classroomRules.length} Rules Learned! 🌟
@@ -574,28 +578,29 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
               </div>
             </>
           ) : showCompletion ? (
-            /* Completion Celebration */
+            /* Completion Celebration - FIXED: Better centering and sizing */
             <div style={{
               textAlign: 'center',
               background: 'linear-gradient(135deg, #FFD700, #FF69B4)',
               color: 'white',
-              padding: '4rem',
+              padding: '3rem', // Reduced from '4rem'
               borderRadius: '40px',
               border: '8px solid white',
               boxShadow: '0 30px 60px rgba(0, 0, 0, 0.3)',
               animation: 'ruleEntrance 0.8s ease-out',
-              maxWidth: '700px'
+              maxWidth: '700px',
+              margin: 'auto' // Center the completion box
             }}>
-              <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>🎉</div>
-              <div style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: '800', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '5rem', marginBottom: '1rem' }}>🎉</div>
+              <div style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: '800', marginBottom: '0.75rem' }}>
                 Fantastic! You learned all our classroom rules! 🎉
               </div>
-              <div style={{ fontSize: 'clamp(1.2rem, 3vw, 1.8rem)', marginTop: '1rem' }}>
+              <div style={{ fontSize: 'clamp(1.2rem, 3vw, 1.8rem)', marginTop: '0.75rem' }}>
                 You're ready to have an amazing day! ⭐
               </div>
               <div style={{ 
                 fontSize: '1rem', 
-                marginTop: '2rem',
+                marginTop: '1.5rem',
                 opacity: 0.9,
                 fontStyle: 'italic'
               }}>
@@ -603,16 +608,17 @@ const ClassroomRulesStep: React.FC<MorningMeetingStepProps> = ({
               </div>
             </div>
           ) : (
-            /* No rules configured */
+            /* No rules configured - FIXED: Better sizing and positioning */
             <div style={{
               textAlign: 'center',
               background: 'rgba(255, 255, 255, 0.9)',
               color: '#333333',
-              padding: '3rem',
+              padding: '2.5rem', // Reduced from '3rem'
               borderRadius: '30px',
-              border: '4px solid rgba(255, 215, 0, 0.8)'
+              border: '4px solid rgba(255, 215, 0, 0.8)',
+              margin: 'auto' // Center the no-rules box
             }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📝</div>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
               <div style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem' }}>
                 No Classroom Rules Configured
               </div>

@@ -267,8 +267,8 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
           {/* Current Task Title */}
           <h2 style={styles.taskTitle}>{steps[currentStep]?.question}</h2>
           
-          {/* Main Task Content - Scrollable */}
-          <div style={styles.mainTaskContent} className="calendar-tasks-container">
+          {/* Main Task Content */}
+          <div style={styles.mainTaskContent}>
             {renderMainContent()}
           </div>
           
@@ -286,15 +286,23 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
           </div>
         </div>
         
-        {/* Right Column - Progress Sidebar */}
+        {/* FIXED: Right Column - Progress Sidebar WITHOUT scrollbar */}
         <div style={styles.rightColumn}>
           <div style={styles.progressSidebar}>
             <h3 style={styles.progressTitle}>Progress</h3>
             <div style={styles.progressList}>
               {steps.map((s, index) => (
-                <div key={s.id} onClick={() => setCurrentStep(index)} style={{ ...styles.progressItem, ...(currentStep === index ? styles.progressItemActive : {}), ...(completedSteps.has(index) ? styles.progressItemCompleted : {}) }}>
-                  <span style={styles.progressCheck}>{completedSteps.has(index) ? '✅' : '➡️'}</span>
-                  <div style={styles.progressText}>
+                <div key={s.id} onClick={() => setCurrentStep(index)} style={{ 
+                  ...styles.progressItem, 
+                  ...(currentStep === index ? styles.progressItemActive : {}), 
+                  ...(completedSteps.has(index) ? styles.progressItemCompleted : {}) 
+                }}>
+                  {/* FIXED: Use strikethrough instead of checkmarks */}
+                  <span style={styles.progressCheck}>{completedSteps.has(index) ? '➡️' : '➡️'}</span>
+                  <div style={{
+                    ...styles.progressText,
+                    ...(completedSteps.has(index) ? { textDecoration: 'line-through', opacity: 0.7 } : {})
+                  }}>
                     {s.question}
                     <div style={styles.standardText}>Standard: {s.standard}</div>
                   </div>
@@ -333,36 +341,12 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
        <style>{`
          .pop-in { animation: popIn 0.5s ease-out forwards; } 
          @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-         
-         /* Smooth scrolling for calendar tasks */
-         .calendar-tasks-container {
-           scrollbar-width: thin;
-           scrollbar-color: rgba(255,255,255,0.3) transparent;
-         }
-         
-         .calendar-tasks-container::-webkit-scrollbar {
-           width: 8px;
-         }
-         
-         .calendar-tasks-container::-webkit-scrollbar-track {
-           background: rgba(255,255,255,0.1);
-           border-radius: 10px;
-         }
-         
-         .calendar-tasks-container::-webkit-scrollbar-thumb {
-           background: rgba(255,255,255,0.3);
-           border-radius: 10px;
-         }
-         
-         .calendar-tasks-container::-webkit-scrollbar-thumb:hover {
-           background: rgba(255,255,255,0.5);
-         }
        `}</style>
     </div>
   );
 };
 
-// Fixed styles for proper two-column layout
+// FIXED styles for proper two-column layout without scrollbars
 const styles: { [key: string]: React.CSSProperties } = {
     // Main container with proper padding
     pageContainer: { 
@@ -440,12 +424,12 @@ const styles: { [key: string]: React.CSSProperties } = {
         marginBottom: '1.5rem' 
     },
     
-    // Main task content area - scrollable
+    // Main task content area
     mainTaskContent: { 
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column', 
-        overflowY: 'visible',
+        overflowY: 'visible', // FIXED: No longer auto to prevent scrollbars
         paddingRight: '0',
         marginRight: '0',
         gap: '1.5rem',
@@ -454,7 +438,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         justifyContent: 'center'
     },
     
-    // Progress sidebar
+    // FIXED: Progress sidebar without scrollbar
     progressSidebar: { 
         background: 'rgba(255, 255, 255, 0.15)', 
         backdropFilter: 'blur(15px)', 
@@ -463,8 +447,8 @@ const styles: { [key: string]: React.CSSProperties } = {
         border: '2px solid rgba(255, 255, 255, 0.2)', 
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)', 
         height: 'fit-content',
-        maxHeight: '600px',
-        overflowY: 'auto'
+        maxHeight: 'none', // FIXED: Remove height constraint
+        overflowY: 'visible' // FIXED: Remove scrollbar
     },
     progressTitle: { 
         fontSize: '1.3rem', 
@@ -496,9 +480,10 @@ const styles: { [key: string]: React.CSSProperties } = {
         fontWeight: 600,
         transform: 'scale(1.02)'
     },
+    // FIXED: Strikethrough styling for completed items instead of background color
     progressItemCompleted: { 
-        opacity: 1, 
-        background: 'rgba(40, 167, 69, 0.3)'
+        opacity: 0.7, 
+        background: 'rgba(255, 255, 255, 0.05)' // Subtle background instead of green
     },
     progressCheck: { 
         marginRight: '0.75rem', 
@@ -728,7 +713,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         background: 'rgba(255, 160, 122, 0.7)' 
     },
     
-    // New timeline section styles
+    // Timeline section styles
     timelineSection: {
         display: 'flex',
         flexDirection: 'column',
