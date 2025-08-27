@@ -257,7 +257,6 @@ class UnifiedDataService {
       attendance: [],
       calendar: {
         behaviorCommitments: [],
-        dailyHighlights: [],
         independentChoices: []
       },
       settings: {},

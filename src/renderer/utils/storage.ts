@@ -177,8 +177,7 @@ export const exportAllVSBData = (): string => {
       'vsb_settings',
       'choiceRotationHistory',
       'choiceAnalytics',
-      'behaviorCommitments',
-      'dailyHighlights'
+      'behaviorCommitments'
     ];
     
     vsbKeys.forEach(key => {

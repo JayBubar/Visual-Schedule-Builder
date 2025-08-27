@@ -494,7 +494,6 @@ export interface CalendarSettings {
   weatherLocation: string;
   showBehaviorCommitments: boolean;
   showIndependentChoices: boolean;
-  showDailyHighlights: boolean;
   enableSoundEffects: boolean;
   autoSaveInterval: number;
   defaultView: 'dashboard' | 'commitments' | 'choices' | 'highlights' | 'day';
