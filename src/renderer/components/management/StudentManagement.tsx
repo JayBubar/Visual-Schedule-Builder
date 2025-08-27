@@ -587,8 +587,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   studentGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-    gap: '1.5rem'
+    gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 450px))',
+    gap: '1.5rem',
+    justifyContent: 'start'
   },
   modalOverlay: {
     position: 'fixed',
