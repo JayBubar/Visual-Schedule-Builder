@@ -173,8 +173,20 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
                             dayStyle = {...dayStyle, ...styles.calendarDayToday};
                         }
                         if (step.id === 'calendar-patterns') {
-                            if (day.getDate() % 2 === 0) dayStyle = {...dayStyle, ...styles.patternA};
-                            else dayStyle = {...dayStyle, ...styles.patternB};
+                            // Calculate which week this day is in (0-based)
+                            const dayOfMonth = day.getDate();
+                            const firstDayOfWeek = firstDayOfMonth;
+                            const weekNumber = Math.floor((dayOfMonth - 1 + firstDayOfWeek) / 7);
+                            
+                            if (weekNumber % 2 === 0) {
+                                dayStyle = {...dayStyle, ...styles.patternA};
+                                // Remove any conflicting background properties
+                                delete dayStyle.backgroundColor;
+                            } else {
+                                dayStyle = {...dayStyle, ...styles.patternB};
+                                // Remove any conflicting background properties
+                                delete dayStyle.backgroundColor;
+                            }
                         }
                         return (
                             <div key={day.toISOString()} style={dayStyle}>
@@ -475,7 +487,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         background: 'rgba(255, 255, 255, 0.1)'
     },
     progressItemActive: { 
-        backgroundColor: 'rgba(255, 255, 255, 0.25)', 
+        background: 'rgba(255, 255, 255, 0.25)', 
         opacity: 1, 
         fontWeight: 600,
         transform: 'scale(1.02)'
