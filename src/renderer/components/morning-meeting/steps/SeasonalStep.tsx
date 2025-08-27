@@ -185,17 +185,23 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
         return (
           <>
             <h2 style={styles.rightPanelTitle}>{step.question}</h2>
-            <div style={styles.mysteryBox}>
+            <div style={styles.seasonRevealContainer}>
               {!revealedSeason ? (
                 <>
-                  <div style={{ fontSize: '6rem' }}>❓</div>
-                  <button onClick={handleRevealSeason} style={styles.actionButton}>Reveal the Season!</button>
+                  <div style={styles.mysterySeasonBox}>
+                    <div style={styles.mysteryEmoji}>❓</div>
+                    <p style={styles.mysteryText}>What season is it?</p>
+                  </div>
+                  <button onClick={handleRevealSeason} style={styles.seasonActionButton}>
+                    🔍 Reveal the Season!
+                  </button>
                 </>
               ) : (
-                <>
-                  <div style={{ fontSize: '6rem' }}>{currentSeasonData.emoji}</div>
-                  <h3 style={{ fontSize: '3rem', margin: 0, color: 'white' }}>{currentSeasonData.name}</h3>
-                </>
+                <div style={styles.revealedSeasonBox} className="season-reveal-animation">
+                  <div style={styles.seasonEmoji}>{currentSeasonData.emoji}</div>
+                  <h3 style={styles.seasonName}>{currentSeasonData.name}</h3>
+                  <p style={styles.seasonDescription}>{currentSeasonData.description}</p>
+                </div>
               )}
             </div>
           </>
@@ -260,6 +266,25 @@ const SeasonalStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubSetti
           20%, 80% { transform: translate3d(2px, 0, 0); }
           30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
           40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        .season-reveal-animation {
+          animation: seasonReveal 1s ease-out;
+        }
+
+        @keyframes seasonReveal {
+          0% { 
+            transform: scale(0.5) rotate(-10deg);
+            opacity: 0;
+          }
+          50% { 
+            transform: scale(1.2) rotate(5deg);
+            opacity: 0.8;
+          }
+          100% { 
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
         }
       `}</style>
     </div>
@@ -528,6 +553,65 @@ const styles: { [key: string]: React.CSSProperties } = {
         borderRadius: '12px', 
         cursor: 'pointer', 
         fontWeight: 600 
+    },
+    seasonRevealContainer: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+        gap: '2rem'
+    },
+    mysterySeasonBox: {
+        background: 'rgba(0,0,0,0.2)',
+        borderRadius: '20px',
+        padding: '3rem',
+        textAlign: 'center',
+        width: '400px'
+    },
+    mysteryEmoji: {
+        fontSize: '8rem',
+        marginBottom: '1rem'
+    },
+    mysteryText: {
+        fontSize: '1.5rem',
+        color: 'white',
+        margin: 0
+    },
+    seasonActionButton: {
+        padding: '1rem 2rem',
+        fontSize: '1.2rem',
+        background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        fontWeight: 600
+    },
+    revealedSeasonBox: {
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1))',
+        borderRadius: '20px',
+        padding: '4rem',
+        textAlign: 'center',
+        width: '500px',
+        border: '3px solid rgba(255,255,255,0.3)'
+    },
+    seasonEmoji: {
+        fontSize: '10rem',
+        marginBottom: '1rem',
+        filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))'
+    },
+    seasonName: {
+        fontSize: '4rem',
+        fontWeight: 'bold',
+        margin: '1rem 0',
+        color: 'white'
+    },
+    seasonDescription: {
+        fontSize: '1.5rem',
+        color: 'white',
+        opacity: 0.9,
+        margin: 0
     }
 };
 

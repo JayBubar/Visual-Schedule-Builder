@@ -96,6 +96,11 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
   const handleInternalNext = () => { if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1); };
   const handleInternalBack = () => { if (currentStep > 0) setCurrentStep(currentStep - 1); };
 
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"], v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
   const isStepTaskComplete = useCallback(() => {
     const step = steps[currentStep];
     if (!step) return false;
@@ -192,27 +197,51 @@ const CalendarMathStep: React.FC<MorningMeetingStepProps> = ({ currentDate, hubS
             );
         case 'name-today-yesterday-tomorrow':
             return (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                <div style={styles.timelineSection}>
+                    {/* Single month header */}
+                    <h3 style={styles.monthHeader}>
+                        {monthNames[today.getMonth()]} {today.getFullYear()}
+                    </h3>
+                    
+                    {/* Three date boxes */}
                     <div style={styles.timelineContainer}>
                         <div style={{...styles.timelineBox, ...(yesterdayRevealed ? styles.timelineBoxRevealed : {})}}>
                             <div style={styles.timelineLabel}>Yesterday</div>
-                            {yesterdayRevealed ? dayNames[yesterday.getDay()] : '❓'}
+                            <div style={styles.dateNumber}>
+                                {yesterdayRevealed ? `${yesterday.getDate()}${getOrdinalSuffix(yesterday.getDate())}` : '?'}
+                            </div>
+                            {yesterdayRevealed && <div style={styles.dayName}>{dayNames[yesterday.getDay()]}</div>}
                         </div>
+                        
                         <div style={{...styles.timelineBox, ...styles.timelineBoxToday}}>
                             <div style={styles.timelineLabel}>Today</div>
-                            {dayNames[today.getDay()]}
+                            <div style={styles.dateNumber}>
+                                {today.getDate()}{getOrdinalSuffix(today.getDate())}
+                            </div>
+                            <div style={styles.dayName}>{dayNames[today.getDay()]}</div>
                         </div>
+                        
                         <div style={{...styles.timelineBox, ...(tomorrowRevealed ? styles.timelineBoxRevealed : {})}}>
-                             <div style={styles.timelineLabel}>Tomorrow</div>
-                            {tomorrowRevealed ? dayNames[tomorrow.getDay()] : '❓'}
+                            <div style={styles.timelineLabel}>Tomorrow</div>
+                            <div style={styles.dateNumber}>
+                                {tomorrowRevealed ? `${tomorrow.getDate()}${getOrdinalSuffix(tomorrow.getDate())}` : '?'}
+                            </div>
+                            {tomorrowRevealed && <div style={styles.dayName}>{dayNames[tomorrow.getDay()]}</div>}
                         </div>
                     </div>
-                     {!tomorrowRevealed && (
-                        <button style={styles.actionButton} onClick={() => {
-                            setYesterdayRevealed(true);
-                            setTomorrowRevealed(true);
-                            markStepComplete(4, "Awesome!");
-                        }}>🔍 Reveal All</button>
+                    
+                    {/* Reveal button - positioned bottom right */}
+                    {!tomorrowRevealed && (
+                        <button 
+                            style={styles.revealButton} 
+                            onClick={() => {
+                                setYesterdayRevealed(true);
+                                setTomorrowRevealed(true);
+                                markStepComplete(4, "Awesome!");
+                            }}
+                        >
+                            Reveal All
+                        </button>
                     )}
                 </div>
             );
@@ -416,9 +445,9 @@ const styles: { [key: string]: React.CSSProperties } = {
         flex: 1, 
         display: 'flex', 
         flexDirection: 'column', 
-        overflowY: 'auto',
-        paddingRight: '1rem',
-        marginRight: '-1rem',
+        overflowY: 'visible',
+        paddingRight: '0',
+        marginRight: '0',
         gap: '1.5rem',
         minHeight: '0',
         alignItems: 'center',
@@ -434,7 +463,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         border: '2px solid rgba(255, 255, 255, 0.2)', 
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)', 
         height: 'fit-content',
-        maxHeight: '500px',
+        maxHeight: '600px',
         overflowY: 'auto'
     },
     progressTitle: { 
@@ -552,16 +581,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     gridContainerMonths: { 
         display: 'grid', 
         gridTemplateColumns: 'repeat(4, 1fr)', 
-        gap: '1rem', 
+        gap: '0.8rem', 
         width: '100%', 
-        maxWidth: '800px'
+        maxWidth: '700px'
     },
     card: { 
         position: 'relative', 
         background: 'rgba(255, 255, 255, 0.8)', 
         border: '1px solid rgba(255, 255, 255, 0.5)', 
         borderRadius: '16px', 
-        padding: '1rem', 
+        padding: '0.8rem', 
         textAlign: 'center', 
         cursor: 'pointer', 
         transition: 'all 0.2s ease-in-out', 
@@ -582,7 +611,7 @@ const styles: { [key: string]: React.CSSProperties } = {
         color: 'rgba(0,0,0,0.2)' 
     },
     cardEmoji: { 
-        fontSize: '2.5rem' 
+        fontSize: '2rem' 
     },
     cardTitle: { 
         fontSize: '1.2rem', 
@@ -697,6 +726,52 @@ const styles: { [key: string]: React.CSSProperties } = {
     }, 
     patternB: { 
         background: 'rgba(255, 160, 122, 0.7)' 
+    },
+    
+    // New timeline section styles
+    timelineSection: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: '100%',
+        flex: 1,
+        justifyContent: 'center',
+        position: 'relative'
+    },
+    
+    monthHeader: {
+        fontSize: '2rem',
+        fontWeight: 700,
+        color: 'white',
+        textAlign: 'center',
+        marginBottom: '2rem',
+        textShadow: '0 2px 5px rgba(0,0,0,0.3)'
+    },
+    
+    dateNumber: {
+        fontSize: '3rem',
+        fontWeight: 'bold',
+        marginBottom: '0.5rem'
+    },
+    
+    dayName: {
+        fontSize: '1.5rem',
+        fontWeight: 500
+    },
+    
+    revealButton: {
+        position: 'absolute',
+        bottom: '1rem',
+        right: '2rem',
+        padding: '0.8rem 1.5rem',
+        fontSize: '1rem',
+        background: 'linear-gradient(45deg, #ffc107 0%, #ff8008 100%)',
+        color: 'white',
+        border: 'none',
+        borderRadius: '12px',
+        cursor: 'pointer',
+        fontWeight: 600,
+        boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
     },
     
     // Celebration and video button

@@ -127,22 +127,24 @@ const WeatherStep: React.FC<MorningMeetingStepProps> = ({ currentDate = new Date
                 }, {} as Record<WeatherType, number>);
 
                 const maxCount = Math.max(...Object.values(counts), 1);
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57'];
 
                 return (
                     <>
                         <h2 style={styles.rightPanelTitle}>{step.question}</h2>
-                        <div style={styles.graphContainer}>
-                           {WEATHER_OPTIONS.map(opt => {
-                               const count = counts[opt.type] || 0;
-                               const height = `${(count / maxCount) * 100}%`;
-                               return (
-                                   <div key={opt.type} style={styles.barWrapper}>
-                                       <div style={styles.barCount}>{count}</div>
-                                       <div style={{...styles.bar, height}} />
-                                       <div style={styles.barLabel}>{opt.emoji}</div>
-                                   </div>
-                               );
-                           })}
+                        <div style={styles.enhancedGraphContainer}>
+                            {WEATHER_OPTIONS.map((opt, index) => {
+                                const count = counts[opt.type] || 0;
+                                const height = `${(count / maxCount) * 100}%`;
+                                return (
+                                    <div key={opt.type} style={styles.enhancedBarWrapper}>
+                                        <div style={styles.barCount}>{count}</div>
+                                        <div style={{...styles.enhancedBar, height, backgroundColor: colors[index]}} />
+                                        <div style={{...styles.colorSquare, backgroundColor: colors[index]}} />
+                                        <div style={styles.barLabel}>{opt.emoji}</div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </>
                 );

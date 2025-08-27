@@ -70,6 +70,40 @@ export const styles: { [key: string]: React.CSSProperties } = {
     bar: { width: '60%', background: 'linear-gradient(to top, #a1c4fd, #c2e9fb)', borderRadius: '8px 8px 0 0', transition: 'height 0.5s ease-out' },
     barLabel: { marginTop: '0.5rem', fontSize: '2rem' },
     barCount: { color: 'white', fontWeight: 'bold', fontSize: '1.5rem', marginBottom: '0.5rem' },
+    
+    // Enhanced Bar Graph Styles
+    enhancedGraphContainer: {
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'flex-end',
+        width: '100%',
+        height: '400px',
+        background: 'rgba(0,0,0,0.1)',
+        borderRadius: '16px',
+        padding: '2rem'
+    },
+    
+    enhancedBarWrapper: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        flex: 1,
+        gap: '0.5rem'
+    },
+    
+    enhancedBar: {
+        width: '80%',
+        borderRadius: '8px 8px 0 0',
+        transition: 'height 0.5s ease-out',
+        minHeight: '20px'
+    },
+    
+    colorSquare: {
+        width: '20px',
+        height: '20px',
+        borderRadius: '4px',
+        border: '2px solid white'
+    },
     internalNavBar: { 
         position: 'absolute', 
         bottom: '2rem',
