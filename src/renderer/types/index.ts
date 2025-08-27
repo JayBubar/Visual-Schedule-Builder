@@ -1006,7 +1006,7 @@ export interface HubSettings {
 
 // Add this to the bottom of src/renderer/types.ts
 
-export type WeatherType = 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+export type WeatherType = 'sunny' | 'cloudy' | 'partly-cloudy' | 'rainy' | 'windy' | 'snowy';
 
 export interface WeatherHistory {
   [date: string]: WeatherType;

@@ -2203,13 +2203,13 @@ class UnifiedDataService {
         if (!unifiedData.settings.weatherHistory) {
           unifiedData.settings.weatherHistory = {};
         }
-        unifiedData.settings.weatherHistory[date] = weather as 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+        unifiedData.settings.weatherHistory[date] = weather as 'sunny' | 'cloudy' | 'partly-cloudy' | 'rainy' | 'windy' | 'snowy';
         this.saveUnifiedData(unifiedData);
       }
       
       // Also save to direct localStorage for backward compatibility
       const currentWeatherHistory = this.getWeatherHistory();
-      currentWeatherHistory[date] = weather as 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy';
+      currentWeatherHistory[date] = weather as 'sunny' | 'cloudy' | 'partly-cloudy' | 'rainy' | 'windy' | 'snowy';
       localStorage.setItem('weatherHistory', JSON.stringify(currentWeatherHistory));
       
       console.log(`🌤️ Weather saved for ${date}: ${weather}`);
@@ -2219,13 +2219,13 @@ class UnifiedDataService {
   }
 
   // Method to get weather for a specific date
-  static getWeatherForDate(date: string): 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy' | null {
+  static getWeatherForDate(date: string): 'sunny' | 'cloudy' | 'partly-cloudy' | 'rainy' | 'windy' | 'snowy' | null {
     const weatherHistory = this.getWeatherHistory();
     return weatherHistory[date] || null;
   }
 
   // Method to get weather for today
-  static getTodayWeather(): 'sunny' | 'cloudy' | 'rainy' | 'windy' | 'snowy' | null {
+  static getTodayWeather(): 'sunny' | 'cloudy' | 'partly-cloudy' | 'rainy' | 'windy' | 'snowy' | null {
     const today = new Date().toISOString().split('T')[0];
     return this.getWeatherForDate(today);
   }
