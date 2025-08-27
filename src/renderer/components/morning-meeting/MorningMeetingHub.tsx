@@ -245,7 +245,7 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
   onStartMorningMeeting,
   onClose
 }) => {
-  const [activeSection, setActiveSection] = useState<'welcome' | 'vocabulary' | 'videos' | 'classroomRules' | 'behaviorCommitments' | 'announcements' | 'celebrations' | 'flow'>('welcome');
+  const [activeSection, setActiveSection] = useState<'welcome' | 'videos' | 'classroomRules' | 'behaviorCommitments' | 'announcements' | 'celebrations' | 'flow'>('welcome');
   const [settings, setSettings] = useState<HubSettings>(DEFAULT_HUB_SETTINGS);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCelebrationsModal, setShowCelebrationsModal] = useState(false);
@@ -468,7 +468,6 @@ const MorningMeetingHub: React.FC<MorningMeetingHubProps> = ({
 
   const hubSections = [
     { id: 'welcome', name: 'Welcome', icon: '👋', description: 'Personalize your classroom greeting' },
-    { id: 'vocabulary', name: 'Vocabulary', icon: '📚', description: 'Customize learning words' },
     { id: 'videos', name: 'Videos', icon: '🎥', description: 'Select educational videos' },
     { id: 'classroomRules', name: 'Classroom Rules', icon: '⭐', description: 'Manage classroom expectations' },
     { id: 'behaviorCommitments', name: 'Behavior Goals', icon: '🎯', description: 'Manage "I will..." statements' },
