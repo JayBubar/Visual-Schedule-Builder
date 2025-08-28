@@ -163,6 +163,15 @@ export interface BehaviorCommitment {
   notes?: string;
 }
 
+// Additional behavior commitment interface for new methods
+interface BehaviorCommitmentData {
+  studentId: string;
+  text: string;
+  achieved: boolean;
+  achievedAt: string | null;
+  category?: string;
+}
+
 
 export interface IndependentChoice {
   id: string;
@@ -2338,6 +2347,167 @@ class UnifiedDataService {
     } catch (error) {
       console.error('Error saving standards for date:', error);
     }
+  }
+
+  // ===== BEHAVIOR COMMITMENT METHODS =====
+  
+  // Get behavior commitments for a specific date
+  static getBehaviorCommitmentsForDate(date: string): BehaviorCommitmentData[] {
+    try {
+      const behaviorData = localStorage.getItem('behaviorCommitments');
+      if (!behaviorData) return [];
+      
+      const data = JSON.parse(behaviorData);
+      return data[date] || [];
+    } catch (error) {
+      console.error('Error getting behavior commitments:', error);
+      return [];
+    }
+  }
+
+  // Get behavior commitment for a specific student on a specific date
+  static getBehaviorCommitmentForStudent(studentId: string, date: string): BehaviorCommitmentData | null {
+    try {
+      const commitments = this.getBehaviorCommitmentsForDate(date);
+      return commitments.find((c: BehaviorCommitmentData) => c.studentId === studentId) || null;
+    } catch (error) {
+      console.error('Error getting behavior commitment for student:', error);
+      return null;
+    }
+  }
+
+  // Update behavior achievement status for a student
+  static updateBehaviorAchievement(studentId: string, date: string, achieved: boolean): boolean {
+    try {
+      const behaviorData = localStorage.getItem('behaviorCommitments') || '{}';
+      const data = JSON.parse(behaviorData);
+      
+      if (!data[date]) data[date] = [];
+      
+      const existingIndex = data[date].findIndex((c: BehaviorCommitmentData) => c.studentId === studentId);
+      
+      if (existingIndex >= 0) {
+        data[date][existingIndex].achieved = achieved;
+        data[date][existingIndex].achievedAt = achieved ? new Date().toISOString() : null;
+      } else {
+        console.warn('No behavior commitment found for student:', studentId);
+        return false;
+      }
+      
+      localStorage.setItem('behaviorCommitments', JSON.stringify(data));
+      console.log('✅ Updated behavior achievement for', studentId);
+      return true;
+      
+    } catch (error) {
+      console.error('Error updating behavior achievement:', error);
+      return false;
+    }
+  }
+
+  // Save behavior commitment for a student
+  static saveBehaviorCommitment(studentId: string, date: string, commitment: string, category?: string): boolean {
+    try {
+      const behaviorData = localStorage.getItem('behaviorCommitments') || '{}';
+      const data = JSON.parse(behaviorData);
+      
+      if (!data[date]) data[date] = [];
+      
+      const existingIndex = data[date].findIndex((c: BehaviorCommitmentData) => c.studentId === studentId);
+      
+      const commitmentData: BehaviorCommitmentData = {
+        studentId,
+        text: commitment,
+        achieved: false,
+        achievedAt: null,
+        category: category || 'general'
+      };
+      
+      if (existingIndex >= 0) {
+        data[date][existingIndex] = { ...data[date][existingIndex], ...commitmentData };
+      } else {
+        data[date].push(commitmentData);
+      }
+      
+      localStorage.setItem('behaviorCommitments', JSON.stringify(data));
+      console.log('✅ Saved behavior commitment for', studentId);
+      return true;
+      
+    } catch (error) {
+      console.error('Error saving behavior commitment:', error);
+      return false;
+    }
+  }
+
+  // ===== MIGRATION UTILITY =====
+  
+  // Migration utility - run this ONCE to migrate old data
+  static migrateDailyCheckInsData(): { success: boolean; migratedCount: number; errors: string[] } {
+    const result = {
+      success: false,
+      migratedCount: 0,
+      errors: [] as string[]
+    };
+    
+    try {
+      console.log('🔄 Starting dailyCheckIns data migration...');
+      
+      const oldData = localStorage.getItem('dailyCheckIns');
+      if (!oldData) {
+        result.errors.push('No dailyCheckIns data found to migrate');
+        return result;
+      }
+      
+      const checkIns = JSON.parse(oldData);
+      const behaviorData: { [date: string]: BehaviorCommitmentData[] } = {};
+      
+      checkIns.forEach((checkIn: any) => {
+        const date = checkIn.date;
+        
+        // Migrate attendance data
+        if (checkIn.attendance && Array.isArray(checkIn.attendance)) {
+          checkIn.attendance.forEach((record: any) => {
+            try {
+              this.updateStudentAttendance(record.studentId, date, record.isPresent, record.notes || '');
+            } catch (error) {
+              result.errors.push(`Failed to migrate attendance for ${record.studentId}: ${error}`);
+            }
+          });
+        }
+        
+        // Migrate behavior commitments
+        if (checkIn.behaviorCommitments && Array.isArray(checkIn.behaviorCommitments)) {
+          behaviorData[date] = checkIn.behaviorCommitments.map((commitment: any) => ({
+            studentId: commitment.studentId,
+            text: commitment.commitment || commitment.text || 'Migrated commitment',
+            achieved: commitment.achieved || false,
+            achievedAt: commitment.achievedAt || null,
+            category: commitment.category || 'general'
+          }));
+          
+          result.migratedCount += checkIn.behaviorCommitments.length;
+        }
+      });
+      
+      // Save migrated behavior data
+      localStorage.setItem('behaviorCommitments', JSON.stringify(behaviorData));
+      
+      // Create backup of old data
+      localStorage.setItem('dailyCheckIns_backup_' + Date.now(), oldData);
+      
+      // Remove old data after successful migration
+      localStorage.removeItem('dailyCheckIns');
+      
+      result.success = true;
+      console.log('✅ Migration completed successfully');
+      console.log(`📦 Migrated ${result.migratedCount} behavior commitments`);
+      
+    } catch (error) {
+      result.success = false;
+      result.errors.push(`Migration failed: ${error}`);
+      console.error('❌ Migration failed:', error);
+    }
+    
+    return result;
   }
 }
 

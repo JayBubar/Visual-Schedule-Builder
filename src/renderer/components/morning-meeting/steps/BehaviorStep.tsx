@@ -129,6 +129,22 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
     setSelectedStudent(student.id);
   };
 
+  // Save behavior commitments to UnifiedDataService
+  const saveBehaviorCommitments = (commitments: { studentId: string; commitment: string; category?: string }[]) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      commitments.forEach(({ studentId, commitment, category }) => {
+        UnifiedDataService.saveBehaviorCommitment(studentId, today, commitment, category);
+      });
+      
+      console.log('✅ Behavior commitments saved successfully');
+      
+    } catch (error) {
+      console.error('❌ Error saving behavior commitments:', error);
+    }
+  };
+
   const handleCommitmentSelect = (commitment: BehaviorCommitment) => {
     if (!selectedStudent) return;
 
@@ -155,8 +171,16 @@ const BehaviorStep: React.FC<BehaviorStepProps> = ({ onNext, onBack, onHome, onS
     setAnimatingCard(selectedStudent);
     setTimeout(() => setAnimatingCard(null), 800);
     
+    // Save to localStorage for backward compatibility
     const todayKey = currentDate.toDateString();
     localStorage.setItem(`behaviorChoices_${todayKey}`, JSON.stringify(newChoices));
+    
+    // Save to UnifiedDataService
+    saveBehaviorCommitments([{
+      studentId: selectedStudent,
+      commitment: commitment.text,
+      category: 'morning-meeting'
+    }]);
     
     setSelectedStudent(null);
 

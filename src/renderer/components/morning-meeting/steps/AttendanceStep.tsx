@@ -104,6 +104,30 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
   // Get teacher name from hub settings
   const teacherName = hubSettings?.welcomePersonalization?.teacherName || 'Teacher';
 
+  // Save attendance data to UnifiedDataService
+  const saveAttendanceData = (absentStudents: string[], presentStudents: string[]) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      console.log('🔄 Saving attendance data via UnifiedDataService...');
+      
+      // Save absent students
+      absentStudents.forEach(studentId => {
+        UnifiedDataService.updateStudentAttendance(studentId, today, false, 'Marked absent in Morning Meeting');
+      });
+      
+      // Save present students  
+      presentStudents.forEach(studentId => {
+        UnifiedDataService.updateStudentAttendance(studentId, today, true, 'Marked present in Morning Meeting');
+      });
+      
+      console.log('✅ Attendance data saved successfully');
+      
+    } catch (error) {
+      console.error('❌ Error saving attendance data:', error);
+    }
+  };
+
   // 🔧 FIX: Use useCallback to memoize the data update function
   const handleDataUpdate = useCallback(() => {
     // Only update when we have meaningful attendance data
@@ -119,6 +143,9 @@ const AttendanceStep: React.FC<MorningMeetingStepProps> = ({
       
       console.log('📤 Updating step data:', stepDataUpdate);
       onDataUpdate?.(stepDataUpdate);
+      
+      // Save attendance data to UnifiedDataService
+      saveAttendanceData(absentStudents, presentStudents);
     }
   }, [presentStudents, absentStudents, totalCount, presentCount, absentCount, isComplete, onDataUpdate]);
 

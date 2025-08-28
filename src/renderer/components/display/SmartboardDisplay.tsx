@@ -71,31 +71,30 @@ const VideoButton: React.FC<VideoButtonProps> = ({ label, videoUrl, icon, color 
 // Replace the entire getTodaysBehaviorCommitments function:
 const getTodaysBehaviorCommitments = (): { [studentId: string]: any } => {
   try {
-    const today = new Date().toDateString();
-    const behaviorChoices = localStorage.getItem(`behaviorChoices_${today}`);
+    const today = new Date().toISOString().split('T')[0];
     
-    if (behaviorChoices) {
-      const choices = JSON.parse(behaviorChoices);
-      const commitments: { [studentId: string]: any } = {};
-      
-      // Convert BehaviorStep format to SmartBoard expected format
-      Object.values(choices).forEach((choice: any) => {
-        commitments[choice.studentId] = {
-          commitment: choice.commitmentText,
-          achieved: false, // Default to false, can be toggled
-          achievedAt: null,
-          studentName: choice.studentName
+    // Use UnifiedDataService instead of localStorage
+    const behaviorData = UnifiedDataService.getBehaviorCommitmentsForDate(today);
+    
+    const commitments: { [studentId: string]: any } = {};
+    
+    if (behaviorData && behaviorData.length > 0) {
+      behaviorData.forEach((commitment) => {
+        commitments[commitment.studentId] = {
+          commitment: commitment.text,
+          achieved: commitment.achieved || false,
+          achievedAt: commitment.achievedAt || null,
+          category: commitment.category || 'general'
         };
       });
-      
-      console.log('📊 Loaded behavior commitments from new format:', commitments);
-      return commitments;
+      console.log('📊 Found behavior commitments for today:', commitments);
+    } else {
+      console.log('ℹ️ No behavior commitments found for today');
     }
     
-    console.log('ℹ️ No behavior choices found for today');
-    return {};
+    return commitments;
   } catch (error) {
-    console.error('Error loading behavior commitments:', error);
+    console.error('❌ Error loading behavior commitments:', error);
     return {};
   }
 };
@@ -110,9 +109,20 @@ const WholeClassAchievementBadge: React.FC<{ studentId: string }> = ({ studentId
   const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
-    // Achievement functionality has been moved to Morning Meeting
-    // This is a placeholder to maintain component structure
-    setIsAchieved(false);
+    const checkAchievement = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const commitment = UnifiedDataService.getBehaviorCommitmentForStudent(studentId, today);
+        setIsAchieved(commitment?.achieved || false);
+      } catch (error) {
+        console.error('Error checking achievement:', error);
+        setIsAchieved(false);
+      }
+    };
+
+    checkAchievement();
+    const interval = setInterval(checkAchievement, 30000);
+    return () => clearInterval(interval);
   }, [studentId]);
 
   if (!isAchieved) return null;
@@ -145,16 +155,60 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
   const [isAchieved, setIsAchieved] = useState(false);
 
   useEffect(() => {
-    // Behavior commitment functionality has been moved to Morning Meeting
-    // This is a placeholder to maintain component structure
-    setBehaviorCommitment('');
-    setIsAchieved(false);
+    const getTodaysCommitment = () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Get behavior commitment from UnifiedDataService
+        const commitment = UnifiedDataService.getBehaviorCommitmentForStudent(student.id, today);
+        
+        if (commitment) {
+          setBehaviorCommitment(commitment.text);
+          setIsAchieved(commitment.achieved || false);
+        } else {
+          setBehaviorCommitment('');
+          setIsAchieved(false);
+        }
+        
+      } catch (error) {
+        console.error('Error loading behavior commitment:', error);
+        setBehaviorCommitment('');
+        setIsAchieved(false);
+      }
+    };
+    
+    getTodaysCommitment();
   }, [student.id]);
 
   // Toggle achievement function - placeholder
   const toggleStudentAchievement = (studentId: string) => {
-    // Achievement functionality has been moved to Morning Meeting
-    console.log('Achievement functionality has been moved to Morning Meeting');
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get current commitment from UnifiedDataService
+      const currentCommitment = UnifiedDataService.getBehaviorCommitmentForStudent(studentId, today);
+      
+      if (currentCommitment) {
+        // Toggle the achievement status
+        const newAchievedStatus = !currentCommitment.achieved;
+        
+        // Update via UnifiedDataService
+        const success = UnifiedDataService.updateBehaviorAchievement(studentId, today, newAchievedStatus);
+        
+        if (success) {
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+          
+          // Note: This is a placeholder - actual state update would need to be handled by parent component
+          console.log('Achievement status updated successfully');
+        } else {
+          console.error('Failed to update behavior achievement');
+        }
+      } else {
+        console.log('No behavior commitment found for student:', studentId);
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
   };
 
   return (
@@ -357,8 +411,33 @@ const WholeClassDisplay: React.FC<{
   }, []);
 
   const toggleStudentAchievement = (studentId: string) => {
-    // Achievement functionality has been moved to Morning Meeting
-    console.log('Achievement functionality has been moved to Morning Meeting');
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get current commitment from UnifiedDataService
+      const currentCommitment = UnifiedDataService.getBehaviorCommitmentForStudent(studentId, today);
+      
+      if (currentCommitment) {
+        // Toggle the achievement status
+        const newAchievedStatus = !currentCommitment.achieved;
+        
+        // Update via UnifiedDataService
+        const success = UnifiedDataService.updateBehaviorAchievement(studentId, today, newAchievedStatus);
+        
+        if (success) {
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+          
+          // Force a re-render by updating behavior commitments state
+          setBehaviorCommitments(getTodaysBehaviorCommitments());
+        } else {
+          console.error('Failed to update behavior achievement');
+        }
+      } else {
+        console.log('No behavior commitment found for student:', studentId);
+      }
+    } catch (error) {
+      console.error('Error toggling achievement:', error);
+    }
   };
 
   return (
@@ -906,33 +985,28 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
   // Toggle function for behavior achievements - can be after hooks
   const toggleStudentAchievement = (studentId: string) => {
     try {
-      const today = new Date().toDateString();
-      const behaviorChoices = localStorage.getItem(`behaviorChoices_${today}`);
+      const today = new Date().toISOString().split('T')[0];
       
-      if (!behaviorChoices) return;
+      // Get current commitment from UnifiedDataService
+      const currentCommitment = UnifiedDataService.getBehaviorCommitmentForStudent(studentId, today);
       
-      const choices = JSON.parse(behaviorChoices);
-      
-      if (choices[studentId]) {
-        // Toggle the achieved status
-        choices[studentId].achieved = !choices[studentId].achieved;
-        choices[studentId].achievedAt = choices[studentId].achieved 
-          ? new Date().toISOString() 
-          : null;
+      if (currentCommitment) {
+        // Toggle the achievement status
+        const newAchievedStatus = !currentCommitment.achieved;
         
-        // Save back to localStorage
-        localStorage.setItem(`behaviorChoices_${today}`, JSON.stringify(choices));
+        // Update via UnifiedDataService
+        const success = UnifiedDataService.updateBehaviorAchievement(studentId, today, newAchievedStatus);
         
-        // Update local state
-        setBehaviorCommitments((prev: any) => ({
-          ...prev,
-          [studentId]: {
-            ...prev[studentId],
-            achieved: choices[studentId].achieved
-          }
-        }));
-        
-        console.log(`${choices[studentId].achieved ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+        if (success) {
+          console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
+          
+          // Force a re-render by updating behavior commitments state
+          setBehaviorCommitments(getTodaysBehaviorCommitments());
+        } else {
+          console.error('Failed to update behavior achievement');
+        }
+      } else {
+        console.log('No behavior commitment found for student:', studentId);
       }
     } catch (error) {
       console.error('Error toggling achievement:', error);
