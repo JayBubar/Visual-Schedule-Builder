@@ -1,3 +1,4 @@
+import SmartBoardDataDebug from './SmartBoardDataDebug';
 import React, { useState, useEffect } from 'react';
 import { Student, Staff, HubSettings, ScheduleActivity, Schedule, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
@@ -1536,6 +1537,10 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       display: 'flex',
       flexDirection: 'column'
     }}>
+      
+      {/* ADD THIS LINE HERE - Debug overlay */}
+      <SmartBoardDataDebug />
+      
       {/* CSS Animations */}
       <style>{`
         @keyframes pulse {

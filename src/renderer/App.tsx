@@ -405,12 +405,7 @@ const App: React.FC = () => {
 
   // Use this conditional rendering to display either the full app or a single view
   return (
-    <ResourceScheduleProvider allStudents={students.map(student => ({
-      ...student,
-      dateCreated: new Date().toISOString(),
-      grade: student.grade || '',
-      resourceInfo: student.resourceInfo || undefined
-    }))}>
+    <ResourceScheduleProvider>
       {currentView === 'display' ? (
         <SmartboardDisplay
           isActive={true}

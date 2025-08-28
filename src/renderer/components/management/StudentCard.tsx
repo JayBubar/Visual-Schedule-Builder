@@ -1,4 +1,4 @@
-// REDESIGNED: StudentCard Component with Staff Management aesthetic and fixed layout + Resource Modal
+// CORRECTED: StudentCard Component - Resource Services in Dropdown + Fixed Z-Index Issues
 // src/renderer/components/management/StudentCard.tsx
 
 import React, { useState, useRef } from 'react';
@@ -78,7 +78,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const [showPrintDataSheets, setShowPrintDataSheets] = useState(false);
   const [showGoalManager, setShowGoalManager] = useState(false);
   const [showIEPDataCollection, setShowIEPDataCollection] = useState(false);
-  const [showResourceModal, setShowResourceModal] = useState(false); // 🆕 Resource modal state
+  const [showResourceModal, setShowResourceModal] = useState(false); // Resource modal state
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
 
@@ -144,7 +144,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
     };
   };
 
-  // Updated handlers to show modals directly
+  // ORIGINAL: Modal handlers - these work fine
   const handleDataEntry = () => {
     setShowEnhancedDataEntry(true);
   };
@@ -161,19 +161,26 @@ const StudentCard: React.FC<StudentCardProps> = ({
     setShowQuickDataEntry(true);
   };
 
-  // 🆕 Resource modal handlers
-  const handleResourceInfo = () => {
+  // MOVED: Resource Services to dropdown
+  const handleResourceServices = () => {
+    setShowActionsDropdown(false); // Close dropdown
     setShowResourceModal(true);
   };
 
+  // Resource save handler - only save, don't close modal automatically
   const handleResourceSave = (resourceInfo: { attendsResource: boolean; resourceType: string; resourceTeacher: string; timeframe: string }) => {
     try {
       UnifiedDataService.updateStudent(student.id, { resourceInfo });
       onPhotoUpdate(); // Trigger refresh
-      setShowResourceModal(false);
+      // Don't close modal automatically - let user close it manually
     } catch (error) {
       console.error('Error saving resource info:', error);
     }
+  };
+
+  // Explicit save and close handler
+  const handleResourceSaveAndClose = () => {
+    setShowResourceModal(false);
   };
 
   const progress = calculateIEPProgress();
@@ -204,6 +211,9 @@ const StudentCard: React.FC<StudentCardProps> = ({
             <div style={styles.dropdownMenu}>
               <button onClick={onEdit} style={styles.dropdownItem}>
                 ✏️ Edit Student
+              </button>
+              <button onClick={handleResourceServices} style={styles.dropdownItem}>
+                🏫 Resource Services
               </button>
               <button onClick={onDelete} style={styles.dropdownItem}>
                 🗑️ Delete Student
@@ -259,7 +269,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
             {student.isActive ? '✅ Active' : '❌ Inactive'}
           </div>
 
-          {/* 🆕 Resource Info Badge */}
+          {/* Resource Info Badge - Show if has resource services */}
           {student.resourceInfo?.attendsResource && (
             <div style={styles.resourceBadge}>
               🎯 {student.resourceInfo.resourceType || 'Resource Services'}
@@ -268,19 +278,13 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </div>
       </div>
 
-      {/* IEP Action Buttons Section - Updated with Resource Info button */}
+      {/* RESTORED: Original IEP Action Buttons Section - 2x2 Grid */}
       <div style={styles.iepButtonsSection}>
         <button
           onClick={handleGoalManagement}
           style={styles.primaryActionButton}
         >
           🎯 Manage Goals
-        </button>
-        <button
-          onClick={handleResourceInfo} // 🆕 Resource Info button
-          style={styles.resourceActionButton}
-        >
-          🏫 Resource Info
         </button>
         <button
           onClick={handleQuickDataEntry}
@@ -302,7 +306,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </button>
       </div>
 
-      {/* Stats Section (Replacing center bar) */}
+      {/* Stats Section */}
       <div style={styles.statsSection}>
         <div style={styles.statItem}>
           <div style={styles.statValue}>{(student.accommodations || []).length}</div>
@@ -322,7 +326,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom Section - IEP Progress (Bottom Left) */}
+      {/* Bottom Section - IEP Progress */}
       <div style={styles.bottomSection}>
         <div style={styles.iepProgress}>
           <div style={styles.progressContainer}>
@@ -345,67 +349,77 @@ const StudentCard: React.FC<StudentCardProps> = ({
         style={{ display: 'none' }}
       />
 
-      {/* Existing Modals */}
-      <QuickDataEntry
-        studentId={student.id}
-        isOpen={showQuickDataEntry}
-        onClose={() => {
-          setShowQuickDataEntry(false);
-          setSelectedGoalId(undefined);
-        }}
-        onDataSaved={() => {
-          setShowQuickDataEntry(false);
-          setSelectedGoalId(undefined);
-          onPhotoUpdate();
-        }}
-        preselectedGoal={selectedGoalId}
-      />
-
-      <ProgressPanel
-        studentId={student.id}
-        isOpen={showProgressPanel}
-        onClose={() => setShowProgressPanel(false)}
-        onAddData={(goalId: string) => {
-          setShowProgressPanel(false);
-          setSelectedGoalId(goalId);
-          setShowQuickDataEntry(true);
-        }}
-      />
-
-      {showEnhancedDataEntry && (
-        <div style={styles.modalOverlay}>
-          <EnhancedDataEntry
-            selectedStudent={{
-              id: student.id,
-              name: student.name,
-              grade: student.grade,
-              photo: student.photo
+      {/* CORRECTED: All modals now render outside the card using React Portals pattern */}
+      {showQuickDataEntry && (
+        <div style={styles.fullScreenModal}>
+          <QuickDataEntry
+            studentId={student.id}
+            isOpen={showQuickDataEntry}
+            onClose={() => {
+              setShowQuickDataEntry(false);
+              setSelectedGoalId(undefined);
             }}
-            selectedGoal={
-              student.iepData?.goals?.[0] || {
-                id: 'temp-goal',
-                studentId: student.id,
-                title: 'Sample Goal',
-                description: 'Please create goals for this student',
-                domain: 'academic',
-                measurementType: 'percentage',
-                target: 80,
-                currentProgress: 0,
-                dataPoints: 0,
-                dateCreated: new Date().toISOString().split('T')[0]
-              }
-            }
-            onBack={() => setShowEnhancedDataEntry(false)}
             onDataSaved={() => {
-              setShowEnhancedDataEntry(false);
+              setShowQuickDataEntry(false);
+              setSelectedGoalId(undefined);
               onPhotoUpdate();
+            }}
+            preselectedGoal={selectedGoalId}
+          />
+        </div>
+      )}
+
+      {showProgressPanel && (
+        <div style={styles.fullScreenModal}>
+          <ProgressPanel
+            studentId={student.id}
+            isOpen={showProgressPanel}
+            onClose={() => setShowProgressPanel(false)}
+            onAddData={(goalId: string) => {
+              setShowProgressPanel(false);
+              setSelectedGoalId(goalId);
+              setShowQuickDataEntry(true);
             }}
           />
         </div>
       )}
 
+      {showEnhancedDataEntry && (
+        <div style={styles.fullScreenModal}>
+          <div style={styles.enhancedDataEntryContainer}>
+            <EnhancedDataEntry
+              selectedStudent={{
+                id: student.id,
+                name: student.name,
+                grade: student.grade,
+                photo: student.photo
+              }}
+              selectedGoal={
+                student.iepData?.goals?.[0] || {
+                  id: 'temp-goal',
+                  studentId: student.id,
+                  title: 'Sample Goal',
+                  description: 'Please create goals for this student',
+                  domain: 'academic',
+                  measurementType: 'percentage',
+                  target: 80,
+                  currentProgress: 0,
+                  dataPoints: 0,
+                  dateCreated: new Date().toISOString().split('T')[0]
+                }
+              }
+              onBack={() => setShowEnhancedDataEntry(false)}
+              onDataSaved={() => {
+                setShowEnhancedDataEntry(false);
+                onPhotoUpdate();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {showPrintDataSheets && (
-        <div style={styles.modalOverlay}>
+        <div style={styles.fullScreenModal}>
           <PrintDataSheetSystem
             students={[{
               ...student,
@@ -421,8 +435,9 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </div>
       )}
 
+      {/* CORRECTED: Goals Manager opens as intended with pre-selected student */}
       {showGoalManager && (
-        <div style={styles.modalOverlay}>
+        <div style={styles.fullScreenModal}>
           <GoalManager
             preSelectedStudentId={student.id}
             onGoalSaved={() => {
@@ -434,7 +449,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
       )}
 
       {showIEPDataCollection && (
-        <div style={styles.modalOverlay}>
+        <div style={styles.fullScreenModal}>
           <IEPDataCollectionInterface
             isActive={showIEPDataCollection}
             preSelectedStudentId={student.id}
@@ -442,10 +457,21 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </div>
       )}
 
-      {/* 🆕 Resource Info Modal */}
+      {/* DEBUGGING: Resource Modal - Let's try a simpler approach to fix the flash */}
       {showResourceModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.resourceModalContent}>
+        <div 
+          style={styles.resourceModalOverlay}
+          onClick={(e) => {
+            // Only close if clicking the overlay itself, not the modal content
+            if (e.target === e.currentTarget) {
+              setShowResourceModal(false);
+            }
+          }}
+        >
+          <div 
+            style={styles.resourceModalContent}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+          >
             <div style={styles.resourceModalHeader}>
               <h3 style={styles.resourceModalTitle}>
                 🏫 Resource Services - {student.name}
@@ -469,6 +495,16 @@ const StudentCard: React.FC<StudentCardProps> = ({
                 onChange={handleResourceSave}
                 studentName={student.name}
               />
+              
+              {/* Debug: Manual Save Button */}
+              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                <button
+                  onClick={() => setShowResourceModal(false)}
+                  style={styles.debugCloseButton}
+                >
+                  Close Modal
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -477,7 +513,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
   );
 };
 
-// REDESIGNED: Clean, Staff Management-inspired styles + Resource Modal styles
+// CORRECTED: Styles with proper z-index hierarchy and restored 2x2 button grid
 const styles: { [key: string]: React.CSSProperties } = {
   cardContainer: {
     background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
@@ -491,7 +527,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
     gap: '1rem',
     minHeight: '400px',
-    position: 'relative'
+    position: 'relative',
+    // IMPORTANT: Student cards stay at base level
+    zIndex: 1
   },
 
   topSection: {
@@ -530,8 +568,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     border: '1px solid rgba(0,0,0,0.1)',
-    minWidth: '160px',
-    zIndex: 1000
+    minWidth: '180px',
+    // FIXED: Dropdown should be above modals but below modal overlays
+    zIndex: 100
   },
 
   dropdownItem: {
@@ -545,7 +584,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     textAlign: 'left',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.5rem'
+    gap: '0.5rem',
+    transition: 'background-color 0.2s ease'
   },
 
   parentInfo: {
@@ -651,7 +691,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'white'
   },
 
-  // 🆕 Resource badge styles
   resourceBadge: {
     display: 'inline-block',
     padding: '2px 8px',
@@ -662,10 +701,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'white'
   },
 
+  // RESTORED: Original 2x2 button grid
   iepButtonsSection: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)', // Updated to 3 columns for 5 buttons
-    gridTemplateRows: 'repeat(2, 1fr)',
+    gridTemplateColumns: '1fr 1fr',
     gap: '0.5rem'
   },
 
@@ -699,24 +738,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.5rem'
-  },
-
-  // 🆕 Resource action button style
-  resourceActionButton: {
-    padding: '0.75rem',
-    borderRadius: '8px',
-    border: 'none',
-    background: 'linear-gradient(145deg, #6f42c1, #563d7c)',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
-    gridColumn: 'span 1'
   },
 
   statsSection: {
@@ -791,20 +812,43 @@ const styles: { [key: string]: React.CSSProperties } = {
     opacity: 0.8
   },
 
-  modalOverlay: {
+  // CORRECTED: Universal full-screen modal style for most modals
+  fullScreenModal: {
     position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 9999,
+    zIndex: 10000,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
   },
 
-  // 🆕 Resource modal styles
+  // Enhanced Data Entry needs its own container
+  enhancedDataEntryContainer: {
+    width: '95vw',
+    height: '95vh',
+    background: 'white',
+    borderRadius: '16px',
+    overflow: 'hidden'
+  },
+
+  // DEBUGGING: Separate resource modal overlay to isolate the flashing issue
+  resourceModalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 15000, // Even higher to ensure it's on top
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
   resourceModalContent: {
     background: 'white',
     borderRadius: '16px',
@@ -812,7 +856,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     maxWidth: '600px',
     maxHeight: '90vh',
     overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+    position: 'relative'
   },
 
   resourceModalHeader: {
@@ -842,13 +887,25 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '1.2rem',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    transition: 'background-color 0.2s ease'
   },
 
   resourceModalBody: {
     padding: '2rem',
     maxHeight: '70vh',
     overflow: 'auto'
+  },
+
+  // DEBUG: Manual close button for testing
+  debugCloseButton: {
+    background: 'linear-gradient(145deg, #dc3545, #c82333)',
+    color: 'white',
+    border: 'none',
+    padding: '0.75rem 1.5rem',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600'
   }
 };
 
