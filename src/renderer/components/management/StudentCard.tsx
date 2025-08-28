@@ -167,20 +167,15 @@ const StudentCard: React.FC<StudentCardProps> = ({
     setShowResourceModal(true);
   };
 
-  // Resource save handler - only save, don't close modal automatically
+  // Resource save handler
   const handleResourceSave = (resourceInfo: { attendsResource: boolean; resourceType: string; resourceTeacher: string; timeframe: string }) => {
     try {
       UnifiedDataService.updateStudent(student.id, { resourceInfo });
       onPhotoUpdate(); // Trigger refresh
-      // Don't close modal automatically - let user close it manually
+      setShowResourceModal(false);
     } catch (error) {
       console.error('Error saving resource info:', error);
     }
-  };
-
-  // Explicit save and close handler
-  const handleResourceSaveAndClose = () => {
-    setShowResourceModal(false);
   };
 
   const progress = calculateIEPProgress();
@@ -581,7 +576,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#374151',
     cursor: 'pointer',
     fontSize: '0.9rem',
-    textAlign: 'left',
+    textAlign: 'left' as const,
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem',
@@ -835,66 +830,72 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflow: 'hidden'
   },
 
-  // DEBUGGING: Separate resource modal overlay to isolate the flashing issue
-  resourceModalOverlay: {
+  // 🆕 Full-Screen Resource Modal Styles
+  fullScreenResourceModal: {
     position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 15000, // Even higher to ensure it's on top
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-
-  resourceModalContent: {
-    background: 'white',
-    borderRadius: '16px',
-    width: '90%',
-    maxWidth: '600px',
-    maxHeight: '90vh',
-    overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-    position: 'relative'
-  },
-
-  resourceModalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1.5rem',
-    borderBottom: '1px solid rgba(0,0,0,0.1)',
-    background: 'linear-gradient(145deg, #6f42c1, #563d7c)'
-  },
-
-  resourceModalTitle: {
-    margin: 0,
-    color: 'white',
-    fontSize: '1.3rem',
-    fontWeight: '600'
-  },
-
-  resourceModalCloseButton: {
-    background: 'rgba(255,255,255,0.2)',
-    border: 'none',
-    color: 'white',
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    cursor: 'pointer',
-    fontSize: '1.2rem',
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    zIndex: 20000, // Higher than everything
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: '2rem'
+  },
+
+  fullScreenResourceContent: {
+    background: 'white',
+    borderRadius: '20px',
+    width: '95vw',
+    maxWidth: '1200px',
+    height: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxShadow: '0 25px 80px rgba(0,0,0,0.4)'
+  },
+
+  fullScreenResourceHeader: {
+    background: 'linear-gradient(145deg, #6f42c1, #563d7c)',
+    color: 'white',
+    padding: '2rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0
+  },
+
+  fullScreenResourceTitle: {
+    margin: 0,
+    fontSize: '2rem',
+    fontWeight: '700'
+  },
+
+  fullScreenResourceSubtitle: {
+    fontSize: '1.1rem',
+    opacity: 0.9,
+    fontWeight: '400'
+  },
+
+  fullScreenResourceCloseButton: {
+    background: 'rgba(255,255,255,0.2)',
+    border: 'none',
+    color: 'white',
+    padding: '1rem 1.5rem',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: '600',
     transition: 'background-color 0.2s ease'
   },
 
-  resourceModalBody: {
-    padding: '2rem',
-    maxHeight: '70vh',
-    overflow: 'auto'
+  fullScreenResourceBody: {
+    flex: 1,
+    padding: '3rem',
+    overflow: 'auto',
+    backgroundColor: '#f8fafc'
   },
 
   // DEBUG: Manual close button for testing
@@ -906,6 +907,73 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '600'
+  },
+
+  // FIXED: Missing resource modal styles
+  resourceModalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 15000,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '2rem'
+  },
+
+  resourceModalContent: {
+    background: 'white',
+    borderRadius: '16px',
+    width: '90vw',
+    maxWidth: '600px',
+    maxHeight: '80vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+  },
+
+  resourceModalHeader: {
+    background: 'linear-gradient(145deg, #6f42c1, #563d7c)',
+    color: 'white',
+    padding: '1.5rem',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexShrink: 0
+  },
+
+  resourceModalTitle: {
+    margin: 0,
+    fontSize: '1.5rem',
+    fontWeight: '700'
+  },
+
+  resourceModalCloseButton: {
+    background: 'rgba(255,255,255,0.2)',
+    border: 'none',
+    color: 'white',
+    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    fontWeight: '600',
+    transition: 'background-color 0.2s ease',
+    minWidth: '40px',
+    height: '40px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
+  resourceModalBody: {
+    flex: 1,
+    padding: '2rem',
+    overflow: 'auto',
+    backgroundColor: '#f8fafc'
   }
 };
 

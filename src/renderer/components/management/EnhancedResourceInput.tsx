@@ -1,13 +1,112 @@
-// IMPROVED: User-friendly Resource Input Component
+// IMPROVED: Clean Resource Input with M-F Checkboxes + Time Dropdowns
 // src/renderer/components/management/EnhancedResourceInput.tsx
 
 import React, { useState, useEffect } from 'react';
+import { Clock, User, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
+import UnifiedDataService from '../../services/unifiedDataService';
+
+// Teacher Selector Component
+const TeacherSelector: React.FC<{
+  value: string;
+  onChange: (teacher: string) => void;
+  serviceType: string;
+}> = ({ value, onChange, serviceType }) => {
+  const [allStaff, setAllStaff] = useState<any[]>([]);
+  const [filteredStaff, setFilteredStaff] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Load staff from UnifiedDataService
+    try {
+      const staff = UnifiedDataService.getAllStaff();
+      setAllStaff(staff);
+      console.log('📋 Loaded staff for resource selection:', staff.length);
+    } catch (error) {
+      console.error('Error loading staff:', error);
+      setAllStaff([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Filter staff based on service type and role
+    let filtered = allStaff;
+
+    if (serviceType) {
+      // Try to match staff roles to service types
+      const roleKeywords = {
+        'Speech Therapy': ['speech', 'slp', 'language', 'communication'],
+        'Occupational Therapy': ['occupational', 'ot', 'therapy'],
+        'Physical Therapy': ['physical', 'pt', 'therapy'],
+        'Counseling': ['counselor', 'counseling', 'social', 'psychologist'],
+        'Reading Support': ['reading', 'literacy', 'english', 'ela'],
+        'Math Support': ['math', 'mathematics', 'numeracy'],
+        'ESL Support': ['esl', 'english', 'language', 'bilingual'],
+        'Behavior Support': ['behavior', 'social', 'emotional', 'support'],
+        'Life Skills': ['life', 'skills', 'functional', 'adaptive']
+      };
+
+      const keywords = roleKeywords[serviceType as keyof typeof roleKeywords] || [];
+      
+      filtered = allStaff.filter(staff => {
+        const role = (staff.role || '').toLowerCase();
+        const name = (staff.name || '').toLowerCase();
+        
+        // Check if role matches keywords or if it's a general resource role
+        return keywords.some(keyword => role.includes(keyword)) ||
+               role.includes('resource') ||
+               role.includes('specialist') ||
+               role.includes('therapist') ||
+               role.includes('teacher');
+      });
+    }
+
+    // If no matches found, show all staff as fallback
+    if (filtered.length === 0) {
+      filtered = allStaff;
+    }
+
+    // Sort by name for better UX
+    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    setFilteredStaff(filtered);
+  }, [allStaff, serviceType]);
+
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={styles.select}
+      required
+    >
+      <option value="">Select teacher/therapist...</option>
+      {filteredStaff.map(staff => (
+        <option key={staff.id} value={staff.name}>
+          {staff.name} {staff.role ? `(${staff.role})` : ''}
+        </option>
+      ))}
+      {allStaff.length === 0 && (
+        <option value="" disabled>No staff loaded</option>
+      )}
+      {/* Allow custom entry as fallback */}
+      <option value="__custom__">Add Custom Teacher...</option>
+    </select>
+  );
+};
 
 interface ResourceInfo {
   attendsResource: boolean;
   resourceType: string;
   resourceTeacher: string;
   timeframe: string;
+}
+
+// NEW: Structured resource schedule interface
+interface StructuredResourceSchedule {
+  attendsResource: boolean;
+  resourceType: string;
+  resourceTeacher: string;
+  days: string[]; // ['Monday', 'Wednesday', 'Friday']
+  startTime: string; // '9:00 AM'
+  endTime: string; // '9:30 AM'
 }
 
 interface EnhancedResourceInputProps {
@@ -21,244 +120,359 @@ const EnhancedResourceInput: React.FC<EnhancedResourceInputProps> = ({
   onChange,
   studentName
 }) => {
-  // Local state for the form
-  const [localResourceInfo, setLocalResourceInfo] = useState<ResourceInfo>({
-    attendsResource: false,
-    resourceType: '',
-    resourceTeacher: '',
-    timeframe: '',
-    ...resourceInfo
-  });
+  // Parse existing timeframe into structured data
+  const parseTimeframe = (timeframe: string): StructuredResourceSchedule => {
+    const defaultSchedule: StructuredResourceSchedule = {
+      attendsResource: resourceInfo.attendsResource,
+      resourceType: resourceInfo.resourceType,
+      resourceTeacher: resourceInfo.resourceTeacher,
+      days: [],
+      startTime: '9:00 AM',
+      endTime: '9:30 AM'
+    };
 
-  // Predefined options for better UX
-  const serviceTypes = [
-    { value: '', label: 'Select a service...' },
-    { value: 'Speech Therapy', label: 'Speech Therapy' },
-    { value: 'Occupational Therapy', label: 'Occupational Therapy (OT)' },
-    { value: 'Physical Therapy', label: 'Physical Therapy (PT)' },
-    { value: 'Reading Support', label: 'Reading Support' },
-    { value: 'Math Support', label: 'Math Support' },
-    { value: 'Counseling', label: 'Counseling' },
-    { value: 'ESL Support', label: 'ESL Support' },
-    { value: 'Behavior Support', label: 'Behavior Support' },
-    { value: 'Other', label: 'Other Service' }
-  ];
+    if (!timeframe) return defaultSchedule;
 
-  const timeSlots = [
-    { value: '', label: 'Select time...' },
-    { value: 'Monday 9:00-9:30 AM', label: 'Monday 9:00-9:30 AM' },
-    { value: 'Monday 10:00-10:30 AM', label: 'Monday 10:00-10:30 AM' },
-    { value: 'Monday 11:00-11:30 AM', label: 'Monday 11:00-11:30 AM' },
-    { value: 'Monday 1:00-1:30 PM', label: 'Monday 1:00-1:30 PM' },
-    { value: 'Monday 2:00-2:30 PM', label: 'Monday 2:00-2:30 PM' },
-    { value: 'Tuesday 9:00-9:30 AM', label: 'Tuesday 9:00-9:30 AM' },
-    { value: 'Tuesday 10:00-10:30 AM', label: 'Tuesday 10:00-10:30 AM' },
-    { value: 'Tuesday 11:00-11:30 AM', label: 'Tuesday 11:00-11:30 AM' },
-    { value: 'Tuesday 1:00-1:30 PM', label: 'Tuesday 1:00-1:30 PM' },
-    { value: 'Tuesday 2:00-2:30 PM', label: 'Tuesday 2:00-2:30 PM' },
-    { value: 'Wednesday 9:00-9:30 AM', label: 'Wednesday 9:00-9:30 AM' },
-    { value: 'Wednesday 10:00-10:30 AM', label: 'Wednesday 10:00-10:30 AM' },
-    { value: 'Wednesday 11:00-11:30 AM', label: 'Wednesday 11:00-11:30 AM' },
-    { value: 'Wednesday 1:00-1:30 PM', label: 'Wednesday 1:00-1:30 PM' },
-    { value: 'Wednesday 2:00-2:30 PM', label: 'Wednesday 2:00-2:30 PM' },
-    { value: 'Thursday 9:00-9:30 AM', label: 'Thursday 9:00-9:30 AM' },
-    { value: 'Thursday 10:00-10:30 AM', label: 'Thursday 10:00-10:30 AM' },
-    { value: 'Thursday 11:00-11:30 AM', label: 'Thursday 11:00-11:30 AM' },
-    { value: 'Thursday 1:00-1:30 PM', label: 'Thursday 1:00-1:30 PM' },
-    { value: 'Thursday 2:00-2:30 PM', label: 'Thursday 2:00-2:30 PM' },
-    { value: 'Friday 9:00-9:30 AM', label: 'Friday 9:00-9:30 AM' },
-    { value: 'Friday 10:00-10:30 AM', label: 'Friday 10:00-10:30 AM' },
-    { value: 'Friday 11:00-11:30 AM', label: 'Friday 11:00-11:30 AM' },
-    { value: 'Friday 1:00-1:30 PM', label: 'Friday 1:00-1:30 PM' },
-    { value: 'Friday 2:00-2:30 PM', label: 'Friday 2:00-2:30 PM' },
-    { value: 'Custom', label: 'Custom Schedule...' }
-  ];
+    try {
+      // Try to parse existing timeframe formats
+      const dayAbbreviations = {
+        'M': 'Monday', 'MON': 'Monday',
+        'T': 'Tuesday', 'TU': 'Tuesday', 'TUE': 'Tuesday', 'TUES': 'Tuesday',
+        'W': 'Wednesday', 'WED': 'Wednesday',
+        'TH': 'Thursday', 'THU': 'Thursday', 'THUR': 'Thursday', 'THURS': 'Thursday',
+        'F': 'Friday', 'FRI': 'Friday'
+      };
 
-  const resourceTeachers = [
-    { value: '', label: 'Select teacher/therapist...' },
-    { value: 'Ms. Johnson', label: 'Ms. Johnson' },
-    { value: 'Mr. Smith', label: 'Mr. Smith' },
-    { value: 'Ms. Rodriguez', label: 'Ms. Rodriguez' },
-    { value: 'Mr. Davis', label: 'Mr. Davis' },
-    { value: 'Ms. Thompson', label: 'Ms. Thompson' },
-    { value: 'Other', label: 'Other (specify below)' }
-  ];
-
-  // Update parent when local state changes
-  useEffect(() => {
-    onChange(localResourceInfo);
-  }, [localResourceInfo, onChange]);
-
-  const handleFieldChange = (field: keyof ResourceInfo, value: any) => {
-    console.log(`🔄 Resource field changed: ${field} = ${value}`);
-    setLocalResourceInfo(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleAttendanceChange = (attends: boolean) => {
-    if (!attends) {
-      // If unchecking attendance, clear all other fields
-      setLocalResourceInfo({
-        attendsResource: false,
-        resourceType: '',
-        resourceTeacher: '',
-        timeframe: ''
+      // Extract days
+      const days: string[] = [];
+      Object.keys(dayAbbreviations).forEach(abbr => {
+        if (timeframe.toUpperCase().includes(abbr)) {
+          const fullDay = dayAbbreviations[abbr as keyof typeof dayAbbreviations];
+          if (!days.includes(fullDay)) {
+            days.push(fullDay);
+          }
+        }
       });
-    } else {
-      setLocalResourceInfo(prev => ({
-        ...prev,
-        attendsResource: true
-      }));
+
+      // Extract time range
+      const timeMatch = timeframe.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?.*?(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (timeMatch) {
+        const [, startHour, startMin, startPeriod = 'AM', endHour, endMin, endPeriod = 'AM'] = timeMatch;
+        defaultSchedule.startTime = `${startHour}:${startMin} ${startPeriod.toUpperCase()}`;
+        defaultSchedule.endTime = `${endHour}:${endMin} ${endPeriod.toUpperCase()}`;
+      }
+
+      defaultSchedule.days = days;
+      return defaultSchedule;
+    } catch (error) {
+      console.error('Error parsing timeframe:', error);
+      return defaultSchedule;
     }
   };
 
+  const [schedule, setSchedule] = useState<StructuredResourceSchedule>(() => 
+    parseTimeframe(resourceInfo.timeframe)
+  );
+
+  // Generate time options in 15-minute increments
+  const generateTimeOptions = () => {
+    const times: string[] = [];
+    const periods = ['AM', 'PM'];
+    
+    periods.forEach(period => {
+      const startHour = period === 'AM' ? 7 : 12;
+      const endHour = period === 'AM' ? 11 : 15; // 7AM-11:45AM, 12PM-3:45PM (school hours)
+      
+      for (let hour = startHour; hour <= endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+          const displayHour = period === 'AM' ? hour : (hour === 12 ? 12 : hour - 12);
+          const timeString = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+          times.push(timeString);
+        }
+      }
+    });
+    
+    return times;
+  };
+
+  const timeOptions = generateTimeOptions();
+
+  // Service types
+  const serviceTypes = [
+    { value: '', label: 'Select a service...', color: '#gray' },
+    { value: 'Speech Therapy', label: 'Speech Therapy', color: '#3b82f6' },
+    { value: 'Occupational Therapy', label: 'Occupational Therapy (OT)', color: '#10b981' },
+    { value: 'Physical Therapy', label: 'Physical Therapy (PT)', color: '#f59e0b' },
+    { value: 'Reading Support', label: 'Reading Support', color: '#ef4444' },
+    { value: 'Math Support', label: 'Math Support', color: '#8b5cf6' },
+    { value: 'Counseling', label: 'Counseling', color: '#06b6d4' },
+    { value: 'ESL Support', label: 'ESL Support', color: '#84cc16' },
+    { value: 'Behavior Support', label: 'Behavior Support', color: '#f97316' },
+    { value: 'Life Skills', label: 'Life Skills', color: '#6366f1' },
+    { value: 'Other', label: 'Other Service', color: '#64748b' }
+  ];
+
+  // Days of the week
+  const daysOfWeek = [
+    { value: 'Monday', label: 'Monday', abbr: 'M' },
+    { value: 'Tuesday', label: 'Tuesday', abbr: 'T' },
+    { value: 'Wednesday', label: 'Wednesday', abbr: 'W' },
+    { value: 'Thursday', label: 'Thursday', abbr: 'Th' },
+    { value: 'Friday', label: 'Friday', abbr: 'F' }
+  ];
+
+  // Convert structured schedule back to timeframe string
+  const generateTimeframe = (schedule: StructuredResourceSchedule): string => {
+    if (!schedule.attendsResource || schedule.days.length === 0) {
+      return '';
+    }
+
+    // Create day abbreviations
+    const dayAbbrs = schedule.days.map(day => {
+      switch(day) {
+        case 'Monday': return 'M';
+        case 'Tuesday': return 'T';
+        case 'Wednesday': return 'W';
+        case 'Thursday': return 'Th';
+        case 'Friday': return 'F';
+        default: return day.substring(0, 3);
+      }
+    });
+
+    const dayString = dayAbbrs.join('');
+    return `${dayString} ${schedule.startTime}-${schedule.endTime}`;
+  };
+
+  // Update parent component when schedule changes
+  useEffect(() => {
+    const newTimeframe = generateTimeframe(schedule);
+    onChange({
+      attendsResource: schedule.attendsResource,
+      resourceType: schedule.resourceType,
+      resourceTeacher: schedule.resourceTeacher,
+      timeframe: newTimeframe
+    });
+  }, [schedule, onChange]);
+
+  const handleResourceToggle = (checked: boolean) => {
+    setSchedule(prev => ({
+      ...prev,
+      attendsResource: checked,
+      resourceType: checked ? prev.resourceType : '',
+      resourceTeacher: checked ? prev.resourceTeacher : '',
+      days: checked ? prev.days : [],
+      startTime: checked ? prev.startTime : '9:00 AM',
+      endTime: checked ? prev.endTime : '9:30 AM'
+    }));
+  };
+
+  const handleDayToggle = (day: string) => {
+    setSchedule(prev => ({
+      ...prev,
+      days: prev.days.includes(day) 
+        ? prev.days.filter(d => d !== day)
+        : [...prev.days, day].sort((a, b) => {
+            const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            return order.indexOf(a) - order.indexOf(b);
+          })
+    }));
+  };
+
+  // Validation
+  const isValidSchedule = schedule.attendsResource && 
+                         schedule.resourceType && 
+                         schedule.resourceTeacher && 
+                         schedule.days.length > 0 &&
+                         schedule.startTime &&
+                         schedule.endTime;
+
+  // Time conflict validation
+  const hasTimeConflict = () => {
+    const startTime = new Date(`2000-01-01 ${schedule.startTime}`);
+    const endTime = new Date(`2000-01-01 ${schedule.endTime}`);
+    return endTime <= startTime;
+  };
+
+  const selectedServiceType = serviceTypes.find(s => s.value === schedule.resourceType);
+
   return (
     <div style={styles.container}>
-      <h4 style={styles.sectionTitle}>
-        🏫 Resource Services for {studentName}
-      </h4>
+      <div style={styles.sectionTitle}>
+        <Calendar className="w-5 h-5" />
+        Resource Services Configuration
+      </div>
 
       {/* Main Toggle */}
       <div style={styles.toggleSection}>
         <label style={styles.toggleLabel}>
           <input
             type="checkbox"
-            checked={localResourceInfo.attendsResource}
-            onChange={(e) => handleAttendanceChange(e.target.checked)}
+            checked={schedule.attendsResource}
+            onChange={(e) => handleResourceToggle(e.target.checked)}
             style={styles.checkbox}
           />
-          <span style={styles.toggleText}>
-            This student receives resource services
-          </span>
+          <span style={styles.toggleText}>🎯 Student receives resource services</span>
         </label>
       </div>
 
-      {/* Resource Details (only show if attending) */}
-      {localResourceInfo.attendsResource && (
+      {schedule.attendsResource && (
         <div style={styles.detailsSection}>
           
           {/* Service Type */}
           <div style={styles.formGroup}>
-            <label style={styles.label}>Service Type *</label>
+            <label style={styles.label}>
+              <User className="w-4 h-4" />
+              Service Type *
+            </label>
             <select
-              value={localResourceInfo.resourceType}
-              onChange={(e) => handleFieldChange('resourceType', e.target.value)}
-              style={styles.select}
+              value={schedule.resourceType}
+              onChange={(e) => setSchedule(prev => ({ ...prev, resourceType: e.target.value }))}
+              style={{
+                ...styles.select,
+                borderColor: selectedServiceType?.color || '#e5e7eb'
+              }}
               required
             >
-              {serviceTypes.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {serviceTypes.map(service => (
+                <option key={service.value} value={service.value}>
+                  {service.label}
                 </option>
               ))}
             </select>
-            {localResourceInfo.resourceType && (
-              <div style={styles.selectedPreview}>
-                ✅ Selected: {localResourceInfo.resourceType}
-              </div>
-            )}
-          </div>
-
-          {/* Schedule/Timeframe */}
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Schedule/Time *</label>
-            <select
-              value={localResourceInfo.timeframe}
-              onChange={(e) => handleFieldChange('timeframe', e.target.value)}
-              style={styles.select}
-              required
-            >
-              {timeSlots.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            
-            {/* Custom time input */}
-            {localResourceInfo.timeframe === 'Custom' && (
-              <input
-                type="text"
-                placeholder="e.g., MWF 10:15-10:45 AM"
-                onChange={(e) => handleFieldChange('timeframe', e.target.value)}
-                style={styles.customInput}
-              />
-            )}
-            
-            {localResourceInfo.timeframe && localResourceInfo.timeframe !== 'Custom' && (
-              <div style={styles.selectedPreview}>
-                ⏰ Scheduled: {localResourceInfo.timeframe}
-              </div>
-            )}
           </div>
 
           {/* Teacher/Therapist */}
           <div style={styles.formGroup}>
-            <label style={styles.label}>Teacher/Therapist *</label>
-            <select
-              value={localResourceInfo.resourceTeacher}
-              onChange={(e) => handleFieldChange('resourceTeacher', e.target.value)}
-              style={styles.select}
-              required
-            >
-              {resourceTeachers.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            
-            {/* Custom teacher input */}
-            {localResourceInfo.resourceTeacher === 'Other' && (
-              <input
-                type="text"
-                placeholder="Enter teacher/therapist name"
-                onChange={(e) => handleFieldChange('resourceTeacher', e.target.value)}
-                style={styles.customInput}
-              />
-            )}
-            
-            {localResourceInfo.resourceTeacher && localResourceInfo.resourceTeacher !== 'Other' && (
-              <div style={styles.selectedPreview}>
-                👨‍🏫 Provider: {localResourceInfo.resourceTeacher}
-              </div>
-            )}
+            <label style={styles.label}>
+              <User className="w-4 h-4" />
+              Teacher/Therapist *
+            </label>
+            <TeacherSelector
+              value={schedule.resourceTeacher}
+              onChange={(teacher) => setSchedule(prev => ({ ...prev, resourceTeacher: teacher }))}
+              serviceType={schedule.resourceType}
+            />
           </div>
 
-          {/* Summary Preview */}
-          {localResourceInfo.resourceType && localResourceInfo.timeframe && localResourceInfo.resourceTeacher && (
-            <div style={styles.summaryPreview}>
-              <div style={styles.summaryTitle}>📋 Resource Service Summary</div>
-              <div style={styles.summaryContent}>
-                <div><strong>{studentName}</strong> will attend <strong>{localResourceInfo.resourceType}</strong></div>
-                <div>with <strong>{localResourceInfo.resourceTeacher}</strong></div>
-                <div>during <strong>{localResourceInfo.timeframe}</strong></div>
+          {/* Days Selection */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              <Calendar className="w-4 h-4" />
+              Days of the Week *
+            </label>
+            <div style={styles.daysGrid}>
+              {daysOfWeek.map(day => (
+                <label key={day.value} style={styles.dayLabel}>
+                  <input
+                    type="checkbox"
+                    checked={schedule.days.includes(day.value)}
+                    onChange={() => handleDayToggle(day.value)}
+                    style={styles.dayCheckbox}
+                  />
+                  <span style={{
+                    ...styles.dayButton,
+                    ...(schedule.days.includes(day.value) ? styles.dayButtonActive : {})
+                  }}>
+                    <div style={styles.dayAbbr}>{day.abbr}</div>
+                    <div style={styles.dayName}>{day.label}</div>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Selection */}
+          <div style={styles.timeSection}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <Clock className="w-4 h-4" />
+                Start Time *
+              </label>
+              <select
+                value={schedule.startTime}
+                onChange={(e) => setSchedule(prev => ({ ...prev, startTime: e.target.value }))}
+                style={styles.select}
+                required
+              >
+                <option value="">Select start time...</option>
+                {timeOptions.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>
+                <Clock className="w-4 h-4" />
+                End Time *
+              </label>
+              <select
+                value={schedule.endTime}
+                onChange={(e) => setSchedule(prev => ({ ...prev, endTime: e.target.value }))}
+                style={styles.select}
+                required
+              >
+                <option value="">Select end time...</option>
+                {timeOptions.map(time => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Validation Messages */}
+          {hasTimeConflict() && (
+            <div style={styles.errorMessage}>
+              <AlertTriangle className="w-4 h-4" />
+              End time must be after start time
+            </div>
+          )}
+
+          {/* Schedule Preview */}
+          {isValidSchedule && !hasTimeConflict() && (
+            <div style={styles.previewSection}>
+              <div style={styles.previewHeader}>
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span style={styles.previewTitle}>Schedule Preview</span>
+              </div>
+              <div style={styles.previewContent}>
+                <div style={styles.previewStudent}>
+                  <strong>{studentName}</strong> will attend <strong>{schedule.resourceType}</strong>
+                </div>
+                <div style={styles.previewDetails}>
+                  with <strong>{schedule.resourceTeacher}</strong>
+                </div>
+                <div style={styles.previewTime}>
+                  {schedule.days.map(day => day.charAt(0)).join('')} {schedule.startTime} - {schedule.endTime}
+                </div>
+                <div style={styles.previewDays}>
+                  {schedule.days.join(', ')}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Helpful Examples */}
+          {/* Help Text */}
           <div style={styles.helpSection}>
-            <div style={styles.helpTitle}>💡 Schedule Format Examples:</div>
-            <div style={styles.helpText}>
-              • "Monday/Wednesday 2:00-2:30 PM"<br/>
-              • "Daily 10:00-10:30 AM"<br/>
-              • "MWF 9:00-9:30 AM"<br/>
-              • "Tuesdays & Thursdays 1:15-2:00 PM"
-            </div>
+            <div style={styles.helpTitle}>💡 Tips:</div>
+            <ul style={styles.helpList}>
+              <li>Select the days your student will be pulled out for services</li>
+              <li>Choose times during your regular class schedule</li>
+              <li>Times are in 15-minute increments for easy scheduling</li>
+              <li>The system will automatically track when students are out of class</li>
+            </ul>
           </div>
         </div>
       )}
 
       {/* No Services Message */}
-      {!localResourceInfo.attendsResource && (
-        <div style={styles.noServicesMessage}>
-          <div style={styles.noServicesIcon}>🏫</div>
+      {!schedule.attendsResource && (
+        <div style={styles.noServicesSection}>
+          <div style={styles.noServicesIcon}>🎒</div>
           <div style={styles.noServicesText}>
-            {studentName} does not currently receive resource services.<br/>
-            Check the box above to set up resource services.
+            <strong>{studentName}</strong> does not currently receive resource services.
+            <br />
+            Check the box above to configure resource services.
           </div>
         </div>
       )}
@@ -266,21 +480,20 @@ const EnhancedResourceInput: React.FC<EnhancedResourceInputProps> = ({
   );
 };
 
-// Comprehensive styles for the improved resource input
+// Clean, professional styles
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     background: 'rgba(59, 130, 246, 0.05)',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    border: '1px solid rgba(59, 130, 246, 0.1)',
-    marginTop: '1rem'
+    borderRadius: '16px',
+    padding: '2rem',
+    border: '1px solid rgba(59, 130, 246, 0.1)'
   },
 
   sectionTitle: {
-    fontSize: '1.1rem',
+    fontSize: '1.2rem',
     fontWeight: '600',
     color: '#1e40af',
-    marginBottom: '1rem',
+    marginBottom: '1.5rem',
     display: 'flex',
     alignItems: 'center',
     gap: '0.5rem'
@@ -290,21 +503,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '1.5rem',
     padding: '1rem',
     background: 'rgba(59, 130, 246, 0.1)',
-    borderRadius: '8px',
+    borderRadius: '12px',
     border: '2px solid rgba(59, 130, 246, 0.2)'
   },
 
   toggleLabel: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '1rem',
     cursor: 'pointer',
     fontSize: '1rem'
   },
 
   checkbox: {
-    width: '1.25rem',
-    height: '1.25rem',
+    width: '1.5rem',
+    height: '1.5rem',
     cursor: 'pointer'
   },
 
@@ -316,7 +529,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   detailsSection: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '1.25rem'
+    gap: '1.5rem'
   },
 
   formGroup: {
@@ -326,9 +539,12 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 
   label: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.9rem',
     fontWeight: '600',
-    color: '#374151',
-    fontSize: '0.9rem'
+    color: '#374151'
   },
 
   select: {
@@ -337,81 +553,153 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '2px solid #e5e7eb',
     fontSize: '1rem',
     backgroundColor: 'white',
-    transition: 'border-color 0.2s',
-    cursor: 'pointer'
+    transition: 'border-color 0.2s ease'
   },
 
-  customInput: {
+  input: {
     padding: '0.75rem',
     borderRadius: '8px',
     border: '2px solid #e5e7eb',
     fontSize: '1rem',
-    marginTop: '0.5rem',
-    transition: 'border-color 0.2s'
+    backgroundColor: 'white',
+    transition: 'border-color 0.2s ease'
   },
 
-  selectedPreview: {
-    padding: '0.5rem',
-    background: 'rgba(34, 197, 94, 0.1)',
-    borderRadius: '6px',
-    border: '1px solid rgba(34, 197, 94, 0.2)',
-    color: '#065f46',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    marginTop: '0.5rem'
+  daysGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    gap: '0.5rem'
   },
 
-  summaryPreview: {
-    marginTop: '1rem',
-    padding: '1rem',
-    background: 'rgba(16, 185, 129, 0.1)',
-    borderRadius: '8px',
-    border: '1px solid rgba(16, 185, 129, 0.2)'
+  dayLabel: {
+    cursor: 'pointer'
   },
 
-  summaryTitle: {
-    fontWeight: '600',
-    color: '#065f46',
-    marginBottom: '0.5rem',
-    fontSize: '1rem'
+  dayCheckbox: {
+    display: 'none'
   },
 
-  summaryContent: {
+  dayButton: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.25rem',
-    fontSize: '0.9rem',
-    color: '#047857',
-    lineHeight: '1.4'
-  },
-
-  helpSection: {
-    marginTop: '1rem',
-    padding: '1rem',
-    background: 'rgba(245, 158, 11, 0.1)',
+    alignItems: 'center',
+    padding: '0.75rem 0.5rem',
     borderRadius: '8px',
-    border: '1px solid rgba(245, 158, 11, 0.2)'
+    border: '2px solid #e5e7eb',
+    backgroundColor: 'white',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer'
   },
 
-  helpTitle: {
-    fontWeight: '600',
-    color: '#92400e',
-    marginBottom: '0.5rem',
+  dayButtonActive: {
+    borderColor: '#3b82f6',
+    backgroundColor: '#eff6ff',
+    color: '#1e40af'
+  },
+
+  dayAbbr: {
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+    marginBottom: '0.25rem'
+  },
+
+  dayName: {
+    fontSize: '0.7rem'
+  },
+
+  timeSection: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '1rem'
+  },
+
+  errorMessage: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.75rem',
+    backgroundColor: '#fef2f2',
+    color: '#dc2626',
+    borderRadius: '8px',
+    border: '1px solid #fecaca',
     fontSize: '0.9rem'
   },
 
-  helpText: {
-    fontSize: '0.8rem',
-    color: '#a16207',
-    lineHeight: '1.4'
+  previewSection: {
+    padding: '1rem',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '12px',
+    border: '1px solid #bbf7d0'
   },
 
-  noServicesMessage: {
-    padding: '2rem',
-    textAlign: 'center',
-    background: 'rgba(156, 163, 175, 0.1)',
+  previewHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    marginBottom: '0.75rem'
+  },
+
+  previewTitle: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#15803d'
+  },
+
+  previewContent: {
+    fontSize: '0.9rem',
+    color: '#374151',
+    lineHeight: '1.5'
+  },
+
+  previewStudent: {
+    marginBottom: '0.5rem'
+  },
+
+  previewDetails: {
+    marginBottom: '0.5rem'
+  },
+
+  previewTime: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: '#15803d',
+    marginBottom: '0.25rem'
+  },
+
+  previewDays: {
+    fontSize: '0.8rem',
+    color: '#6b7280'
+  },
+
+  helpSection: {
+    padding: '1rem',
+    backgroundColor: '#fef9e7',
     borderRadius: '8px',
-    border: '1px solid rgba(156, 163, 175, 0.2)'
+    border: '1px solid #fde047'
+  },
+
+  helpTitle: {
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    color: '#a16207',
+    marginBottom: '0.5rem'
+  },
+
+  helpList: {
+    fontSize: '0.8rem',
+    color: '#92400e',
+    paddingLeft: '1rem',
+    margin: 0
+  },
+
+  noServicesSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '2rem',
+    backgroundColor: '#f9fafb',
+    borderRadius: '12px',
+    border: '1px solid #e5e7eb'
   },
 
   noServicesIcon: {
@@ -420,8 +708,8 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
 
   noServicesText: {
+    textAlign: 'center',
     color: '#6b7280',
-    fontSize: '0.9rem',
     lineHeight: '1.5'
   }
 };
