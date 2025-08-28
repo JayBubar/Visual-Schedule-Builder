@@ -84,28 +84,35 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
       // Extract days - Enhanced to handle new format
       const days: string[] = [];
       
-      // NEW: Handle compact day abbreviations like "MTW", "MTWF", etc.
-      const compactDayMatch = timeframe.match(/^([MTWF]+)\s+/);
+      // NEW: Handle compact day abbreviations like "MTW", "MTWF", "MTWThF", etc.
+      const compactDayMatch = timeframe.match(/^([MTWThF]+)\s+/);
       if (compactDayMatch) {
         const dayString = compactDayMatch[1];
         console.log('📅 Found compact day format:', dayString);
         
-        // Parse each character in the day string
-        for (let i = 0; i < dayString.length; i++) {
+        // Parse the day string, handling "Th" for Thursday
+        let i = 0;
+        while (i < dayString.length) {
           const char = dayString[i];
           const nextChar = dayString[i + 1];
           
           if (char === 'M') {
             days.push('Monday');
-          } else if (char === 'T' && nextChar === 'H') {
+            i++;
+          } else if (char === 'T' && nextChar === 'h') {
             days.push('Thursday');
-            i++; // Skip the 'H'
+            i += 2; // Skip both 'T' and 'h'
           } else if (char === 'T') {
             days.push('Tuesday');
+            i++;
           } else if (char === 'W') {
             days.push('Wednesday');
+            i++;
           } else if (char === 'F') {
             days.push('Friday');
+            i++;
+          } else {
+            i++; // Skip unknown characters
           }
         }
       } else {
@@ -213,6 +220,20 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
       currentDay,
       currentTimeStr,
       totalStudents: studentsWithParsedSchedules.length
+    });
+    
+    // ENHANCED DEBUG: Log all students and their resource info
+    console.log('👥 All students with resource info:');
+    studentsWithParsedSchedules.forEach((student, index) => {
+      const studentAny = student as any;
+      console.log(`  ${index + 1}. ${student.name}:`, {
+        hasResourceInfo: !!studentAny.resourceInfo,
+        attendsResource: studentAny.resourceInfo?.attendsResource,
+        resourceType: studentAny.resourceInfo?.resourceType,
+        timeframe: studentAny.resourceInfo?.timeframe,
+        hasParsedSchedule: !!studentAny.resourceInfo?.parsedSchedule,
+        parsedScheduleLength: studentAny.resourceInfo?.parsedSchedule?.length || 0
+      });
     });
     
     const pullOuts: StudentPullOut[] = [];
