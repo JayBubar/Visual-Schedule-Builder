@@ -102,7 +102,7 @@ interface LibraryContent {
   name: string;
   icon: string;
   category: 'academic' | 'break' | 'other';
-  contentType: 'activity' | 'video' | 'document'; // ADD document type
+  contentType: 'activity' | 'video' | 'document' | 'choice-item';  // ADD document type
   defaultDuration: number;
   description: string;
   tags: string[];
@@ -129,6 +129,15 @@ interface LibraryContent {
   // Metadata
   createdAt: string;
   updatedAt?: string;
+  
+  // Choice-specific data (NEW)
+  choiceData?: {
+    description: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    skillAreas: string[];
+    supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
+    format: 'solo' | 'group' | 'flexible';
+  };
 }
 
 // Content creation/edit modal component
@@ -142,9 +151,13 @@ const ContentModal: React.FC<{
     name: string;
     icon: string;
     category: 'academic' | 'break' | 'other';
-    contentType: 'activity' | 'video' | 'document'; // ADD document
+    contentType: 'activity' | 'video' | 'document' | 'choice-item'; // ADD document and choice-item
     defaultDuration: number;
     description: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    skillAreas: string[];
+    supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
+    format: 'solo' | 'group' | 'flexible';
     tags: string[];
     videoUrl: string;
     googleDriveUrl: string; // NEW
@@ -159,6 +172,10 @@ const ContentModal: React.FC<{
     contentType: 'activity',
     defaultDuration: 30,
     description: '',
+    difficulty: 'beginner',
+    skillAreas: [],
+    supervisionLevel: 'minimal',
+    format: 'solo',
     tags: [],
     videoUrl: '',
     googleDriveUrl: '', // NEW
@@ -216,6 +233,10 @@ const ContentModal: React.FC<{
         contentType: content.contentType,
         defaultDuration: content.defaultDuration,
         description: content.description,
+        difficulty: content.choiceData?.difficulty || 'beginner',
+        skillAreas: content.choiceData?.skillAreas || [],
+        supervisionLevel: content.choiceData?.supervisionLevel || 'minimal',
+        format: content.choiceData?.format || 'solo',
         tags: [...content.tags],
         videoUrl: content.videoData?.videoUrl || '',
         googleDriveUrl: content.documentData?.googleDriveUrl || '', // NEW
@@ -232,6 +253,10 @@ const ContentModal: React.FC<{
         contentType: 'activity',
         defaultDuration: 30,
         description: '',
+        difficulty: 'beginner',
+        skillAreas: [],
+        supervisionLevel: 'minimal',
+        format: 'solo',
         tags: [],
         videoUrl: '',
         googleDriveUrl: '', // NEW
@@ -246,7 +271,8 @@ const ContentModal: React.FC<{
   const handleSave = () => {
     if (!formData.name.trim()) return;
     if (formData.contentType === 'video' && !formData.videoUrl.trim()) return;
-    if (formData.contentType === 'document' && !formData.googleDriveUrl.trim()) return; // NEW
+    if (formData.contentType === 'document' && !formData.googleDriveUrl.trim()) return;
+    if (formData.contentType === 'choice-item' && !formData.description.trim()) return;
 
     const contentData: LibraryContent = {
       id: content?.id || generateUniqueId('content'),
@@ -276,6 +302,17 @@ const ContentModal: React.FC<{
           googleDriveUrl: formData.googleDriveUrl.trim(),
           documentType: formData.documentType,
           notes: formData.notes.trim() || undefined,
+        }
+      }),
+      
+      // Choice item-specific data (NEW)
+      ...(formData.contentType === 'choice-item' && {
+        choiceData: {
+          description: formData.description.trim(),
+          difficulty: formData.difficulty,
+          skillAreas: formData.skillAreas,
+          supervisionLevel: formData.supervisionLevel,
+          format: formData.format,
         }
       }),
       
@@ -388,6 +425,20 @@ const ContentModal: React.FC<{
                   <div className="content-type-icon">📄</div>
                   <div className="content-type-label">Document</div>
                   <div className="content-type-desc">Google Drive link or resource</div>
+                </div>
+              </label>
+              <label className={`content-type-option ${formData.contentType === 'choice-item' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="contentType"
+                  value="choice-item"
+                  checked={formData.contentType === 'choice-item'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
+                />
+                <div className="content-type-card">
+                  <div className="content-type-icon">🎯</div>
+                  <div className="content-type-label">Choice Item</div>
+                  <div className="content-type-desc">Student choice activity option</div>
                 </div>
               </label>
             </div>
@@ -614,6 +665,91 @@ const ContentModal: React.FC<{
             </div>
           )}
 
+          {/* NEW: Choice Item Fields (for choice items only) */}
+          {formData.contentType === 'choice-item' && (
+            <>
+              <div className="form-group">
+                <label>Description *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Brief description of the choice activity..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Difficulty Level</label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Supervision Level</label>
+                  <select
+                    value={formData.supervisionLevel}
+                    onChange={(e) => setFormData(prev => ({ ...prev, supervisionLevel: e.target.value as any }))}
+                  >
+                    <option value="independent">Independent</option>
+                    <option value="minimal">Minimal Support</option>
+                    <option value="moderate">Moderate Support</option>
+                    <option value="full">Full Supervision</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Format</label>
+                  <select
+                    value={formData.format}
+                    onChange={(e) => setFormData(prev => ({ ...prev, format: e.target.value as any }))}
+                  >
+                    <option value="solo">Solo Activity</option>
+                    <option value="group">Group Activity</option>
+                    <option value="flexible">Solo or Group</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Skill Areas</label>
+                <div className="skill-areas-section">
+                  <div className="skill-suggestions">
+                    {['Fine Motor', 'Gross Motor', 'Communication', 'Social Skills', 'Math', 'Reading', 'Science', 'Art', 'Music', 'Sensory'].map(skill => (
+                      <button
+                        key={skill}
+                        type="button"
+                        onClick={() => {
+                          if (formData.skillAreas.includes(skill)) {
+                            setFormData(prev => ({
+                              ...prev,
+                              skillAreas: prev.skillAreas.filter(s => s !== skill)
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              skillAreas: [...prev.skillAreas, skill]
+                            }));
+                          }
+                        }}
+                        className={`skill-suggestion ${formData.skillAreas.includes(skill) ? 'selected' : ''}`}
+                      >
+                        {skill}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Tags */}
           <div className="form-group">
             <label>Tags</label>
@@ -687,11 +823,12 @@ const ContentModal: React.FC<{
 const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
-  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document'>('all');
+  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document' | 'choice-item'>('all');
   const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<LibraryContent | undefined>();
   const [addingContent, setAddingContent] = useState<Set<string>>(new Set());
+  const [expandedChoice, setExpandedChoice] = useState<string | null>(null);
 
   // Base content library (built-in, non-deletable items)
   const baseContent: LibraryContent[] = [
@@ -1038,6 +1175,12 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
               >
                 📚 Activities ({getContentTypeCount('activity')})
               </button>
+              <button
+                onClick={() => setSelectedContentType('choice-item')}
+                className={`content-type-button ${selectedContentType === 'choice-item' ? 'active' : ''}`}
+              >
+                🎯 Choice Items ({getContentTypeCount('choice-item')})
+              </button>
             </div>
           </div>
 
@@ -1157,6 +1300,35 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                     )}
                   </div>
                 )}
+
+        {/* Choice Item-specific display */}
+        {content.contentType === 'choice-item' && content.choiceData && (
+          <div className="choice-item-compact">
+            <div className="choice-quick-info">
+              <span className="difficulty-indicator">{content.choiceData.difficulty}</span>
+              <span className="format-indicator">{content.choiceData.format}</span>
+              <span className="supervision-indicator">{content.choiceData.supervisionLevel}</span>
+            </div>
+            <button 
+              className="open-choice-details"
+              onClick={() => setExpandedChoice(expandedChoice === content.id ? null : content.id)}
+            >
+              {expandedChoice === content.id ? 'Hide Details' : 'Open Details'}
+            </button>
+            {expandedChoice === content.id && content.choiceData.skillAreas.length > 0 && (
+              <div className="choice-expanded-details">
+                <div className="choice-skills">
+                  <span className="choice-label">🧠 Skills:</span>
+                  <div className="skill-tags">
+                    {content.choiceData.skillAreas.map((skill, index) => (
+                      <span key={index} className="skill-tag">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
                 {/* Add video selection checkboxes for videos */}
                 {content.contentType === 'video' && (
@@ -1694,6 +1866,173 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           font-style: italic;
         }
 
+        .choice-details {
+          background: rgba(56, 161, 105, 0.05);
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+          border-left: 3px solid #38a169;
+        }
+
+        .choice-attributes {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .choice-attribute {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+        }
+
+        .choice-label {
+          font-weight: 600;
+          color: #2d3748;
+          min-width: 80px;
+        }
+
+        .difficulty-badge {
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .difficulty-badge.beginner {
+          background: #c6f6d5;
+          color: #276749;
+        }
+
+        .difficulty-badge.intermediate {
+          background: #fbb6ce;
+          color: #97266d;
+        }
+
+        .difficulty-badge.advanced {
+          background: #fed7d7;
+          color: #c53030;
+        }
+
+        .format-text,
+        .supervision-text {
+          color: #4a5568;
+          font-weight: 500;
+          text-transform: capitalize;
+        }
+
+        .choice-skills {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .skill-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+        }
+
+        .skill-tag {
+          background: #38a169;
+          color: white;
+          padding: 0.125rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
+        .type-badge.choice-item {
+          background: #e9d8fd;
+          color: #6b46c1;
+        }
+
+        .content-item.choice-item {
+          border-left: 4px solid #9f7aea;
+        }
+
+        /* Choice Item Compact Display Styles */
+        .choice-item-compact {
+          background: rgba(159, 122, 234, 0.05);
+          border-left: 3px solid #9f7aea;
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+        }
+
+        .choice-quick-info {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .difficulty-indicator,
+        .format-indicator,
+        .supervision-indicator {
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: capitalize;
+          background: rgba(159, 122, 234, 0.2);
+          color: #6b46c1;
+        }
+
+        .open-choice-details {
+          background: #9f7aea;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          padding: 0.5rem 1rem;
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .open-choice-details:hover {
+          background: #8b5cf6;
+          transform: translateY(-1px);
+        }
+
+        .choice-expanded-details {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(159, 122, 234, 0.3);
+        }
+
+        .choice-skills {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .choice-label {
+          font-weight: 600;
+          color: #6b46c1;
+          font-size: 0.9rem;
+        }
+
+        .skill-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+        }
+
+        .skill-tag {
+          background: #9f7aea;
+          color: white;
+          padding: 0.125rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          font-weight: 500;
+        }
+
         .content-tags {
           display: flex;
           flex-wrap: wrap;
@@ -1996,7 +2335,7 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
 
         .content-type-selector {
           display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
           gap: 1rem;
         }
 
@@ -2305,6 +2644,136 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           cursor: not-allowed;
         }
 
+        /* Choice Item Styles */
+        .skill-areas-section {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .skill-areas-input {
+          border: 2px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 0.5rem;
+          background: white;
+        }
+
+        .skill-areas-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .skill-chip {
+          display: flex;
+          align-items: center;
+          gap: 0.25rem;
+          background: #9f7aea;
+          color: white;
+          padding: 0.25rem 0.5rem;
+          border-radius: 12px;
+          font-size: 0.8rem;
+          font-weight: 500;
+        }
+
+        .skill-remove {
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+          font-size: 0.8rem;
+          width: 1rem;
+          height: 1rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: background-color 0.2s ease;
+        }
+
+        .skill-remove:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .add-skill-input {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .add-skill-input input {
+          flex: 1;
+          border: none;
+          outline: none;
+          padding: 0.25rem;
+          font-size: 0.9rem;
+        }
+
+        .add-skill-input button {
+          padding: 0.25rem 0.75rem;
+          background: #38a169;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          font-weight: 500;
+          transition: background-color 0.2s ease;
+        }
+
+        .add-skill-input button:hover {
+          background: #2f855a;
+        }
+
+        .suggested-skills {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .suggested-skills small {
+          color: #718096;
+          font-weight: 500;
+        }
+
+        .skill-suggestions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+        }
+
+        .skill-suggestion {
+          padding: 0.25rem 0.5rem;
+          border: 1px solid #e2e8f0;
+          background: white;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s ease;
+        }
+
+        .skill-suggestion:hover:not(:disabled) {
+          border-color: #9f7aea;
+          background: rgba(159, 122, 234, 0.05);
+        }
+
+        .skill-suggestion.added {
+          background: #9f7aea;
+          color: white;
+          border-color: #9f7aea;
+        }
+
+        .skill-suggestion.selected {
+          background: #9f7aea;
+          color: white;
+          border-color: #9f7aea;
+        }
+
+        .skill-suggestion:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
         .modal-footer {
           display: flex;
           justify-content: flex-end;
@@ -2394,6 +2863,12 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
             grid-template-columns: 1fr;
           }
 
+          .content-type-selector {
+            grid-template-columns: 1fr 1fr;
+          }
+        }
+
+        @media (max-width: 600px) {
           .content-type-selector {
             grid-template-columns: 1fr;
           }
