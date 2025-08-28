@@ -9,6 +9,68 @@ import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
 import MorningMeetingFlow from '../morning-meeting/MorningMeetingFlow';
 
+// Migration Utility Component (TEMPORARY - Remove after migration is complete)
+const MigrationUtility: React.FC = () => {
+  const [migrationResult, setMigrationResult] = useState<any>(null);
+  const [hasRun, setHasRun] = useState(false);
+
+  const runMigration = () => {
+    const result = UnifiedDataService.migrateDailyCheckInsData();
+    setMigrationResult(result);
+    setHasRun(true);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      background: 'white',
+      padding: '20px',
+      borderRadius: '10px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+      zIndex: 10000,
+      maxWidth: '400px'
+    }}>
+      <h3>🔄 Data Migration</h3>
+      
+      {!hasRun ? (
+        <div>
+          <p>Click to migrate old dailyCheckIns data to new format:</p>
+          <button
+            onClick={runMigration}
+            style={{
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Run Migration
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h4>{migrationResult.success ? '✅ Success' : '❌ Failed'}</h4>
+          <p>Migrated: {migrationResult.migratedCount} items</p>
+          {migrationResult.errors.length > 0 && (
+            <div>
+              <p>Errors:</p>
+              <ul style={{ fontSize: '12px', color: 'red' }}>
+                {migrationResult.errors.map((error: string, i: number) => (
+                  <li key={i}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Video Button Component
 interface VideoButtonProps {
   label: string;
@@ -198,8 +260,8 @@ const WholeClassStudentCard: React.FC<{ student: Student; showBehaviorStatements
         if (success) {
           console.log(`🎯 ${newAchievedStatus ? 'Achieved' : 'Unachieved'} goal for ${studentId}`);
           
-          // Note: This is a placeholder - actual state update would need to be handled by parent component
-          console.log('Achievement status updated successfully');
+          // Update local state to reflect the change
+          setIsAchieved(newAchievedStatus);
         } else {
           console.error('Failed to update behavior achievement');
         }
@@ -1614,6 +1676,9 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       
       {/* ADD THIS LINE HERE - Debug overlay */}
       <SmartBoardDataDebug />
+      
+      {/* TEMPORARY: Migration Utility - Remove after migration is complete */}
+      <MigrationUtility />
       
       {/* CSS Animations */}
       <style>{`
