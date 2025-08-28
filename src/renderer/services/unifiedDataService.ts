@@ -84,6 +84,14 @@ export interface UnifiedStudent {
     };
   };
   
+  // Legacy resource info for backward compatibility
+  resourceInfo?: {
+    attendsResource: boolean;
+    resourceType: string;
+    resourceTeacher: string;
+    timeframe: string;
+  };
+  
   // IEP data (now unified)
   iepData: {
     goals: IEPGoal[];

@@ -1,5 +1,7 @@
+// IMPROVED: User-friendly Resource Input Component
+// src/renderer/components/management/EnhancedResourceInput.tsx
+
 import React, { useState, useEffect } from 'react';
-import { Clock, User, Calendar, AlertTriangle } from 'lucide-react';
 
 interface ResourceInfo {
   attendsResource: boolean;
@@ -11,7 +13,7 @@ interface ResourceInfo {
 interface EnhancedResourceInputProps {
   resourceInfo: ResourceInfo;
   onChange: (resourceInfo: ResourceInfo) => void;
-  studentName?: string;
+  studentName: string;
 }
 
 const EnhancedResourceInput: React.FC<EnhancedResourceInputProps> = ({
@@ -19,355 +21,409 @@ const EnhancedResourceInput: React.FC<EnhancedResourceInputProps> = ({
   onChange,
   studentName
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [schedulePreview, setSchedulePreview] = useState<string>('');
-  const [scheduleError, setScheduleError] = useState<string>('');
+  // Local state for the form
+  const [localResourceInfo, setLocalResourceInfo] = useState<ResourceInfo>({
+    attendsResource: false,
+    resourceType: '',
+    resourceTeacher: '',
+    timeframe: '',
+    ...resourceInfo
+  });
 
-  // Common service types
+  // Predefined options for better UX
   const serviceTypes = [
-    'Speech Therapy',
-    'Occupational Therapy', 
-    'Physical Therapy',
-    'Counseling',
-    'Reading Support',
-    'Math Support',
-    'ESL',
-    'Behavioral Support',
-    'Life Skills',
-    'Other'
+    { value: '', label: 'Select a service...' },
+    { value: 'Speech Therapy', label: 'Speech Therapy' },
+    { value: 'Occupational Therapy', label: 'Occupational Therapy (OT)' },
+    { value: 'Physical Therapy', label: 'Physical Therapy (PT)' },
+    { value: 'Reading Support', label: 'Reading Support' },
+    { value: 'Math Support', label: 'Math Support' },
+    { value: 'Counseling', label: 'Counseling' },
+    { value: 'ESL Support', label: 'ESL Support' },
+    { value: 'Behavior Support', label: 'Behavior Support' },
+    { value: 'Other', label: 'Other Service' }
   ];
 
-  // Common time slots
   const timeSlots = [
-    '8:00-8:30 AM',
-    '8:30-9:00 AM',
-    '9:00-9:30 AM',
-    '9:30-10:00 AM',
-    '10:00-10:30 AM',
-    '10:30-11:00 AM',
-    '11:00-11:30 AM',
-    '11:30-12:00 PM',
-    '12:00-12:30 PM',
-    '12:30-1:00 PM',
-    '1:00-1:30 PM',
-    '1:30-2:00 PM',
-    '2:00-2:30 PM',
-    '2:30-3:00 PM',
-    '3:00-3:30 PM',
-    'Custom'
+    { value: '', label: 'Select time...' },
+    { value: 'Monday 9:00-9:30 AM', label: 'Monday 9:00-9:30 AM' },
+    { value: 'Monday 10:00-10:30 AM', label: 'Monday 10:00-10:30 AM' },
+    { value: 'Monday 11:00-11:30 AM', label: 'Monday 11:00-11:30 AM' },
+    { value: 'Monday 1:00-1:30 PM', label: 'Monday 1:00-1:30 PM' },
+    { value: 'Monday 2:00-2:30 PM', label: 'Monday 2:00-2:30 PM' },
+    { value: 'Tuesday 9:00-9:30 AM', label: 'Tuesday 9:00-9:30 AM' },
+    { value: 'Tuesday 10:00-10:30 AM', label: 'Tuesday 10:00-10:30 AM' },
+    { value: 'Tuesday 11:00-11:30 AM', label: 'Tuesday 11:00-11:30 AM' },
+    { value: 'Tuesday 1:00-1:30 PM', label: 'Tuesday 1:00-1:30 PM' },
+    { value: 'Tuesday 2:00-2:30 PM', label: 'Tuesday 2:00-2:30 PM' },
+    { value: 'Wednesday 9:00-9:30 AM', label: 'Wednesday 9:00-9:30 AM' },
+    { value: 'Wednesday 10:00-10:30 AM', label: 'Wednesday 10:00-10:30 AM' },
+    { value: 'Wednesday 11:00-11:30 AM', label: 'Wednesday 11:00-11:30 AM' },
+    { value: 'Wednesday 1:00-1:30 PM', label: 'Wednesday 1:00-1:30 PM' },
+    { value: 'Wednesday 2:00-2:30 PM', label: 'Wednesday 2:00-2:30 PM' },
+    { value: 'Thursday 9:00-9:30 AM', label: 'Thursday 9:00-9:30 AM' },
+    { value: 'Thursday 10:00-10:30 AM', label: 'Thursday 10:00-10:30 AM' },
+    { value: 'Thursday 11:00-11:30 AM', label: 'Thursday 11:00-11:30 AM' },
+    { value: 'Thursday 1:00-1:30 PM', label: 'Thursday 1:00-1:30 PM' },
+    { value: 'Thursday 2:00-2:30 PM', label: 'Thursday 2:00-2:30 PM' },
+    { value: 'Friday 9:00-9:30 AM', label: 'Friday 9:00-9:30 AM' },
+    { value: 'Friday 10:00-10:30 AM', label: 'Friday 10:00-10:30 AM' },
+    { value: 'Friday 11:00-11:30 AM', label: 'Friday 11:00-11:30 AM' },
+    { value: 'Friday 1:00-1:30 PM', label: 'Friday 1:00-1:30 PM' },
+    { value: 'Friday 2:00-2:30 PM', label: 'Friday 2:00-2:30 PM' },
+    { value: 'Custom', label: 'Custom Schedule...' }
   ];
 
-  // Days of the week
-  const daysOfWeek = [
-    { value: 'Monday', label: 'Monday', abbr: 'M' },
-    { value: 'Tuesday', label: 'Tuesday', abbr: 'T' },
-    { value: 'Wednesday', label: 'Wednesday', abbr: 'W' },
-    { value: 'Thursday', label: 'Thursday', abbr: 'Th' },
-    { value: 'Friday', label: 'Friday', abbr: 'F' }
+  const resourceTeachers = [
+    { value: '', label: 'Select teacher/therapist...' },
+    { value: 'Ms. Johnson', label: 'Ms. Johnson' },
+    { value: 'Mr. Smith', label: 'Mr. Smith' },
+    { value: 'Ms. Rodriguez', label: 'Ms. Rodriguez' },
+    { value: 'Mr. Davis', label: 'Mr. Davis' },
+    { value: 'Ms. Thompson', label: 'Ms. Thompson' },
+    { value: 'Other', label: 'Other (specify below)' }
   ];
 
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [selectedTime, setSelectedTime] = useState<string>('');
-  const [customTime, setCustomTime] = useState<string>('');
-
-  // Parse existing timeframe when component mounts
+  // Update parent when local state changes
   useEffect(() => {
-    if (resourceInfo.timeframe) {
-      parseExistingTimeframe(resourceInfo.timeframe);
-    }
-  }, []);
+    onChange(localResourceInfo);
+  }, [localResourceInfo, onChange]);
 
-  // Generate schedule preview and validate
-  useEffect(() => {
-    if (selectedDays.length > 0 && (selectedTime !== 'Custom' ? selectedTime : customTime)) {
-      const timeToUse = selectedTime === 'Custom' ? customTime : selectedTime;
-      const daysText = selectedDays.length === 1 
-        ? selectedDays[0] + 's'
-        : selectedDays.length === 5
-        ? 'Daily'
-        : selectedDays.join('/');
-      
-      const preview = `${daysText} ${timeToUse}`;
-      setSchedulePreview(preview);
-      
-      // Validate the schedule format
-      validateSchedule(preview);
-      
-      // Update the parent component
-      onChange({
-        ...resourceInfo,
-        timeframe: preview
+  const handleFieldChange = (field: keyof ResourceInfo, value: any) => {
+    console.log(`🔄 Resource field changed: ${field} = ${value}`);
+    setLocalResourceInfo(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleAttendanceChange = (attends: boolean) => {
+    if (!attends) {
+      // If unchecking attendance, clear all other fields
+      setLocalResourceInfo({
+        attendsResource: false,
+        resourceType: '',
+        resourceTeacher: '',
+        timeframe: ''
       });
     } else {
-      setSchedulePreview('');
-      setScheduleError('');
+      setLocalResourceInfo(prev => ({
+        ...prev,
+        attendsResource: true
+      }));
     }
-  }, [selectedDays, selectedTime, customTime]);
-
-  const parseExistingTimeframe = (timeframe: string) => {
-    try {
-      // Extract time
-      const timeMatch = timeframe.match(/(\d{1,2}:\d{2}(?:\s*(?:AM|PM))?)\s*-\s*(\d{1,2}:\d{2}(?:\s*(?:AM|PM))?)/i);
-      if (timeMatch) {
-        const fullTimeRange = `${timeMatch[1]}-${timeMatch[2]}`;
-        if (timeSlots.includes(fullTimeRange)) {
-          setSelectedTime(fullTimeRange);
-        } else {
-          setSelectedTime('Custom');
-          setCustomTime(fullTimeRange);
-        }
-      }
-
-      // Extract days
-      const days: string[] = [];
-      daysOfWeek.forEach(day => {
-        if (timeframe.toLowerCase().includes(day.value.toLowerCase()) || 
-            timeframe.toLowerCase().includes(day.abbr.toLowerCase())) {
-          days.push(day.value);
-        }
-      });
-      setSelectedDays(days);
-    } catch (error) {
-      console.warn('Error parsing existing timeframe:', timeframe);
-    }
-  };
-
-  const validateSchedule = (schedule: string) => {
-    if (!schedule) {
-      setScheduleError('');
-      return;
-    }
-
-    // Check for valid time format
-    const hasValidTime = /\d{1,2}:\d{2}/.test(schedule);
-    if (!hasValidTime) {
-      setScheduleError('Please include a valid time range (e.g., 10:00-10:30)');
-      return;
-    }
-
-    // Check for valid days
-    const hasValidDays = daysOfWeek.some(day => 
-      schedule.toLowerCase().includes(day.value.toLowerCase())
-    );
-    if (!hasValidDays && !schedule.toLowerCase().includes('daily')) {
-      setScheduleError('Please specify which days (e.g., Monday, Tuesday)');
-      return;
-    }
-
-    setScheduleError('');
-  };
-
-  const handleDayToggle = (day: string) => {
-    setSelectedDays(prev => 
-      prev.includes(day) 
-        ? prev.filter(d => d !== day)
-        : [...prev, day].sort((a, b) => {
-            const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-            return order.indexOf(a) - order.indexOf(b);
-          })
-    );
-  };
-
-  const handleResourceToggle = (checked: boolean) => {
-    if (!checked) {
-      // Clear all data when unchecked
-      setSelectedDays([]);
-      setSelectedTime('');
-      setCustomTime('');
-      setSchedulePreview('');
-      setScheduleError('');
-    }
-    
-    onChange({
-      attendsResource: checked,
-      resourceType: checked ? resourceInfo.resourceType : '',
-      resourceTeacher: checked ? resourceInfo.resourceTeacher : '',
-      timeframe: checked ? resourceInfo.timeframe : ''
-    });
   };
 
   return (
-    <div className="space-y-4">
-      {/* Main Resource Toggle */}
-      <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <label className="flex items-center gap-2 cursor-pointer">
+    <div style={styles.container}>
+      <h4 style={styles.sectionTitle}>
+        🏫 Resource Services for {studentName}
+      </h4>
+
+      {/* Main Toggle */}
+      <div style={styles.toggleSection}>
+        <label style={styles.toggleLabel}>
           <input
             type="checkbox"
-            checked={resourceInfo.attendsResource}
-            onChange={(e) => handleResourceToggle(e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            checked={localResourceInfo.attendsResource}
+            onChange={(e) => handleAttendanceChange(e.target.checked)}
+            style={styles.checkbox}
           />
-          <span className="font-medium text-blue-900">🎯 Receives Resource Services</span>
+          <span style={styles.toggleText}>
+            This student receives resource services
+          </span>
         </label>
-        {resourceInfo.attendsResource && (
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="ml-auto text-xs bg-blue-100 hover:bg-blue-200 px-2 py-1 rounded text-blue-700 transition-colors"
-          >
-            {showAdvanced ? 'Simple' : 'Advanced'} Setup
-          </button>
-        )}
       </div>
 
-      {resourceInfo.attendsResource && (
-        <div className="ml-6 space-y-4 border-l-2 border-blue-200 pl-4">
+      {/* Resource Details (only show if attending) */}
+      {localResourceInfo.attendsResource && (
+        <div style={styles.detailsSection}>
+          
           {/* Service Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Service Type
-            </label>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Service Type *</label>
             <select
-              value={resourceInfo.resourceType}
-              onChange={(e) => onChange({...resourceInfo, resourceType: e.target.value})}
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={localResourceInfo.resourceType}
+              onChange={(e) => handleFieldChange('resourceType', e.target.value)}
+              style={styles.select}
+              required
             >
-              <option value="">Select a service...</option>
-              {serviceTypes.map(service => (
-                <option key={service} value={service}>{service}</option>
+              {serviceTypes.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
               ))}
             </select>
+            {localResourceInfo.resourceType && (
+              <div style={styles.selectedPreview}>
+                ✅ Selected: {localResourceInfo.resourceType}
+              </div>
+            )}
+          </div>
+
+          {/* Schedule/Timeframe */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Schedule/Time *</label>
+            <select
+              value={localResourceInfo.timeframe}
+              onChange={(e) => handleFieldChange('timeframe', e.target.value)}
+              style={styles.select}
+              required
+            >
+              {timeSlots.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            
+            {/* Custom time input */}
+            {localResourceInfo.timeframe === 'Custom' && (
+              <input
+                type="text"
+                placeholder="e.g., MWF 10:15-10:45 AM"
+                onChange={(e) => handleFieldChange('timeframe', e.target.value)}
+                style={styles.customInput}
+              />
+            )}
+            
+            {localResourceInfo.timeframe && localResourceInfo.timeframe !== 'Custom' && (
+              <div style={styles.selectedPreview}>
+                ⏰ Scheduled: {localResourceInfo.timeframe}
+              </div>
+            )}
           </div>
 
           {/* Teacher/Therapist */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teacher/Therapist
-            </label>
-            <input
-              type="text"
-              value={resourceInfo.resourceTeacher}
-              onChange={(e) => onChange({...resourceInfo, resourceTeacher: e.target.value})}
-              placeholder="e.g., Ms. Johnson, Mr. Smith"
-              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {showAdvanced ? (
-            // Advanced Schedule Builder
-            <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-900 flex items-center gap-2">
-                <Calendar className="w-4 h-4" />
-                Schedule Builder
-              </h4>
-
-              {/* Days Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Days
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {daysOfWeek.map(day => (
-                    <button
-                      key={day.value}
-                      onClick={() => handleDayToggle(day.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                        selectedDays.includes(day.value)
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
-                    >
-                      {day.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Time Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Time Slot
-                </label>
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select time slot...</option>
-                  {timeSlots.map(slot => (
-                    <option key={slot} value={slot}>{slot}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Custom Time Input */}
-              {selectedTime === 'Custom' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Custom Time Range
-                  </label>
-                  <input
-                    type="text"
-                    value={customTime}
-                    onChange={(e) => setCustomTime(e.target.value)}
-                    placeholder="e.g., 10:15-10:45 AM"
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Format: 10:00-10:30 AM or 14:00-14:30
-                  </p>
-                </div>
-              )}
-
-              {/* Schedule Preview */}
-              {schedulePreview && (
-                <div className="bg-white border border-gray-200 rounded-md p-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-green-600" />
-                    <span className="font-medium text-gray-900">Schedule:</span>
-                    <span className="text-blue-600 font-mono">{schedulePreview}</span>
-                  </div>
-                  {scheduleError ? (
-                    <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                      <AlertTriangle className="w-3 h-3" />
-                      <span>{scheduleError}</span>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-green-600 mt-2">
-                      ✓ Valid schedule format
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            // Simple Text Input (original)
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Schedule/Timeframe
-              </label>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Teacher/Therapist *</label>
+            <select
+              value={localResourceInfo.resourceTeacher}
+              onChange={(e) => handleFieldChange('resourceTeacher', e.target.value)}
+              style={styles.select}
+              required
+            >
+              {resourceTeachers.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            
+            {/* Custom teacher input */}
+            {localResourceInfo.resourceTeacher === 'Other' && (
               <input
                 type="text"
-                value={resourceInfo.timeframe}
-                onChange={(e) => onChange({...resourceInfo, timeframe: e.target.value})}
-                placeholder="e.g., Tuesdays & Thursdays 10:00-10:30 AM"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter teacher/therapist name"
+                onChange={(e) => handleFieldChange('resourceTeacher', e.target.value)}
+                style={styles.customInput}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Examples: "Monday/Wednesday 2:00-2:30", "Daily 10:00-10:30 AM", "MWF 9:00-9:30"
-              </p>
-            </div>
-          )}
+            )}
+            
+            {localResourceInfo.resourceTeacher && localResourceInfo.resourceTeacher !== 'Other' && (
+              <div style={styles.selectedPreview}>
+                👨‍🏫 Provider: {localResourceInfo.resourceTeacher}
+              </div>
+            )}
+          </div>
 
-          {/* Student Preview */}
-          {studentName && resourceInfo.resourceType && resourceInfo.timeframe && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <User className="w-4 h-4 text-green-600 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-green-900">
-                    {studentName} → {resourceInfo.resourceType}
-                  </p>
-                  <p className="text-green-700">
-                    {resourceInfo.timeframe} with {resourceInfo.resourceTeacher || 'Resource Teacher'}
-                  </p>
-                </div>
+          {/* Summary Preview */}
+          {localResourceInfo.resourceType && localResourceInfo.timeframe && localResourceInfo.resourceTeacher && (
+            <div style={styles.summaryPreview}>
+              <div style={styles.summaryTitle}>📋 Resource Service Summary</div>
+              <div style={styles.summaryContent}>
+                <div><strong>{studentName}</strong> will attend <strong>{localResourceInfo.resourceType}</strong></div>
+                <div>with <strong>{localResourceInfo.resourceTeacher}</strong></div>
+                <div>during <strong>{localResourceInfo.timeframe}</strong></div>
               </div>
             </div>
           )}
+
+          {/* Helpful Examples */}
+          <div style={styles.helpSection}>
+            <div style={styles.helpTitle}>💡 Schedule Format Examples:</div>
+            <div style={styles.helpText}>
+              • "Monday/Wednesday 2:00-2:30 PM"<br/>
+              • "Daily 10:00-10:30 AM"<br/>
+              • "MWF 9:00-9:30 AM"<br/>
+              • "Tuesdays & Thursdays 1:15-2:00 PM"
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Services Message */}
+      {!localResourceInfo.attendsResource && (
+        <div style={styles.noServicesMessage}>
+          <div style={styles.noServicesIcon}>🏫</div>
+          <div style={styles.noServicesText}>
+            {studentName} does not currently receive resource services.<br/>
+            Check the box above to set up resource services.
+          </div>
         </div>
       )}
     </div>
   );
+};
+
+// Comprehensive styles for the improved resource input
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    background: 'rgba(59, 130, 246, 0.05)',
+    borderRadius: '12px',
+    padding: '1.5rem',
+    border: '1px solid rgba(59, 130, 246, 0.1)',
+    marginTop: '1rem'
+  },
+
+  sectionTitle: {
+    fontSize: '1.1rem',
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: '1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+
+  toggleSection: {
+    marginBottom: '1.5rem',
+    padding: '1rem',
+    background: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: '8px',
+    border: '2px solid rgba(59, 130, 246, 0.2)'
+  },
+
+  toggleLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    cursor: 'pointer',
+    fontSize: '1rem'
+  },
+
+  checkbox: {
+    width: '1.25rem',
+    height: '1.25rem',
+    cursor: 'pointer'
+  },
+
+  toggleText: {
+    fontWeight: '600',
+    color: '#1e40af'
+  },
+
+  detailsSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.25rem'
+  },
+
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem'
+  },
+
+  label: {
+    fontWeight: '600',
+    color: '#374151',
+    fontSize: '0.9rem'
+  },
+
+  select: {
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: '2px solid #e5e7eb',
+    fontSize: '1rem',
+    backgroundColor: 'white',
+    transition: 'border-color 0.2s',
+    cursor: 'pointer'
+  },
+
+  customInput: {
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: '2px solid #e5e7eb',
+    fontSize: '1rem',
+    marginTop: '0.5rem',
+    transition: 'border-color 0.2s'
+  },
+
+  selectedPreview: {
+    padding: '0.5rem',
+    background: 'rgba(34, 197, 94, 0.1)',
+    borderRadius: '6px',
+    border: '1px solid rgba(34, 197, 94, 0.2)',
+    color: '#065f46',
+    fontSize: '0.9rem',
+    fontWeight: '500',
+    marginTop: '0.5rem'
+  },
+
+  summaryPreview: {
+    marginTop: '1rem',
+    padding: '1rem',
+    background: 'rgba(16, 185, 129, 0.1)',
+    borderRadius: '8px',
+    border: '1px solid rgba(16, 185, 129, 0.2)'
+  },
+
+  summaryTitle: {
+    fontWeight: '600',
+    color: '#065f46',
+    marginBottom: '0.5rem',
+    fontSize: '1rem'
+  },
+
+  summaryContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.25rem',
+    fontSize: '0.9rem',
+    color: '#047857',
+    lineHeight: '1.4'
+  },
+
+  helpSection: {
+    marginTop: '1rem',
+    padding: '1rem',
+    background: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: '8px',
+    border: '1px solid rgba(245, 158, 11, 0.2)'
+  },
+
+  helpTitle: {
+    fontWeight: '600',
+    color: '#92400e',
+    marginBottom: '0.5rem',
+    fontSize: '0.9rem'
+  },
+
+  helpText: {
+    fontSize: '0.8rem',
+    color: '#a16207',
+    lineHeight: '1.4'
+  },
+
+  noServicesMessage: {
+    padding: '2rem',
+    textAlign: 'center',
+    background: 'rgba(156, 163, 175, 0.1)',
+    borderRadius: '8px',
+    border: '1px solid rgba(156, 163, 175, 0.2)'
+  },
+
+  noServicesIcon: {
+    fontSize: '3rem',
+    marginBottom: '1rem'
+  },
+
+  noServicesText: {
+    color: '#6b7280',
+    fontSize: '0.9rem',
+    lineHeight: '1.5'
+  }
 };
 
 export default EnhancedResourceInput;
