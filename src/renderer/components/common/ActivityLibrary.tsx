@@ -102,7 +102,7 @@ interface LibraryContent {
   name: string;
   icon: string;
   category: 'academic' | 'break' | 'other';
-  contentType: 'activity' | 'video';
+  contentType: 'activity' | 'video' | 'document'; // ADD document type
   defaultDuration: number;
   description: string;
   tags: string[];
@@ -112,6 +112,13 @@ interface LibraryContent {
   // Video-specific data
   videoData?: {
     videoUrl: string;
+    notes?: string;
+  };
+  
+  // Document-specific data (NEW)
+  documentData?: {
+    googleDriveUrl: string;
+    documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other';
     notes?: string;
   };
   
@@ -135,11 +142,13 @@ const ContentModal: React.FC<{
     name: string;
     icon: string;
     category: 'academic' | 'break' | 'other';
-    contentType: 'activity' | 'video';
+    contentType: 'activity' | 'video' | 'document'; // ADD document
     defaultDuration: number;
     description: string;
     tags: string[];
     videoUrl: string;
+    googleDriveUrl: string; // NEW
+    documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other'; // NEW
     notes: string;
     materials: string[];
     instructions: string;
@@ -152,6 +161,8 @@ const ContentModal: React.FC<{
     description: '',
     tags: [],
     videoUrl: '',
+    googleDriveUrl: '', // NEW
+    documentType: 'resource', // NEW
     notes: '',
     materials: [],
     instructions: '',
@@ -159,11 +170,30 @@ const ContentModal: React.FC<{
   const [newTag, setNewTag] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // FIXED: Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (showEmojiPicker && !target.closest('.icon-selection')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
   // Available icons organized by purpose
   const iconLibrary = {
     academic: ['📚', '✏️', '🔢', '🧪', '🗺️', '💻', '📖', '📝', '🎓', '🔬'],
     break: ['🍽️', '🍎', '🚻', '😴', '🔄', '⏰', '🛡️', '🚨', '⚠️', '🔔'],
     other: ['🗣️', '✋', '💭', '🎯', '🎨', '🎵', '⚽', '🤝', '🧘', '🎮'],
+    document: ['📄', '📋', '📊', '📈', '📉', '🗂️', '📁', '🔗', '📎', '📑'], // NEW
     general: ['📋', '⭐', '🎉', '💡', '🔗', '📹', '🎬', '📺', '🌟', '✨']
   };
 
@@ -173,7 +203,8 @@ const ContentModal: React.FC<{
     break: ['nutrition', 'rest', 'hygiene', 'safety', 'routine'],
     other: ['therapy', 'support', 'choice', 'transition', 'resource'],
     video: ['seasonal', 'weather', 'educational', 'calming', 'motivational'],
-    activity: ['hands-on', 'group', 'individual', 'discussion', 'practice']
+    activity: ['hands-on', 'group', 'individual', 'discussion', 'practice'],
+    document: ['lesson-plan', 'worksheet', 'standard', 'resource', 'template'] // NEW
   };
 
   useEffect(() => {
@@ -187,7 +218,9 @@ const ContentModal: React.FC<{
         description: content.description,
         tags: [...content.tags],
         videoUrl: content.videoData?.videoUrl || '',
-        notes: content.videoData?.notes || '',
+        googleDriveUrl: content.documentData?.googleDriveUrl || '', // NEW
+        documentType: content.documentData?.documentType || 'resource', // NEW
+        notes: content.videoData?.notes || content.documentData?.notes || '',
         materials: content.materials || [],
         instructions: content.instructions || '',
       });
@@ -201,6 +234,8 @@ const ContentModal: React.FC<{
         description: '',
         tags: [],
         videoUrl: '',
+        googleDriveUrl: '', // NEW
+        documentType: 'resource', // NEW
         notes: '',
         materials: [],
         instructions: '',
@@ -365,7 +400,7 @@ const ContentModal: React.FC<{
           <div className="form-row">
             <div className="form-group">
               <label>Icon</label>
-              <div className="icon-selection">
+              <div className="icon-selection" style={{ position: 'relative' }}>
                 <div className="current-icon">
                   <span className="emoji-preview">{formData.icon}</span>
                 </div>
@@ -377,7 +412,20 @@ const ContentModal: React.FC<{
                   Choose Icon
                 </button>
                 {showEmojiPicker && (
-                  <div className="emoji-picker">
+                  <div className="emoji-picker" style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: '0',
+                    right: '0',
+                    background: 'white',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    zIndex: 1000,
+                    maxHeight: '300px',
+                    overflowY: 'auto'
+                  }}>
                     <div className="emoji-category">
                       <h4>For {formData.category}</h4>
                       <div className="emoji-grid">
