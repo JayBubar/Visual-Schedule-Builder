@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MorningMeetingStepProps, Student } from '../types/morningMeetingTypes';
 import StepNavigation from '../common/StepNavigation';
+import UnifiedDataService from '../../../services/unifiedDataService';
 
 interface Celebration {
   id: string;
@@ -122,12 +123,66 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
   const funHoliday = useMemo(() => getFunHolidayForDate(currentDate), [currentDate, getFunHolidayForDate]);
 
   const birthdayStudents = useMemo(() => {
-    return students.filter(student => {
-      if (!student.birthday) return false;
-      const birthday = new Date(student.birthday);
-      return birthday.getMonth() === currentDate.getMonth() && birthday.getDate() === currentDate.getDate();
+    // Get all students from UnifiedDataService instead of using props
+    const allStudents = UnifiedDataService.getAllStudents();
+    
+    // Debug logging
+    console.log('🎂 CelebrationStep Debug Info:');
+    console.log('- Total students found:', allStudents.length);
+    console.log('- Current date:', currentDate.toDateString());
+    console.log('- Current month/day:', currentDate.getMonth(), currentDate.getDate());
+    
+    // Check each student's birthday data
+    allStudents.forEach(student => {
+      if (student.birthday) {
+        const birthday = new Date(student.birthday);
+        console.log(`- Student: ${student.name}`);
+        console.log(`  Birthday: ${student.birthday}`);
+        console.log(`  Parsed birthday: ${birthday.toDateString()}`);
+        console.log(`  Birthday month (0-based): ${birthday.getMonth()} (${birthday.getMonth() + 1} in human terms)`);
+        console.log(`  Birthday day: ${birthday.getDate()}`);
+        console.log(`  Current month (0-based): ${currentDate.getMonth()} (${currentDate.getMonth() + 1} in human terms)`);
+        console.log(`  Current day: ${currentDate.getDate()}`);
+        console.log(`  Allow Birthday Display: ${student.allowBirthdayDisplay}`);
+        console.log(`  Allow Photo in Celebrations: ${student.allowPhotoInCelebrations}`);
+        console.log(`  Matches today: ${birthday.getMonth() === currentDate.getMonth() && birthday.getDate() === currentDate.getDate()}`);
+      }
     });
-  }, [students, currentDate]);
+    
+    const filtered = allStudents.filter(student => {
+      // Check if student has a birthday
+      if (!student.birthday) {
+        console.log(`❌ ${student.name}: No birthday set`);
+        return false;
+      }
+      
+      // TEMPORARY: Allow birthday display even if allowBirthdayDisplay is not explicitly set
+      // This helps us debug if the issue is with the privacy setting
+      if (student.allowBirthdayDisplay === false) {
+        console.log(`❌ ${student.name}: Birthday display explicitly disabled`);
+        return false;
+      }
+      
+      if (!student.allowBirthdayDisplay) {
+        console.log(`⚠️ ${student.name}: allowBirthdayDisplay not set, but allowing for debugging`);
+      }
+      
+      // Check if birthday matches today's date
+      const birthday = new Date(student.birthday);
+      const matches = birthday.getMonth() === currentDate.getMonth() && birthday.getDate() === currentDate.getDate();
+      
+      if (matches) {
+        console.log(`✅ ${student.name}: Birthday matches today!`);
+      } else {
+        console.log(`❌ ${student.name}: Birthday doesn't match today`);
+      }
+      
+      return matches;
+    });
+    
+    console.log('🎂 Final birthday students:', filtered.length);
+    return filtered;
+  }, [currentDate]);
 
   const customCelebrations = useMemo(() => {
     return hubSettings?.celebrations?.customCelebrations || [];
@@ -174,7 +229,9 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
                 <h4>🎂 Happy Birthday!</h4>
                 {birthdayStudents.map(student => (
                   <div key={student.id} style={styles.studentCard}>
-                    {student.photo && <img src={student.photo} alt={student.name} style={styles.studentPhoto} />}
+                    {student.photo && student.allowPhotoInCelebrations && (
+                      <img src={student.photo} alt={student.name} style={styles.studentPhoto} />
+                    )}
                     <span>{student.name}</span>
                   </div>
                 ))}
