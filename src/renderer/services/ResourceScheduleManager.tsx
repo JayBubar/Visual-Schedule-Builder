@@ -1,32 +1,5 @@
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
-
-// Using your existing unified data structure
-interface UnifiedStudent {
-  id: string;
-  name: string;
-  grade: string;
-  photo?: string;
-  dateCreated: string;
-  notes?: string;
-  accommodations?: string[];
-  goals?: string[];
-  preferredPartners?: string[];
-  avoidPartners?: string[];
-  resourceInfo?: {
-    attendsResource: boolean;
-    resourceType: string;
-    resourceTeacher: string;
-    timeframe: string;
-    parsedSchedule?: ResourceSchedule[];
-  };
-  iepData?: {
-    goals: any[];
-    dataCollection: any[];
-  };
-  calendarPreferences?: any;
-  schedulePreferences?: any;
-  analytics?: any;
-}
+import UnifiedDataService, { UnifiedStudent } from './unifiedDataService';
 
 interface ResourceSchedule {
   day: string;
@@ -67,13 +40,20 @@ const ResourceScheduleContext = createContext<ResourceScheduleContextType | unde
 
 interface ResourceScheduleProviderProps {
   children: React.ReactNode;
-  allStudents: UnifiedStudent[];
 }
 
 export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> = ({
-  children,
-  allStudents
+  children
 }) => {
+  // Get all students from UnifiedDataService
+  const allStudents = useMemo(() => {
+    try {
+      return UnifiedDataService.getAllStudents();
+    } catch (error) {
+      console.error('ResourceScheduleManager: Error loading students from UnifiedDataService:', error);
+      return [];
+    }
+  }, []);
   // Parse timeframe strings into structured schedules
   const parseResourceSchedule = useCallback((timeframe: string, serviceType: string, teacher: string): ResourceSchedule[] => {
     if (!timeframe) return [];
@@ -141,22 +121,34 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
 
   // Get all students with resource services
   const getAllResourceStudents = useCallback(() => {
-    return allStudents.filter(student => student.resourceInfo?.attendsResource);
+    return allStudents.filter(student => 
+      (student as any).resourceInfo?.attendsResource || 
+      student.resourceInformation?.attendsResourceServices
+    );
   }, [allStudents]);
 
   // Parse all student schedules
   const studentsWithParsedSchedules = useMemo(() => {
     return allStudents.map(student => {
-      if (student.resourceInfo?.attendsResource && student.resourceInfo.timeframe) {
+      // Handle both old and new resource info structures
+      const studentAny = student as any;
+      const resourceInfo = studentAny.resourceInfo || {
+        attendsResource: student.resourceInformation?.attendsResourceServices || false,
+        resourceType: student.resourceInformation?.relatedServices?.[0] || 'Resource Services',
+        resourceTeacher: 'Resource Teacher',
+        timeframe: ''
+      };
+
+      if (resourceInfo.attendsResource && resourceInfo.timeframe) {
         const parsedSchedule = parseResourceSchedule(
-          student.resourceInfo.timeframe,
-          student.resourceInfo.resourceType,
-          student.resourceInfo.resourceTeacher
+          resourceInfo.timeframe,
+          resourceInfo.resourceType,
+          resourceInfo.resourceTeacher
         );
         return {
           ...student,
           resourceInfo: {
-            ...student.resourceInfo,
+            ...resourceInfo,
             parsedSchedule
           }
         };
@@ -173,9 +165,10 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     const pullOuts: StudentPullOut[] = [];
     
     studentsWithParsedSchedules.forEach(student => {
-      if (!student.resourceInfo?.parsedSchedule) return;
+      const studentAny = student as any;
+      if (!studentAny.resourceInfo?.parsedSchedule) return;
       
-      student.resourceInfo.parsedSchedule.forEach(schedule => {
+      studentAny.resourceInfo.parsedSchedule.forEach((schedule: ResourceSchedule) => {
         if (schedule.day === currentDay && 
             currentTimeStr >= schedule.startTime && 
             currentTimeStr <= schedule.endTime) {
@@ -209,9 +202,10 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     const upcomingPullOuts: StudentPullOut[] = [];
     
     studentsWithParsedSchedules.forEach(student => {
-      if (!student.resourceInfo?.parsedSchedule) return;
+      const studentAny = student as any;
+      if (!studentAny.resourceInfo?.parsedSchedule) return;
       
-      student.resourceInfo.parsedSchedule.forEach(schedule => {
+      studentAny.resourceInfo.parsedSchedule.forEach((schedule: ResourceSchedule) => {
         if (schedule.day === currentDay && 
             schedule.startTime > currentTimeStr && 
             schedule.startTime <= futureTimeStr) {
@@ -246,9 +240,10 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     const conflictingStudents: UnifiedStudent[] = [];
     
     studentsWithParsedSchedules.forEach(student => {
-      if (!student.resourceInfo?.parsedSchedule) return;
+      const studentAny = student as any;
+      if (!studentAny.resourceInfo?.parsedSchedule) return;
       
-      student.resourceInfo.parsedSchedule.forEach(schedule => {
+      studentAny.resourceInfo.parsedSchedule.forEach((schedule: ResourceSchedule) => {
         if (schedule.day === checkDay) {
           // Check if activity time overlaps with resource time
           if (timeRangesOverlap(activityTime, `${schedule.startTime}-${schedule.endTime}`)) {

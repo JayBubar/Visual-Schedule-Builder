@@ -1572,7 +1572,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       })()}
 
       {/* Out of Class Display - Top Right Corner */}
-      <OutOfClassDisplay studentsInPullOut={currentPullOuts} />
+      <OutOfClassDisplay position="top-right" />
 
       {/* Header - Fixed Height with Navigation and Video Buttons */}
       <div style={{

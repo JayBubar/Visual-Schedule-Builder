@@ -1,34 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Clock, MapPin, Calendar } from 'lucide-react';
+import UnifiedDataService from '../../services/unifiedDataService';
 
-// Using your existing unified data structure
-interface UnifiedStudent {
-  id: string;
-  name: string;
-  grade: string;
-  photo?: string;
-  dateCreated: string;
-  notes?: string;
-  accommodations?: string[];
-  goals?: string[];
-  preferredPartners?: string[];
-  avoidPartners?: string[];
-  resourceInfo?: {
-    attendsResource: boolean;
-    resourceType: string;
-    resourceTeacher: string;
-    timeframe: string;
-    parsedSchedule?: ResourceSchedule[];
-  };
-  iepData?: {
-    goals: any[];
-    dataCollection: any[];
-  };
-  calendarPreferences?: any;
-  schedulePreferences?: any;
-  analytics?: any;
-}
+// Import the actual UnifiedStudent type from UnifiedDataService
+import { UnifiedStudent } from '../../services/unifiedDataService';
 
 interface ResourceSchedule {
   day: string;
@@ -46,15 +22,175 @@ interface StudentPullOut {
 }
 
 interface OutOfClassDisplayProps {
-  studentsInPullOut: StudentPullOut[];
   className?: string;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }
 
 const OutOfClassDisplay: React.FC<OutOfClassDisplayProps> = ({
-  studentsInPullOut,
-  className = ''
+  className = '',
+  position = 'top-right'
 }) => {
-  if (studentsInPullOut.length === 0) {
+  const [studentsInPullOut, setStudentsInPullOut] = useState<StudentPullOut[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Parse timeframe strings into structured schedules
+  const parseResourceSchedule = useCallback((timeframe: string, serviceType: string, teacher: string): ResourceSchedule[] => {
+    if (!timeframe) return [];
+    
+    try {
+      const schedules: ResourceSchedule[] = [];
+      
+      // Common patterns:
+      // "Tuesdays 10:00-10:30"
+      // "Monday/Wednesday 2:00-2:30"  
+      // "10:00-10:30 AM, Tuesdays & Thursdays"
+      // "MWF 9:00-9:30"
+      
+      const timeframeUpper = timeframe.toUpperCase();
+      
+      // Extract time range
+      const timeMatch = timeframe.match(/(\d{1,2}):(\d{2})\s*(?:AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!timeMatch) return [];
+      
+      const [, startHour, startMin, endHour, endMin, period] = timeMatch;
+      const startTime = formatTime(startHour, startMin, period);
+      const endTime = formatTime(endHour, endMin, period);
+      
+      // Extract days
+      const days: string[] = [];
+      if (timeframeUpper.includes('MONDAY') || timeframeUpper.includes('MON')) days.push('Monday');
+      if (timeframeUpper.includes('TUESDAY') || timeframeUpper.includes('TUE')) days.push('Tuesday');
+      if (timeframeUpper.includes('WEDNESDAY') || timeframeUpper.includes('WED')) days.push('Wednesday');
+      if (timeframeUpper.includes('THURSDAY') || timeframeUpper.includes('THU')) days.push('Thursday');
+      if (timeframeUpper.includes('FRIDAY') || timeframeUpper.includes('FRI')) days.push('Friday');
+      
+      // Handle abbreviations like MWF
+      if (timeframeUpper.includes('MWF')) {
+        days.push('Monday', 'Wednesday', 'Friday');
+      }
+      if (timeframeUpper.includes('TTH') || timeframeUpper.includes('T/TH')) {
+        days.push('Tuesday', 'Thursday');
+      }
+      
+      // Create schedule entries for each day
+      days.forEach(day => {
+        schedules.push({
+          day,
+          startTime,
+          endTime,
+          serviceType,
+          teacher,
+        });
+      });
+      
+      return schedules;
+    } catch (error) {
+      console.warn('Error parsing resource schedule:', timeframe, error);
+      return [];
+    }
+  }, []);
+
+  // Helper function to format time with AM/PM
+  const formatTime = (hour: string, minute: string, period?: string) => {
+    let h = parseInt(hour);
+    if (period?.toUpperCase() === 'PM' && h !== 12) h += 12;
+    if (period?.toUpperCase() === 'AM' && h === 12) h = 0;
+    return `${h.toString().padStart(2, '0')}:${minute}`;
+  };
+
+  // Get students currently in pull-out
+  const getCurrentPullOuts = useCallback((currentTime: Date = new Date()): StudentPullOut[] => {
+    const currentDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
+    const currentTimeStr = currentTime.toTimeString().substring(0, 5); // HH:MM format
+    
+    const pullOuts: StudentPullOut[] = [];
+    
+    try {
+      // Get all students from UnifiedDataService
+      const allStudents = UnifiedDataService.getAllStudents();
+      
+      // Filter students with resource services
+      const resourceStudents = allStudents.filter(student => 
+        (student as any).resourceInfo?.attendsResource || 
+        student.resourceInformation?.attendsResourceServices
+      );
+      
+      resourceStudents.forEach(student => {
+        // Handle both old and new resource info structures
+        const studentAny = student as any;
+        const resourceInfo = studentAny.resourceInfo || {
+          attendsResource: student.resourceInformation?.attendsResourceServices || false,
+          resourceType: student.resourceInformation?.relatedServices?.[0] || 'Resource Services',
+          resourceTeacher: 'Resource Teacher',
+          timeframe: ''
+        };
+        
+        if (!resourceInfo.timeframe) return;
+        
+        const parsedSchedule = parseResourceSchedule(
+          resourceInfo.timeframe,
+          resourceInfo.resourceType,
+          resourceInfo.resourceTeacher
+        );
+        
+        parsedSchedule.forEach(schedule => {
+          if (schedule.day === currentDay && 
+              currentTimeStr >= schedule.startTime && 
+              currentTimeStr <= schedule.endTime) {
+            
+            // Calculate time remaining
+            const endTime = new Date(currentTime);
+            const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+            endTime.setHours(endHour, endMin, 0, 0);
+            const timeRemaining = Math.max(0, Math.floor((endTime.getTime() - currentTime.getTime()) / 60000));
+            
+            pullOuts.push({
+              student,
+              currentService: schedule,
+              timeRemaining
+            });
+          }
+        });
+      });
+      
+    } catch (err) {
+      console.error('Error getting current pull-outs:', err);
+      setError('Failed to load resource students');
+    }
+    
+    return pullOuts;
+  }, [parseResourceSchedule]);
+
+  // Load current pull-out data
+  const loadData = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const currentPullOuts = getCurrentPullOuts();
+      setStudentsInPullOut(currentPullOuts);
+      console.log('📚 Loaded pull-out students:', currentPullOuts.length);
+    } catch (err) {
+      console.error('Error loading pull-out data:', err);
+      setError('Failed to load pull-out data');
+      setStudentsInPullOut([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getCurrentPullOuts]);
+
+  // Load data on mount and refresh every minute
+  useEffect(() => {
+    loadData();
+    
+    // Refresh every minute to keep pull-out status current
+    const interval = setInterval(loadData, 60000);
+    
+    return () => clearInterval(interval);
+  }, [loadData]);
+
+  if (studentsInPullOut.length === 0 && !isLoading) {
     return null;
   }
 
@@ -95,9 +231,53 @@ const OutOfClassDisplay: React.FC<OutOfClassDisplayProps> = ({
     return icons[serviceType] || '📋';
   };
 
+  // Position styles based on position prop
+  const getPositionStyles = () => {
+    const baseStyles = {
+      position: 'fixed' as const,
+      zIndex: 100,
+      maxWidth: '320px',
+      transition: 'all 0.3s ease',
+    };
+
+    switch (position) {
+      case 'top-left':
+        return {
+          ...baseStyles,
+          top: '80px',
+          left: '20px',
+        };
+      case 'top-right':
+        return {
+          ...baseStyles,
+          top: '80px',
+          right: '20px',
+        };
+      case 'bottom-left':
+        return {
+          ...baseStyles,
+          bottom: '20px',
+          left: '20px',
+        };
+      case 'bottom-right':
+        return {
+          ...baseStyles,
+          bottom: '20px',
+          right: '20px',
+        };
+      default:
+        return {
+          ...baseStyles,
+          top: '80px',
+          right: '20px',
+        };
+    }
+  };
+
   return (
     <motion.div 
-      className={`absolute top-4 right-4 bg-black/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-lg max-w-sm ${className}`}
+      style={getPositionStyles()}
+      className={`bg-black/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-lg ${className}`}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
@@ -111,6 +291,18 @@ const OutOfClassDisplay: React.FC<OutOfClassDisplayProps> = ({
         <span className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 rounded-full">
           {studentsInPullOut.length}
         </span>
+        
+        {/* Loading/Error Indicators */}
+        {isLoading && (
+          <div className="bg-green-500/20 text-green-300 text-xs px-2 py-1 rounded-full">
+            🔄
+          </div>
+        )}
+        {error && (
+          <div className="bg-red-500/20 text-red-300 text-xs px-2 py-1 rounded-full">
+            ⚠️
+          </div>
+        )}
       </div>
 
       {/* Services Groups */}

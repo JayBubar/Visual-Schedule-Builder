@@ -15,46 +15,41 @@ const EnhancedAbsentStudentsDisplay: React.FC<AbsentStudentsDisplayProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [students, setStudents] = useState<any[]>([]);
 
-  // Direct data loading with UnifiedDataService
-  const [allStudents, setAllStudents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Load data using UnifiedDataService methods
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(() => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const loadedStudents = UnifiedDataService.getAllStudents();
+      // Get all students from UnifiedDataService
+      const allStudents = UnifiedDataService.getAllStudents();
       
-      setAllStudents(loadedStudents);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError('Failed to load data');
-      setAllStudents([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [absentStudents, loadData]);
-
-  // Load student data
-  useEffect(() => {
-    const loadStudentData = () => {
+      // Map absent student IDs to student data
       const absentStudentData = absentStudents.map(id => 
         allStudents.find(student => student.id === id)
       ).filter(Boolean);
+      
       setStudents(absentStudentData);
-    };
-
-    if (absentStudents.length > 0 && allStudents.length > 0) {
-      loadStudentData();
+      setError(null);
+    } catch (err) {
+      console.error('Error loading student data:', err);
+      setError('Failed to load student data');
+      setStudents([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [absentStudents, allStudents]);
+  }, [absentStudents]);
+
+  useEffect(() => {
+    if (absentStudents.length > 0) {
+      loadData();
+    } else {
+      setStudents([]);
+    }
+  }, [absentStudents, loadData]);
 
   if (absentStudents.length === 0) return null;
 
