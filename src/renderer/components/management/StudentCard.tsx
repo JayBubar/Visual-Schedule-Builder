@@ -1,14 +1,16 @@
-// UPDATED: StudentCard with Resource Services in Admin Dropdown
-// Keep workflow buttons prominent, move admin actions to dropdown
+// REDESIGNED: StudentCard Component with Staff Management aesthetic and fixed layout
 // src/renderer/components/management/StudentCard.tsx
 
 import React, { useState, useRef } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
 import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
-import EnhancedResourceInput from './EnhancedResourceInput';
+import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
+import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
+import GoalManager from '../data-collection/GoalManager';
+import IEPDataCollectionInterface from '../data-collection/IEPDataCollectionInterface';
 
-// Same ExtendedStudent interface as before
+// FIXED: Use the same ExtendedStudent interface as StudentManagement
 interface ExtendedStudent {
   id: string;
   name: string;
@@ -71,8 +73,12 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [showQuickDataEntry, setShowQuickDataEntry] = useState(false);
   const [showProgressPanel, setShowProgressPanel] = useState(false);
-  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [showEnhancedDataEntry, setShowEnhancedDataEntry] = useState(false);
+  const [showPrintDataSheets, setShowPrintDataSheets] = useState(false);
+  const [showGoalManager, setShowGoalManager] = useState(false);
+  const [showIEPDataCollection, setShowIEPDataCollection] = useState(false);
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
+  const [showActionsDropdown, setShowActionsDropdown] = useState(false);
 
   const handlePhotoClick = () => {
     fileInputRef.current?.click();
@@ -100,352 +106,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
-  const calculateIEPExpiration = (iepStartDate?: string): string => {
-    if (!iepStartDate) return 'Not set';
-    const startDate = new Date(iepStartDate);
-    const expirationDate = new Date(startDate.setFullYear(startDate.getFullYear() + 1));
-    return expirationDate.toLocaleDateString('en-US', { 
-      month: 'numeric', 
-      day: 'numeric', 
-      year: '2-digit' 
-    });
-  };
-
-  // Workflow button handlers (keep these as direct functions)
-  const handleDataEntry = () => onDataEntry(student);
-  const handlePrintSheets = () => onPrintSheets(student);
-  const handleGoalManagement = () => onGoalManagement(student);
-  const handleQuickDataEntry = () => onQuickDataEntry(student);
-
-  // Resource modal handlers
-  const handleResourceServices = () => {
-    setShowResourceModal(true);
-  };
-
-  const handleResourceUpdate = (resourceInfo: any) => {
-    console.log('🔄 Updating resource info:', resourceInfo);
-    UnifiedDataService.updateStudent(student.id, { resourceInfo });
-    onPhotoUpdate(); // Refresh the card data
-  };
-
-  const handleResourceModalClose = () => {
-    setShowResourceModal(false);
-    onPhotoUpdate(); // Refresh in case data was updated
-  };
-
-  return (
-    <div style={styles.cardContainer}>
-      
-      {/* Top Left - PRIMARY WORKFLOW BUTTONS (Keep These Prominent!) */}
-      <div style={styles.actionsLeft}>
-        <div style={styles.actionButtonsColumn}>
-          <button
-            onClick={handleGoalManagement}
-            style={styles.primaryActionButton}
-            title="Manage IEP Goals"
-          >
-            🎯 Manage Goals
-          </button>
-          <button
-            onClick={handleQuickDataEntry}
-            style={styles.secondaryActionButton}
-            title="Quick Data Entry"
-          >
-            ⚡ Quick Entry
-          </button>
-          <button
-            onClick={handleDataEntry}
-            style={styles.secondaryActionButton}
-            title="Full Data Entry"
-          >
-            📊 Full Entry
-          </button>
-          <button
-            onClick={handlePrintSheets}
-            style={styles.primaryActionButton}
-            title="Print Data Sheets"
-          >
-            🖨️ Print Sheets
-          </button>
-        </div>
-      </div>
-
-      {/* Center - Student Info */}
-      <div style={styles.studentInfo}>
-        {/* Student Photo/Avatar */}
-        <div style={styles.photoSection}>
-          <div style={styles.photoContainer}>
-            {student.photo ? (
-              <img 
-                src={student.photo} 
-                alt={student.name}
-                style={styles.studentPhoto}
-                onClick={handlePhotoClick}
-              />
-            ) : (
-              <div 
-                style={styles.photoPlaceholder}
-                onClick={handlePhotoClick}
-              >
-                {getStudentInitials(student.name)}
-              </div>
-            )}
-            
-            {isUploading && (
-              <div style={styles.uploadingOverlay}>
-                Uploading...
-              </div>
-            )}
-          </div>
-          
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handlePhotoChange}
-            accept="image/*"
-            style={{ display: 'none' }}
-          />
-        </div>
-
-        <h3 style={styles.studentName}>{student.name}</h3>
-        <p style={styles.studentGrade}>{student.grade}</p>
-        
-        {/* Status Badge */}
-        <div style={{
-          ...styles.statusBadge,
-          ...(student.isActive ? styles.statusActive : styles.statusInactive)
-        }}>
-          {student.isActive ? '✅ Active' : '❌ Inactive'}
-        </div>
-
-        {/* Resource Services Indicator */}
-        {student.resourceInfo?.attendsResource && (
-          <div style={styles.resourceIndicator}>
-            🏫 {student.resourceInfo.resourceType}
-            <br/>
-            <small>{student.resourceInfo.timeframe}</small>
-          </div>
-        )}
-      </div>
-
-      {/* Top Right - Progress Graphic */}
-      <div style={styles.progressRight}>
-        <ProgressGraphic student={student} isUsingUnifiedData={isUsingUnifiedData} />
-      </div>
-
-      {/* Content Area - Main Information */}
-      <div style={styles.contentArea}>
-        <div style={styles.statsGrid}>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>{(student.accommodations || []).length}</div>
-            <div style={styles.statLabel}>Accommodations</div>
-          </div>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>
-              {isUsingUnifiedData ? (student.iepData?.goals || []).length : (student.goals || []).length}
-            </div>
-            <div style={styles.statLabel}>IEP Goals</div>
-          </div>
-          <div style={styles.statItem}>
-            <div style={styles.statValue}>
-              {isUsingUnifiedData ? (student.iepData?.dataCollection || []).length : 0}
-            </div>
-            <div style={styles.statLabel}>Data Points</div>
-          </div>
-        </div>
-
-        {/* Accommodations Preview */}
-        {student.accommodations && student.accommodations.length > 0 && (
-          <div style={styles.accommodationsPreview}>
-            <div style={styles.previewLabel}>Key Accommodations:</div>
-            <div style={styles.previewText}>
-              {student.accommodations.slice(0, 2).join(', ')}
-              {student.accommodations.length > 2 && ` +${student.accommodations.length - 2} more`}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Left - IMPROVED ADMIN DROPDOWN */}
-      <div style={styles.adminLeft}>
-        <AdminActionsDropdown 
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onResourceServices={handleResourceServices}
-          studentId={student.id}
-          studentName={student.name}
-        />
-      </div>
-
-      {/* Bottom Center - Contact Info */}
-      <div style={styles.contactInfo}>
-        {student.parentName && (
-          <div style={styles.contactText}>
-            <div>👨‍👩‍👧‍👦 {student.parentName}</div>
-            {student.parentPhone && <div>📞 {student.parentPhone}</div>}
-          </div>
-        )}
-      </div>
-
-      {/* Bottom Right - Reference Information */}
-      <div style={styles.referenceRight}>
-        <div style={styles.referenceContainer}>
-          <div style={styles.referenceTitle}>Quick Reference:</div>
-          <div style={styles.referenceContent}>
-            <div>📋 {student.accommodations?.length || 0} accommodations</div>
-            <div>🎯 {isUsingUnifiedData ? (student.iepData?.goals || []).filter(g => g.isActive).length : (student.goals?.length || 0)} active goals</div>
-            <div>📊 {isUsingUnifiedData ? (student.iepData?.dataCollection || []).length : 0} data points</div>
-            {student.dateCreated && (
-              <div>📅 IEP expires: {calculateIEPExpiration(student.dateCreated)}</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Modals */}
-      <QuickDataEntry
-        studentId={student.id}
-        isOpen={showQuickDataEntry}
-        onClose={() => {
-          setShowQuickDataEntry(false);
-          setSelectedGoalId(undefined);
-        }}
-        onDataSaved={() => {
-          setShowQuickDataEntry(false);
-          setSelectedGoalId(undefined);
-          onPhotoUpdate();
-        }}
-        preselectedGoal={selectedGoalId}
-      />
-
-      <ProgressPanel
-        studentId={student.id}
-        isOpen={showProgressPanel}
-        onClose={() => setShowProgressPanel(false)}
-        onAddData={(goalId: string) => {
-          setShowProgressPanel(false);
-          setSelectedGoalId(goalId);
-          setShowQuickDataEntry(true);
-        }}
-      />
-
-      {/* NEW: Resource Services Modal */}
-      {showResourceModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.resourceModal}>
-            <div style={styles.resourceModalHeader}>
-              <h3 style={styles.resourceModalTitle}>
-                🏫 Resource Services - {student.name}
-              </h3>
-              <button 
-                onClick={handleResourceModalClose}
-                style={styles.resourceModalClose}
-              >
-                ×
-              </button>
-            </div>
-            <div style={styles.resourceModalContent}>
-              <EnhancedResourceInput
-                resourceInfo={student.resourceInfo || {
-                  attendsResource: false,
-                  resourceType: '',
-                  resourceTeacher: '',
-                  timeframe: ''
-                }}
-                onChange={handleResourceUpdate}
-                studentName={student.name}
-              />
-            </div>
-            <div style={styles.resourceModalFooter}>
-              <button 
-                onClick={handleResourceModalClose}
-                style={styles.resourceModalSaveButton}
-              >
-                ✅ Save & Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// IMPROVED Admin Actions Dropdown Component
-interface AdminActionsDropdownProps {
-  onEdit: () => void;
-  onDelete: () => void;
-  onResourceServices: () => void;
-  studentId: string;
-  studentName: string;
-}
-
-const AdminActionsDropdown: React.FC<AdminActionsDropdownProps> = ({ 
-  onEdit, 
-  onDelete, 
-  onResourceServices, 
-  studentId, 
-  studentName 
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div style={styles.dropdownContainer}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={styles.actionsButton}
-        title="Administrative Actions"
-      >
-        🔴 Admin ▼
-      </button>
-
-      {isOpen && (
-        <>
-          {/* Backdrop to close dropdown */}
-          <div 
-            style={styles.dropdownBackdrop}
-            onClick={() => setIsOpen(false)}
-          />
-          
-          <div style={styles.dropdownMenu}>
-            <button onClick={onEdit} style={styles.dropdownItem}>
-              ✏️ Edit Student
-            </button>
-            
-            <div style={styles.dropdownDivider} />
-            
-            <button onClick={onResourceServices} style={styles.dropdownItem}>
-              🏫 Resource Services
-            </button>
-            
-            <div style={styles.dropdownDivider} />
-            
-            <button 
-              onClick={() => {
-                if (window.confirm(`Are you sure you want to delete ${studentName}? This cannot be undone.`)) {
-                  onDelete();
-                }
-                setIsOpen(false);
-              }} 
-              style={styles.dropdownItemDanger}
-            >
-              🗑️ Delete Student
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// Progress Graphic Component (unchanged)
-interface ProgressGraphicProps {
-  student: ExtendedStudent;
-  isUsingUnifiedData: boolean;
-}
-
-const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifiedData }) => {
-  const calculateStudentProgress = () => {
+  const calculateIEPProgress = () => {
     if (!isUsingUnifiedData || !(student.iepData?.goals || []).length) {
       return { percentage: 0, trend: '➡️', goalCount: 0 };
     }
@@ -481,114 +142,401 @@ const ProgressGraphic: React.FC<ProgressGraphicProps> = ({ student, isUsingUnifi
     };
   };
 
-  const progress = calculateStudentProgress();
+  // Updated handlers to show modals directly
+  const handleDataEntry = () => {
+    setShowEnhancedDataEntry(true);
+  };
+
+  const handlePrintSheets = () => {
+    setShowPrintDataSheets(true);
+  };
+
+  const handleGoalManagement = () => {
+    setShowGoalManager(true);
+  };
+
+  const handleQuickDataEntry = () => {
+    setShowQuickDataEntry(true);
+  };
+
+  const progress = calculateIEPProgress();
 
   return (
-    <div style={styles.progressContainer}>
-      <div style={styles.progressPercentage}>{progress.percentage}%</div>
-      <div style={styles.progressTrend}>{progress.trend}</div>
-      <div style={styles.progressGoals}>{progress.goalCount} goals</div>
+    <div
+      style={styles.cardContainer}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.15)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.1)';
+      }}
+    >
+      {/* Top Section - Actions Dropdown (Top Right) */}
+      <div style={styles.topSection}>
+        <div style={styles.actionsDropdown}>
+          <button
+            onClick={() => setShowActionsDropdown(!showActionsDropdown)}
+            style={styles.actionsButton}
+          >
+            ⚙️ Actions ▼
+          </button>
+          
+          {showActionsDropdown && (
+            <div style={styles.dropdownMenu}>
+              <button onClick={onEdit} style={styles.dropdownItem}>
+                ✏️ Edit Student
+              </button>
+              <button onClick={onDelete} style={styles.dropdownItem}>
+                🗑️ Delete Student
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Parent Info (Under Actions) */}
+        {student.parentName && (
+          <div style={styles.parentInfo}>
+            <div style={styles.parentName}>👨‍👩‍👧‍👦 {student.parentName}</div>
+            {student.parentPhone && <div style={styles.parentPhone}>📞 {student.parentPhone}</div>}
+          </div>
+        )}
+      </div>
+
+      {/* Main Section - Photo and Student Info */}
+      <div style={styles.mainSection}>
+        <div style={styles.photoContainer}>
+          {student.photo ? (
+            <img 
+              src={student.photo} 
+              alt={student.name}
+              style={styles.studentPhoto}
+              onClick={handlePhotoClick}
+            />
+          ) : (
+            <div 
+              style={styles.photoPlaceholder}
+              onClick={handlePhotoClick}
+            >
+              {getStudentInitials(student.name)}
+            </div>
+          )}
+          
+          {isUploading && (
+            <div style={styles.uploadingOverlay}>
+              Uploading...
+            </div>
+          )}
+        </div>
+
+        <div style={styles.studentInfo}>
+          <h3 style={styles.studentName}>{student.name}</h3>
+          <p style={styles.studentGrade}>{student.grade}</p>
+          
+          {/* Status Badge */}
+          <div style={{
+            ...styles.statusBadge,
+            ...(student.isActive ? styles.statusActive : styles.statusInactive)
+          }}>
+            {student.isActive ? '✅ Active' : '❌ Inactive'}
+          </div>
+        </div>
+      </div>
+
+      {/* IEP Action Buttons Section */}
+      <div style={styles.iepButtonsSection}>
+        <button
+          onClick={handleGoalManagement}
+          style={styles.primaryActionButton}
+        >
+          🎯 Manage Goals
+        </button>
+        <button
+          onClick={handleQuickDataEntry}
+          style={styles.secondaryActionButton}
+        >
+          ⚡ Quick Entry
+        </button>
+        <button
+          onClick={handleDataEntry}
+          style={styles.secondaryActionButton}
+        >
+          📊 Full Entry
+        </button>
+        <button
+          onClick={handlePrintSheets}
+          style={styles.primaryActionButton}
+        >
+          🖨️ Print Sheets
+        </button>
+      </div>
+
+      {/* Stats Section (Replacing center bar) */}
+      <div style={styles.statsSection}>
+        <div style={styles.statItem}>
+          <div style={styles.statValue}>{(student.accommodations || []).length}</div>
+          <div style={styles.statLabel}>Accommodations</div>
+        </div>
+        <div style={styles.statItem}>
+          <div style={styles.statValue}>
+            {isUsingUnifiedData ? (student.iepData?.goals || []).length : (student.goals || []).length}
+          </div>
+          <div style={styles.statLabel}>IEP Goals</div>
+        </div>
+        <div style={styles.statItem}>
+          <div style={styles.statValue}>
+            {isUsingUnifiedData ? (student.iepData?.dataCollection || []).length : 0}
+          </div>
+          <div style={styles.statLabel}>Data Points</div>
+        </div>
+      </div>
+
+      {/* Bottom Section - IEP Progress (Bottom Left) */}
+      <div style={styles.bottomSection}>
+        <div style={styles.iepProgress}>
+          <div style={styles.progressContainer}>
+            <div style={styles.progressPercentage}>{progress.percentage}%</div>
+            <div style={styles.progressTrend}>{progress.trend}</div>
+          </div>
+          <div style={styles.progressInfo}>
+            <div style={styles.progressLabel}>IEP Progress</div>
+            <div style={styles.progressGoals}>{progress.goalCount} active goals</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handlePhotoChange}
+        accept="image/*"
+        style={{ display: 'none' }}
+      />
+
+      {/* Modals */}
+      <QuickDataEntry
+        studentId={student.id}
+        isOpen={showQuickDataEntry}
+        onClose={() => {
+          setShowQuickDataEntry(false);
+          setSelectedGoalId(undefined);
+        }}
+        onDataSaved={() => {
+          setShowQuickDataEntry(false);
+          setSelectedGoalId(undefined);
+          onPhotoUpdate();
+        }}
+        preselectedGoal={selectedGoalId}
+      />
+
+      <ProgressPanel
+        studentId={student.id}
+        isOpen={showProgressPanel}
+        onClose={() => setShowProgressPanel(false)}
+        onAddData={(goalId: string) => {
+          setShowProgressPanel(false);
+          setSelectedGoalId(goalId);
+          setShowQuickDataEntry(true);
+        }}
+      />
+
+      {showEnhancedDataEntry && (
+        <div style={styles.modalOverlay}>
+          <EnhancedDataEntry
+            selectedStudent={{
+              id: student.id,
+              name: student.name,
+              grade: student.grade,
+              photo: student.photo
+            }}
+            selectedGoal={
+              student.iepData?.goals?.[0] || {
+                id: 'temp-goal',
+                studentId: student.id,
+                title: 'Sample Goal',
+                description: 'Please create goals for this student',
+                domain: 'academic',
+                measurementType: 'percentage',
+                target: 80,
+                currentProgress: 0,
+                dataPoints: 0,
+                dateCreated: new Date().toISOString().split('T')[0]
+              }
+            }
+            onBack={() => setShowEnhancedDataEntry(false)}
+            onDataSaved={() => {
+              setShowEnhancedDataEntry(false);
+              onPhotoUpdate();
+            }}
+          />
+        </div>
+      )}
+
+      {showPrintDataSheets && (
+        <div style={styles.modalOverlay}>
+          <PrintDataSheetSystem
+            students={[{
+              ...student,
+              dateCreated: student.dateCreated || new Date().toISOString().split('T')[0],
+              iepData: {
+                goals: student.iepData?.goals || [],
+                dataCollection: student.iepData?.dataCollection || []
+              }
+            }]}
+            goals={student.iepData?.goals || []}
+            onBack={() => setShowPrintDataSheets(false)}
+          />
+        </div>
+      )}
+
+      {showGoalManager && (
+        <div style={styles.modalOverlay}>
+          <GoalManager
+            preSelectedStudentId={student.id}
+            onGoalSaved={() => {
+              setShowGoalManager(false);
+              onPhotoUpdate();
+            }}
+          />
+        </div>
+      )}
+
+      {showIEPDataCollection && (
+        <div style={styles.modalOverlay}>
+          <IEPDataCollectionInterface
+            isActive={showIEPDataCollection}
+            preSelectedStudentId={student.id}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-// COMPREHENSIVE STYLES (Updated with new modal and dropdown styles)
+// REDESIGNED: Clean, Staff Management-inspired styles
 const styles: { [key: string]: React.CSSProperties } = {
   cardContainer: {
-    background: 'rgba(255,255,255,0.1)',
+    background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
     borderRadius: '16px',
+    padding: '1.5rem',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+    backdropFilter: 'blur(10px)',
     border: '1px solid rgba(255,255,255,0.2)',
-    color: 'white',
     transition: 'all 0.3s ease',
-    cursor: 'pointer',
-    display: 'grid',
-    gridTemplateAreas: `
-      "actions-left student-info progress-right"
-      "content-area content-area content-area"
-      "admin-left contact-info reference-right"
-    `,
-    gridTemplateColumns: '220px 1fr 220px',
-    gridTemplateRows: 'auto 1fr auto',
-    gap: '24px',
-    padding: '28px',
-    minHeight: '320px'
-  },
-  
-  actionsLeft: { gridArea: 'actions-left' },
-  actionButtonsColumn: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.75rem'
+    gap: '1rem',
+    minHeight: '400px',
+    position: 'relative'
   },
-  
-  primaryActionButton: {
-    padding: '0.75rem 0.875rem',
-    borderRadius: '12px',
+
+  topSection: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+    flexDirection: 'column',
+    gap: '0.5rem'
+  },
+
+  actionsDropdown: {
+    position: 'relative',
+    alignSelf: 'flex-end'
+  },
+
+  actionsButton: {
+    background: 'linear-gradient(145deg, #dc3545, #c82333)',
     border: 'none',
-    background: 'linear-gradient(135deg, #10b981, #059669)',
     color: 'white',
+    padding: '8px 12px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: '600',
     cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.25rem'
+  },
+
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '0.25rem',
+    background: 'white',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    border: '1px solid rgba(0,0,0,0.1)',
+    minWidth: '160px',
+    zIndex: 1000
+  },
+
+  dropdownItem: {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    border: 'none',
+    background: 'transparent',
+    color: '#374151',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+
+  parentInfo: {
+    alignSelf: 'flex-end',
+    textAlign: 'right',
     fontSize: '0.8rem',
-    fontWeight: 'bold',
-    transition: 'all 0.3s ease',
+    color: '#495057'
+  },
+
+  parentName: {
+    fontWeight: '600',
+    marginBottom: '0.25rem'
+  },
+
+  parentPhone: {
+    opacity: 0.8
+  },
+
+  mainSection: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.5rem',
-    minHeight: '40px',
-    whiteSpace: 'nowrap',
-    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+    gap: '1rem'
   },
-  
-  secondaryActionButton: {
-    padding: '0.6rem 0.75rem',
-    borderRadius: '12px',
-    border: 'none',
-    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '0.75rem',
-    fontWeight: 'bold',
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.4rem',
-    minHeight: '36px',
-    whiteSpace: 'nowrap',
-    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+
+  photoContainer: {
+    position: 'relative',
+    flexShrink: 0
   },
-  
-  studentInfo: { gridArea: 'student-info', textAlign: 'center' },
-  photoSection: { marginBottom: '1rem' },
-  photoContainer: { position: 'relative', display: 'inline-block' },
-  
+
   studentPhoto: {
     width: '80px',
     height: '80px',
     borderRadius: '50%',
     objectFit: 'cover',
-    border: '3px solid rgba(255,255,255,0.3)',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease'
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+    cursor: 'pointer'
   },
-  
+
   photoPlaceholder: {
     width: '80px',
     height: '80px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+    background: 'linear-gradient(145deg, #667eea, #764ba2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '2rem',
     fontWeight: 'bold',
-    margin: '0 auto',
-    border: '3px solid rgba(255,255,255,0.3)',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease'
+    color: 'white',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+    cursor: 'pointer'
   },
-  
+
   uploadingOverlay: {
     position: 'absolute',
     top: 0,
@@ -603,287 +551,164 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'white',
     fontSize: '0.8rem'
   },
-  
-  studentName: { margin: '0 0 0.5rem 0', fontSize: '1.3rem', fontWeight: '700' },
-  studentGrade: { margin: '0 0 1rem 0', opacity: 0.8, fontSize: '1rem' },
-  
-  statusBadge: {
-    display: 'inline-block',
-    padding: '0.25rem 0.75rem',
-    borderRadius: '12px',
-    fontSize: '0.8rem',
-    marginBottom: '0.5rem',
-    fontWeight: '600'
-  },
-  
-  statusActive: {
-    background: 'rgba(34, 197, 94, 0.3)',
-    border: '1px solid #22c55e'
-  },
-  
-  statusInactive: {
-    background: 'rgba(239, 68, 68, 0.3)',
-    border: '1px solid #ef4444'
+
+  studentInfo: {
+    flex: 1
   },
 
-  // NEW: Resource indicator
-  resourceIndicator: {
+  studentName: {
+    margin: '0 0 0.25rem 0',
+    color: '#2c3e50',
+    fontSize: '1.3rem',
+    fontWeight: '700'
+  },
+
+  studentGrade: {
+    margin: '0 0 0.5rem 0',
+    color: '#667eea',
+    fontSize: '1rem',
+    fontWeight: '600'
+  },
+
+  statusBadge: {
     display: 'inline-block',
-    padding: '0.5rem',
-    borderRadius: '8px',
-    background: 'rgba(59, 130, 246, 0.2)',
-    border: '1px solid rgba(59, 130, 246, 0.4)',
-    fontSize: '0.7rem',
-    color: '#dbeafe',
-    textAlign: 'center',
-    lineHeight: '1.2',
-    marginTop: '0.5rem'
-  },
-  
-  progressRight: { gridArea: 'progress-right' },
-  progressContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '1rem',
-    background: 'rgba(255,255,255,0.1)',
+    padding: '2px 8px',
     borderRadius: '12px',
-    minWidth: '120px',
-    height: 'fit-content',
-    backdropFilter: 'blur(10px)'
+    fontSize: '0.7rem',
+    fontWeight: '600'
   },
-  
-  progressPercentage: {
-    fontSize: '1.8rem',
-    fontWeight: 'bold',
-    marginBottom: '0.5rem',
-    lineHeight: '1'
+
+  statusActive: {
+    background: 'linear-gradient(145deg, #28a745, #20c997)',
+    color: 'white'
   },
-  
-  progressTrend: {
-    fontSize: '1.4rem',
-    marginBottom: '0.75rem',
-    lineHeight: '1'
+
+  statusInactive: {
+    background: 'linear-gradient(145deg, #dc3545, #c82333)',
+    color: 'white'
   },
-  
-  progressGoals: {
-    fontSize: '0.75rem',
-    opacity: 0.8,
-    textAlign: 'center',
-    lineHeight: '1.2'
-  },
-  
-  contentArea: { gridArea: 'content-area' },
-  statsGrid: {
+
+  iepButtonsSection: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '0.5rem',
-    marginBottom: '1rem',
-    padding: '0.75rem',
-    background: 'rgba(255,255,255,0.1)',
-    borderRadius: '8px',
-    backdropFilter: 'blur(10px)'
+    gridTemplateColumns: '1fr 1fr',
+    gap: '0.5rem'
   },
-  
-  statItem: { textAlign: 'center' },
-  statValue: { fontSize: '1.2rem', fontWeight: 'bold' },
-  statLabel: { fontSize: '0.7rem', opacity: 0.7 },
-  
-  accommodationsPreview: { marginBottom: '1rem' },
-  previewLabel: { fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.25rem' },
-  previewText: { fontSize: '0.8rem' },
-  
-  adminLeft: { gridArea: 'admin-left' },
-  dropdownContainer: { position: 'relative' },
-  
-  actionsButton: {
-    padding: '0.5rem 0.75rem',
+
+  primaryActionButton: {
+    padding: '0.75rem',
     borderRadius: '8px',
     border: 'none',
-    background: 'rgba(239, 68, 68, 0.8)',
+    background: 'linear-gradient(145deg, #28a745, #20c997)',
     color: 'white',
     cursor: 'pointer',
     fontSize: '0.8rem',
-    fontWeight: 'bold',
+    fontWeight: '600',
     transition: 'all 0.3s ease',
     display: 'flex',
     alignItems: 'center',
-    gap: '0.25rem',
-    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+    justifyContent: 'center',
+    gap: '0.5rem'
   },
 
-  // NEW: Improved dropdown styles
-  dropdownBackdrop: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 999
-  },
-  
-  dropdownMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '0.25rem',
-    background: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-    border: '1px solid rgba(0,0,0,0.1)',
-    minWidth: '200px',
-    zIndex: 1000,
-    overflow: 'hidden',
-    backdropFilter: 'blur(10px)'
-  },
-  
-  dropdownItem: {
-    width: '100%',
-    padding: '0.875rem 1.25rem',
-    border: 'none',
-    background: 'transparent',
-    color: '#374151',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    textAlign: 'left',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    transition: 'all 0.2s ease'
-  },
-
-  dropdownItemDanger: {
-    width: '100%',
-    padding: '0.875rem 1.25rem',
-    border: 'none',
-    background: 'transparent',
-    color: '#dc2626',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: '500',
-    textAlign: 'left',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    transition: 'all 0.2s ease'
-  },
-
-  dropdownDivider: {
-    height: '1px',
-    background: 'rgba(0,0,0,0.1)',
-    margin: '0.25rem 0'
-  },
-  
-  contactInfo: { gridArea: 'contact-info' },
-  contactText: { fontSize: '0.8rem', opacity: 0.8 },
-  
-  referenceRight: { gridArea: 'reference-right' },
-  referenceContainer: {
-    padding: '1rem',
-    background: 'rgba(255,255,255,0.05)',
+  secondaryActionButton: {
+    padding: '0.75rem',
     borderRadius: '8px',
+    border: 'none',
+    background: 'linear-gradient(145deg, #007bff, #0056b3)',
+    color: 'white',
+    cursor: 'pointer',
     fontSize: '0.8rem',
-    backdropFilter: 'blur(10px)'
-  },
-  
-  referenceTitle: {
-    marginBottom: '0.75rem',
-    fontWeight: 'bold',
-    opacity: 0.9,
-    fontSize: '0.85rem'
-  },
-  
-  referenceContent: {
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
     display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-    lineHeight: '1.3'
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem'
   },
 
-  // NEW: Resource Modal Styles
+  statsSection: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '0.5rem',
+    padding: '0.75rem',
+    background: 'rgba(102, 126, 234, 0.1)',
+    borderRadius: '8px'
+  },
+
+  statItem: {
+    textAlign: 'center'
+  },
+
+  statValue: {
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+    color: '#2c3e50'
+  },
+
+  statLabel: {
+    fontSize: '0.7rem',
+    color: '#495057',
+    opacity: 0.8
+  },
+
+  bottomSection: {
+    marginTop: 'auto'
+  },
+
+  iepProgress: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    padding: '0.75rem',
+    background: 'rgba(40, 167, 69, 0.1)',
+    borderRadius: '8px',
+    border: '1px solid rgba(40, 167, 69, 0.2)'
+  },
+
+  progressContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem'
+  },
+
+  progressPercentage: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    color: '#28a745'
+  },
+
+  progressTrend: {
+    fontSize: '1.2rem'
+  },
+
+  progressInfo: {
+    flex: 1
+  },
+
+  progressLabel: {
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    color: '#28a745',
+    marginBottom: '0.25rem'
+  },
+
+  progressGoals: {
+    fontSize: '0.8rem',
+    color: '#495057',
+    opacity: 0.8
+  },
+
   modalOverlay: {
     position: 'fixed',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    zIndex: 9999,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2000,
-    padding: '2rem',
-    backdropFilter: 'blur(5px)'
-  },
-
-  resourceModal: {
-    background: 'white',
-    borderRadius: '20px',
-    width: '100%',
-    maxWidth: '800px',
-    maxHeight: '90vh',
-    overflow: 'hidden',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-    display: 'flex',
-    flexDirection: 'column'
-  },
-
-  resourceModalHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1.5rem 2rem',
-    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-    color: 'white'
-  },
-
-  resourceModalTitle: {
-    margin: 0,
-    fontSize: '1.3rem',
-    fontWeight: '700'
-  },
-
-  resourceModalClose: {
-    background: 'rgba(255,255,255,0.2)',
-    border: 'none',
-    color: 'white',
-    borderRadius: '50%',
-    width: '40px',
-    height: '40px',
-    cursor: 'pointer',
-    fontSize: '1.5rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.3s ease'
-  },
-
-  resourceModalContent: {
-    flex: 1,
-    padding: '2rem',
-    overflowY: 'auto'
-  },
-
-  resourceModalFooter: {
-    padding: '1.5rem 2rem',
-    borderTop: '1px solid #e5e7eb',
-    background: '#f9fafb',
-    display: 'flex',
-    justifyContent: 'flex-end'
-  },
-
-  resourceModalSaveButton: {
-    padding: '0.875rem 2rem',
-    borderRadius: '12px',
-    border: 'none',
-    background: 'linear-gradient(135deg, #10b981, #059669)',
-    color: 'white',
-    cursor: 'pointer',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)'
+    justifyContent: 'center'
   }
 };
 
