@@ -1,9 +1,9 @@
-import SmartBoardDataDebug from './SmartBoardDataDebug';
 import React, { useState, useEffect } from 'react';
 import { Student, Staff, HubSettings, ScheduleActivity, Schedule, StaffMember, GroupAssignment, SavedActivity } from '../../types';
 import TransitionDisplay from './TransitionDisplay';
 import EnhancedAbsentStudentsDisplay from './AbsentStudentsDisplay';
 import OutOfClassDisplay from './OutOfClassDisplay';
+import ResourceServicesDisplay from './ResourceServicesDisplay';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 import UnifiedDataService, { UnifiedStudent, UnifiedStaff } from '../../services/unifiedDataService';
 import ChoiceDataManager, { StudentChoice } from '../../utils/choiceDataManager';
@@ -453,16 +453,29 @@ const WholeClassDisplay: React.FC<{
   activityName: string;
   showBehaviorStatements: boolean;
   availableHeight: number;
-}> = ({ students, activityName, showBehaviorStatements, availableHeight }) => {
-  // Filter out absent students
+  currentPullOuts: any[];
+}> = ({ students, activityName, showBehaviorStatements, availableHeight, currentPullOuts }) => {
+  // Filter out absent AND pulled-out students
   const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
-  const presentStudents = students.filter(student => !absentStudentIds.includes(student.id));
+  const pullOutStudentIds = currentPullOuts.map(pullOut => pullOut.student.id);
+  
+  const availableStudents = students.filter(student => 
+    !absentStudentIds.includes(student.id) && 
+    !pullOutStudentIds.includes(student.id)
+  );
+  
+  console.log('🏫 WholeClassDisplay filtering:', {
+    totalStudents: students.length,
+    absentStudents: absentStudentIds.length,
+    pulledOutStudents: pullOutStudentIds.length,
+    availableStudents: availableStudents.length
+  });
 
   // Calculate card size based on available height and number of students
   const headerHeight = 120; // Approximate height of header section
   const gridHeight = availableHeight - headerHeight;
-  const rows = Math.ceil(Math.sqrt(presentStudents.length));
-  const cols = Math.ceil(presentStudents.length / rows);
+  const rows = Math.ceil(Math.sqrt(availableStudents.length));
+  const cols = Math.ceil(availableStudents.length / rows);
   const cardHeight = Math.max(120, (gridHeight - (rows - 1) * 16) / rows); // 16px gap between rows
 
   const [behaviorCommitments, setBehaviorCommitments] = useState<any>({});
@@ -533,7 +546,7 @@ const WholeClassDisplay: React.FC<{
           color: 'rgba(255, 255, 255, 0.9)',
           fontWeight: '500'
         }}>
-          All {presentStudents.length} students participate together
+          All {availableStudents.length} students participate together
         </p>
 
         {/* Show absent count if any */}
@@ -550,7 +563,7 @@ const WholeClassDisplay: React.FC<{
       </div>
 
       {/* Student Grid */}
-      {presentStudents.length > 0 && (
+      {availableStudents.length > 0 && (
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
@@ -560,7 +573,7 @@ const WholeClassDisplay: React.FC<{
           alignContent: 'start',
           overflow: 'hidden'
         }}>
-          {presentStudents.map((student) => {
+          {availableStudents.map((student) => {
             const studentCommitment = behaviorCommitments[student.id];
             return (
             <StudentCardWithBehavior
@@ -578,7 +591,7 @@ const WholeClassDisplay: React.FC<{
       )}
 
       {/* No students message */}
-      {presentStudents.length === 0 && (
+      {availableStudents.length === 0 && (
         <div style={{
           textAlign: 'center',
           padding: '2rem',
@@ -1674,8 +1687,6 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
       flexDirection: 'column'
     }}>
       
-      {/* ADD THIS LINE HERE - Debug overlay */}
-      <SmartBoardDataDebug />
       
       {/* TEMPORARY: Migration Utility - Remove after migration is complete */}
       <MigrationUtility />
@@ -1703,20 +1714,23 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
         }
       `}</style>
 
-      {/* Absent Students Display - Top Left Corner */}
+      {/* Resource Services Display - Top Left Corner */}
+      <ResourceServicesDisplay position="top-left" compact={true} />
+
+      {/* Absent Students Display - Top Right Corner (moved from left) */}
       {(() => {
         const absentStudentIds = UnifiedDataService.getAbsentStudentsToday();
         return absentStudentIds.length > 0 && (
           <EnhancedAbsentStudentsDisplay
             absentStudents={absentStudentIds}
-            position="top-left"
+            position="top-right"
             compact={true}
           />
         );
       })()}
 
-      {/* Out of Class Display - Top Right Corner */}
-      <OutOfClassDisplay position="top-right" />
+      {/* Out of Class Display - Bottom Right Corner (moved to avoid crowding) */}
+      <OutOfClassDisplay position="bottom-right" />
 
       {/* Header - Fixed Height with Navigation and Video Buttons */}
       <div style={{
@@ -2090,6 +2104,7 @@ const SmartboardDisplay: React.FC<SmartboardDisplayProps> = ({
             activityName={currentActivity?.name}
             showBehaviorStatements={showBehaviorStatements}
             availableHeight={availableContentHeight}
+            currentPullOuts={currentPullOuts}
           />
         )}
       </div>

@@ -1,7 +1,7 @@
 // CORRECTED: StudentCard Component - Resource Services in Dropdown + Fixed Z-Index Issues
 // src/renderer/components/management/StudentCard.tsx
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import UnifiedDataService from '../../services/unifiedDataService';
 import QuickDataEntry from '../data-collection/QuickDataEntry';
 import ProgressPanel from '../data-collection/ProgressPanel';
@@ -167,16 +167,17 @@ const StudentCard: React.FC<StudentCardProps> = ({
     setShowResourceModal(true);
   };
 
-  // Resource save handler
-  const handleResourceSave = (resourceInfo: { attendsResource: boolean; resourceType: string; resourceTeacher: string; timeframe: string }) => {
+  // Resource save handler - Don't close modal immediately, let user control when to close
+  const handleResourceSave = useCallback((resourceInfo: { attendsResource: boolean; resourceType: string; resourceTeacher: string; timeframe: string }) => {
     try {
       UnifiedDataService.updateStudent(student.id, { resourceInfo });
       onPhotoUpdate(); // Trigger refresh
-      setShowResourceModal(false);
+      // Don't close modal automatically - let user close it manually
+      console.log('Resource info saved:', resourceInfo);
     } catch (error) {
       console.error('Error saving resource info:', error);
     }
-  };
+  }, [student.id, onPhotoUpdate]);
 
   const progress = calculateIEPProgress();
 
@@ -452,34 +453,28 @@ const StudentCard: React.FC<StudentCardProps> = ({
         </div>
       )}
 
-      {/* DEBUGGING: Resource Modal - Let's try a simpler approach to fix the flash */}
+      {/* FIXED: Resource Modal - Full Screen Approach */}
       {showResourceModal && (
-        <div 
-          style={styles.resourceModalOverlay}
-          onClick={(e) => {
-            // Only close if clicking the overlay itself, not the modal content
-            if (e.target === e.currentTarget) {
-              setShowResourceModal(false);
-            }
-          }}
-        >
-          <div 
-            style={styles.resourceModalContent}
-            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
-          >
-            <div style={styles.resourceModalHeader}>
-              <h3 style={styles.resourceModalTitle}>
-                🏫 Resource Services - {student.name}
-              </h3>
+        <div style={styles.fullScreenModal}>
+          <div style={styles.fullScreenResourceContent}>
+            <div style={styles.fullScreenResourceHeader}>
+              <div>
+                <h2 style={styles.fullScreenResourceTitle}>
+                  🏫 Resource Services Configuration
+                </h2>
+                <p style={styles.fullScreenResourceSubtitle}>
+                  Configure resource services for {student.name}
+                </p>
+              </div>
               <button
                 onClick={() => setShowResourceModal(false)}
-                style={styles.resourceModalCloseButton}
+                style={styles.fullScreenResourceCloseButton}
               >
-                ✕
+                ✕ Close
               </button>
             </div>
             
-            <div style={styles.resourceModalBody}>
+            <div style={styles.fullScreenResourceBody}>
               <EnhancedResourceInput
                 resourceInfo={student.resourceInfo || {
                   attendsResource: false,
@@ -490,16 +485,6 @@ const StudentCard: React.FC<StudentCardProps> = ({
                 onChange={handleResourceSave}
                 studentName={student.name}
               />
-              
-              {/* Debug: Manual Save Button */}
-              <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                <button
-                  onClick={() => setShowResourceModal(false)}
-                  style={styles.debugCloseButton}
-                >
-                  Close Modal
-                </button>
-              </div>
             </div>
           </div>
         </div>

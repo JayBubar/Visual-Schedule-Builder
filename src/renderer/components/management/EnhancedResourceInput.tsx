@@ -252,7 +252,7 @@ const EnhancedResourceInput: React.FC<EnhancedResourceInputProps> = ({
       resourceTeacher: schedule.resourceTeacher,
       timeframe: newTimeframe
     });
-  }, [schedule, onChange]);
+  }, [schedule]); // Removed onChange from dependencies to prevent infinite loop
 
   const handleResourceToggle = (checked: boolean) => {
     setSchedule(prev => ({
