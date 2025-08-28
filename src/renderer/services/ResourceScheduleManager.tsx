@@ -61,17 +61,14 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     try {
       const schedules: ResourceSchedule[] = [];
       
-      console.log('🔍 Parsing resource schedule:', { timeframe, serviceType, teacher });
-      
-      // NEW: Handle EnhancedResourceInput format: "MTW 10:00 AM-11:30 AM"
-      // OLD: Handle legacy formats: "Tuesdays 10:00-10:30", "Monday/Wednesday 2:00-2:30", "MWF 9:00-9:30"
+      // Handle EnhancedResourceInput format: "MTW 10:00 AM-11:30 AM"
+      // Handle legacy formats: "Tuesdays 10:00-10:30", "Monday/Wednesday 2:00-2:30", "MWF 9:00-9:30"
       
       const timeframeUpper = timeframe.toUpperCase();
       
       // Extract time range - Updated to handle AM/PM properly
       const timeMatch = timeframe.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
       if (!timeMatch) {
-        console.warn('❌ No time pattern found in:', timeframe);
         return [];
       }
       
@@ -79,18 +76,14 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
       const startTime = formatTime(startHour, startMin, startPeriod);
       const endTime = formatTime(endHour, endMin, endPeriod);
       
-      console.log('⏰ Parsed times:', { startTime, endTime });
-      
       // Extract days - Enhanced to handle new format
       const days: string[] = [];
       
-      // NEW: Handle compact day abbreviations like "MTW", "MTWF", "MTWThF", etc.
+      // Handle compact day abbreviations like "MTW", "MTWF", "MTWThF", etc.
       const compactDayMatch = timeframe.match(/^([MTWThF]+)\s+/);
-      console.log('🔍 Compact day match attempt:', { timeframe, compactDayMatch });
       
       if (compactDayMatch) {
         const dayString = compactDayMatch[1];
-        console.log('📅 Found compact day format:', dayString);
         
         // Parse the day string, handling "Th" for Thursday
         let i = 0;
@@ -98,35 +91,27 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
           const char = dayString[i];
           const nextChar = dayString[i + 1];
           
-          console.log(`🔤 Parsing character at position ${i}: '${char}', next: '${nextChar}'`);
-          
           if (char === 'M') {
             days.push('Monday');
-            console.log('✅ Added Monday');
             i++;
           } else if (char === 'T' && nextChar === 'h') {
             days.push('Thursday');
-            console.log('✅ Added Thursday');
             i += 2; // Skip both 'T' and 'h'
           } else if (char === 'T') {
             days.push('Tuesday');
-            console.log('✅ Added Tuesday');
             i++;
           } else if (char === 'W') {
             days.push('Wednesday');
-            console.log('✅ Added Wednesday');
             i++;
           } else if (char === 'F') {
             days.push('Friday');
-            console.log('✅ Added Friday');
             i++;
           } else {
-            console.log(`⚠️ Unknown character: '${char}'`);
             i++; // Skip unknown characters
           }
         }
       } else {
-        // LEGACY: Handle full day names and other patterns
+        // Handle full day names and other patterns
         if (timeframeUpper.includes('MONDAY') || timeframeUpper.includes('MON')) days.push('Monday');
         if (timeframeUpper.includes('TUESDAY') || timeframeUpper.includes('TUE')) days.push('Tuesday');
         if (timeframeUpper.includes('WEDNESDAY') || timeframeUpper.includes('WED')) days.push('Wednesday');
@@ -142,8 +127,6 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
         }
       }
       
-      console.log('📅 Parsed days:', days);
-      
       // Create schedule entries for each day
       days.forEach(day => {
         schedules.push({
@@ -155,10 +138,9 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
         });
       });
       
-      console.log('✅ Created schedules:', schedules);
       return schedules;
     } catch (error) {
-      console.error('❌ Error parsing resource schedule:', timeframe, error);
+      console.error('Error parsing resource schedule:', timeframe, error);
       return [];
     }
   }, []);
@@ -177,9 +159,7 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
       }
     }
     
-    const formattedTime = `${h.toString().padStart(2, '0')}:${minute}`;
-    console.log(`🕐 Formatted time: ${hour}:${minute} ${period || ''} -> ${formattedTime}`);
-    return formattedTime;
+    return `${h.toString().padStart(2, '0')}:${minute}`;
   };
 
   // Get all students with resource services
@@ -225,59 +205,17 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     const currentDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
     const currentTimeStr = currentTime.toTimeString().substring(0, 5); // HH:MM format
     
-    console.log('🔍 getCurrentPullOuts called:', {
-      currentTime: currentTime.toISOString(),
-      currentDay,
-      currentTimeStr,
-      totalStudents: studentsWithParsedSchedules.length
-    });
-    
-    // ENHANCED DEBUG: Log all students and their resource info
-    console.log('👥 All students with resource info:');
-    studentsWithParsedSchedules.forEach((student, index) => {
-      const studentAny = student as any;
-      console.log(`  ${index + 1}. ${student.name}:`, {
-        hasResourceInfo: !!studentAny.resourceInfo,
-        attendsResource: studentAny.resourceInfo?.attendsResource,
-        resourceType: studentAny.resourceInfo?.resourceType,
-        timeframe: studentAny.resourceInfo?.timeframe,
-        hasParsedSchedule: !!studentAny.resourceInfo?.parsedSchedule,
-        parsedScheduleLength: studentAny.resourceInfo?.parsedSchedule?.length || 0
-      });
-    });
-    
     const pullOuts: StudentPullOut[] = [];
     
     studentsWithParsedSchedules.forEach(student => {
       const studentAny = student as any;
       
-      // Debug each student's resource info
-      if (studentAny.resourceInfo?.attendsResource) {
-        console.log(`👤 Checking student: ${student.name}`, {
-          attendsResource: studentAny.resourceInfo.attendsResource,
-          timeframe: studentAny.resourceInfo.timeframe,
-          parsedSchedule: studentAny.resourceInfo.parsedSchedule
-        });
-      }
-      
       if (!studentAny.resourceInfo?.parsedSchedule) return;
       
       studentAny.resourceInfo.parsedSchedule.forEach((schedule: ResourceSchedule) => {
-        console.log(`📅 Checking schedule for ${student.name}:`, {
-          scheduleDay: schedule.day,
-          currentDay,
-          scheduleStart: schedule.startTime,
-          scheduleEnd: schedule.endTime,
-          currentTime: currentTimeStr,
-          dayMatch: schedule.day === currentDay,
-          timeInRange: currentTimeStr >= schedule.startTime && currentTimeStr <= schedule.endTime
-        });
-        
         if (schedule.day === currentDay && 
             currentTimeStr >= schedule.startTime && 
             currentTimeStr <= schedule.endTime) {
-          
-          console.log(`✅ PULLOUT DETECTED: ${student.name} is in ${schedule.serviceType}`);
           
           // Calculate time remaining
           const endTime = new Date(currentTime);
@@ -293,12 +231,6 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
         }
       });
     });
-    
-    console.log(`🏫 Total pullouts found: ${pullOuts.length}`, pullOuts.map(p => ({
-      student: p.student.name,
-      service: p.currentService.serviceType,
-      timeRemaining: p.timeRemaining
-    })));
     
     return pullOuts;
   }, [studentsWithParsedSchedules]);

@@ -40,7 +40,6 @@ const ResourceServicesDisplay: React.FC<ResourceServicesDisplayProps> = ({
     try {
       const currentPullOuts = getCurrentPullOuts();
       setStudentsInPullOut(currentPullOuts);
-      console.log('🏫 Loaded resource pullout students:', currentPullOuts.length);
     } catch (error) {
       console.error('Error loading resource pullout data:', error);
       setStudentsInPullOut([]);
