@@ -246,6 +246,7 @@ const ContentModal: React.FC<{
   const handleSave = () => {
     if (!formData.name.trim()) return;
     if (formData.contentType === 'video' && !formData.videoUrl.trim()) return;
+    if (formData.contentType === 'document' && !formData.googleDriveUrl.trim()) return; // NEW
 
     const contentData: LibraryContent = {
       id: content?.id || generateUniqueId('content'),
@@ -265,6 +266,15 @@ const ContentModal: React.FC<{
       ...(formData.contentType === 'video' && {
         videoData: {
           videoUrl: formData.videoUrl.trim(),
+          notes: formData.notes.trim() || undefined,
+        }
+      }),
+      
+      // Document-specific data (NEW)
+      ...(formData.contentType === 'document' && {
+        documentData: {
+          googleDriveUrl: formData.googleDriveUrl.trim(),
+          documentType: formData.documentType,
           notes: formData.notes.trim() || undefined,
         }
       }),
@@ -366,6 +376,20 @@ const ContentModal: React.FC<{
                   <div className="content-type-desc">Educational video content</div>
                 </div>
               </label>
+              <label className={`content-type-option ${formData.contentType === 'document' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="contentType"
+                  value="document"
+                  checked={formData.contentType === 'document'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
+                />
+                <div className="content-type-card">
+                  <div className="content-type-icon">📄</div>
+                  <div className="content-type-label">Document</div>
+                  <div className="content-type-desc">Google Drive link or resource</div>
+                </div>
+              </label>
             </div>
           </div>
 
@@ -394,6 +418,37 @@ const ContentModal: React.FC<{
               />
               <small className="form-help">YouTube, Vimeo, or other video platform links</small>
             </div>
+          )}
+
+          {/* NEW: Google Drive URL (for documents only) */}
+          {formData.contentType === 'document' && (
+            <>
+              <div className="form-group">
+                <label>Google Drive URL *</label>
+                <input
+                  type="url"
+                  value={formData.googleDriveUrl}
+                  onChange={(e) => setFormData(prev => ({ ...prev, googleDriveUrl: e.target.value }))}
+                  placeholder="https://docs.google.com/document/d/..."
+                  required
+                />
+                <small className="form-help">Google Docs, Sheets, Drive folder, or other Google Drive links</small>
+              </div>
+              
+              <div className="form-group">
+                <label>Document Type</label>
+                <select
+                  value={formData.documentType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value as any }))}
+                >
+                  <option value="lesson-plan">Lesson Plan</option>
+                  <option value="worksheet">Worksheet</option>
+                  <option value="standard">Educational Standard</option>
+                  <option value="resource">Teaching Resource</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </>
           )}
 
           {/* Icon and Category Row */}
@@ -632,7 +687,7 @@ const ContentModal: React.FC<{
 const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
-  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video'>('all');
+  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document'>('all');
   const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<LibraryContent | undefined>();
@@ -972,10 +1027,16 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                 🎬 Video ({getContentTypeCount('video')})
               </button>
               <button
+                onClick={() => setSelectedContentType('document')}
+                className={`content-type-button ${selectedContentType === 'document' ? 'active' : ''}`}
+              >
+                📄 Documents ({getContentTypeCount('document')})
+              </button>
+              <button
                 onClick={() => setSelectedContentType('activity')}
                 className={`content-type-button ${selectedContentType === 'activity' ? 'active' : ''}`}
               >
-                📄 Documents ({getContentTypeCount('activity')})
+                📚 Activities ({getContentTypeCount('activity')})
               </button>
             </div>
           </div>
@@ -1072,6 +1133,26 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                     {content.videoData.notes && (
                       <div className="video-notes">
                         <strong>Notes:</strong> {content.videoData.notes}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* NEW Document-specific display */}
+                {content.contentType === 'document' && content.documentData && (
+                  <div className="document-details">
+                    <div className="document-url">
+                      <span className="document-label">🔗</span>
+                      <a href={content.documentData.googleDriveUrl} target="_blank" rel="noopener noreferrer" className="document-link">
+                        Open Document
+                      </a>
+                    </div>
+                    <div className="document-type">
+                      <strong>Type:</strong> {content.documentData.documentType.replace('-', ' ')}
+                    </div>
+                    {content.documentData.notes && (
+                      <div className="document-notes">
+                        <strong>Notes:</strong> {content.documentData.notes}
                       </div>
                     )}
                   </div>
@@ -1415,6 +1496,10 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           border-left: 4px solid #38a169;
         }
 
+        .content-item.document {
+          border-left: 4px solid #805ad5;
+        }
+
         .content-header {
           display: flex;
           justify-content: space-between;
@@ -1493,6 +1578,11 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           color: #97266d;
         }
 
+        .type-badge.document {
+          background: #e9d8fd;
+          color: #553c9a;
+        }
+
         .built-in-badge {
           background: #edf2f7;
           color: #4a5568;
@@ -1565,6 +1655,43 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           border-left: 3px solid #38a169;
           font-size: 0.9rem;
           color: #4a5568;
+        }
+
+        .document-details {
+          background: rgba(128, 90, 213, 0.05);
+          border-radius: 8px;
+          padding: 0.75rem;
+          margin: 0.5rem 0;
+          border-left: 3px solid #805ad5;
+        }
+
+        .document-url {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .document-link {
+          color: #667eea;
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .document-link:hover {
+          text-decoration: underline;
+        }
+
+        .document-type {
+          font-size: 0.9rem;
+          color: #4a5568;
+          margin-bottom: 0.5rem;
+        }
+
+        .document-notes {
+          font-size: 0.9rem;
+          color: #4a5568;
+          font-style: italic;
         }
 
         .content-tags {
@@ -1869,7 +1996,7 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
 
         .content-type-selector {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr 1fr 1fr;
           gap: 1rem;
         }
 
