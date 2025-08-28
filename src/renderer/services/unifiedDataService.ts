@@ -84,6 +84,13 @@ export interface UnifiedStudent {
     };
   };
   
+  resourceInfo?: {
+    attendsResource: boolean;
+    resourceType: string;
+    resourceTeacher: string;
+    timeframe: string;
+  };
+  
   // IEP data (now unified)
   iepData: {
     goals: IEPGoal[];

@@ -1,4 +1,4 @@
-// REDESIGNED: StudentCard Component with Staff Management aesthetic and fixed layout
+// REDESIGNED: StudentCard Component with Staff Management aesthetic and fixed layout + Resource Modal
 // src/renderer/components/management/StudentCard.tsx
 
 import React, { useState, useRef } from 'react';
@@ -9,6 +9,7 @@ import EnhancedDataEntry from '../data-collection/EnhancedDataEntry';
 import PrintDataSheetSystem from '../data-collection/PrintDataSheetSystem';
 import GoalManager from '../data-collection/GoalManager';
 import IEPDataCollectionInterface from '../data-collection/IEPDataCollectionInterface';
+import EnhancedResourceInput from './EnhancedResourceInput';
 
 // FIXED: Use the same ExtendedStudent interface as StudentManagement
 interface ExtendedStudent {
@@ -77,6 +78,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
   const [showPrintDataSheets, setShowPrintDataSheets] = useState(false);
   const [showGoalManager, setShowGoalManager] = useState(false);
   const [showIEPDataCollection, setShowIEPDataCollection] = useState(false);
+  const [showResourceModal, setShowResourceModal] = useState(false); // 🆕 Resource modal state
   const [selectedGoalId, setSelectedGoalId] = useState<string | undefined>(undefined);
   const [showActionsDropdown, setShowActionsDropdown] = useState(false);
 
@@ -157,6 +159,21 @@ const StudentCard: React.FC<StudentCardProps> = ({
 
   const handleQuickDataEntry = () => {
     setShowQuickDataEntry(true);
+  };
+
+  // 🆕 Resource modal handlers
+  const handleResourceInfo = () => {
+    setShowResourceModal(true);
+  };
+
+  const handleResourceSave = (resourceInfo: { attendsResource: boolean; resourceType: string; resourceTeacher: string; timeframe: string }) => {
+    try {
+      UnifiedDataService.updateStudent(student.id, { resourceInfo });
+      onPhotoUpdate(); // Trigger refresh
+      setShowResourceModal(false);
+    } catch (error) {
+      console.error('Error saving resource info:', error);
+    }
   };
 
   const progress = calculateIEPProgress();
@@ -241,16 +258,29 @@ const StudentCard: React.FC<StudentCardProps> = ({
           }}>
             {student.isActive ? '✅ Active' : '❌ Inactive'}
           </div>
+
+          {/* 🆕 Resource Info Badge */}
+          {student.resourceInfo?.attendsResource && (
+            <div style={styles.resourceBadge}>
+              🎯 {student.resourceInfo.resourceType || 'Resource Services'}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* IEP Action Buttons Section */}
+      {/* IEP Action Buttons Section - Updated with Resource Info button */}
       <div style={styles.iepButtonsSection}>
         <button
           onClick={handleGoalManagement}
           style={styles.primaryActionButton}
         >
           🎯 Manage Goals
+        </button>
+        <button
+          onClick={handleResourceInfo} // 🆕 Resource Info button
+          style={styles.resourceActionButton}
+        >
+          🏫 Resource Info
         </button>
         <button
           onClick={handleQuickDataEntry}
@@ -315,7 +345,7 @@ const StudentCard: React.FC<StudentCardProps> = ({
         style={{ display: 'none' }}
       />
 
-      {/* Modals */}
+      {/* Existing Modals */}
       <QuickDataEntry
         studentId={student.id}
         isOpen={showQuickDataEntry}
@@ -411,11 +441,43 @@ const StudentCard: React.FC<StudentCardProps> = ({
           />
         </div>
       )}
+
+      {/* 🆕 Resource Info Modal */}
+      {showResourceModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.resourceModalContent}>
+            <div style={styles.resourceModalHeader}>
+              <h3 style={styles.resourceModalTitle}>
+                🏫 Resource Services - {student.name}
+              </h3>
+              <button
+                onClick={() => setShowResourceModal(false)}
+                style={styles.resourceModalCloseButton}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={styles.resourceModalBody}>
+              <EnhancedResourceInput
+                resourceInfo={student.resourceInfo || {
+                  attendsResource: false,
+                  resourceType: '',
+                  resourceTeacher: '',
+                  timeframe: ''
+                }}
+                onChange={handleResourceSave}
+                studentName={student.name}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// REDESIGNED: Clean, Staff Management-inspired styles
+// REDESIGNED: Clean, Staff Management-inspired styles + Resource Modal styles
 const styles: { [key: string]: React.CSSProperties } = {
   cardContainer: {
     background: 'linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
@@ -575,7 +637,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '2px 8px',
     borderRadius: '12px',
     fontSize: '0.7rem',
-    fontWeight: '600'
+    fontWeight: '600',
+    marginRight: '0.5rem'
   },
 
   statusActive: {
@@ -588,9 +651,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: 'white'
   },
 
+  // 🆕 Resource badge styles
+  resourceBadge: {
+    display: 'inline-block',
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontSize: '0.7rem',
+    fontWeight: '600',
+    background: 'linear-gradient(145deg, #6f42c1, #563d7c)',
+    color: 'white'
+  },
+
   iepButtonsSection: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(3, 1fr)', // Updated to 3 columns for 5 buttons
+    gridTemplateRows: 'repeat(2, 1fr)',
     gap: '0.5rem'
   },
 
@@ -624,6 +699,24 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '0.5rem'
+  },
+
+  // 🆕 Resource action button style
+  resourceActionButton: {
+    padding: '0.75rem',
+    borderRadius: '8px',
+    border: 'none',
+    background: 'linear-gradient(145deg, #6f42c1, #563d7c)',
+    color: 'white',
+    cursor: 'pointer',
+    fontSize: '0.8rem',
+    fontWeight: '600',
+    transition: 'all 0.3s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    gridColumn: 'span 1'
   },
 
   statsSection: {
@@ -709,6 +802,53 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
+  },
+
+  // 🆕 Resource modal styles
+  resourceModalContent: {
+    background: 'white',
+    borderRadius: '16px',
+    width: '90%',
+    maxWidth: '600px',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+  },
+
+  resourceModalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '1.5rem',
+    borderBottom: '1px solid rgba(0,0,0,0.1)',
+    background: 'linear-gradient(145deg, #6f42c1, #563d7c)'
+  },
+
+  resourceModalTitle: {
+    margin: 0,
+    color: 'white',
+    fontSize: '1.3rem',
+    fontWeight: '600'
+  },
+
+  resourceModalCloseButton: {
+    background: 'rgba(255,255,255,0.2)',
+    border: 'none',
+    color: 'white',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    fontSize: '1.2rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
+  resourceModalBody: {
+    padding: '2rem',
+    maxHeight: '70vh',
+    overflow: 'auto'
   }
 };
 
