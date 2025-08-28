@@ -61,37 +61,71 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     try {
       const schedules: ResourceSchedule[] = [];
       
-      // Common patterns:
-      // "Tuesdays 10:00-10:30"
-      // "Monday/Wednesday 2:00-2:30"  
-      // "10:00-10:30 AM, Tuesdays & Thursdays"
-      // "MWF 9:00-9:30"
+      console.log('🔍 Parsing resource schedule:', { timeframe, serviceType, teacher });
+      
+      // NEW: Handle EnhancedResourceInput format: "MTW 10:00 AM-11:30 AM"
+      // OLD: Handle legacy formats: "Tuesdays 10:00-10:30", "Monday/Wednesday 2:00-2:30", "MWF 9:00-9:30"
       
       const timeframeUpper = timeframe.toUpperCase();
       
-      // Extract time range
-      const timeMatch = timeframe.match(/(\d{1,2}):(\d{2})\s*(?:AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-      if (!timeMatch) return [];
+      // Extract time range - Updated to handle AM/PM properly
+      const timeMatch = timeframe.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+      if (!timeMatch) {
+        console.warn('❌ No time pattern found in:', timeframe);
+        return [];
+      }
       
-      const [, startHour, startMin, endHour, endMin, period] = timeMatch;
-      const startTime = formatTime(startHour, startMin, period);
-      const endTime = formatTime(endHour, endMin, period);
+      const [, startHour, startMin, startPeriod, endHour, endMin, endPeriod] = timeMatch;
+      const startTime = formatTime(startHour, startMin, startPeriod);
+      const endTime = formatTime(endHour, endMin, endPeriod);
       
-      // Extract days
+      console.log('⏰ Parsed times:', { startTime, endTime });
+      
+      // Extract days - Enhanced to handle new format
       const days: string[] = [];
-      if (timeframeUpper.includes('MONDAY') || timeframeUpper.includes('MON')) days.push('Monday');
-      if (timeframeUpper.includes('TUESDAY') || timeframeUpper.includes('TUE')) days.push('Tuesday');
-      if (timeframeUpper.includes('WEDNESDAY') || timeframeUpper.includes('WED')) days.push('Wednesday');
-      if (timeframeUpper.includes('THURSDAY') || timeframeUpper.includes('THU')) days.push('Thursday');
-      if (timeframeUpper.includes('FRIDAY') || timeframeUpper.includes('FRI')) days.push('Friday');
       
-      // Handle abbreviations like MWF
-      if (timeframeUpper.includes('MWF')) {
-        days.push('Monday', 'Wednesday', 'Friday');
+      // NEW: Handle compact day abbreviations like "MTW", "MTWF", etc.
+      const compactDayMatch = timeframe.match(/^([MTWF]+)\s+/);
+      if (compactDayMatch) {
+        const dayString = compactDayMatch[1];
+        console.log('📅 Found compact day format:', dayString);
+        
+        // Parse each character in the day string
+        for (let i = 0; i < dayString.length; i++) {
+          const char = dayString[i];
+          const nextChar = dayString[i + 1];
+          
+          if (char === 'M') {
+            days.push('Monday');
+          } else if (char === 'T' && nextChar === 'H') {
+            days.push('Thursday');
+            i++; // Skip the 'H'
+          } else if (char === 'T') {
+            days.push('Tuesday');
+          } else if (char === 'W') {
+            days.push('Wednesday');
+          } else if (char === 'F') {
+            days.push('Friday');
+          }
+        }
+      } else {
+        // LEGACY: Handle full day names and other patterns
+        if (timeframeUpper.includes('MONDAY') || timeframeUpper.includes('MON')) days.push('Monday');
+        if (timeframeUpper.includes('TUESDAY') || timeframeUpper.includes('TUE')) days.push('Tuesday');
+        if (timeframeUpper.includes('WEDNESDAY') || timeframeUpper.includes('WED')) days.push('Wednesday');
+        if (timeframeUpper.includes('THURSDAY') || timeframeUpper.includes('THU')) days.push('Thursday');
+        if (timeframeUpper.includes('FRIDAY') || timeframeUpper.includes('FRI')) days.push('Friday');
+        
+        // Handle legacy abbreviations like MWF (but not the new compact format)
+        if (timeframeUpper.includes('MWF') && !compactDayMatch) {
+          days.push('Monday', 'Wednesday', 'Friday');
+        }
+        if (timeframeUpper.includes('TTH') || timeframeUpper.includes('T/TH')) {
+          days.push('Tuesday', 'Thursday');
+        }
       }
-      if (timeframeUpper.includes('TTH') || timeframeUpper.includes('T/TH')) {
-        days.push('Tuesday', 'Thursday');
-      }
+      
+      console.log('📅 Parsed days:', days);
       
       // Create schedule entries for each day
       days.forEach(day => {
@@ -104,19 +138,31 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
         });
       });
       
+      console.log('✅ Created schedules:', schedules);
       return schedules;
     } catch (error) {
-      console.warn('Error parsing resource schedule:', timeframe, error);
+      console.error('❌ Error parsing resource schedule:', timeframe, error);
       return [];
     }
   }, []);
 
-  // Helper function to format time with AM/PM
+  // Helper function to format time with AM/PM - Enhanced for better AM/PM handling
   const formatTime = (hour: string, minute: string, period?: string) => {
     let h = parseInt(hour);
-    if (period?.toUpperCase() === 'PM' && h !== 12) h += 12;
-    if (period?.toUpperCase() === 'AM' && h === 12) h = 0;
-    return `${h.toString().padStart(2, '0')}:${minute}`;
+    
+    // Handle AM/PM conversion to 24-hour format
+    if (period) {
+      const periodUpper = period.toUpperCase();
+      if (periodUpper === 'PM' && h !== 12) {
+        h += 12;
+      } else if (periodUpper === 'AM' && h === 12) {
+        h = 0;
+      }
+    }
+    
+    const formattedTime = `${h.toString().padStart(2, '0')}:${minute}`;
+    console.log(`🕐 Formatted time: ${hour}:${minute} ${period || ''} -> ${formattedTime}`);
+    return formattedTime;
   };
 
   // Get all students with resource services
@@ -162,16 +208,45 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
     const currentDay = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
     const currentTimeStr = currentTime.toTimeString().substring(0, 5); // HH:MM format
     
+    console.log('🔍 getCurrentPullOuts called:', {
+      currentTime: currentTime.toISOString(),
+      currentDay,
+      currentTimeStr,
+      totalStudents: studentsWithParsedSchedules.length
+    });
+    
     const pullOuts: StudentPullOut[] = [];
     
     studentsWithParsedSchedules.forEach(student => {
       const studentAny = student as any;
+      
+      // Debug each student's resource info
+      if (studentAny.resourceInfo?.attendsResource) {
+        console.log(`👤 Checking student: ${student.name}`, {
+          attendsResource: studentAny.resourceInfo.attendsResource,
+          timeframe: studentAny.resourceInfo.timeframe,
+          parsedSchedule: studentAny.resourceInfo.parsedSchedule
+        });
+      }
+      
       if (!studentAny.resourceInfo?.parsedSchedule) return;
       
       studentAny.resourceInfo.parsedSchedule.forEach((schedule: ResourceSchedule) => {
+        console.log(`📅 Checking schedule for ${student.name}:`, {
+          scheduleDay: schedule.day,
+          currentDay,
+          scheduleStart: schedule.startTime,
+          scheduleEnd: schedule.endTime,
+          currentTime: currentTimeStr,
+          dayMatch: schedule.day === currentDay,
+          timeInRange: currentTimeStr >= schedule.startTime && currentTimeStr <= schedule.endTime
+        });
+        
         if (schedule.day === currentDay && 
             currentTimeStr >= schedule.startTime && 
             currentTimeStr <= schedule.endTime) {
+          
+          console.log(`✅ PULLOUT DETECTED: ${student.name} is in ${schedule.serviceType}`);
           
           // Calculate time remaining
           const endTime = new Date(currentTime);
@@ -187,6 +262,12 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
         }
       });
     });
+    
+    console.log(`🏫 Total pullouts found: ${pullOuts.length}`, pullOuts.map(p => ({
+      student: p.student.name,
+      service: p.currentService.serviceType,
+      timeRemaining: p.timeRemaining
+    })));
     
     return pullOuts;
   }, [studentsWithParsedSchedules]);
