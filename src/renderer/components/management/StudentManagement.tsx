@@ -304,12 +304,6 @@ const StudentManagement: React.FC<StudentManagementProps> = ({ isActive, onDataC
         <h1 style={styles.title}>👥 Student Management</h1>
         <p style={styles.subtitle}>Comprehensive student records with IEP integration</p>
         
-        <div style={styles.dataIndicator}>
-          ✅ Direct UnifiedDataService Integration
-          <span style={styles.studentCount}>{students.length} students loaded</span>
-          {isLoading && <span style={styles.loadingText}>🔄 Loading...</span>}
-          {error && <span style={styles.errorText}>⚠️ {error}</span>}
-        </div>
       </div>
 
       {/* Search and Filter Controls */}
@@ -491,18 +485,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     opacity: 0.9,
     marginBottom: '1rem'
   },
-  dataIndicator: {
-    display: 'inline-block',
-    background: 'rgba(34, 197, 94, 0.2)',
-    padding: '8px 16px',
-    borderRadius: '20px',
-    border: '1px solid #22c55e',
-    color: '#22c55e',
-    fontSize: '0.9rem'
-  },
-  studentCount: { marginLeft: '10px' },
-  loadingText: { marginLeft: '10px' },
-  errorText: { marginLeft: '10px' },
   controlsContainer: {
     maxWidth: '1400px',
     margin: '0 auto 2rem auto',

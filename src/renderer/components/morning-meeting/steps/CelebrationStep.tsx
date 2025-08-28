@@ -168,7 +168,17 @@ const CelebrationStep: React.FC<MorningMeetingStepProps> = ({
       }
       
       // Check if birthday matches today's date
-      const birthday = new Date(student.birthday);
+      // Fix timezone issue with ISO date parsing by parsing manually
+      let birthday;
+      if (student.birthday.includes('-')) {
+        // Handle ISO format (YYYY-MM-DD) to avoid timezone issues
+        const [year, month, day] = student.birthday.split('-').map(Number);
+        birthday = new Date(year, month - 1, day); // month is 0-based in Date constructor
+      } else {
+        // Handle other formats
+        birthday = new Date(student.birthday);
+      }
+      
       const matches = birthday.getMonth() === currentDate.getMonth() && birthday.getDate() === currentDate.getDate();
       
       if (matches) {
