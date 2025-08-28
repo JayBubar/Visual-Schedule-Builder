@@ -227,22 +227,22 @@ const ContentModal: React.FC<{
   useEffect(() => {
     if (content) {
       setFormData({
-        name: content.name,
-        icon: content.icon,
-        category: content.category,
-        contentType: content.contentType,
-        defaultDuration: content.defaultDuration,
-        description: content.description,
-        difficulty: content.choiceData?.difficulty || 'beginner',
-        skillAreas: content.choiceData?.skillAreas || [],
-        supervisionLevel: content.choiceData?.supervisionLevel || 'minimal',
-        format: content.choiceData?.format || 'solo',
-        tags: [...content.tags],
-        videoUrl: content.videoData?.videoUrl || '',
-        googleDriveUrl: content.documentData?.googleDriveUrl || '', // NEW
-        documentType: content.documentData?.documentType || 'resource', // NEW
-        notes: content.videoData?.notes || content.documentData?.notes || '',
-        materials: content.materials || [],
+        name: content.name || '',
+        icon: content.icon || '📝',
+        category: content.category || 'academic',
+        contentType: content.contentType || 'activity',
+        defaultDuration: content.defaultDuration || 30,
+        description: content.description || '',
+        difficulty: (content.choiceData?.difficulty) || 'beginner',
+        skillAreas: (content.choiceData?.skillAreas && Array.isArray(content.choiceData.skillAreas)) ? [...content.choiceData.skillAreas] : [],
+        supervisionLevel: (content.choiceData?.supervisionLevel) || 'minimal',
+        format: (content.choiceData?.format) || 'solo',
+        tags: (content.tags && Array.isArray(content.tags)) ? [...content.tags] : [],
+        videoUrl: (content.videoData?.videoUrl) || '',
+        googleDriveUrl: (content.documentData?.googleDriveUrl) || '',
+        documentType: (content.documentData?.documentType) || 'resource',
+        notes: (content.videoData?.notes || content.documentData?.notes) || '',
+        materials: (content.materials && Array.isArray(content.materials)) ? [...content.materials] : [],
         instructions: content.instructions || '',
       });
     } else {
@@ -259,8 +259,8 @@ const ContentModal: React.FC<{
         format: 'solo',
         tags: [],
         videoUrl: '',
-        googleDriveUrl: '', // NEW
-        documentType: 'resource', // NEW
+        googleDriveUrl: '',
+        documentType: 'resource',
         notes: '',
         materials: [],
         instructions: '',
@@ -328,19 +328,21 @@ const ContentModal: React.FC<{
 
   const addTag = (tag?: string) => {
     const tagToAdd = tag || newTag.trim();
-    if (tagToAdd && !formData.tags.includes(tagToAdd)) {
+    const currentTags = Array.isArray(formData.tags) ? formData.tags : [];
+    if (tagToAdd && !currentTags.includes(tagToAdd)) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tagToAdd]
+        tags: [...currentTags, tagToAdd]
       }));
       setNewTag('');
     }
   };
 
   const removeTag = (tagToRemove: string) => {
+    const currentTags = Array.isArray(formData.tags) ? formData.tags : [];
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: currentTags.filter(tag => tag !== tagToRemove)
     }));
   };
 
@@ -727,19 +729,20 @@ const ContentModal: React.FC<{
                         key={skill}
                         type="button"
                         onClick={() => {
-                          if (formData.skillAreas.includes(skill)) {
+                          const currentSkillAreas = Array.isArray(formData.skillAreas) ? formData.skillAreas : [];
+                          if (currentSkillAreas.includes(skill)) {
                             setFormData(prev => ({
                               ...prev,
-                              skillAreas: prev.skillAreas.filter(s => s !== skill)
+                              skillAreas: currentSkillAreas.filter(s => s !== skill)
                             }));
                           } else {
                             setFormData(prev => ({
                               ...prev,
-                              skillAreas: [...prev.skillAreas, skill]
+                              skillAreas: [...currentSkillAreas, skill]
                             }));
                           }
                         }}
-                        className={`skill-suggestion ${formData.skillAreas.includes(skill) ? 'selected' : ''}`}
+                        className={`skill-suggestion ${Array.isArray(formData.skillAreas) && formData.skillAreas.includes(skill) ? 'selected' : ''}`}
                       >
                         {skill}
                       </button>
