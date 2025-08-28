@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Clock, MapPin } from 'lucide-react';
+import { User, Clock } from 'lucide-react';
 import { useResourceSchedule } from '../../services/ResourceScheduleManager';
 
 interface StudentPullOut {
@@ -8,6 +7,7 @@ interface StudentPullOut {
     id: string;
     name: string;
     photo?: string;
+    grade?: string;
   };
   currentService: {
     serviceType: string;
@@ -32,6 +32,7 @@ const ResourceServicesDisplay: React.FC<ResourceServicesDisplayProps> = ({
   const { getCurrentPullOuts } = useResourceSchedule();
   const [studentsInPullOut, setStudentsInPullOut] = useState<StudentPullOut[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Load current pull-out data
   const loadData = () => {
@@ -63,16 +64,6 @@ const ResourceServicesDisplay: React.FC<ResourceServicesDisplayProps> = ({
     return null;
   }
 
-  // Group by service type for better organization
-  const serviceGroups = studentsInPullOut.reduce((groups, pullOut) => {
-    const serviceType = pullOut.currentService.serviceType;
-    if (!groups[serviceType]) {
-      groups[serviceType] = [];
-    }
-    groups[serviceType].push(pullOut);
-    return groups;
-  }, {} as Record<string, StudentPullOut[]>);
-
   const getServiceIcon = (serviceType: string) => {
     const icons = {
       'Speech Therapy': '🗣️',
@@ -93,7 +84,7 @@ const ResourceServicesDisplay: React.FC<ResourceServicesDisplayProps> = ({
     const baseStyles = {
       position: 'fixed' as const,
       zIndex: 100,
-      maxWidth: compact ? '280px' : '320px',
+      maxWidth: isExpanded ? '400px' : '280px',
       transition: 'all 0.3s ease',
     };
 
@@ -132,218 +123,293 @@ const ResourceServicesDisplay: React.FC<ResourceServicesDisplayProps> = ({
   };
 
   return (
-    <motion.div 
-      style={getPositionStyles()}
-      className={`bg-yellow-500/10 backdrop-blur-sm rounded-xl p-3 border-2 border-yellow-400/30 shadow-lg ${className}`}
-      initial={{ opacity: 0, scale: 0.9, x: -20 }}
-      animate={{ opacity: 1, scale: 1, x: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        marginBottom: '0.75rem',
-        paddingBottom: '0.5rem',
-        borderBottom: '1px solid rgba(255, 193, 7, 0.3)'
-      }}>
-        <span style={{ fontSize: '1.2rem' }}>🏫</span>
-        <h3 style={{
-          margin: 0,
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          color: 'white',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-        }}>
-          Resource Services
-        </h3>
-        <span style={{
-          background: 'rgba(255, 193, 7, 0.3)',
-          color: '#ffc107',
-          fontSize: '0.7rem',
-          padding: '0.2rem 0.5rem',
-          borderRadius: '12px',
-          fontWeight: '600',
-          border: '1px solid rgba(255, 193, 7, 0.5)'
-        }}>
-          {studentsInPullOut.length}
-        </span>
-        
+    <div style={getPositionStyles()}>
+      {/* Collapsed Header Bar */}
+      <div
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          background: 'rgba(255, 193, 7, 0.9)',
+          borderRadius: isExpanded ? '12px 12px 0 0' : '12px',
+          padding: '12px 16px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          boxShadow: '0 4px 20px rgba(255, 193, 7, 0.3)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          transition: 'all 0.2s ease',
+          minHeight: '48px'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 193, 7, 1)';
+          e.currentTarget.style.transform = 'scale(1.02)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'rgba(255, 193, 7, 0.9)';
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
+      >
+        {/* Icon and Count */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.2rem' }}>🏫</span>
+          <span style={{
+            color: 'white',
+            fontWeight: '700',
+            fontSize: '1rem'
+          }}>
+            {studentsInPullOut.length} Resource
+          </span>
+        </div>
+
+        {/* Compact Student Photos (when collapsed) */}
+        {!isExpanded && (
+          <div style={{ 
+            display: 'flex', 
+            gap: '4px',
+            marginLeft: '8px'
+          }}>
+            {studentsInPullOut.slice(0, 3).map((pullOut, index) => (
+              <div
+                key={pullOut.student?.id || index}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: pullOut.student?.photo ? 'transparent' : 'rgba(255, 255, 255, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.5)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {pullOut.student?.photo ? (
+                  <img 
+                    src={pullOut.student.photo} 
+                    alt={pullOut.student.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                ) : (
+                  <span style={{ 
+                    color: 'white', 
+                    fontSize: '10px', 
+                    fontWeight: '600' 
+                  }}>
+                    {pullOut.student?.name?.charAt(0) || '?'}
+                  </span>
+                )}
+              </div>
+            ))}
+            {studentsInPullOut.length > 3 && (
+              <div style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                color: 'white',
+                fontWeight: '600'
+              }}>
+                +{studentsInPullOut.length - 3}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Loading Indicator */}
         {isLoading && (
           <div style={{
-            background: 'rgba(255, 193, 7, 0.2)',
-            color: '#ffc107',
-            fontSize: '0.7rem',
-            padding: '0.2rem 0.5rem',
-            borderRadius: '12px'
+            background: 'rgba(34, 197, 94, 0.3)',
+            borderRadius: '8px',
+            padding: '0.2rem 0.4rem',
+            fontSize: '0.6rem',
+            color: '#22c55e',
+            fontWeight: '600'
           }}>
             🔄
           </div>
         )}
+
+        {/* Expand/Collapse Arrow */}
+        <span style={{
+          color: 'white',
+          fontSize: '1rem',
+          transition: 'transform 0.2s ease',
+          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
       </div>
 
-      {/* Services Groups */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        <AnimatePresence>
-          {Object.entries(serviceGroups).map(([serviceType, students]) => (
-            <motion.div
-              key={serviceType}
-              style={{
-                background: 'rgba(255, 193, 7, 0.15)',
-                borderRadius: '8px',
-                padding: '0.5rem',
-                border: '1px solid rgba(255, 193, 7, 0.3)'
-              }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Service Type Header */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '0.5rem'
-              }}>
-                <span style={{ fontSize: '1rem' }}>{getServiceIcon(serviceType)}</span>
-                <span style={{
-                  fontSize: '0.75rem',
-                  fontWeight: '600',
-                  color: 'white',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+      {/* Expanded Student List */}
+      {isExpanded && (
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          borderRadius: '0 0 12px 12px',
+          padding: '16px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(10px)',
+          border: '2px solid rgba(255, 255, 255, 0.2)',
+          borderTop: 'none',
+          maxHeight: '300px',
+          overflowY: 'auto'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            {studentsInPullOut.map((pullOut, index) => (
+              <div
+                key={pullOut.student?.id || index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '8px',
+                  background: 'rgba(255, 193, 7, 0.1)',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 193, 7, 0.2)'
+                }}
+              >
+                {/* Student Photo */}
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: pullOut.student?.photo ? 'transparent' : 'linear-gradient(135deg, #ffc107, #ff8f00)',
+                  border: '2px solid rgba(255, 193, 7, 0.3)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
                 }}>
-                  {serviceType}
-                </span>
-                <span style={{
-                  fontSize: '0.65rem',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  marginLeft: 'auto'
-                }}>
-                  {students[0]?.currentService.teacher}
-                </span>
-              </div>
-
-              {/* Students in this service */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: compact ? '1fr' : 'repeat(2, 1fr)',
-                gap: '0.5rem'
-              }}>
-                {students.map(({ student, currentService, timeRemaining }) => (
-                  <motion.div
-                    key={student.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      borderRadius: '6px',
-                      padding: '0.4rem',
-                      border: '1px solid rgba(255, 255, 255, 0.2)'
-                    }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {/* Student Photo */}
-                    <div style={{
-                      width: '24px',
-                      height: '24px',
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      background: student.photo ? 'transparent' : 'linear-gradient(135deg, #ffc107, #ff8f00)',
-                      border: '1px solid rgba(255, 193, 7, 0.5)',
-                      flexShrink: 0
+                  {pullOut.student?.photo ? (
+                    <img 
+                      src={pullOut.student.photo} 
+                      alt={pullOut.student.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  ) : (
+                    <span style={{ 
+                      color: 'white', 
+                      fontSize: '1rem', 
+                      fontWeight: '600' 
                     }}>
-                      {student.photo ? (
-                        <img 
-                          src={student.photo} 
-                          alt={student.name}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}>
-                          <User style={{ width: '12px', height: '12px', color: 'white' }} />
-                        </div>
-                      )}
-                    </div>
+                      {pullOut.student?.name?.charAt(0) || '?'}
+                    </span>
+                  )}
+                </div>
 
-                    {/* Student Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: '0.7rem',
-                        fontWeight: '600',
-                        color: 'white',
-                        textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        {student.name}
-                      </div>
-                      
-                      {/* Service Time */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem',
-                        marginTop: '0.1rem'
-                      }}>
-                        <Clock style={{ width: '8px', height: '8px', color: 'rgba(255, 255, 255, 0.7)' }} />
-                        <span style={{
-                          fontSize: '0.6rem',
-                          color: 'rgba(255, 255, 255, 0.7)'
-                        }}>
-                          Until {currentService.endTime}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                {/* Student Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontWeight: '700',
+                    color: '#1f2937',
+                    fontSize: '0.95rem',
+                    marginBottom: '2px'
+                  }}>
+                    {pullOut.student?.name || 'Unknown Student'}
+                  </div>
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: '#6b7280',
+                    fontWeight: '500',
+                    marginBottom: '4px'
+                  }}>
+                    {pullOut.currentService.serviceType}
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontSize: '0.7rem',
+                    color: '#6b7280'
+                  }}>
+                    <Clock style={{ width: '10px', height: '10px' }} />
+                    <span>
+                      {pullOut.currentService.startTime} - {pullOut.currentService.endTime}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Service Icon */}
+                <div style={{
+                  color: '#ffc107',
+                  fontSize: '1.2rem'
+                }}>
+                  {getServiceIcon(pullOut.currentService.serviceType)}
+                </div>
               </div>
+            ))}
+          </div>
 
-              {/* Service Time Range */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: '0.5rem',
-                fontSize: '0.65rem',
-                color: 'rgba(255, 255, 255, 0.7)',
-                borderTop: '1px solid rgba(255, 193, 7, 0.2)',
-                paddingTop: '0.3rem'
+          {/* Footer Actions */}
+          <div style={{
+            marginTop: '12px',
+            paddingTop: '12px',
+            borderTop: '1px solid rgba(255, 193, 7, 0.2)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{
+                fontSize: '0.8rem',
+                color: '#6b7280',
+                fontWeight: '500'
               }}>
-                {students[0]?.currentService.startTime} - {students[0]?.currentService.endTime}
+                {studentsInPullOut.length} student{studentsInPullOut.length !== 1 ? 's' : ''} in resource services
+              </span>
+              <div style={{
+                color: 'rgba(34, 197, 94, 0.9)',
+                fontSize: '0.6rem',
+                fontWeight: '600'
+              }}>
+                ✅ Updated: {new Date().toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
-      {/* Footer Note */}
-      <div style={{
-        marginTop: '0.5rem',
-        fontSize: '0.6rem',
-        color: 'rgba(255, 255, 255, 0.6)',
-        textAlign: 'center',
-        fontStyle: 'italic'
-      }}>
-        Students return automatically when service ends
-      </div>
-    </motion.div>
+            </div>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded(false);
+              }}
+              style={{
+                background: 'rgba(255, 193, 7, 0.1)',
+                border: '1px solid rgba(255, 193, 7, 0.3)',
+                borderRadius: '6px',
+                color: '#ffc107',
+                padding: '4px 8px',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Collapse
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -86,6 +86,8 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
       
       // NEW: Handle compact day abbreviations like "MTW", "MTWF", "MTWThF", etc.
       const compactDayMatch = timeframe.match(/^([MTWThF]+)\s+/);
+      console.log('🔍 Compact day match attempt:', { timeframe, compactDayMatch });
+      
       if (compactDayMatch) {
         const dayString = compactDayMatch[1];
         console.log('📅 Found compact day format:', dayString);
@@ -96,22 +98,30 @@ export const ResourceScheduleProvider: React.FC<ResourceScheduleProviderProps> =
           const char = dayString[i];
           const nextChar = dayString[i + 1];
           
+          console.log(`🔤 Parsing character at position ${i}: '${char}', next: '${nextChar}'`);
+          
           if (char === 'M') {
             days.push('Monday');
+            console.log('✅ Added Monday');
             i++;
           } else if (char === 'T' && nextChar === 'h') {
             days.push('Thursday');
+            console.log('✅ Added Thursday');
             i += 2; // Skip both 'T' and 'h'
           } else if (char === 'T') {
             days.push('Tuesday');
+            console.log('✅ Added Tuesday');
             i++;
           } else if (char === 'W') {
             days.push('Wednesday');
+            console.log('✅ Added Wednesday');
             i++;
           } else if (char === 'F') {
             days.push('Friday');
+            console.log('✅ Added Friday');
             i++;
           } else {
+            console.log(`⚠️ Unknown character: '${char}'`);
             i++; // Skip unknown characters
           }
         }
