@@ -22,10 +22,9 @@ const Navigation: React.FC<NavigationProps> = ({
     { id: 'display', icon: '📺', label: 'Display', shortcut: 'Ctrl+4' },
     { id: 'students', icon: '👥', label: 'Students', shortcut: 'Ctrl+5' },
     { id: 'staff', icon: '👨‍🏫', label: 'Staff', shortcut: 'Ctrl+6' },
-    { id: 'calendar', icon: '📅', label: 'Morning Meeting', shortcut: 'Ctrl+7' },
-    { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+8' },
-    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+9' },
-    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+0' }
+    { id: 'iep-goals', icon: '🎯', label: 'IEP Goals', shortcut: 'Ctrl+7' },
+    { id: 'reports', icon: '📈', label: 'Reports', shortcut: 'Ctrl+8' },
+    { id: 'settings', icon: '⚙️', label: 'Settings', shortcut: 'Ctrl+9' }
   ] as const;
 
   return (

@@ -1,5 +1,6 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
+import '../../styles/library.css';
 
 // DisplayVideoCheckbox Component
 interface DisplayVideoCheckboxProps {
@@ -82,15 +83,6 @@ const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({
   );
 };
 
-// Utility function to generate unique IDs
-let idCounter = 0;
-const generateUniqueId = (prefix: string = 'id'): string => {
-  idCounter++;
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substr(2, 9);
-  const counter = idCounter.toString(36);
-  return `${prefix}_${timestamp}_${counter}_${random}`;
-};
 
 interface ActivityLibraryProps {
   isActive: boolean;
@@ -102,7 +94,7 @@ interface LibraryContent {
   name: string;
   icon: string;
   category: 'academic' | 'break' | 'other';
-  contentType: 'activity' | 'video' | 'document' | 'choice-item';  // ADD document type
+  contentType: 'activity' | 'video' | 'document' | 'choice-item'; // ADD choice-item
   defaultDuration: number;
   description: string;
   tags: string[];
@@ -115,20 +107,12 @@ interface LibraryContent {
     notes?: string;
   };
   
-  // Document-specific data (NEW)
+  // Document-specific data
   documentData?: {
     googleDriveUrl: string;
     documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other';
     notes?: string;
   };
-  
-  // Activity-specific data
-  materials?: string[];
-  instructions?: string;
-  
-  // Metadata
-  createdAt: string;
-  updatedAt?: string;
   
   // Choice-specific data (NEW)
   choiceData?: {
@@ -138,6 +122,14 @@ interface LibraryContent {
     supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
     format: 'solo' | 'group' | 'flexible';
   };
+  
+  // Activity-specific data
+  materials?: string[];
+  instructions?: string;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt?: string;
 }
 
 // Content creation/edit modal component
@@ -151,7 +143,7 @@ const ContentModal: React.FC<{
     name: string;
     icon: string;
     category: 'academic' | 'break' | 'other';
-    contentType: 'activity' | 'video' | 'document' | 'choice-item'; // ADD document and choice-item
+    contentType: 'activity' | 'video' | 'document' | 'choice-item';
     defaultDuration: number;
     description: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -160,8 +152,8 @@ const ContentModal: React.FC<{
     format: 'solo' | 'group' | 'flexible';
     tags: string[];
     videoUrl: string;
-    googleDriveUrl: string; // NEW
-    documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other'; // NEW
+    googleDriveUrl: string;
+    documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other';
     notes: string;
     materials: string[];
     instructions: string;
@@ -178,8 +170,8 @@ const ContentModal: React.FC<{
     format: 'solo',
     tags: [],
     videoUrl: '',
-    googleDriveUrl: '', // NEW
-    documentType: 'resource', // NEW
+    googleDriveUrl: '',
+    documentType: 'resource',
     notes: '',
     materials: [],
     instructions: '',
@@ -826,7 +818,7 @@ const ContentModal: React.FC<{
   );
 };
 
-const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
+const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
   const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document' | 'choice-item'>('all');
@@ -3063,4 +3055,641 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
   );
 };
 
-export default SimplifiedActivityLibrary;
+// ActivityCard component for Activities tab
+const ActivityCard: React.FC<{ content: LibraryContent }> = ({ content }) => {
+  const [addingContent, setAddingContent] = useState(false);
+
+  const handleAddToSchedule = async () => {
+    if (addingContent) return;
+
+    setAddingContent(true);
+
+    try {
+      const instanceId = generateUniqueId(`${content.id}`);
+      
+      const contentToAdd = {
+        id: instanceId,
+        originalId: content.id,
+        name: content.name,
+        icon: content.icon,
+        emoji: content.icon,
+        duration: content.defaultDuration,
+        category: content.category,
+        description: content.description || '',
+        materials: content.materials || [],
+        instructions: content.instructions || '',
+        isCustom: content.isCustom,
+        tags: content.tags || [],
+        createdAt: new Date().toISOString(),
+        addedFromLibrary: true,
+      };
+
+      const existingActivities = JSON.parse(localStorage.getItem('available_activities') || '[]');
+      const updatedActivities = [...existingActivities, contentToAdd];
+      localStorage.setItem('available_activities', JSON.stringify(updatedActivities));
+
+      window.dispatchEvent(new CustomEvent('activityAdded', {
+        detail: { 
+          activity: contentToAdd,
+          source: 'Library',
+          timestamp: Date.now()
+        }
+      }));
+
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log(`Activity "${content.name}" added to Schedule Builder`);
+      
+    } catch (error) {
+      console.error('Error adding activity:', error);
+      alert(`Error adding "${content.name}". Please try again.`);
+    } finally {
+      setAddingContent(false);
+    }
+  };
+
+  return (
+    <div className={`content-item activity`} data-category={content.category}>
+      <div className="content-header">
+        <div className="content-icon">
+          {content.icon}
+        </div>
+        <div className="content-meta">
+          <div className="content-badges">
+            <span className={`category-badge ${content.category}`}>
+              {content.category}
+            </span>
+            <span className="type-badge activity">activity</span>
+            {!content.isDeletable && (
+              <span className="built-in-badge">Built-in</span>
+            )}
+            {content.isCustom && (
+              <span className="custom-badge">Custom</span>
+            )}
+          </div>
+          <div className="content-duration">{content.defaultDuration}min</div>
+        </div>
+      </div>
+
+      <div className="content-body">
+        <h3 className="content-title">{content.name}</h3>
+        <p className="content-description">{content.description}</p>
+        
+        {content.materials && content.materials.length > 0 && (
+          <div className="activity-materials">
+            <strong>Materials:</strong> {content.materials.join(', ')}
+          </div>
+        )}
+
+        {content.tags.length > 0 && (
+          <div className="content-tags">
+            {content.tags.map(tag => (
+              <span key={tag} className="content-tag">#{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="content-actions">
+        <button 
+          className={`action-button primary ${addingContent ? 'adding' : ''}`}
+          title="Add to schedule"
+          onClick={handleAddToSchedule}
+          disabled={addingContent}
+        >
+          {addingContent ? (
+            <>
+              <span className="spinner">⏳</span> Adding...
+            </>
+          ) : (
+            '+ Add to Schedule'
+          )}
+        </button>
+        
+        <div className="secondary-actions">
+          <button 
+            className="action-button secondary" 
+            title="Edit activity"
+            disabled={!content.isDeletable}
+          >
+            ✏️
+          </button>
+          <button 
+            className="action-button secondary" 
+            title="Duplicate activity"
+          >
+            📋
+          </button>
+          {content.isDeletable && (
+            <button 
+              className="action-button danger" 
+              title="Delete activity"
+            >
+              🗑️
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// MediaCard component for Media tab
+const MediaCard: React.FC<{ content: LibraryContent }> = ({ content }) => {
+  return (
+    <div className={`content-item ${content.contentType}`}>
+      <div className="content-header">
+        <div className="content-icon">
+          {content.icon}
+          {content.contentType === 'video' && (
+            <div className="video-indicator">🎬</div>
+          )}
+        </div>
+        <div className="content-meta">
+          <div className="content-badges">
+            <span className={`type-badge ${content.contentType}`}>
+              {content.contentType}
+            </span>
+            {content.isCustom && (
+              <span className="custom-badge">Custom</span>
+            )}
+          </div>
+          <div className="content-duration">{content.defaultDuration}min</div>
+        </div>
+      </div>
+
+      <div className="content-body">
+        <h3 className="content-title">{content.name}</h3>
+        <p className="content-description">{content.description}</p>
+        
+        {/* Video-specific display */}
+        {content.contentType === 'video' && content.videoData && (
+          <div className="video-details">
+            <div className="video-url">
+              <span className="video-label">🔗</span>
+              <a href={content.videoData.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
+                View Video
+              </a>
+            </div>
+            {content.videoData.notes && (
+              <div className="video-notes">
+                <strong>Notes:</strong> {content.videoData.notes}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Document-specific display */}
+        {content.contentType === 'document' && content.documentData && (
+          <div className="document-details">
+            <div className="document-url">
+              <span className="document-label">🔗</span>
+              <a href={content.documentData.googleDriveUrl} target="_blank" rel="noopener noreferrer" className="document-link">
+                Open Document
+              </a>
+            </div>
+            <div className="document-type">
+              Type: {content.documentData.documentType}
+            </div>
+            {content.documentData.notes && (
+              <div className="document-notes">
+                <strong>Notes:</strong> {content.documentData.notes}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SmartBoard Display Options for Videos */}
+        {content.contentType === 'video' && (
+          <div className="smartboard-options">
+            <h4>📺 Smartboard Display Options</h4>
+            <div className="display-checkboxes">
+              <DisplayVideoCheckbox
+                videoId={content.id}
+                slot="move1"
+                label="🏃‍♀️ Move Video 1"
+                video={content}
+              />
+              <DisplayVideoCheckbox
+                videoId={content.id}
+                slot="lesson1"
+                label="📚 Lesson Video 1"
+                video={content}
+              />
+              <DisplayVideoCheckbox
+                videoId={content.id}
+                slot="move2"
+                label="🤸‍♂️ Move Video 2"
+                video={content}
+              />
+              <DisplayVideoCheckbox
+                videoId={content.id}
+                slot="lesson2"
+                label="🎓 Lesson Video 2"
+                video={content}
+              />
+            </div>
+          </div>
+        )}
+
+        {content.tags.length > 0 && (
+          <div className="content-tags">
+            {content.tags.map(tag => (
+              <span key={tag} className="content-tag">#{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="content-actions">
+        <div className="secondary-actions">
+          <button 
+            className="action-button secondary" 
+            title="Edit content"
+            disabled={!content.isDeletable}
+          >
+            ✏️
+          </button>
+          <button 
+            className="action-button secondary" 
+            title="Duplicate content"
+          >
+            📋
+          </button>
+          {content.isDeletable && (
+            <button 
+              className="action-button danger" 
+              title="Delete content"
+            >
+              🗑️
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Updated ActivitiesTab with complete implementation
+const ActivitiesTab: React.FC<{ 
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  onOpenModal: (content?: LibraryContent) => void;
+}> = ({ searchTerm, setSearchTerm, onOpenModal }) => {
+  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
+
+  // Base content library (built-in, non-deletable items)
+  const baseContent: LibraryContent[] = [
+    // Academic
+    { id: 'base-ela', name: 'ELA', icon: '📚', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'English Language Arts instruction', tags: ['reading', 'writing', 'language'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-science', name: 'Science', icon: '🔬', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Science exploration and experiments', tags: ['experiments', 'discovery', 'STEM'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-math', name: 'Math', icon: '🔢', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Mathematics instruction and practice', tags: ['numbers', 'calculation', 'problem-solving'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-social-studies', name: 'Social Studies', icon: '🗺️', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Geography, history, and social concepts', tags: ['geography', 'history', 'community'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    
+    // Break
+    { id: 'base-lunch', name: 'Lunch', icon: '🍽️', category: 'break', contentType: 'activity', defaultDuration: 30, description: 'Lunch break and social time', tags: ['food', 'social', 'nutrition'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-bathroom', name: 'Bathroom Break', icon: '🚻', category: 'break', contentType: 'activity', defaultDuration: 5, description: 'Bathroom and hygiene break', tags: ['hygiene', 'self-care', 'routine'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-snack', name: 'Snack Time', icon: '🍎', category: 'break', contentType: 'activity', defaultDuration: 10, description: 'Snack time and nutrition break', tags: ['food', 'nutrition', 'energy'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    
+    // Other
+    { id: 'base-transition', name: 'Transition', icon: '🔄', category: 'other', contentType: 'activity', defaultDuration: 5, description: 'Movement between activities', tags: ['transition', 'routine', 'movement'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'base-safety', name: 'Safety Drill', icon: '🛡️', category: 'other', contentType: 'activity', defaultDuration: 10, description: 'Emergency preparedness and safety practice', tags: ['safety', 'drill', 'emergency'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+    { id: 'morning-meeting-builtin', name: 'Morning Meeting', icon: '🌅', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Daily morning meeting with welcome, attendance, behavior commitments, and learning activities', tags: ['morning', 'routine', 'community', 'daily'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString(), materials: ['Morning Meeting Hub configuration'], instructions: 'Automated morning meeting flow guided by Morning Meeting Hub settings' },
+  ];
+
+  // Load custom content
+  useEffect(() => {
+    loadCustomContent();
+  }, []);
+
+  const loadCustomContent = () => {
+    try {
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      const customContentFromUnified: LibraryContent[] = unifiedActivities
+        .filter(activity => activity.isCustom)
+        .map((activity: UnifiedActivity): LibraryContent => ({
+          id: activity.id,
+          name: activity.name,
+          icon: (activity as any).icon || '📝',
+          category: (activity as any).category || 'academic',
+          contentType: 'activity',
+          defaultDuration: activity.duration || 30,
+          description: activity.description || '',
+          tags: (activity as any).tags || [],
+          isDeletable: true,
+          isCustom: true,
+          materials: activity.materials,
+          instructions: activity.instructions,
+          createdAt: activity.dateCreated,
+          updatedAt: activity.dateCreated,
+        }));
+
+      setCustomContent(customContentFromUnified);
+    } catch (error) {
+      console.error('Error loading custom content:', error);
+    }
+  };
+
+  // Filter only activities
+  const baseActivities = baseContent.filter(content => content.contentType === 'activity');
+  const customActivities = customContent.filter(content => content.contentType === 'activity');
+  const allActivities = [...baseActivities, ...customActivities];
+
+  const filteredActivities = useMemo(() => {
+    return allActivities.filter(content => {
+      const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesCategory = selectedCategory === 'all' || content.category === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchTerm, selectedCategory, allActivities]);
+
+  const getCategoryCount = (category: string) => {
+    if (category === 'all') return allActivities.length;
+    return allActivities.filter(content => content.category === category).length;
+  };
+
+  return (
+    <div className="activities-tab">
+      <div className="tab-header">
+        <h3>📋 Activities for Schedule Builder</h3>
+        <p>Manage activities that can be scheduled in your daily routine</p>
+      </div>
+
+      <div className="tab-controls">
+        <div className="search-section">
+          <div className="search-input-container">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search activities..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="clear-search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="filters-and-actions">
+          <div className="filter-section">
+            <div className="filter-row">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
+              >
+                All ({getCategoryCount('all')})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('academic')}
+                className={`category-button ${selectedCategory === 'academic' ? 'active' : ''}`}
+              >
+                📚 Academic ({getCategoryCount('academic')})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('break')}
+                className={`category-button ${selectedCategory === 'break' ? 'active' : ''}`}
+              >
+                🍽️ Break ({getCategoryCount('break')})
+              </button>
+              <button
+                onClick={() => setSelectedCategory('other')}
+                className={`category-button ${selectedCategory === 'other' ? 'active' : ''}`}
+              >
+                🎯 Other ({getCategoryCount('other')})
+              </button>
+            </div>
+          </div>
+
+          <div className="create-actions">
+            <button 
+              className="create-button activity"
+              onClick={() => onOpenModal()}
+            >
+              <span className="create-icon">📚</span>
+              Create Activity
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      <div className="results-summary">
+        Showing {filteredActivities.length} of {allActivities.length} activities
+        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
+        {selectedCategory !== 'all' && <span className="filter-summary"> in {selectedCategory}</span>}
+      </div>
+
+      {/* Activities Grid */}
+      <div className="content-grid">
+        {filteredActivities.length === 0 ? (
+          <div className="no-results">
+            <div className="no-results-icon">🔍</div>
+            <h3>No activities found</h3>
+            <p>Try adjusting your search terms or filters</p>
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="reset-search">
+                Clear search
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredActivities.map(activity => (
+            <ActivityCard key={activity.id} content={activity} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Updated MediaTab with complete implementation
+const MediaTab: React.FC<{ 
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  onOpenModal: (content?: LibraryContent) => void;
+}> = ({ searchTerm, setSearchTerm, onOpenModal }) => {
+  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
+  const [selectedMediaType, setSelectedMediaType] = useState<'all' | 'video' | 'document'>('all');
+
+  // Load custom content
+  useEffect(() => {
+    loadCustomContent();
+  }, []);
+
+  const loadCustomContent = () => {
+    // Same loading logic as ActivitiesTab
+    try {
+      const unifiedActivities = UnifiedDataService.getAllActivities();
+      
+      const customContentFromUnified: LibraryContent[] = unifiedActivities
+        .filter(activity => activity.isCustom)
+        .map((activity: UnifiedActivity): LibraryContent => ({
+          id: activity.id,
+          name: activity.name,
+          icon: (activity as any).icon || '📝',
+          category: (activity as any).category || 'academic',
+          contentType: (activity as any).contentType || 'activity',
+          defaultDuration: activity.duration || 30,
+          description: activity.description || '',
+          tags: (activity as any).tags || [],
+          isDeletable: true,
+          isCustom: true,
+          videoData: (activity as any).videoData,
+          documentData: (activity as any).documentData,
+          createdAt: activity.dateCreated,
+          updatedAt: activity.dateCreated,
+        }));
+
+      setCustomContent(customContentFromUnified);
+    } catch (error) {
+      console.error('Error loading custom content:', error);
+    }
+  };
+
+  // Filter only media
+  const customMedia = customContent.filter(content => 
+    content.contentType === 'video' || content.contentType === 'document'
+  );
+
+  const filteredMedia = useMemo(() => {
+    return customMedia.filter(content => {
+      const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      const matchesType = selectedMediaType === 'all' || content.contentType === selectedMediaType;
+      
+      return matchesSearch && matchesType;
+    });
+  }, [searchTerm, selectedMediaType, customMedia]);
+
+  const getMediaTypeCount = (type: string) => {
+    if (type === 'all') return customMedia.length;
+    return customMedia.filter(content => content.contentType === type).length;
+  };
+
+  return (
+    <div className="media-tab">
+      <div className="tab-header">
+        <h3>🎬 Media Library</h3>
+        <p>Manage videos and documents for your classroom</p>
+      </div>
+
+      <div className="tab-controls">
+        <div className="search-section">
+          <div className="search-input-container">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search videos and documents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="clear-search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="filters-and-actions">
+          <div className="filter-section">
+            <div className="filter-row">
+              <button
+                onClick={() => setSelectedMediaType('all')}
+                className={`media-type-button ${selectedMediaType === 'all' ? 'active' : ''}`}
+              >
+                All Media ({getMediaTypeCount('all')})
+              </button>
+              <button
+                onClick={() => setSelectedMediaType('video')}
+                className={`media-type-button ${selectedMediaType === 'video' ? 'active' : ''}`}
+              >
+                🎬 Videos ({getMediaTypeCount('video')})
+              </button>
+              <button
+                onClick={() => setSelectedMediaType('document')}
+                className={`media-type-button ${selectedMediaType === 'document' ? 'active' : ''}`}
+              >
+                📄 Documents ({getMediaTypeCount('document')})
+              </button>
+            </div>
+          </div>
+
+          <div className="create-actions">
+            <button 
+              className="create-button video"
+              onClick={() => onOpenModal()}
+            >
+              <span className="create-icon">🎬</span>
+              Add Video
+            </button>
+            <button 
+              className="create-button document"
+              onClick={() => onOpenModal()}
+            >
+              <span className="create-icon">📄</span>
+              Add Document
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      <div className="results-summary">
+        Showing {filteredMedia.length} of {customMedia.length} media items
+        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
+        {selectedMediaType !== 'all' && <span className="filter-summary"> • {selectedMediaType}s only</span>}
+      </div>
+
+      {/* Media Grid */}
+      <div className="content-grid">
+        {filteredMedia.length === 0 ? (
+          <div className="no-results">
+            <div className="no-results-icon">🎬</div>
+            <h3>No media found</h3>
+            <p>Add videos and documents to get started</p>
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="reset-search">
+                Clear search
+              </button>
+            )}
+          </div>
+        ) : (
+          filteredMedia.map(media => (
+            <MediaCard key={media.id} content={media} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Export the utility function
+export const generateUniqueId = (prefix: string = 'id'): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  const counter = Math.floor(Math.random() * 1000).toString(36);
+  return `${prefix}_${timestamp}_${counter}_${random}`;
+};
+
+export default Library;

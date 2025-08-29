@@ -10,7 +10,7 @@ import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
 import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
-import ActivityLibrary from './components/common/ActivityLibrary';
+import Library from './components/common/ActivityLibrary';
 import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';
@@ -18,7 +18,6 @@ import GoalManager from './components/data-collection/GoalManager';
 import SmartGroups from './components/smart-groups/SmartGroups';
 import { SmartGroupsAIService } from './services/smartGroupsService';
 import { DataPrivacyService } from './services/dataPrivacyService';
-import MorningMeetingHub from './components/morning-meeting/MorningMeetingHub';
 import MorningMeetingFlow from './components/morning-meeting/MorningMeetingFlow';
 
 const App: React.FC = () => {
@@ -419,14 +418,6 @@ const App: React.FC = () => {
           onNavigateHome={handleBackToStart}
           onNavigateToBuilder={() => handleViewChange('builder')}
         />
-      ) : currentView === 'calendar' && !showMorningMeetingFlow ? (
-        <MorningMeetingHub
-          onStartMorningMeeting={() => {
-            console.log('🚀 Starting Morning Meeting from Hub!');
-            setShowMorningMeetingFlow(true);
-          }}
-          onClose={() => handleViewChange('builder')}
-        />
       ) : currentView === 'calendar' && showMorningMeetingFlow ? (
         <MorningMeetingFlow
           students={students}
@@ -469,7 +460,7 @@ const App: React.FC = () => {
               <GoalManager />
             )}
             {currentView === 'library' && (
-              <ActivityLibrary
+              <Library
                 isActive={true}
               />
             )}
