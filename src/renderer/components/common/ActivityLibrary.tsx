@@ -819,12 +819,13 @@ const ContentModal: React.FC<{
 };
 
 const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
+  const [activeTab, setActiveTab] = useState<'activities' | 'media'>('activities');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
-  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document' | 'choice-item'>('all');
-  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<LibraryContent | undefined>();
+  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
+  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document' | 'choice-item'>('all');
   const [addingContent, setAddingContent] = useState<Set<string>>(new Set());
   const [expandedChoice, setExpandedChoice] = useState<string | null>(null);
 
@@ -1100,371 +1101,44 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         </p>
       </div>
 
-      {/* Search and Filter Controls */}
-      <div className="library-controls">
-        <div className="search-section">
-          <div className="search-input-container">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search activities, videos, descriptions, or tags..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="clear-search"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="filters-and-actions">
-          <div className="filter-section">
-            {/* Category Filters - Top Row */}
-            <div className="filter-row">
-              <button
-                onClick={() => setSelectedCategory('academic')}
-                className={`category-button ${selectedCategory === 'academic' ? 'active' : ''}`}
-              >
-                📚 Academic ({getCategoryCount('academic')})
-              </button>
-              <button
-                onClick={() => setSelectedCategory('break')}
-                className={`category-button ${selectedCategory === 'break' ? 'active' : ''}`}
-              >
-                🍽️ Break ({getCategoryCount('break')})
-              </button>
-              <button
-                onClick={() => setSelectedCategory('other')}
-                className={`category-button ${selectedCategory === 'other' ? 'active' : ''}`}
-              >
-                🎯 Other ({getCategoryCount('other')})
-              </button>
-            </div>
-
-            {/* Content Type Filters - Bottom Row */}
-            <div className="filter-row">
-              <button
-                onClick={() => setSelectedContentType('all')}
-                className={`content-type-button ${selectedContentType === 'all' ? 'active' : ''}`}
-              >
-                All ({getContentTypeCount('all')})
-              </button>
-              <button
-                onClick={() => setSelectedContentType('video')}
-                className={`content-type-button ${selectedContentType === 'video' ? 'active' : ''}`}
-              >
-                🎬 Video ({getContentTypeCount('video')})
-              </button>
-              <button
-                onClick={() => setSelectedContentType('document')}
-                className={`content-type-button ${selectedContentType === 'document' ? 'active' : ''}`}
-              >
-                📄 Documents ({getContentTypeCount('document')})
-              </button>
-              <button
-                onClick={() => setSelectedContentType('activity')}
-                className={`content-type-button ${selectedContentType === 'activity' ? 'active' : ''}`}
-              >
-                📚 Activities ({getContentTypeCount('activity')})
-              </button>
-              <button
-                onClick={() => setSelectedContentType('choice-item')}
-                className={`content-type-button ${selectedContentType === 'choice-item' ? 'active' : ''}`}
-              >
-                🎯 Choice Items ({getContentTypeCount('choice-item')})
-              </button>
-            </div>
-          </div>
-
-          {/* Create Buttons - Right Side */}
-          <div className="create-actions">
-            <button 
-              className="create-button activity"
-              onClick={() => {
-                setEditingContent(undefined);
-                setModalOpen(true);
-              }}
-            >
-              <span className="create-icon">📚</span>
-              Create Custom Activity
-            </button>
-            <button 
-              className="create-button video"
-              onClick={() => {
-                setEditingContent(undefined);
-                setModalOpen(true);
-              }}
-            >
-              <span className="create-icon">📥</span>
-              Download Video/Docs
-            </button>
-          </div>
-        </div>
+      {/* Tab Navigation */}
+      <div className="tab-navigation">
+        <button
+          onClick={() => setActiveTab('activities')}
+          className={`tab-button ${activeTab === 'activities' ? 'active' : ''}`}
+        >
+          <span className="tab-icon">📋</span>
+          Activities
+        </button>
+        <button
+          onClick={() => setActiveTab('media')}
+          className={`tab-button ${activeTab === 'media' ? 'active' : ''}`}
+        >
+          <span className="tab-icon">🎬</span>
+          Media
+        </button>
       </div>
 
-      {/* Results Summary */}
-      <div className="results-summary">
-        Showing {filteredContent.length} of {allContent.length} items
-        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
-        {selectedCategory !== 'all' && <span className="filter-summary"> in {selectedCategory}</span>}
-        {selectedContentType !== 'all' && <span className="filter-summary"> • {selectedContentType}s only</span>}
-      </div>
-
-      {/* Content Grid */}
-      <div className="content-grid">
-        {filteredContent.length === 0 ? (
-          <div className="no-results">
-            <div className="no-results-icon">🔍</div>
-            <h3>No content found</h3>
-            <p>Try adjusting your search terms or filters</p>
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="reset-search">
-                Clear search
-              </button>
-            )}
-          </div>
+      {/* Tab Content */}
+      <div className="tab-content">
+        {activeTab === 'activities' ? (
+          <ActivitiesTab
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            onOpenModal={(content) => {
+              setEditingContent(content);
+              setModalOpen(true);
+            }}
+          />
         ) : (
-          filteredContent.map(content => (
-            <div key={content.id} className={`content-item ${content.contentType}`} data-category={content.category}>
-              <div className="content-header">
-                <div className="content-icon">
-                  {content.icon}
-                  {content.contentType === 'video' && (
-                    <div className="video-indicator">🎬</div>
-                  )}
-                </div>
-                <div className="content-meta">
-                  <div className="content-badges">
-                    <span className={`category-badge ${content.category}`}>
-                      {content.category}
-                    </span>
-                    <span className={`type-badge ${content.contentType}`}>
-                      {content.contentType}
-                    </span>
-                    {!content.isDeletable && (
-                      <span className="built-in-badge">Built-in</span>
-                    )}
-                    {content.isCustom && (
-                      <span className="custom-badge">Custom</span>
-                    )}
-                  </div>
-                  <div className="content-duration">{content.defaultDuration}min</div>
-                </div>
-              </div>
-
-              <div className="content-body">
-                <h3 className="content-title">{content.name}</h3>
-                {content.contentType !== 'choice-item' && (
-                  <p className="content-description">{content.description}</p>
-                )}
-                
-                {/* Video-specific display */}
-                {content.contentType === 'video' && content.videoData && (
-                  <div className="video-details">
-                    <div className="video-url">
-                      <span className="video-label">🔗</span>
-                      <a href={content.videoData.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
-                        View Video
-                      </a>
-                    </div>
-                    {content.videoData.notes && (
-                      <div className="video-notes">
-                        <strong>Notes:</strong> {content.videoData.notes}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* NEW Document-specific display */}
-                {content.contentType === 'document' && content.documentData && (
-                  <div className="document-details">
-                    <div className="document-url">
-                      <span className="document-label">🔗</span>
-                      <a href={content.documentData.googleDriveUrl} target="_blank" rel="noopener noreferrer" className="document-link">
-                        Open Document
-                      </a>
-                    </div>
-                    <div className="document-type">
-                      <strong>Type:</strong> {content.documentData.documentType.replace('-', ' ')}
-                    </div>
-                    {content.documentData.notes && (
-                      <div className="document-notes">
-                        <strong>Notes:</strong> {content.documentData.notes}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-        {/* Choice Item-specific display - COMPACT VERSION */}
-        {content.contentType === 'choice-item' && content.choiceData && (
-          <div className="choice-item-compact">
-            <button 
-              className="open-choice-details"
-              onClick={() => setExpandedChoice(expandedChoice === content.id ? null : content.id)}
-            >
-              {expandedChoice === content.id ? 'Close Details' : 'Open Details'}
-            </button>
-            
-            {/* Expanded Details Modal-like Section */}
-            {expandedChoice === content.id && (
-              <div className="choice-expanded-details">
-                <div className="choice-description">
-                  <strong>Description:</strong> {content.choiceData.description}
-                </div>
-                
-                <div className="choice-metadata">
-                  <div className="choice-meta-item">
-                    <span className="choice-meta-label">Difficulty:</span>
-                    <span className={`difficulty-badge ${content.choiceData.difficulty}`}>
-                      {content.choiceData.difficulty}
-                    </span>
-                  </div>
-                  
-                  <div className="choice-meta-item">
-                    <span className="choice-meta-label">Format:</span>
-                    <span className="format-text">{content.choiceData.format}</span>
-                  </div>
-                  
-                  <div className="choice-meta-item">
-                    <span className="choice-meta-label">Supervision:</span>
-                    <span className="supervision-text">{content.choiceData.supervisionLevel}</span>
-                  </div>
-                </div>
-                
-                {content.choiceData.skillAreas.length > 0 && (
-                  <div className="choice-skills">
-                    <span className="choice-meta-label">Skills:</span>
-                    <div className="skill-tags">
-                      {content.choiceData.skillAreas.map((skill, index) => (
-                        <span key={index} className="skill-tag">{skill}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-                {/* Add video selection checkboxes for videos */}
-                {content.contentType === 'video' && (
-                  <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: 'rgba(102, 126, 234, 0.1)',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(102, 126, 234, 0.3)'
-                  }}>
-                    <h4 style={{ 
-                      margin: '0 0 0.5rem 0', 
-                      fontSize: '0.9rem', 
-                      color: '#667eea',
-                      fontWeight: '600'
-                    }}>
-                      📺 Smartboard Display Options
-                    </h4>
-                    
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: '1fr 1fr', 
-                      gap: '0.5rem' 
-                    }}>
-                      <DisplayVideoCheckbox
-                        videoId={content.id}
-                        slot="move1"
-                        label="🏃‍♀️ Move Video 1"
-                        video={content}
-                      />
-                      <DisplayVideoCheckbox
-                        videoId={content.id}
-                        slot="lesson1"
-                        label="📚 Lesson Video 1"
-                        video={content}
-                      />
-                      <DisplayVideoCheckbox
-                        videoId={content.id}
-                        slot="move2"
-                        label="🤸‍♂️ Move Video 2"
-                        video={content}
-                      />
-                      <DisplayVideoCheckbox
-                        videoId={content.id}
-                        slot="lesson2"
-                        label="🎓 Lesson Video 2"
-                        video={content}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Activity-specific display */}
-                {content.contentType === 'activity' && content.materials && content.materials.length > 0 && (
-                  <div className="activity-materials">
-                    <strong>Materials:</strong> {content.materials.join(', ')}
-                  </div>
-                )}
-
-                {/* Tags */}
-                {content.tags.length > 0 && (
-                  <div className="content-tags">
-                    {content.tags.map(tag => (
-                      <span key={tag} className="content-tag">#{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="content-actions">
-                <button 
-                  className={`action-button primary ${addingContent.has(content.id) ? 'adding' : ''}`}
-                  title="Add to schedule"
-                  onClick={() => handleAddToSchedule(content)}
-                  disabled={addingContent.has(content.id)}
-                >
-                  {addingContent.has(content.id) ? (
-                    <>
-                      <span className="spinner">⏳</span> Adding...
-                    </>
-                  ) : (
-                    '+ Add to Schedule'
-                  )}
-                </button>
-                
-                <div className="secondary-actions">
-                  <button 
-                    className="action-button secondary" 
-                    title="Edit content"
-                    onClick={() => handleEditContent(content)}
-                    disabled={!content.isDeletable}
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    className="action-button secondary" 
-                    title="Duplicate content"
-                    onClick={() => handleDuplicateContent(content)}
-                  >
-                    📋
-                  </button>
-                  {content.isDeletable && (
-                    <button 
-                      className="action-button danger" 
-                      title="Delete content"
-                      onClick={() => handleDeleteContent(content)}
-                    >
-                      🗑️
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
+          <MediaTab
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            onOpenModal={(content) => {
+              setEditingContent(content);
+              setModalOpen(true);
+            }}
+          />
         )}
       </div>
 
@@ -1503,6 +1177,106 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           color: #718096;
           font-size: 1.1rem;
           margin: 0;
+        }
+
+        /* Tab Navigation Styles */
+        .tab-navigation {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 2rem;
+          background: #f7fafc;
+          border-radius: 12px;
+          padding: 0.5rem;
+          border: 1px solid #e2e8f0;
+        }
+
+        .tab-button {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.75rem 1.5rem;
+          border: none;
+          background: transparent;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 1rem;
+          font-weight: 500;
+          color: #718096;
+          transition: all 0.2s ease;
+          flex: 1;
+          justify-content: center;
+        }
+
+        .tab-button:hover {
+          background: rgba(102, 126, 234, 0.1);
+          color: #667eea;
+        }
+
+        .tab-button.active {
+          background: #667eea;
+          color: white;
+          box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-icon {
+          font-size: 1.2rem;
+        }
+
+        .tab-content {
+          min-height: 400px;
+        }
+
+        /* Tab-specific styles */
+        .activities-tab,
+        .media-tab {
+          padding: 1rem 0;
+        }
+
+        .tab-header {
+          text-align: center;
+          margin-bottom: 2rem;
+        }
+
+        .tab-header h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #2d3748;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .tab-header p {
+          color: #718096;
+          margin: 0;
+        }
+
+        .tab-controls {
+          background: #f7fafc;
+          padding: 1.5rem;
+          border-radius: 12px;
+          margin-bottom: 1.5rem;
+          border: 1px solid #e2e8f0;
+        }
+
+        .media-type-button {
+          padding: 0.5rem 1rem;
+          border: 2px solid #e2e8f0;
+          background: white;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+
+        .media-type-button:hover {
+          border-color: #667eea;
+          background: rgba(102, 126, 234, 0.05);
+        }
+
+        .media-type-button.active {
+          background: #667eea;
+          color: white;
+          border-color: #667eea;
         }
 
         .library-controls {
@@ -3054,6 +2828,7 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     </div>
   );
 };
+
 
 // ActivityCard component for Activities tab
 const ActivityCard: React.FC<{ content: LibraryContent }> = ({ content }) => {
