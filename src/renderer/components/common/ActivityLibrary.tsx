@@ -1,13 +1,12 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
-import '../../styles/library.css';
 
 // DisplayVideoCheckbox Component
 interface DisplayVideoCheckboxProps {
   videoId: string;
   slot: 'move1' | 'move2' | 'lesson1' | 'lesson2';
   label: string;
-  video: any; // Use your video type
+  video: any;
 }
 
 const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({ 
@@ -18,7 +17,6 @@ const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({
 }) => {
   const [isSelected, setIsSelected] = useState(false);
 
-  // Load current selection on mount
   useEffect(() => {
     const selectedVideos = localStorage.getItem('selectedDisplayVideos');
     if (selectedVideos) {
@@ -33,23 +31,19 @@ const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({
       const videos = selectedVideos ? JSON.parse(selectedVideos) : {};
       
       if (checked) {
-        // Select this video for this slot
         videos[slot] = {
           id: videoId,
           url: video.videoData?.videoUrl || video.url,
           title: video.name
         };
       } else {
-        // Deselect this slot
         delete videos[slot];
       }
       
       localStorage.setItem('selectedDisplayVideos', JSON.stringify(videos));
       setIsSelected(checked);
       
-      // If selecting, deselect other videos for this slot
       if (checked) {
-        // Trigger re-render of other checkboxes (you might need a context or state management)
         window.dispatchEvent(new CustomEvent('displayVideoSelectionChanged'));
       }
     } catch (error) {
@@ -83,6 +77,13 @@ const DisplayVideoCheckbox: React.FC<DisplayVideoCheckboxProps> = ({
   );
 };
 
+// Utility function to generate unique IDs
+const generateUniqueId = (prefix: string = 'id'): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substr(2, 9);
+  const counter = Math.floor(Math.random() * 1000).toString(36);
+  return `${prefix}_${timestamp}_${counter}_${random}`;
+};
 
 interface ActivityLibraryProps {
   isActive: boolean;
@@ -94,127 +95,64 @@ interface LibraryContent {
   name: string;
   icon: string;
   category: 'academic' | 'break' | 'other';
-  contentType: 'activity' | 'video' | 'document' | 'choice-item'; // ADD choice-item
+  contentType: 'activity' | 'video' | 'document';
   defaultDuration: number;
   description: string;
   tags: string[];
   isDeletable: boolean;
   isCustom: boolean;
-  
-  // Video-specific data
   videoData?: {
     videoUrl: string;
     notes?: string;
   };
-  
-  // Document-specific data
   documentData?: {
     googleDriveUrl: string;
     documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other';
     notes?: string;
   };
-  
-  // Choice-specific data (NEW)
-  choiceData?: {
-    description: string;
-    difficulty: 'beginner' | 'intermediate' | 'advanced';
-    skillAreas: string[];
-    supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
-    format: 'solo' | 'group' | 'flexible';
-  };
-  
-  // Activity-specific data
   materials?: string[];
   instructions?: string;
-  
-  // Metadata
   createdAt: string;
   updatedAt?: string;
 }
 
-// Content creation/edit modal component
+// Base content library
+const baseContent: LibraryContent[] = [
+  { id: 'base-ela', name: 'ELA', icon: '📚', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'English Language Arts instruction', tags: ['reading', 'writing', 'language'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-science', name: 'Science', icon: '🔬', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Science exploration and experiments', tags: ['experiments', 'discovery', 'STEM'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-math', name: 'Math', icon: '🔢', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Mathematics instruction and practice', tags: ['numbers', 'calculation', 'problem-solving'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-social-studies', name: 'Social Studies', icon: '🗺️', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Geography, history, and social concepts', tags: ['geography', 'history', 'community'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-lunch', name: 'Lunch', icon: '🍽️', category: 'break', contentType: 'activity', defaultDuration: 30, description: 'Lunch break and social time', tags: ['food', 'social', 'nutrition'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-bathroom', name: 'Bathroom Break', icon: '🚻', category: 'break', contentType: 'activity', defaultDuration: 5, description: 'Bathroom and hygiene break', tags: ['hygiene', 'self-care', 'routine'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-snack', name: 'Snack Time', icon: '🍎', category: 'break', contentType: 'activity', defaultDuration: 10, description: 'Snack time and nutrition break', tags: ['food', 'nutrition', 'energy'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-transition', name: 'Transition', icon: '🔄', category: 'other', contentType: 'activity', defaultDuration: 5, description: 'Movement between activities', tags: ['transition', 'routine', 'movement'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
+  { id: 'morning-meeting-builtin', name: 'Morning Meeting', icon: '🌅', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Daily morning meeting with welcome, attendance, behavior commitments, and learning activities', tags: ['morning', 'routine', 'community', 'daily'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString(), materials: ['Morning Meeting Hub configuration'], instructions: 'Automated morning meeting flow guided by Morning Meeting Hub settings' },
+];
+
+// Content creation modal component
 const ContentModal: React.FC<{
   content?: LibraryContent;
   onSave: (content: LibraryContent) => void;
   onCancel: () => void;
   isOpen: boolean;
 }> = ({ content, onSave, onCancel, isOpen }) => {
-  const [formData, setFormData] = useState<{
-    name: string;
-    icon: string;
-    category: 'academic' | 'break' | 'other';
-    contentType: 'activity' | 'video' | 'document' | 'choice-item';
-    defaultDuration: number;
-    description: string;
-    difficulty: 'beginner' | 'intermediate' | 'advanced';
-    skillAreas: string[];
-    supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
-    format: 'solo' | 'group' | 'flexible';
-    tags: string[];
-    videoUrl: string;
-    googleDriveUrl: string;
-    documentType: 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other';
-    notes: string;
-    materials: string[];
-    instructions: string;
-  }>({
+  const [formData, setFormData] = useState({
     name: '',
     icon: '📝',
-    category: 'academic',
-    contentType: 'activity',
+    category: 'academic' as 'academic' | 'break' | 'other',
+    contentType: 'activity' as 'activity' | 'video' | 'document',
     defaultDuration: 30,
     description: '',
-    difficulty: 'beginner',
-    skillAreas: [],
-    supervisionLevel: 'minimal',
-    format: 'solo',
-    tags: [],
+    tags: [] as string[],
     videoUrl: '',
     googleDriveUrl: '',
-    documentType: 'resource',
+    documentType: 'resource' as 'lesson-plan' | 'worksheet' | 'standard' | 'resource' | 'other',
     notes: '',
-    materials: [],
+    materials: [] as string[],
     instructions: '',
   });
-  const [newTag, setNewTag] = useState('');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
-  // FIXED: Close emoji picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (showEmojiPicker && !target.closest('.icon-selection')) {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    if (showEmojiPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showEmojiPicker]);
-
-  // Available icons organized by purpose
-  const iconLibrary = {
-    academic: ['📚', '✏️', '🔢', '🧪', '🗺️', '💻', '📖', '📝', '🎓', '🔬'],
-    break: ['🍽️', '🍎', '🚻', '😴', '🔄', '⏰', '🛡️', '🚨', '⚠️', '🔔'],
-    other: ['🗣️', '✋', '💭', '🎯', '🎨', '🎵', '⚽', '🤝', '🧘', '🎮'],
-    document: ['📄', '📋', '📊', '📈', '📉', '🗂️', '📁', '🔗', '📎', '📑'], // NEW
-    general: ['📋', '⭐', '🎉', '💡', '🔗', '📹', '🎬', '📺', '🌟', '✨']
-  };
-
-  // Common tags for different content types
-  const tagSuggestions = {
-    academic: ['math', 'reading', 'science', 'social-studies', 'morning-meeting'],
-    break: ['nutrition', 'rest', 'hygiene', 'safety', 'routine'],
-    other: ['therapy', 'support', 'choice', 'transition', 'resource'],
-    video: ['seasonal', 'weather', 'educational', 'calming', 'motivational'],
-    activity: ['hands-on', 'group', 'individual', 'discussion', 'practice'],
-    document: ['lesson-plan', 'worksheet', 'standard', 'resource', 'template'] // NEW
-  };
 
   useEffect(() => {
     if (content) {
@@ -225,10 +163,6 @@ const ContentModal: React.FC<{
         contentType: content.contentType || 'activity',
         defaultDuration: content.defaultDuration || 30,
         description: content.description || '',
-        difficulty: content.choiceData?.difficulty || 'beginner',
-        skillAreas: Array.isArray(content.choiceData?.skillAreas) ? [...content.choiceData.skillAreas] : [],
-        supervisionLevel: content.choiceData?.supervisionLevel || 'minimal',
-        format: content.choiceData?.format || 'solo',
         tags: Array.isArray(content.tags) ? [...content.tags] : [],
         videoUrl: content.videoData?.videoUrl || '',
         googleDriveUrl: content.documentData?.googleDriveUrl || '',
@@ -238,7 +172,6 @@ const ContentModal: React.FC<{
         instructions: content.instructions || '',
       });
     } else {
-      // Reset form with safe defaults
       setFormData({
         name: '',
         icon: '📝',
@@ -246,10 +179,6 @@ const ContentModal: React.FC<{
         contentType: 'activity',
         defaultDuration: 30,
         description: '',
-        difficulty: 'beginner',
-        skillAreas: [],
-        supervisionLevel: 'minimal',
-        format: 'solo',
         tags: [],
         videoUrl: '',
         googleDriveUrl: '',
@@ -265,7 +194,6 @@ const ContentModal: React.FC<{
     if (!formData.name.trim()) return;
     if (formData.contentType === 'video' && !formData.videoUrl.trim()) return;
     if (formData.contentType === 'document' && !formData.googleDriveUrl.trim()) return;
-    if (formData.contentType === 'choice-item' && !formData.description.trim()) return;
 
     const contentData: LibraryContent = {
       id: content?.id || generateUniqueId('content'),
@@ -276,12 +204,11 @@ const ContentModal: React.FC<{
       defaultDuration: formData.defaultDuration,
       description: formData.description.trim(),
       tags: formData.tags,
-      isDeletable: true, // Custom content is always deletable
+      isDeletable: true,
       isCustom: true,
       createdAt: content?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       
-      // Video-specific data
       ...(formData.contentType === 'video' && {
         videoData: {
           videoUrl: formData.videoUrl.trim(),
@@ -289,7 +216,6 @@ const ContentModal: React.FC<{
         }
       }),
       
-      // Document-specific data (NEW)
       ...(formData.contentType === 'document' && {
         documentData: {
           googleDriveUrl: formData.googleDriveUrl.trim(),
@@ -298,18 +224,6 @@ const ContentModal: React.FC<{
         }
       }),
       
-      // Choice item-specific data (NEW)
-      ...(formData.contentType === 'choice-item' && {
-        choiceData: {
-          description: formData.description.trim(),
-          difficulty: formData.difficulty,
-          skillAreas: formData.skillAreas,
-          supervisionLevel: formData.supervisionLevel,
-          format: formData.format,
-        }
-      }),
-      
-      // Activity-specific data  
       ...(formData.contentType === 'activity' && {
         materials: formData.materials.filter(m => m.trim()),
         instructions: formData.instructions.trim() || undefined,
@@ -319,498 +233,236 @@ const ContentModal: React.FC<{
     onSave(contentData);
   };
 
-  const addTag = (tag?: string) => {
-    const tagToAdd = tag || newTag.trim();
-    const currentTags = Array.isArray(formData.tags) ? formData.tags : [];
-    if (tagToAdd && !currentTags.includes(tagToAdd)) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...currentTags, tagToAdd]
-      }));
-      setNewTag('');
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    const currentTags = Array.isArray(formData.tags) ? formData.tags : [];
-    setFormData(prev => ({
-      ...prev,
-      tags: currentTags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
-  const addMaterial = () => {
-    setFormData(prev => ({
-      ...prev,
-      materials: [...prev.materials, '']
-    }));
-  };
-
-  const updateMaterial = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      materials: prev.materials.map((m, i) => i === index ? value : m)
-    }));
-  };
-
-  const removeMaterial = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      materials: prev.materials.filter((_, i) => i !== index)
-    }));
-  };
-
   if (!isOpen) return null;
 
-  const availableTags = [
-    ...(tagSuggestions[formData.category] || []),
-    ...(tagSuggestions[formData.contentType] || [])
-  ];
-
   return (
-    <div className="modal-overlay">
-      <div className="modal-content content-modal">
-        <div className="modal-header">
-          <h3>{content ? 'Edit Content' : `Create ${formData.contentType === 'video' ? 'Video' : 'Activity'}`}</h3>
-          <button className="close-button" onClick={onCancel}>×</button>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        maxWidth: '600px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.5rem',
+          borderBottom: '1px solid #e2e8f0'
+        }}>
+          <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#2d3748' }}>
+            {content ? 'Edit Content' : 'Create Content'}
+          </h3>
+          <button 
+            onClick={onCancel}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: '1.5rem',
+              cursor: 'pointer',
+              color: '#718096'
+            }}
+          >
+            ×
+          </button>
         </div>
 
-        <div className="modal-body">
-          {/* Content Type Selection */}
-          <div className="form-group">
-            <label>Content Type *</label>
-            <div className="content-type-selector">
-              <label className={`content-type-option ${formData.contentType === 'activity' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="contentType"
-                  value="activity"
-                  checked={formData.contentType === 'activity'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
-                />
-                <div className="content-type-card">
-                  <div className="content-type-icon">📚</div>
-                  <div className="content-type-label">Activity</div>
-                  <div className="content-type-desc">Classroom activity or lesson</div>
-                </div>
-              </label>
-              <label className={`content-type-option ${formData.contentType === 'video' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="contentType"
-                  value="video"
-                  checked={formData.contentType === 'video'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
-                />
-                <div className="content-type-card">
-                  <div className="content-type-icon">🎬</div>
-                  <div className="content-type-label">Video</div>
-                  <div className="content-type-desc">Educational video content</div>
-                </div>
-              </label>
-              <label className={`content-type-option ${formData.contentType === 'document' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="contentType"
-                  value="document"
-                  checked={formData.contentType === 'document'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
-                />
-                <div className="content-type-card">
-                  <div className="content-type-icon">📄</div>
-                  <div className="content-type-label">Document</div>
-                  <div className="content-type-desc">Google Drive link or resource</div>
-                </div>
-              </label>
-              <label className={`content-type-option ${formData.contentType === 'choice-item' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="contentType"
-                  value="choice-item"
-                  checked={formData.contentType === 'choice-item'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
-                />
-                <div className="content-type-card">
-                  <div className="content-type-icon">🎯</div>
-                  <div className="content-type-label">Choice Item</div>
-                  <div className="content-type-desc">Student choice activity option</div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Name */}
-          <div className="form-group">
-            <label>{formData.contentType === 'video' ? 'Video Title' : 'Activity Name'} *</label>
+        <div style={{ padding: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+              Name *
+            </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder={formData.contentType === 'video' ? "e.g., Weather Song for Kids" : "e.g., Morning Reading Circle"}
-              required
+              placeholder="Enter name..."
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '1rem'
+              }}
             />
           </div>
 
-          {/* Video URL (for videos only) */}
-          {formData.contentType === 'video' && (
-            <div className="form-group">
-              <label>Video URL *</label>
-              <input
-                type="url"
-                value={formData.videoUrl}
-                onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
-                placeholder="https://www.youtube.com/watch?v=..."
-                required
-              />
-              <small className="form-help">YouTube, Vimeo, or other video platform links</small>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+                Type
+              </label>
+              <select
+                value={formData.contentType}
+                onChange={(e) => setFormData(prev => ({ ...prev, contentType: e.target.value as any }))}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
+              >
+                <option value="activity">Activity</option>
+                <option value="video">Video</option>
+                <option value="document">Document</option>
+              </select>
             </div>
-          )}
-
-          {/* NEW: Google Drive URL (for documents only) */}
-          {formData.contentType === 'document' && (
-            <>
-              <div className="form-group">
-                <label>Google Drive URL *</label>
-                <input
-                  type="url"
-                  value={formData.googleDriveUrl}
-                  onChange={(e) => setFormData(prev => ({ ...prev, googleDriveUrl: e.target.value }))}
-                  placeholder="https://docs.google.com/document/d/..."
-                  required
-                />
-                <small className="form-help">Google Docs, Sheets, Drive folder, or other Google Drive links</small>
-              </div>
-              
-              <div className="form-group">
-                <label>Document Type</label>
-                <select
-                  value={formData.documentType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, documentType: e.target.value as any }))}
-                >
-                  <option value="lesson-plan">Lesson Plan</option>
-                  <option value="worksheet">Worksheet</option>
-                  <option value="standard">Educational Standard</option>
-                  <option value="resource">Teaching Resource</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </>
-          )}
-
-          {/* Icon and Category Row */}
-          <div className="form-row">
-            <div className="form-group">
-              <label>Icon</label>
-              <div className="icon-selection" style={{ position: 'relative' }}>
-                <div className="current-icon">
-                  <span className="emoji-preview">{formData.icon}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="icon-button"
-                >
-                  Choose Icon
-                </button>
-                {showEmojiPicker && (
-                  <div className="emoji-picker" style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: '0',
-                    right: '0',
-                    background: 'white',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                    zIndex: 1000,
-                    maxHeight: '300px',
-                    overflowY: 'auto'
-                  }}>
-                    <div className="emoji-category">
-                      <h4>For {formData.category}</h4>
-                      <div className="emoji-grid">
-                        {iconLibrary[formData.category].map(emoji => (
-                          <button
-                            key={emoji}
-                            type="button"
-                            className="emoji-option"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, icon: emoji }));
-                              setShowEmojiPicker(false);
-                            }}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="emoji-category">
-                      <h4>General</h4>
-                      <div className="emoji-grid">
-                        {iconLibrary.general.map(emoji => (
-                          <button
-                            key={emoji}
-                            type="button"
-                            className="emoji-option"
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, icon: emoji }));
-                              setShowEmojiPicker(false);
-                            }}
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Category</label>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+                Category
+              </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
               >
                 <option value="academic">Academic</option>
                 <option value="break">Break</option>
                 <option value="other">Other</option>
               </select>
             </div>
-
-            <div className="form-group">
-              <label>Duration (minutes)</label>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+                Duration (min)
+              </label>
               <input
                 type="number"
                 value={formData.defaultDuration}
                 onChange={(e) => setFormData(prev => ({ ...prev, defaultDuration: parseInt(e.target.value) || 30 }))}
                 min="1"
                 max="180"
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
               />
             </div>
           </div>
 
-          {/* Description - Only show for non-choice items */}
-          {formData.contentType !== 'choice-item' && (
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder={formData.contentType === 'video' ? 
-                  "Brief description of the video content..." : 
-                  "Brief description of the activity..."}
-                rows={3}
-              />
-            </div>
-          )}
-
-          {/* Video Notes (for videos only) */}
           {formData.contentType === 'video' && (
-            <div className="form-group">
-              <label>Teacher Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Optional notes about when/how to use this video..."
-                rows={2}
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+                Video URL *
+              </label>
+              <input
+                type="url"
+                value={formData.videoUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                placeholder="https://www.youtube.com/watch?v=..."
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
               />
             </div>
           )}
 
-          {/* Materials (for activities only) */}
-          {formData.contentType === 'activity' && (
-            <div className="form-group">
-              <label>Materials</label>
-              <div className="materials-list">
-                {formData.materials.map((material, index) => (
-                  <div key={index} className="material-input">
-                    <input
-                      type="text"
-                      value={material}
-                      onChange={(e) => updateMaterial(index, e.target.value)}
-                      placeholder="e.g., pencils, worksheets, timer"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeMaterial(index)}
-                      className="remove-material"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <button type="button" onClick={addMaterial} className="add-material">
-                  + Add Material
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions (for activities only) */}
-          {formData.contentType === 'activity' && (
-            <div className="form-group">
-              <label>Instructions</label>
-              <textarea
-                value={formData.instructions}
-                onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
-                placeholder="Step-by-step instructions for the activity..."
-                rows={4}
+          {formData.contentType === 'document' && (
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+                Document URL *
+              </label>
+              <input
+                type="url"
+                value={formData.googleDriveUrl}
+                onChange={(e) => setFormData(prev => ({ ...prev, googleDriveUrl: e.target.value }))}
+                placeholder="https://docs.google.com/document/d/..."
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '1rem'
+                }}
               />
             </div>
           )}
 
-          {/* NEW: Choice Item Fields (for choice items only) */}
-          {formData.contentType === 'choice-item' && (
-            <>
-              <div className="form-group">
-                <label>Description *</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Brief description of the choice activity..."
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Difficulty Level</label>
-                  <select
-                    value={formData.difficulty}
-                    onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value as any }))}
-                  >
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Supervision Level</label>
-                  <select
-                    value={formData.supervisionLevel}
-                    onChange={(e) => setFormData(prev => ({ ...prev, supervisionLevel: e.target.value as any }))}
-                  >
-                    <option value="independent">Independent</option>
-                    <option value="minimal">Minimal Support</option>
-                    <option value="moderate">Moderate Support</option>
-                    <option value="full">Full Supervision</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Format</label>
-                  <select
-                    value={formData.format}
-                    onChange={(e) => setFormData(prev => ({ ...prev, format: e.target.value as any }))}
-                  >
-                    <option value="solo">Solo Activity</option>
-                    <option value="group">Group Activity</option>
-                    <option value="flexible">Solo or Group</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Skill Areas</label>
-                <div className="skill-areas-section">
-                  <div className="skill-suggestions">
-                    {['Fine Motor', 'Gross Motor', 'Communication', 'Social Skills', 'Math', 'Reading', 'Science', 'Art', 'Music', 'Sensory'].map(skill => (
-                      <button
-                        key={skill}
-                        type="button"
-                        onClick={() => {
-                          const currentSkillAreas = Array.isArray(formData.skillAreas) ? formData.skillAreas : [];
-                          if (currentSkillAreas.includes(skill)) {
-                            setFormData(prev => ({
-                              ...prev,
-                              skillAreas: currentSkillAreas.filter(s => s !== skill)
-                            }));
-                          } else {
-                            setFormData(prev => ({
-                              ...prev,
-                              skillAreas: [...currentSkillAreas, skill]
-                            }));
-                          }
-                        }}
-                        className={`skill-suggestion ${Array.isArray(formData.skillAreas) && formData.skillAreas.includes(skill) ? 'selected' : ''}`}
-                      >
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Tags */}
-          <div className="form-group">
-            <label>Tags</label>
-            <div className="tags-section">
-              {availableTags.length > 0 && (
-                <div className="suggested-tags">
-                  <small>Suggested tags:</small>
-                  <div className="tag-suggestions">
-                    {availableTags.map(tag => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => addTag(tag)}
-                        className={`tag-suggestion ${Array.isArray(formData.tags) && formData.tags.includes(tag) ? 'added' : ''}`}
-                        disabled={Array.isArray(formData.tags) && formData.tags.includes(tag)}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="tags-input">
-                <div className="tag-list">
-                  {Array.isArray(formData.tags) && formData.tags.map(tag => (
-                    <span key={tag} className="tag-chip">
-                      #{tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="tag-remove"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <div className="add-tag-input">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    placeholder="Add custom tag..."
-                  />
-                  <button type="button" onClick={() => addTag()} disabled={!newTag.trim()}>
-                    Add
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#2d3748' }}>
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Brief description..."
+              rows={3}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                border: '2px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                resize: 'vertical'
+              }}
+            />
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="cancel-btn" onClick={onCancel}>Cancel</button>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: '1rem',
+          padding: '1.5rem',
+          borderTop: '1px solid #e2e8f0'
+        }}>
           <button 
-            className="save-btn" 
-            onClick={handleSave}
-            disabled={!formData.name.trim() || (formData.contentType === 'video' && !formData.videoUrl.trim())}
+            onClick={onCancel}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              borderRadius: '8px',
+              background: '#f7fafc',
+              color: '#718096',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
           >
-            {content ? 'Save Changes' : `Create ${formData.contentType === 'video' ? 'Video' : 'Activity'}`}
+            Cancel
+          </button>
+          <button 
+            onClick={handleSave}
+            disabled={!formData.name.trim() || (formData.contentType === 'video' && !formData.videoUrl.trim()) || (formData.contentType === 'document' && !formData.googleDriveUrl.trim())}
+            style={{
+              padding: '0.75rem 1.5rem',
+              border: 'none',
+              borderRadius: '8px',
+              background: '#667eea',
+              color: 'white',
+              fontWeight: '600',
+              cursor: 'pointer',
+              opacity: (!formData.name.trim() || (formData.contentType === 'video' && !formData.videoUrl.trim()) || (formData.contentType === 'document' && !formData.googleDriveUrl.trim())) ? 0.5 : 1
+            }}
+          >
+            {content ? 'Save Changes' : 'Create'}
           </button>
         </div>
       </div>
@@ -818,39 +470,16 @@ const ContentModal: React.FC<{
   );
 };
 
-const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
-  const [activeTab, setActiveTab] = useState<'activities' | 'media'>('activities');
+// Simple Activity Library Component
+const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
+  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document'>('all');
+  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
+  const [addingContent, setAddingContent] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<LibraryContent | undefined>();
-  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
-  const [selectedContentType, setSelectedContentType] = useState<'all' | 'activity' | 'video' | 'document' | 'choice-item'>('all');
-  const [addingContent, setAddingContent] = useState<Set<string>>(new Set());
-  const [expandedChoice, setExpandedChoice] = useState<string | null>(null);
 
-  // Base content library (built-in, non-deletable items)
-  const baseContent: LibraryContent[] = [
-    // Academic
-    { id: 'base-ela', name: 'ELA', icon: '📚', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'English Language Arts instruction', tags: ['reading', 'writing', 'language'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-science', name: 'Science', icon: '🔬', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Science exploration and experiments', tags: ['experiments', 'discovery', 'STEM'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-math', name: 'Math', icon: '🔢', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Mathematics instruction and practice', tags: ['numbers', 'calculation', 'problem-solving'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-social-studies', name: 'Social Studies', icon: '🗺️', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Geography, history, and social concepts', tags: ['geography', 'history', 'community'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    
-    // Break
-    { id: 'base-lunch', name: 'Lunch', icon: '🍽️', category: 'break', contentType: 'activity', defaultDuration: 30, description: 'Lunch break and social time', tags: ['food', 'social', 'nutrition'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-bathroom', name: 'Bathroom Break', icon: '🚻', category: 'break', contentType: 'activity', defaultDuration: 5, description: 'Bathroom and hygiene break', tags: ['hygiene', 'self-care', 'routine'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-snack', name: 'Snack Time', icon: '🍎', category: 'break', contentType: 'activity', defaultDuration: 10, description: 'Snack time and nutrition break', tags: ['food', 'nutrition', 'energy'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    
-    // Other
-    { id: 'base-transition', name: 'Transition', icon: '🔄', category: 'other', contentType: 'activity', defaultDuration: 5, description: 'Movement between activities', tags: ['transition', 'routine', 'movement'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-safety', name: 'Safety Drill', icon: '🛡️', category: 'other', contentType: 'activity', defaultDuration: 10, description: 'Emergency preparedness and safety practice', tags: ['safety', 'drill', 'emergency'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'morning-meeting-builtin', name: 'Morning Meeting', icon: '🌅', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Daily morning meeting with welcome, attendance, behavior commitments, and learning activities', tags: ['morning', 'routine', 'community', 'daily'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString(), materials: ['Morning Meeting Hub configuration'], instructions: 'Automated morning meeting flow guided by Morning Meeting Hub settings' },
-  ];
-
-  // Load custom content from UnifiedDataService
   useEffect(() => {
     loadCustomContent();
   }, []);
@@ -873,6 +502,7 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
           isDeletable: true,
           isCustom: true,
           videoData: (activity as any).videoData,
+          documentData: (activity as any).documentData,
           materials: activity.materials,
           instructions: activity.instructions,
           createdAt: activity.dateCreated,
@@ -885,10 +515,8 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }
   };
 
-  // Save custom content to UnifiedDataService
   const saveCustomContent = (contentList: LibraryContent[]) => {
     contentList.forEach(content => {
-      // Create the base UnifiedActivity object with only properties that exist in the interface
       const unifiedActivity: Partial<UnifiedActivity> = {
         name: content.name,
         category: content.category,
@@ -899,14 +527,13 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
         isCustom: content.isCustom,
       };
       
-      // Add extra properties that don't exist in UnifiedActivity interface
-      // These will be stored but TypeScript won't complain
       const activityWithExtras = {
         ...unifiedActivity,
         icon: content.icon,
         tags: content.tags,
         contentType: content.contentType,
         videoData: content.videoData,
+        documentData: content.documentData,
       };
       
       const existingActivity = UnifiedDataService.getActivity(content.id);
@@ -919,7 +546,6 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     
     setCustomContent(contentList);
     
-    // Notify Schedule Builder of changes
     window.dispatchEvent(new CustomEvent('activitiesUpdated', {
       detail: { 
         activities: [...baseContent, ...contentList],
@@ -929,12 +555,10 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }));
   };
 
-  // All content (base + custom)
   const allContent = useMemo(() => {
     return [...baseContent, ...customContent];
   }, [customContent]);
 
-  // Filter content based on search, category, and content type
   const filteredContent = useMemo(() => {
     return allContent.filter(content => {
       const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -948,7 +572,6 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     });
   }, [searchTerm, selectedCategory, selectedContentType, allContent]);
 
-  // Get counts for filters
   const getCategoryCount = (category: string) => {
     if (category === 'all') return allContent.length;
     return allContent.filter(content => content.category === category).length;
@@ -959,7 +582,6 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     return allContent.filter(content => content.contentType === type).length;
   };
 
-  // Handle adding content to schedule
   const handleAddToSchedule = async (content: LibraryContent) => {
     if (addingContent.has(content.id)) return;
 
@@ -1014,17 +636,6 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }
   };
 
-  // Handle content editing
-  const handleEditContent = (content: LibraryContent) => {
-    if (!content.isDeletable) {
-      alert('Built-in content cannot be edited. You can create a custom version instead.');
-      return;
-    }
-    setEditingContent(content);
-    setModalOpen(true);
-  };
-
-  // Handle content saving
   const handleSaveContent = (content: LibraryContent) => {
     let updatedContent;
     
@@ -1041,7 +652,6 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     setEditingContent(undefined);
   };
 
-  // Handle content deletion
   const handleDeleteContent = (content: LibraryContent) => {
     if (!content.isDeletable) {
       alert('Built-in content cannot be deleted.');
@@ -1049,7 +659,7 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }
 
     const deleteConfirmed = window.confirm(
-      `Are you sure you want to delete "${content.name}"?\n\nThis action cannot be undone.`
+      `Are you sure you want to delete "${content.name}"?`
     );
 
     if (deleteConfirmed) {
@@ -1075,75 +685,683 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
     }
   };
 
-  // Handle content duplication
-  const handleDuplicateContent = (content: LibraryContent) => {
-    const duplicate: LibraryContent = {
-      ...content,
-      id: generateUniqueId('content'),
-      name: `${content.name} (Copy)`,
-      isDeletable: true,
-      isCustom: true,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setEditingContent(duplicate);
-    setModalOpen(true);
-  };
-
   if (!isActive) return null;
 
   return (
-    <div className="simplified-activity-library">
-      <div className="library-header">
-        <h2 className="component-title">📚 Activity & Video Library</h2>
-        <p className="component-subtitle">
-          Manage your classroom activities and educational videos
+    <div style={{
+      padding: '1.5rem',
+      background: 'white',
+      minHeight: 'calc(100vh - 80px)'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h2 style={{
+          fontSize: '2rem',
+          fontWeight: '700',
+          color: '#2d3748',
+          margin: '0 0 0.5rem 0'
+        }}>📚 Activity Library</h2>
+        <p style={{
+          color: '#718096',
+          fontSize: '1.1rem',
+          margin: '0'
+        }}>
+          Manage your classroom activities and educational content
         </p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="tab-navigation">
-        <button
-          onClick={() => setActiveTab('activities')}
-          className={`tab-button ${activeTab === 'activities' ? 'active' : ''}`}
-        >
-          <span className="tab-icon">📋</span>
-          Activities
-        </button>
-        <button
-          onClick={() => setActiveTab('media')}
-          className={`tab-button ${activeTab === 'media' ? 'active' : ''}`}
-        >
-          <span className="tab-icon">🎬</span>
-          Media
-        </button>
+      <div style={{
+        background: '#f7fafc',
+        padding: '1.5rem',
+        borderRadius: '12px',
+        marginBottom: '1.5rem',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{
+            position: 'relative',
+            maxWidth: '500px',
+            margin: '0 auto'
+          }}>
+            <span style={{
+              position: 'absolute',
+              left: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#a0aec0',
+              fontSize: '1rem'
+            }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search activities, descriptions, or tags..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem 0.75rem 3rem',
+                border: '2px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                transition: 'border-color 0.2s ease'
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{
+                  position: 'absolute',
+                  right: '1rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#a0aec0',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  padding: '0.25rem'
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: '2rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            flex: 1
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              flexWrap: 'wrap'
+            }}>
+              {['all', 'academic', 'break', 'other'].map(category => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category as any)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    border: selectedCategory === category ? 'none' : '2px solid #e2e8f0',
+                    background: selectedCategory === category ? '#667eea' : 'white',
+                    color: selectedCategory === category ? 'white' : '#4a5568',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: '500',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  {category === 'all' ? `All (${getCategoryCount('all')})` :
+                   category === 'academic' ? `📚 Academic (${getCategoryCount('academic')})` :
+                   category === 'break' ? `🍽️ Break (${getCategoryCount('break')})` :
+                   `🎯 Other (${getCategoryCount('other')})`}
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              flexWrap: 'wrap'
+            }}>
+              {['all', 'activity', 'video', 'document'].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedContentType(type as any)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    border: selectedContentType === type ? 'none' : '2px solid #e2e8f0',
+                    background: selectedContentType === type ? '#667eea' : 'white',
+                    color: selectedContentType === type ? 'white' : '#4a5568',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: '500',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  {type === 'all' ? `All Types (${getContentTypeCount('all')})` :
+                   type === 'activity' ? `📄 Activities (${getContentTypeCount('activity')})` :
+                   type === 'video' ? `🎬 Videos (${getContentTypeCount('video')})` :
+                   `📁 Documents (${getContentTypeCount('document')})`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            minWidth: '200px'
+          }}>
+            <button 
+              onClick={() => {
+                setEditingContent(undefined);
+                setModalOpen(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                background: 'linear-gradient(135deg, #38a169 0%, #48bb78 100%)',
+                color: 'white'
+              }}
+            >
+              <span>📚</span>
+              Create Content
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="tab-content">
-        {activeTab === 'activities' ? (
-          <ActivitiesTab
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onOpenModal={(content) => {
-              setEditingContent(content);
-              setModalOpen(true);
-            }}
-          />
+      <div style={{
+        marginBottom: '1rem',
+        color: '#718096',
+        fontSize: '0.9rem',
+        textAlign: 'center'
+      }}>
+        Showing {filteredContent.length} of {allContent.length} items
+        {searchTerm && <span style={{ fontWeight: '500', color: '#4a5568' }}> for "{searchTerm}"</span>}
+        {selectedCategory !== 'all' && <span style={{ fontWeight: '500', color: '#4a5568' }}> in {selectedCategory}</span>}
+        {selectedContentType !== 'all' && <span style={{ fontWeight: '500', color: '#4a5568' }}> • {selectedContentType}s only</span>}
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+        gap: '1.5rem',
+        marginBottom: '2rem'
+      }}>
+        {filteredContent.length === 0 ? (
+          <div style={{
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            padding: '3rem 1rem',
+            color: '#718096'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>🔍</div>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#4a5568' }}>
+              No content found
+            </h3>
+            <p style={{ marginBottom: '1.5rem' }}>Try adjusting your search terms or filters</p>
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')} 
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: '#667eea',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s ease'
+                }}
+              >
+                Clear search
+              </button>
+            )}
+          </div>
         ) : (
-          <MediaTab
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            onOpenModal={(content) => {
-              setEditingContent(content);
-              setModalOpen(true);
-            }}
-          />
+          filteredContent.map(content => (
+            <div 
+              key={content.id} 
+              style={{
+                background: 'white',
+                border: '2px solid #e2e8f0',
+                borderLeft: `4px solid ${
+                  content.contentType === 'video' ? '#e53e3e' : 
+                  content.contentType === 'document' ? '#805ad5' : 
+                  '#38a169'
+                }`,
+                borderRadius: '12px',
+                padding: '1.5rem',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#667eea';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.15)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0';
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'none';
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              }}>
+                <div style={{
+                  fontSize: '3rem',
+                  position: 'relative',
+                  width: '4rem',
+                  height: '4rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {content.icon}
+                  {content.contentType === 'video' && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '-5px',
+                      right: '-5px',
+                      fontSize: '1rem',
+                      background: 'white',
+                      borderRadius: '50%',
+                      padding: '2px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}>🎬</div>
+                  )}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.25rem',
+                    alignItems: 'flex-end'
+                  }}>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '6px',
+                      fontSize: '0.7rem',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      background: content.category === 'academic' ? '#bee3f8' : content.category === 'break' ? '#fed7d7' : '#e6fffa',
+                      color: content.category === 'academic' ? '#2b6cb0' : content.category === 'break' ? '#c53030' : '#2c7a7b'
+                    }}>
+                      {content.category}
+                    </span>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '6px',
+                      fontSize: '0.7rem',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      background: content.contentType === 'activity' ? '#c6f6d5' : content.contentType === 'video' ? '#fbb6ce' : '#e9d8fd',
+                      color: content.contentType === 'activity' ? '#276749' : content.contentType === 'video' ? '#97266d' : '#553c9a'
+                    }}>
+                      {content.contentType}
+                    </span>
+                    {!content.isDeletable && (
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '6px',
+                        fontSize: '0.7rem',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        background: '#edf2f7',
+                        color: '#4a5568'
+                      }}>Built-in</span>
+                    )}
+                    {content.isCustom && (
+                      <span style={{
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '6px',
+                        fontSize: '0.7rem',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        background: '#d6f5d6',
+                        color: '#22543d'
+                      }}>Custom</span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: '#718096',
+                    fontWeight: '500'
+                  }}>
+                    {content.defaultDuration}min
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  margin: '0 0 0.5rem 0',
+                  color: '#2d3748'
+                }}>
+                  {content.name}
+                </h3>
+                <p style={{
+                  color: '#718096',
+                  margin: '0 0 1rem 0',
+                  lineHeight: 1.5
+                }}>
+                  {content.description}
+                </p>
+
+                {content.contentType === 'video' && content.videoData && (
+                  <div style={{
+                    background: 'rgba(229, 62, 62, 0.05)',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    margin: '0.5rem 0',
+                    borderLeft: '3px solid #e53e3e'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span>🔗</span>
+                      <a href={content.videoData.videoUrl} target="_blank" rel="noopener noreferrer" style={{
+                        color: '#667eea',
+                        textDecoration: 'none',
+                        fontWeight: '500'
+                      }}>
+                        View Video
+                      </a>
+                    </div>
+                    {content.videoData.notes && (
+                      <div style={{
+                        fontSize: '0.9rem',
+                        color: '#4a5568',
+                        fontStyle: 'italic'
+                      }}>
+                        <strong>Notes:</strong> {content.videoData.notes}
+                      </div>
+                    )}
+
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '1rem',
+                      background: 'rgba(102, 126, 234, 0.1)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(102, 126, 234, 0.3)'
+                    }}>
+                      <h4 style={{
+                        margin: '0 0 0.5rem 0',
+                        fontSize: '0.9rem',
+                        color: '#667eea',
+                        fontWeight: '600'
+                      }}>
+                        📺 Smartboard Display Options
+                      </h4>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '0.5rem'
+                      }}>
+                        <DisplayVideoCheckbox
+                          videoId={content.id}
+                          slot="move1"
+                          label="🏃‍♀️ Move Video 1"
+                          video={content}
+                        />
+                        <DisplayVideoCheckbox
+                          videoId={content.id}
+                          slot="lesson1"
+                          label="📚 Lesson Video 1"
+                          video={content}
+                        />
+                        <DisplayVideoCheckbox
+                          videoId={content.id}
+                          slot="move2"
+                          label="🤸‍♂️ Move Video 2"
+                          video={content}
+                        />
+                        <DisplayVideoCheckbox
+                          videoId={content.id}
+                          slot="lesson2"
+                          label="🎓 Lesson Video 2"
+                          video={content}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {content.contentType === 'document' && content.documentData && (
+                  <div style={{
+                    background: 'rgba(128, 90, 213, 0.05)',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    margin: '0.5rem 0',
+                    borderLeft: '3px solid #805ad5'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <span>🔗</span>
+                      <a href={content.documentData.googleDriveUrl} target="_blank" rel="noopener noreferrer" style={{
+                        color: '#667eea',
+                        textDecoration: 'none',
+                        fontWeight: '500'
+                      }}>
+                        Open Document
+                      </a>
+                    </div>
+                    <div style={{
+                      fontSize: '0.9rem',
+                      color: '#4a5568',
+                      marginBottom: '0.5rem'
+                    }}>
+                      Type: {content.documentData.documentType}
+                    </div>
+                    {content.documentData.notes && (
+                      <div style={{
+                        fontSize: '0.9rem',
+                        color: '#4a5568',
+                        fontStyle: 'italic'
+                      }}>
+                        <strong>Notes:</strong> {content.documentData.notes}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {content.contentType === 'activity' && content.materials && content.materials.length > 0 && (
+                  <div style={{
+                    background: 'rgba(56, 161, 105, 0.05)',
+                    borderRadius: '8px',
+                    padding: '0.75rem',
+                    margin: '0.5rem 0',
+                    borderLeft: '3px solid #38a169',
+                    fontSize: '0.9rem',
+                    color: '#4a5568'
+                  }}>
+                    <strong>Materials:</strong> {content.materials.join(', ')}
+                  </div>
+                )}
+
+                {content.tags.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.25rem',
+                    marginTop: '0.5rem'
+                  }}>
+                    {content.tags.map(tag => (
+                      <span key={tag} style={{
+                        background: 'rgba(102, 126, 234, 0.1)',
+                        color: '#667eea',
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem'
+              }}>
+                <button 
+                  onClick={() => handleAddToSchedule(content)}
+                  disabled={addingContent.has(content.id)}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    border: '1px solid #667eea',
+                    borderRadius: '6px',
+                    cursor: addingContent.has(content.id) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.25rem',
+                    background: addingContent.has(content.id) ? '#38a169' : '#667eea',
+                    color: 'white',
+                    width: '100%',
+                    opacity: addingContent.has(content.id) ? 0.7 : 1
+                  }}
+                >
+                  {addingContent.has(content.id) ? (
+                    <>
+                      <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</span> Adding...
+                    </>
+                  ) : (
+                    '+ Add to Schedule'
+                  )}
+                </button>
+                
+                <div style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  justifyContent: 'center'
+                }}>
+                  <button 
+                    onClick={() => {
+                      if (!content.isDeletable) {
+                        alert('Built-in content cannot be edited. You can create a custom version instead.');
+                        return;
+                      }
+                      setEditingContent(content);
+                      setModalOpen(true);
+                    }}
+                    disabled={!content.isDeletable}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      cursor: content.isDeletable ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.2s ease',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.25rem',
+                      background: 'white',
+                      color: '#718096',
+                      flex: 1,
+                      opacity: content.isDeletable ? 1 : 0.5
+                    }}
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const duplicate: LibraryContent = {
+                        ...content,
+                        id: generateUniqueId('content'),
+                        name: `${content.name} (Copy)`,
+                        isDeletable: true,
+                        isCustom: true,
+                        createdAt: new Date().toISOString(),
+                      };
+                      setEditingContent(duplicate);
+                      setModalOpen(true);
+                    }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.25rem',
+                      background: 'white',
+                      color: '#718096',
+                      flex: 1
+                    }}
+                  >
+                    📋
+                  </button>
+                  {content.isDeletable && (
+                    <button 
+                      onClick={() => handleDeleteContent(content)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        border: '1px solid #e53e3e',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.25rem',
+                        background: 'white',
+                        color: '#e53e3e',
+                        flex: 1
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#e53e3e';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.color = '#e53e3e';
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 
-
-      {/* Content Modal */}
       <ContentModal
         content={editingContent}
         onSave={handleSaveContent}
@@ -1155,2316 +1373,13 @@ const Library: React.FC<ActivityLibraryProps> = ({ isActive }) => {
       />
 
       <style>{`
-        .simplified-activity-library {
-          padding: 1.5rem;
-          background: white;
-          min-height: calc(100vh - 80px);
-        }
-
-        .library-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .component-title {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #2d3748;
-          margin: 0 0 0.5rem 0;
-        }
-
-        .component-subtitle {
-          color: #718096;
-          font-size: 1.1rem;
-          margin: 0;
-        }
-
-        /* Tab Navigation Styles */
-        .tab-navigation {
-          display: flex;
-          justify-content: center;
-          margin-bottom: 2rem;
-          background: #f7fafc;
-          border-radius: 12px;
-          padding: 0.5rem;
-          border: 1px solid #e2e8f0;
-        }
-
-        .tab-button {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          border: none;
-          background: transparent;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 1rem;
-          font-weight: 500;
-          color: #718096;
-          transition: all 0.2s ease;
-          flex: 1;
-          justify-content: center;
-        }
-
-        .tab-button:hover {
-          background: rgba(102, 126, 234, 0.1);
-          color: #667eea;
-        }
-
-        .tab-button.active {
-          background: #667eea;
-          color: white;
-          box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
-        }
-
-        .tab-icon {
-          font-size: 1.2rem;
-        }
-
-        .tab-content {
-          min-height: 400px;
-        }
-
-        /* Tab-specific styles */
-        .activities-tab,
-        .media-tab {
-          padding: 1rem 0;
-        }
-
-        .tab-header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .tab-header h3 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #2d3748;
-          margin: 0 0 0.5rem 0;
-        }
-
-        .tab-header p {
-          color: #718096;
-          margin: 0;
-        }
-
-        .tab-controls {
-          background: #f7fafc;
-          padding: 1.5rem;
-          border-radius: 12px;
-          margin-bottom: 1.5rem;
-          border: 1px solid #e2e8f0;
-        }
-
-        .media-type-button {
-          padding: 0.5rem 1rem;
-          border: 2px solid #e2e8f0;
-          background: white;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 500;
-          font-size: 0.9rem;
-        }
-
-        .media-type-button:hover {
-          border-color: #667eea;
-          background: rgba(102, 126, 234, 0.05);
-        }
-
-        .media-type-button.active {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        .library-controls {
-          background: #f7fafc;
-          padding: 1.5rem;
-          border-radius: 12px;
-          margin-bottom: 1.5rem;
-          border: 1px solid #e2e8f0;
-        }
-
-        .search-section {
-          margin-bottom: 1.5rem;
-        }
-
-        .search-input-container {
-          position: relative;
-          max-width: 500px;
-          margin: 0 auto;
-        }
-
-        .search-icon {
-          position: absolute;
-          left: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #a0aec0;
-          font-size: 1rem;
-        }
-
-        .search-input {
-          width: 100%;
-          padding: 0.75rem 1rem 0.75rem 3rem;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 1rem;
-          transition: border-color 0.2s ease;
-        }
-
-        .search-input:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .clear-search {
-          position: absolute;
-          right: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          color: #a0aec0;
-          cursor: pointer;
-          font-size: 1rem;
-          padding: 0.25rem;
-        }
-
-        .filters-and-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 2rem;
-        }
-
-        .filter-section {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          flex: 1;
-        }
-
-        .filter-row {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .create-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          min-width: 200px;
-        }
-
-        .create-button {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          border: none;
-          border-radius: 8px;
-          font-size: 0.9rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .create-button.activity {
-          background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
-          color: white;
-        }
-
-        .create-button.video {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-        }
-
-        .create-button:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
-
-        .create-icon {
-          font-size: 1rem;
-        }
-
-        .category-button,
-        .content-type-button {
-          padding: 0.5rem 1rem;
-          border: 2px solid #e2e8f0;
-          background: white;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 500;
-          font-size: 0.9rem;
-        }
-
-        .category-button:hover,
-        .content-type-button:hover {
-          border-color: #667eea;
-          background: rgba(102, 126, 234, 0.05);
-        }
-
-        .category-button.active,
-        .content-type-button.active {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        .results-summary {
-          margin-bottom: 1rem;
-          color: #718096;
-          font-size: 0.9rem;
-          text-align: center;
-        }
-
-        .search-summary,
-        .filter-summary {
-          font-weight: 500;
-          color: #4a5568;
-        }
-
-        .content-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 2rem;
-        }
-
-        .content-item {
-          background: white;
-          border: 2px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 1.5rem;
-          transition: all 0.2s ease;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .content-item:hover {
-          border-color: #667eea;
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-          transform: translateY(-2px);
-        }
-
-        .content-item.video {
-          border-left: 4px solid #e53e3e;
-        }
-
-        .content-item.activity {
-          border-left: 4px solid #38a169;
-        }
-
-        .content-item.document {
-          border-left: 4px solid #805ad5;
-        }
-
-        .content-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-        }
-
-        .content-icon {
-          font-size: 3rem;
-          position: relative;
-          width: 4rem;
-          height: 4rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .video-indicator {
-          position: absolute;
-          bottom: -5px;
-          right: -5px;
-          font-size: 1rem;
-          background: white;
-          border-radius: 50%;
-          padding: 2px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .content-meta {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.5rem;
-        }
-
-        .content-badges {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-          align-items: flex-end;
-        }
-
-        .category-badge,
-        .type-badge,
-        .built-in-badge,
-        .custom-badge {
-          padding: 0.25rem 0.5rem;
-          border-radius: 6px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .category-badge.academic {
-          background: #bee3f8;
-          color: #2b6cb0;
-        }
-
-        .category-badge.break {
-          background: #fed7d7;
-          color: #c53030;
-        }
-
-        .category-badge.other {
-          background: #e6fffa;
-          color: #2c7a7b;
-        }
-
-        .type-badge.activity {
-          background: #c6f6d5;
-          color: #276749;
-        }
-
-        .type-badge.video {
-          background: #fbb6ce;
-          color: #97266d;
-        }
-
-        .type-badge.document {
-          background: #e9d8fd;
-          color: #553c9a;
-        }
-
-        .built-in-badge {
-          background: #edf2f7;
-          color: #4a5568;
-        }
-
-        .custom-badge {
-          background: #d6f5d6;
-          color: #22543d;
-        }
-
-        .content-duration {
-          font-size: 0.875rem;
-          color: #718096;
-          font-weight: 500;
-        }
-
-        .content-body {
-          flex: 1;
-        }
-
-        .content-title {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin: 0 0 0.5rem 0;
-          color: #2d3748;
-        }
-
-        .content-description {
-          color: #718096;
-          margin: 0 0 1rem 0;
-          line-height: 1.5;
-        }
-
-        .video-details {
-          background: rgba(229, 62, 62, 0.05);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.5rem 0;
-          border-left: 3px solid #e53e3e;
-        }
-
-        .video-url {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .video-link {
-          color: #667eea;
-          text-decoration: none;
-          font-weight: 500;
-        }
-
-        .video-link:hover {
-          text-decoration: underline;
-        }
-
-        .video-notes {
-          font-size: 0.9rem;
-          color: #4a5568;
-          font-style: italic;
-        }
-
-        .activity-materials {
-          background: rgba(56, 161, 105, 0.05);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.5rem 0;
-          border-left: 3px solid #38a169;
-          font-size: 0.9rem;
-          color: #4a5568;
-        }
-
-        .document-details {
-          background: rgba(128, 90, 213, 0.05);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.5rem 0;
-          border-left: 3px solid #805ad5;
-        }
-
-        .document-url {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .document-link {
-          color: #667eea;
-          text-decoration: none;
-          font-weight: 500;
-        }
-
-        .document-link:hover {
-          text-decoration: underline;
-        }
-
-        .document-type {
-          font-size: 0.9rem;
-          color: #4a5568;
-          margin-bottom: 0.5rem;
-        }
-
-        .document-notes {
-          font-size: 0.9rem;
-          color: #4a5568;
-          font-style: italic;
-        }
-
-        .choice-details {
-          background: rgba(56, 161, 105, 0.05);
-          border-radius: 8px;
-          padding: 0.75rem;
-          margin: 0.5rem 0;
-          border-left: 3px solid #38a169;
-        }
-
-        .choice-attributes {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-
-        .choice-attribute {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
-        }
-
-        .choice-label {
-          font-weight: 600;
-          color: #2d3748;
-          min-width: 80px;
-        }
-
-        .difficulty-badge {
-          padding: 0.25rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .difficulty-badge.beginner {
-          background: #c6f6d5;
-          color: #276749;
-        }
-
-        .difficulty-badge.intermediate {
-          background: #fbb6ce;
-          color: #97266d;
-        }
-
-        .difficulty-badge.advanced {
-          background: #fed7d7;
-          color: #c53030;
-        }
-
-        .format-text,
-        .supervision-text {
-          color: #4a5568;
-          font-weight: 500;
-          text-transform: capitalize;
-        }
-
-        .choice-skills {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .skill-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-        }
-
-        .skill-tag {
-          background: #38a169;
-          color: white;
-          padding: 0.125rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .type-badge.choice-item {
-          background: #e9d8fd;
-          color: #6b46c1;
-        }
-
-        .content-item.choice-item {
-          border-left: 4px solid #9f7aea;
-          min-height: 200px; /* Smaller minimum height for compact cards */
-        }
-
-        /* Choice Item Compact Display Styles */
-        .choice-item-compact {
-          background: rgba(159, 122, 234, 0.05);
-          border-left: 3px solid #9f7aea;
-          border-radius: 8px;
-          padding: 1rem;
-          margin: 0.5rem 0;
-        }
-
-        .open-choice-details {
-          background: #9f7aea;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          padding: 0.75rem 1.5rem;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          width: 100%;
-        }
-
-        .open-choice-details:hover {
-          background: #8b5cf6;
-          transform: translateY(-1px);
-        }
-
-        .choice-expanded-details {
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid rgba(159, 122, 234, 0.3);
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .choice-description {
-          font-size: 0.9rem;
-          line-height: 1.4;
-          color: #4a5568;
-        }
-
-        .choice-metadata {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-          gap: 0.75rem;
-        }
-
-        .choice-meta-item {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .choice-meta-label {
-          font-weight: 600;
-          font-size: 0.8rem;
-          color: #6b46c1;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        /* Remove the old expanded choice styles */
-        .choice-quick-info,
-        .difficulty-indicator,
-        .format-indicator, 
-        .supervision-indicator {
-          display: none; /* Hide these since we're going compact */
-        }
-
-        .choice-skills {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .choice-label {
-          font-weight: 600;
-          color: #6b46c1;
-          font-size: 0.9rem;
-        }
-
-        .skill-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-        }
-
-        .skill-tag {
-          background: #9f7aea;
-          color: white;
-          padding: 0.125rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .content-tags {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-          margin-top: 0.5rem;
-        }
-
-        .content-tag {
-          background: rgba(102, 126, 234, 0.1);
-          color: #667eea;
-          padding: 0.125rem 0.5rem;
-          border-radius: 6px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-
-        .content-actions {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .secondary-actions {
-          display: flex;
-          gap: 0.5rem;
-          justify-content: center;
-        }
-
-        .action-button {
-          padding: 0.5rem 1rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.25rem;
-        }
-
-        .action-button.primary {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-          width: 100%;
-        }
-
-        .action-button.primary:hover:not(:disabled) {
-          background: #5a67d8;
-          border-color: #5a67d8;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .action-button.primary.adding {
-          background: #38a169;
-          border-color: #38a169;
-          cursor: not-allowed;
-        }
-
-        .action-button.primary:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .spinner {
-          animation: spin 1s linear infinite;
-          display: inline-block;
-        }
-
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
-        }
-
-        .action-button.secondary {
-          background: white;
-          color: #718096;
-          flex: 1;
-        }
-
-        .action-button.secondary:hover:not(:disabled) {
-          background: #f7fafc;
-          border-color: #cbd5e0;
-        }
-
-        .action-button.secondary:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .action-button.danger {
-          background: white;
-          color: #e53e3e;
-          border-color: #e53e3e;
-          flex: 1;
-        }
-
-        .action-button.danger:hover {
-          background: #e53e3e;
-          color: white;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
-        }
-
-        .no-results {
-          grid-column: 1 / -1;
-          text-align: center;
-          padding: 3rem 1rem;
-          color: #718096;
-        }
-
-        .no-results-icon {
-          font-size: 4rem;
-          margin-bottom: 1rem;
-          opacity: 0.5;
-        }
-
-        .no-results h3 {
-          font-size: 1.5rem;
-          margin-bottom: 0.5rem;
-          color: #4a5568;
-        }
-
-        .no-results p {
-          margin-bottom: 1.5rem;
-        }
-
-        .reset-search {
-          padding: 0.75rem 1.5rem;
-          background: #667eea;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: background-color 0.2s ease;
-        }
-
-        .reset-search:hover {
-          background: #5a67d8;
-        }
-
-        .add-content-section {
-          text-align: center;
-          margin-top: 2rem;
-          padding-top: 2rem;
-          border-top: 2px solid #e2e8f0;
-        }
-
-        .add-content-buttons {
-          display: flex;
-          justify-content: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-
-        .add-content-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 1rem 2rem;
-          border: none;
-          border-radius: 12px;
-          font-size: 1rem;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .add-content-button.activity {
-          background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
-          color: white;
-        }
-
-        .add-content-button.video {
-          background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
-          color: white;
-        }
-
-        .add-content-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .add-icon {
-          font-size: 1.25rem;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
-        }
-
-        .modal-content {
-          background: white;
-          border-radius: 12px;
-          max-width: 700px;
-          width: 100%;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .content-modal {
-          max-width: 800px;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.5rem;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .modal-header h3 {
-          margin: 0;
-          font-size: 1.5rem;
-          color: #2d3748;
-        }
-
-        .close-button {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          color: #718096;
-          width: 2rem;
-          height: 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: background-color 0.2s ease;
-        }
-
-        .close-button:hover {
-          background: #f7fafc;
-        }
-
-        .modal-body {
-          padding: 1.5rem;
-        }
-
-        .form-group {
-          margin-bottom: 1.5rem;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 1rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.5rem;
-          font-weight: 600;
-          color: #2d3748;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-          width: 100%;
-          padding: 0.75rem;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 1rem;
-          transition: border-color 0.2s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-          outline: none;
-          border-color: #667eea;
-          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-help {
-          color: #718096;
-          font-size: 0.8rem;
-          margin-top: 0.25rem;
-        }
-
-        .content-type-selector {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          gap: 1rem;
-        }
-
-        .content-type-option {
-          cursor: pointer;
-        }
-
-        .content-type-option input {
-          display: none;
-        }
-
-        .content-type-card {
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 1rem;
-          text-align: center;
-          transition: all 0.2s ease;
-        }
-
-        .content-type-option.selected .content-type-card {
-          border-color: #667eea;
-          background: rgba(102, 126, 234, 0.05);
-        }
-
-        .content-type-card:hover {
-          border-color: #cbd5e0;
-        }
-
-        .content-type-icon {
-          font-size: 2rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .content-type-label {
-          font-weight: 600;
-          color: #2d3748;
-          margin-bottom: 0.25rem;
-        }
-
-        .content-type-desc {
-          font-size: 0.8rem;
-          color: #718096;
-        }
-
-        .icon-selection {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .current-icon {
-          width: 3rem;
-          height: 3rem;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #f7fafc;
-        }
-
-        .emoji-preview {
-          font-size: 2rem;
-        }
-
-        .icon-button {
-          padding: 0.5rem 1rem;
-          border: 2px solid #e2e8f0;
-          background: white;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          font-size: 0.9rem;
-          font-weight: 500;
-        }
-
-        .icon-button:hover {
-          border-color: #667eea;
-          background: rgba(102, 126, 234, 0.05);
-        }
-
-        .emoji-picker {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: white;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 1rem;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          z-index: 10;
-          max-height: 300px;
-          overflow-y: auto;
-        }
-
-        .emoji-category h4 {
-          margin: 0 0 0.5rem 0;
-          color: #4a5568;
-          font-size: 0.9rem;
-        }
-
-        .emoji-grid {
-          display: grid;
-          grid-template-columns: repeat(8, 1fr);
-          gap: 0.25rem;
-          margin-bottom: 1rem;
-        }
-
-        .emoji-option {
-          padding: 0.5rem;
-          border: 1px solid #e2e8f0;
-          background: white;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 1.2rem;
-          transition: all 0.2s ease;
-          aspect-ratio: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .emoji-option:hover {
-          background: #667eea;
-          color: white;
-          transform: scale(1.1);
-        }
-
-        .materials-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .material-input {
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-        }
-
-        .material-input input {
-          flex: 1;
-        }
-
-        .remove-material {
-          background: #e53e3e;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 2rem;
-          height: 2rem;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 1rem;
-          transition: background-color 0.2s ease;
-        }
-
-        .remove-material:hover {
-          background: #c53030;
-        }
-
-        .add-material {
-          padding: 0.5rem 1rem;
-          background: #667eea;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: background-color 0.2s ease;
-        }
-
-        .add-material:hover {
-          background: #5a67d8;
-        }
-
-        .tags-section {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .suggested-tags {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .suggested-tags small {
-          color: #718096;
-          font-weight: 500;
-        }
-
-        .tag-suggestions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-        }
-
-        .tag-suggestion {
-          padding: 0.25rem 0.5rem;
-          border: 1px solid #e2e8f0;
-          background: white;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          transition: all 0.2s ease;
-        }
-
-        .tag-suggestion:hover:not(:disabled) {
-          border-color: #667eea;
-          background: rgba(102, 126, 234, 0.05);
-        }
-
-        .tag-suggestion.added {
-          background: #667eea;
-          color: white;
-          border-color: #667eea;
-        }
-
-        .tag-suggestion:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .tags-input {
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 0.5rem;
-          background: white;
-        }
-
-        .tag-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .tag-chip {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          background: #667eea;
-          color: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 500;
-        }
-
-        .tag-remove {
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          font-size: 0.8rem;
-          width: 1rem;
-          height: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: background-color 0.2s ease;
-        }
-
-        .tag-remove:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .add-tag-input {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .add-tag-input input {
-          flex: 1;
-          border: none;
-          outline: none;
-          padding: 0.25rem;
-          font-size: 0.9rem;
-        }
-
-        .add-tag-input button {
-          padding: 0.25rem 0.75rem;
-          background: #667eea;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 500;
-          transition: background-color 0.2s ease;
-        }
-
-        .add-tag-input button:hover:not(:disabled) {
-          background: #5a67d8;
-        }
-
-        .add-tag-input button:disabled {
-          background: #e2e8f0;
-          color: #a0aec0;
-          cursor: not-allowed;
-        }
-
-        /* Choice Item Styles */
-        .skill-areas-section {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .skill-areas-input {
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
-          padding: 0.5rem;
-          background: white;
-        }
-
-        .skill-areas-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
-        }
-
-        .skill-chip {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          background: #9f7aea;
-          color: white;
-          padding: 0.25rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.8rem;
-          font-weight: 500;
-        }
-
-        .skill-remove {
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          font-size: 0.8rem;
-          width: 1rem;
-          height: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          transition: background-color 0.2s ease;
-        }
-
-        .skill-remove:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
-        .add-skill-input {
-          display: flex;
-          gap: 0.5rem;
-        }
-
-        .add-skill-input input {
-          flex: 1;
-          border: none;
-          outline: none;
-          padding: 0.25rem;
-          font-size: 0.9rem;
-        }
-
-        .add-skill-input button {
-          padding: 0.25rem 0.75rem;
-          background: #38a169;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          font-weight: 500;
-          transition: background-color 0.2s ease;
-        }
-
-        .add-skill-input button:hover {
-          background: #2f855a;
-        }
-
-        .suggested-skills {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .suggested-skills small {
-          color: #718096;
-          font-weight: 500;
-        }
-
-        .skill-suggestions {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-        }
-
-        .skill-suggestion {
-          padding: 0.25rem 0.5rem;
-          border: 1px solid #e2e8f0;
-          background: white;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          transition: all 0.2s ease;
-        }
-
-        .skill-suggestion:hover:not(:disabled) {
-          border-color: #9f7aea;
-          background: rgba(159, 122, 234, 0.05);
-        }
-
-        .skill-suggestion.added {
-          background: #9f7aea;
-          color: white;
-          border-color: #9f7aea;
-        }
-
-        .skill-suggestion.selected {
-          background: #9f7aea;
-          color: white;
-          border-color: #9f7aea;
-        }
-
-        .skill-suggestion:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1rem;
-          padding: 1.5rem;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .cancel-btn,
-        .save-btn {
-          padding: 0.75rem 1.5rem;
-          border: none;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .cancel-btn {
-          background: #f7fafc;
-          color: #718096;
-        }
-
-        .cancel-btn:hover {
-          background: #edf2f7;
-        }
-
-        .save-btn {
-          background: #667eea;
-          color: white;
-        }
-
-        .save-btn:hover:not(:disabled) {
-          background: #5a67d8;
-        }
-
-        .save-btn:disabled {
-          background: #e2e8f0;
-          color: #a0aec0;
-          cursor: not-allowed;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-          .simplified-activity-library {
-            padding: 1rem;
-          }
-
-          .library-controls {
-            padding: 1rem;
-          }
-
-          .filters-and-actions {
-            flex-direction: column;
-            gap: 1rem;
-          }
-
-          .create-actions {
-            min-width: auto;
-            flex-direction: row;
-            justify-content: center;
-          }
-
-          .filter-row {
-            justify-content: center;
-          }
-
-          .content-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .content-header {
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-          }
-
-          .content-meta {
-            align-items: center;
-          }
-
-          .secondary-actions {
-            flex-wrap: wrap;
-          }
-
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-
-          .content-type-selector {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .content-type-selector {
-            grid-template-columns: 1fr;
-          }
-
-          .emoji-grid {
-            grid-template-columns: repeat(6, 1fr);
-          }
-
-          .modal-content {
-            margin: 0.5rem;
-            max-width: calc(100vw - 1rem);
-          }
-
-          .tag-suggestions {
-            justify-content: center;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .filter-row {
-            flex-direction: column;
-          }
-
-          .create-actions {
-            flex-direction: column;
-          }
-
-          .category-button,
-          .content-type-button {
-            justify-content: center;
-          }
-
-          .search-input {
-            font-size: 16px; /* Prevents zoom on iOS */
-          }
-
-          .content-title {
-            font-size: 1.1rem;
-          }
-
-          .content-badges {
-            align-items: center;
-          }
-
-          .emoji-grid {
-            grid-template-columns: repeat(5, 1fr);
-          }
-
-          .material-input {
-            flex-direction: column;
-            gap: 0.25rem;
-          }
-
-          .remove-material {
-            align-self: flex-end;
-          }
-        }
-
-        /* Special category highlighting */
-        .content-item[data-category="academic"] {
-          border-left-color: #2b6cb0;
-        }
-
-        .content-item[data-category="break"] {
-          border-left-color: #c53030;
-        }
-
-        .content-item[data-category="other"] {
-          border-left-color: #2c7a7b;
-        }
-
-        /* Video-specific animations */
-        .content-item.video .video-indicator {
-          animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.7; transform: scale(1.1); }
-        }
-
-        /* Loading states */
-        .content-item .action-button.adding {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .content-item .action-button.adding::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-          animation: shimmer 1.5s infinite;
-        }
-
-        @keyframes shimmer {
-          0% { left: -100%; }
-          100% { left: 100%; }
-        }
-
-        /* Focus styles for accessibility */
-        .category-button:focus,
-        .content-type-button:focus,
-        .action-button:focus,
-        .emoji-option:focus,
-        .tag-suggestion:focus {
-          outline: 2px solid #667eea;
-          outline-offset: 2px;
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-          .content-item {
-            border-width: 3px;
-          }
-          
-          .content-badges > * {
-            border: 1px solid currentColor;
-          }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-          .content-item,
-          .action-button,
-          .emoji-option,
-          .category-button,
-          .content-type-button {
-            transition: none;
-          }
-          
-          .video-indicator,
-          .spinner {
-            animation: none;
-          }
         }
       `}</style>
     </div>
   );
 };
 
-
-// ActivityCard component for Activities tab
-const ActivityCard: React.FC<{ content: LibraryContent }> = ({ content }) => {
-  const [addingContent, setAddingContent] = useState(false);
-
-  const handleAddToSchedule = async () => {
-    if (addingContent) return;
-
-    setAddingContent(true);
-
-    try {
-      const instanceId = generateUniqueId(`${content.id}`);
-      
-      const contentToAdd = {
-        id: instanceId,
-        originalId: content.id,
-        name: content.name,
-        icon: content.icon,
-        emoji: content.icon,
-        duration: content.defaultDuration,
-        category: content.category,
-        description: content.description || '',
-        materials: content.materials || [],
-        instructions: content.instructions || '',
-        isCustom: content.isCustom,
-        tags: content.tags || [],
-        createdAt: new Date().toISOString(),
-        addedFromLibrary: true,
-      };
-
-      const existingActivities = JSON.parse(localStorage.getItem('available_activities') || '[]');
-      const updatedActivities = [...existingActivities, contentToAdd];
-      localStorage.setItem('available_activities', JSON.stringify(updatedActivities));
-
-      window.dispatchEvent(new CustomEvent('activityAdded', {
-        detail: { 
-          activity: contentToAdd,
-          source: 'Library',
-          timestamp: Date.now()
-        }
-      }));
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-      console.log(`Activity "${content.name}" added to Schedule Builder`);
-      
-    } catch (error) {
-      console.error('Error adding activity:', error);
-      alert(`Error adding "${content.name}". Please try again.`);
-    } finally {
-      setAddingContent(false);
-    }
-  };
-
-  return (
-    <div className={`content-item activity`} data-category={content.category}>
-      <div className="content-header">
-        <div className="content-icon">
-          {content.icon}
-        </div>
-        <div className="content-meta">
-          <div className="content-badges">
-            <span className={`category-badge ${content.category}`}>
-              {content.category}
-            </span>
-            <span className="type-badge activity">activity</span>
-            {!content.isDeletable && (
-              <span className="built-in-badge">Built-in</span>
-            )}
-            {content.isCustom && (
-              <span className="custom-badge">Custom</span>
-            )}
-          </div>
-          <div className="content-duration">{content.defaultDuration}min</div>
-        </div>
-      </div>
-
-      <div className="content-body">
-        <h3 className="content-title">{content.name}</h3>
-        <p className="content-description">{content.description}</p>
-        
-        {content.materials && content.materials.length > 0 && (
-          <div className="activity-materials">
-            <strong>Materials:</strong> {content.materials.join(', ')}
-          </div>
-        )}
-
-        {content.tags.length > 0 && (
-          <div className="content-tags">
-            {content.tags.map(tag => (
-              <span key={tag} className="content-tag">#{tag}</span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="content-actions">
-        <button 
-          className={`action-button primary ${addingContent ? 'adding' : ''}`}
-          title="Add to schedule"
-          onClick={handleAddToSchedule}
-          disabled={addingContent}
-        >
-          {addingContent ? (
-            <>
-              <span className="spinner">⏳</span> Adding...
-            </>
-          ) : (
-            '+ Add to Schedule'
-          )}
-        </button>
-        
-        <div className="secondary-actions">
-          <button 
-            className="action-button secondary" 
-            title="Edit activity"
-            disabled={!content.isDeletable}
-          >
-            ✏️
-          </button>
-          <button 
-            className="action-button secondary" 
-            title="Duplicate activity"
-          >
-            📋
-          </button>
-          {content.isDeletable && (
-            <button 
-              className="action-button danger" 
-              title="Delete activity"
-            >
-              🗑️
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// MediaCard component for Media tab
-const MediaCard: React.FC<{ content: LibraryContent }> = ({ content }) => {
-  return (
-    <div className={`content-item ${content.contentType}`}>
-      <div className="content-header">
-        <div className="content-icon">
-          {content.icon}
-          {content.contentType === 'video' && (
-            <div className="video-indicator">🎬</div>
-          )}
-        </div>
-        <div className="content-meta">
-          <div className="content-badges">
-            <span className={`type-badge ${content.contentType}`}>
-              {content.contentType}
-            </span>
-            {content.isCustom && (
-              <span className="custom-badge">Custom</span>
-            )}
-          </div>
-          <div className="content-duration">{content.defaultDuration}min</div>
-        </div>
-      </div>
-
-      <div className="content-body">
-        <h3 className="content-title">{content.name}</h3>
-        <p className="content-description">{content.description}</p>
-        
-        {/* Video-specific display */}
-        {content.contentType === 'video' && content.videoData && (
-          <div className="video-details">
-            <div className="video-url">
-              <span className="video-label">🔗</span>
-              <a href={content.videoData.videoUrl} target="_blank" rel="noopener noreferrer" className="video-link">
-                View Video
-              </a>
-            </div>
-            {content.videoData.notes && (
-              <div className="video-notes">
-                <strong>Notes:</strong> {content.videoData.notes}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Document-specific display */}
-        {content.contentType === 'document' && content.documentData && (
-          <div className="document-details">
-            <div className="document-url">
-              <span className="document-label">🔗</span>
-              <a href={content.documentData.googleDriveUrl} target="_blank" rel="noopener noreferrer" className="document-link">
-                Open Document
-              </a>
-            </div>
-            <div className="document-type">
-              Type: {content.documentData.documentType}
-            </div>
-            {content.documentData.notes && (
-              <div className="document-notes">
-                <strong>Notes:</strong> {content.documentData.notes}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* SmartBoard Display Options for Videos */}
-        {content.contentType === 'video' && (
-          <div className="smartboard-options">
-            <h4>📺 Smartboard Display Options</h4>
-            <div className="display-checkboxes">
-              <DisplayVideoCheckbox
-                videoId={content.id}
-                slot="move1"
-                label="🏃‍♀️ Move Video 1"
-                video={content}
-              />
-              <DisplayVideoCheckbox
-                videoId={content.id}
-                slot="lesson1"
-                label="📚 Lesson Video 1"
-                video={content}
-              />
-              <DisplayVideoCheckbox
-                videoId={content.id}
-                slot="move2"
-                label="🤸‍♂️ Move Video 2"
-                video={content}
-              />
-              <DisplayVideoCheckbox
-                videoId={content.id}
-                slot="lesson2"
-                label="🎓 Lesson Video 2"
-                video={content}
-              />
-            </div>
-          </div>
-        )}
-
-        {content.tags.length > 0 && (
-          <div className="content-tags">
-            {content.tags.map(tag => (
-              <span key={tag} className="content-tag">#{tag}</span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="content-actions">
-        <div className="secondary-actions">
-          <button 
-            className="action-button secondary" 
-            title="Edit content"
-            disabled={!content.isDeletable}
-          >
-            ✏️
-          </button>
-          <button 
-            className="action-button secondary" 
-            title="Duplicate content"
-          >
-            📋
-          </button>
-          {content.isDeletable && (
-            <button 
-              className="action-button danger" 
-              title="Delete content"
-            >
-              🗑️
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Updated ActivitiesTab with complete implementation
-const ActivitiesTab: React.FC<{ 
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  onOpenModal: (content?: LibraryContent) => void;
-}> = ({ searchTerm, setSearchTerm, onOpenModal }) => {
-  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'break' | 'other'>('all');
-
-  // Base content library (built-in, non-deletable items)
-  const baseContent: LibraryContent[] = [
-    // Academic
-    { id: 'base-ela', name: 'ELA', icon: '📚', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'English Language Arts instruction', tags: ['reading', 'writing', 'language'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-science', name: 'Science', icon: '🔬', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Science exploration and experiments', tags: ['experiments', 'discovery', 'STEM'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-math', name: 'Math', icon: '🔢', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Mathematics instruction and practice', tags: ['numbers', 'calculation', 'problem-solving'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-social-studies', name: 'Social Studies', icon: '🗺️', category: 'academic', contentType: 'activity', defaultDuration: 30, description: 'Geography, history, and social concepts', tags: ['geography', 'history', 'community'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    
-    // Break
-    { id: 'base-lunch', name: 'Lunch', icon: '🍽️', category: 'break', contentType: 'activity', defaultDuration: 30, description: 'Lunch break and social time', tags: ['food', 'social', 'nutrition'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-bathroom', name: 'Bathroom Break', icon: '🚻', category: 'break', contentType: 'activity', defaultDuration: 5, description: 'Bathroom and hygiene break', tags: ['hygiene', 'self-care', 'routine'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-snack', name: 'Snack Time', icon: '🍎', category: 'break', contentType: 'activity', defaultDuration: 10, description: 'Snack time and nutrition break', tags: ['food', 'nutrition', 'energy'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    
-    // Other
-    { id: 'base-transition', name: 'Transition', icon: '🔄', category: 'other', contentType: 'activity', defaultDuration: 5, description: 'Movement between activities', tags: ['transition', 'routine', 'movement'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-resource', name: 'Resource', icon: '🎯', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Special education support time', tags: ['support', 'individualized', 'academic'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-choice', name: 'Choice Time', icon: '🎮', category: 'other', contentType: 'activity', defaultDuration: 20, description: 'Student choice activities', tags: ['choice', 'student-selected', 'flexible'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'base-safety', name: 'Safety Drill', icon: '🛡️', category: 'other', contentType: 'activity', defaultDuration: 10, description: 'Emergency preparedness and safety practice', tags: ['safety', 'drill', 'emergency'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString() },
-    { id: 'morning-meeting-builtin', name: 'Morning Meeting', icon: '🌅', category: 'other', contentType: 'activity', defaultDuration: 30, description: 'Daily morning meeting with welcome, attendance, behavior commitments, and learning activities', tags: ['morning', 'routine', 'community', 'daily'], isDeletable: false, isCustom: false, createdAt: new Date().toISOString(), materials: ['Morning Meeting Hub configuration'], instructions: 'Automated morning meeting flow guided by Morning Meeting Hub settings' },
-  ];
-
-  // Load custom content
-  useEffect(() => {
-    loadCustomContent();
-  }, []);
-
-  const loadCustomContent = () => {
-    try {
-      const unifiedActivities = UnifiedDataService.getAllActivities();
-      
-      const customContentFromUnified: LibraryContent[] = unifiedActivities
-        .filter(activity => activity.isCustom)
-        .map((activity: UnifiedActivity): LibraryContent => ({
-          id: activity.id,
-          name: activity.name,
-          icon: (activity as any).icon || '📝',
-          category: (activity as any).category || 'academic',
-          contentType: 'activity',
-          defaultDuration: activity.duration || 30,
-          description: activity.description || '',
-          tags: (activity as any).tags || [],
-          isDeletable: true,
-          isCustom: true,
-          materials: activity.materials,
-          instructions: activity.instructions,
-          createdAt: activity.dateCreated,
-          updatedAt: activity.dateCreated,
-        }));
-
-      setCustomContent(customContentFromUnified);
-    } catch (error) {
-      console.error('Error loading custom content:', error);
-    }
-  };
-
-  // Filter only activities
-  const baseActivities = baseContent.filter(content => content.contentType === 'activity');
-  const customActivities = customContent.filter(content => content.contentType === 'activity');
-  const allActivities = [...baseActivities, ...customActivities];
-
-  const filteredActivities = useMemo(() => {
-    return allActivities.filter(content => {
-      const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === 'all' || content.category === selectedCategory;
-      
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchTerm, selectedCategory, allActivities]);
-
-  const getCategoryCount = (category: string) => {
-    if (category === 'all') return allActivities.length;
-    return allActivities.filter(content => content.category === category).length;
-  };
-
-  return (
-    <div className="activities-tab">
-      <div className="tab-header">
-        <h3>📋 Activities for Schedule Builder</h3>
-        <p>Manage activities that can be scheduled in your daily routine</p>
-      </div>
-
-      <div className="tab-controls">
-        <div className="search-section">
-          <div className="search-input-container">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search activities..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="clear-search"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="filters-and-actions">
-          <div className="filter-section">
-            <div className="filter-row">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`category-button ${selectedCategory === 'all' ? 'active' : ''}`}
-              >
-                All ({getCategoryCount('all')})
-              </button>
-              <button
-                onClick={() => setSelectedCategory('academic')}
-                className={`category-button ${selectedCategory === 'academic' ? 'active' : ''}`}
-              >
-                📚 Academic ({getCategoryCount('academic')})
-              </button>
-              <button
-                onClick={() => setSelectedCategory('break')}
-                className={`category-button ${selectedCategory === 'break' ? 'active' : ''}`}
-              >
-                🍽️ Break ({getCategoryCount('break')})
-              </button>
-              <button
-                onClick={() => setSelectedCategory('other')}
-                className={`category-button ${selectedCategory === 'other' ? 'active' : ''}`}
-              >
-                🎯 Other ({getCategoryCount('other')})
-              </button>
-            </div>
-          </div>
-
-          <div className="create-actions">
-            <button 
-              className="create-button activity"
-              onClick={() => onOpenModal()}
-            >
-              <span className="create-icon">📚</span>
-              Create Activity
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Results Summary */}
-      <div className="results-summary">
-        Showing {filteredActivities.length} of {allActivities.length} activities
-        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
-        {selectedCategory !== 'all' && <span className="filter-summary"> in {selectedCategory}</span>}
-      </div>
-
-      {/* Activities Grid */}
-      <div className="content-grid">
-        {filteredActivities.length === 0 ? (
-          <div className="no-results">
-            <div className="no-results-icon">🔍</div>
-            <h3>No activities found</h3>
-            <p>Try adjusting your search terms or filters</p>
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="reset-search">
-                Clear search
-              </button>
-            )}
-          </div>
-        ) : (
-          filteredActivities.map(activity => (
-            <ActivityCard key={activity.id} content={activity} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Updated MediaTab with complete implementation
-const MediaTab: React.FC<{ 
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  onOpenModal: (content?: LibraryContent) => void;
-}> = ({ searchTerm, setSearchTerm, onOpenModal }) => {
-  const [customContent, setCustomContent] = useState<LibraryContent[]>([]);
-  const [selectedMediaType, setSelectedMediaType] = useState<'all' | 'video' | 'document'>('all');
-
-  // Load custom content
-  useEffect(() => {
-    loadCustomContent();
-  }, []);
-
-  const loadCustomContent = () => {
-    // Same loading logic as ActivitiesTab
-    try {
-      const unifiedActivities = UnifiedDataService.getAllActivities();
-      
-      const customContentFromUnified: LibraryContent[] = unifiedActivities
-        .filter(activity => activity.isCustom)
-        .map((activity: UnifiedActivity): LibraryContent => ({
-          id: activity.id,
-          name: activity.name,
-          icon: (activity as any).icon || '📝',
-          category: (activity as any).category || 'academic',
-          contentType: (activity as any).contentType || 'activity',
-          defaultDuration: activity.duration || 30,
-          description: activity.description || '',
-          tags: (activity as any).tags || [],
-          isDeletable: true,
-          isCustom: true,
-          videoData: (activity as any).videoData,
-          documentData: (activity as any).documentData,
-          createdAt: activity.dateCreated,
-          updatedAt: activity.dateCreated,
-        }));
-
-      setCustomContent(customContentFromUnified);
-    } catch (error) {
-      console.error('Error loading custom content:', error);
-    }
-  };
-
-  // Filter only media
-  const customMedia = customContent.filter(content => 
-    content.contentType === 'video' || content.contentType === 'document'
-  );
-
-  const filteredMedia = useMemo(() => {
-    return customMedia.filter(content => {
-      const matchesSearch = content.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           content.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           content.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const matchesType = selectedMediaType === 'all' || content.contentType === selectedMediaType;
-      
-      return matchesSearch && matchesType;
-    });
-  }, [searchTerm, selectedMediaType, customMedia]);
-
-  const getMediaTypeCount = (type: string) => {
-    if (type === 'all') return customMedia.length;
-    return customMedia.filter(content => content.contentType === type).length;
-  };
-
-  return (
-    <div className="media-tab">
-      <div className="tab-header">
-        <h3>🎬 Media Library</h3>
-        <p>Manage videos and documents for your classroom</p>
-      </div>
-
-      <div className="tab-controls">
-        <div className="search-section">
-          <div className="search-input-container">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search videos and documents..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="clear-search"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="filters-and-actions">
-          <div className="filter-section">
-            <div className="filter-row">
-              <button
-                onClick={() => setSelectedMediaType('all')}
-                className={`media-type-button ${selectedMediaType === 'all' ? 'active' : ''}`}
-              >
-                All Media ({getMediaTypeCount('all')})
-              </button>
-              <button
-                onClick={() => setSelectedMediaType('video')}
-                className={`media-type-button ${selectedMediaType === 'video' ? 'active' : ''}`}
-              >
-                🎬 Videos ({getMediaTypeCount('video')})
-              </button>
-              <button
-                onClick={() => setSelectedMediaType('document')}
-                className={`media-type-button ${selectedMediaType === 'document' ? 'active' : ''}`}
-              >
-                📄 Documents ({getMediaTypeCount('document')})
-              </button>
-            </div>
-          </div>
-
-          <div className="create-actions">
-            <button 
-              className="create-button video"
-              onClick={() => onOpenModal()}
-            >
-              <span className="create-icon">🎬</span>
-              Add Video
-            </button>
-            <button 
-              className="create-button document"
-              onClick={() => onOpenModal()}
-            >
-              <span className="create-icon">📄</span>
-              Add Document
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Results Summary */}
-      <div className="results-summary">
-        Showing {filteredMedia.length} of {customMedia.length} media items
-        {searchTerm && <span className="search-summary"> for "{searchTerm}"</span>}
-        {selectedMediaType !== 'all' && <span className="filter-summary"> • {selectedMediaType}s only</span>}
-      </div>
-
-      {/* Media Grid */}
-      <div className="content-grid">
-        {filteredMedia.length === 0 ? (
-          <div className="no-results">
-            <div className="no-results-icon">🎬</div>
-            <h3>No media found</h3>
-            <p>Add videos and documents to get started</p>
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="reset-search">
-                Clear search
-              </button>
-            )}
-          </div>
-        ) : (
-          filteredMedia.map(media => (
-            <MediaCard key={media.id} content={media} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Export the utility function
-export const generateUniqueId = (prefix: string = 'id'): string => {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substr(2, 9);
-  const counter = Math.floor(Math.random() * 1000).toString(36);
-  return `${prefix}_${timestamp}_${counter}_${random}`;
-};
-
-export default Library;
+export default SimplifiedActivityLibrary;
