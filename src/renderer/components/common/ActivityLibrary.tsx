@@ -1266,7 +1266,9 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
 
               <div className="content-body">
                 <h3 className="content-title">{content.name}</h3>
-                <p className="content-description">{content.description}</p>
+                {content.contentType !== 'choice-item' && (
+                  <p className="content-description">{content.description}</p>
+                )}
                 
                 {/* Video-specific display */}
                 {content.contentType === 'video' && content.videoData && (
@@ -1305,30 +1307,52 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
                   </div>
                 )}
 
-        {/* Choice Item-specific display */}
+        {/* Choice Item-specific display - COMPACT VERSION */}
         {content.contentType === 'choice-item' && content.choiceData && (
           <div className="choice-item-compact">
-            <div className="choice-quick-info">
-              <span className="difficulty-indicator">{content.choiceData.difficulty}</span>
-              <span className="format-indicator">{content.choiceData.format}</span>
-              <span className="supervision-indicator">{content.choiceData.supervisionLevel}</span>
-            </div>
             <button 
               className="open-choice-details"
               onClick={() => setExpandedChoice(expandedChoice === content.id ? null : content.id)}
             >
-              {expandedChoice === content.id ? 'Hide Details' : 'Open Details'}
+              {expandedChoice === content.id ? 'Close Details' : 'Open Details'}
             </button>
-            {expandedChoice === content.id && content.choiceData.skillAreas.length > 0 && (
+            
+            {/* Expanded Details Modal-like Section */}
+            {expandedChoice === content.id && (
               <div className="choice-expanded-details">
-                <div className="choice-skills">
-                  <span className="choice-label">🧠 Skills:</span>
-                  <div className="skill-tags">
-                    {content.choiceData.skillAreas.map((skill, index) => (
-                      <span key={index} className="skill-tag">{skill}</span>
-                    ))}
+                <div className="choice-description">
+                  <strong>Description:</strong> {content.choiceData.description}
+                </div>
+                
+                <div className="choice-metadata">
+                  <div className="choice-meta-item">
+                    <span className="choice-meta-label">Difficulty:</span>
+                    <span className={`difficulty-badge ${content.choiceData.difficulty}`}>
+                      {content.choiceData.difficulty}
+                    </span>
+                  </div>
+                  
+                  <div className="choice-meta-item">
+                    <span className="choice-meta-label">Format:</span>
+                    <span className="format-text">{content.choiceData.format}</span>
+                  </div>
+                  
+                  <div className="choice-meta-item">
+                    <span className="choice-meta-label">Supervision:</span>
+                    <span className="supervision-text">{content.choiceData.supervisionLevel}</span>
                   </div>
                 </div>
+                
+                {content.choiceData.skillAreas.length > 0 && (
+                  <div className="choice-skills">
+                    <span className="choice-meta-label">Skills:</span>
+                    <div className="skill-tags">
+                      {content.choiceData.skillAreas.map((skill, index) => (
+                        <span key={index} className="skill-tag">{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1957,6 +1981,7 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
 
         .content-item.choice-item {
           border-left: 4px solid #9f7aea;
+          min-height: 200px; /* Smaller minimum height for compact cards */
         }
 
         /* Choice Item Compact Display Styles */
@@ -1964,27 +1989,8 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           background: rgba(159, 122, 234, 0.05);
           border-left: 3px solid #9f7aea;
           border-radius: 8px;
-          padding: 0.75rem;
+          padding: 1rem;
           margin: 0.5rem 0;
-        }
-
-        .choice-quick-info {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 0.75rem;
-          flex-wrap: wrap;
-        }
-
-        .difficulty-indicator,
-        .format-indicator,
-        .supervision-indicator {
-          padding: 0.25rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-transform: capitalize;
-          background: rgba(159, 122, 234, 0.2);
-          color: #6b46c1;
         }
 
         .open-choice-details {
@@ -1992,11 +1998,12 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
           color: white;
           border: none;
           border-radius: 6px;
-          padding: 0.5rem 1rem;
-          font-size: 0.8rem;
+          padding: 0.75rem 1.5rem;
+          font-size: 0.9rem;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s ease;
+          width: 100%;
         }
 
         .open-choice-details:hover {
@@ -2005,9 +2012,46 @@ const SimplifiedActivityLibrary: React.FC<ActivityLibraryProps> = ({ isActive })
         }
 
         .choice-expanded-details {
-          margin-top: 0.75rem;
-          padding-top: 0.75rem;
+          margin-top: 1rem;
+          padding-top: 1rem;
           border-top: 1px solid rgba(159, 122, 234, 0.3);
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .choice-description {
+          font-size: 0.9rem;
+          line-height: 1.4;
+          color: #4a5568;
+        }
+
+        .choice-metadata {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 0.75rem;
+        }
+
+        .choice-meta-item {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .choice-meta-label {
+          font-weight: 600;
+          font-size: 0.8rem;
+          color: #6b46c1;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        /* Remove the old expanded choice styles */
+        .choice-quick-info,
+        .difficulty-indicator,
+        .format-indicator, 
+        .supervision-indicator {
+          display: none; /* Hide these since we're going compact */
         }
 
         .choice-skills {
