@@ -600,18 +600,20 @@ const ContentModal: React.FC<{
             </div>
           </div>
 
-          {/* Description */}
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder={formData.contentType === 'video' ? 
-                "Brief description of the video content..." : 
-                "Brief description of the activity..."}
-              rows={3}
-            />
-          </div>
+          {/* Description - Only show for non-choice items */}
+          {formData.contentType !== 'choice-item' && (
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder={formData.contentType === 'video' ? 
+                  "Brief description of the video content..." : 
+                  "Brief description of the activity..."}
+                rows={3}
+              />
+            </div>
+          )}
 
           {/* Video Notes (for videos only) */}
           {formData.contentType === 'video' && (
