@@ -233,19 +233,20 @@ const ContentModal: React.FC<{
         contentType: content.contentType || 'activity',
         defaultDuration: content.defaultDuration || 30,
         description: content.description || '',
-        difficulty: (content.choiceData?.difficulty) || 'beginner',
-        skillAreas: (content.choiceData?.skillAreas && Array.isArray(content.choiceData.skillAreas)) ? [...content.choiceData.skillAreas] : [],
-        supervisionLevel: (content.choiceData?.supervisionLevel) || 'minimal',
-        format: (content.choiceData?.format) || 'solo',
-        tags: (content.tags && Array.isArray(content.tags)) ? [...content.tags] : [],
-        videoUrl: (content.videoData?.videoUrl) || '',
-        googleDriveUrl: (content.documentData?.googleDriveUrl) || '',
-        documentType: (content.documentData?.documentType) || 'resource',
-        notes: (content.videoData?.notes || content.documentData?.notes) || '',
-        materials: (content.materials && Array.isArray(content.materials)) ? [...content.materials] : [],
+        difficulty: content.choiceData?.difficulty || 'beginner',
+        skillAreas: Array.isArray(content.choiceData?.skillAreas) ? [...content.choiceData.skillAreas] : [],
+        supervisionLevel: content.choiceData?.supervisionLevel || 'minimal',
+        format: content.choiceData?.format || 'solo',
+        tags: Array.isArray(content.tags) ? [...content.tags] : [],
+        videoUrl: content.videoData?.videoUrl || '',
+        googleDriveUrl: content.documentData?.googleDriveUrl || '',
+        documentType: content.documentData?.documentType || 'resource',
+        notes: content.videoData?.notes || content.documentData?.notes || '',
+        materials: Array.isArray(content.materials) ? [...content.materials] : [],
         instructions: content.instructions || '',
       });
     } else {
+      // Reset form with safe defaults
       setFormData({
         name: '',
         icon: '📝',
@@ -370,8 +371,8 @@ const ContentModal: React.FC<{
   if (!isOpen) return null;
 
   const availableTags = [
-    ...tagSuggestions[formData.category],
-    ...tagSuggestions[formData.contentType]
+    ...(tagSuggestions[formData.category] || []),
+    ...(tagSuggestions[formData.contentType] || [])
   ];
 
   return (
@@ -766,8 +767,8 @@ const ContentModal: React.FC<{
                         key={tag}
                         type="button"
                         onClick={() => addTag(tag)}
-                        className={`tag-suggestion ${formData.tags.includes(tag) ? 'added' : ''}`}
-                        disabled={formData.tags.includes(tag)}
+                        className={`tag-suggestion ${Array.isArray(formData.tags) && formData.tags.includes(tag) ? 'added' : ''}`}
+                        disabled={Array.isArray(formData.tags) && formData.tags.includes(tag)}
                       >
                         {tag}
                       </button>
@@ -778,7 +779,7 @@ const ContentModal: React.FC<{
               
               <div className="tags-input">
                 <div className="tag-list">
-                  {formData.tags.map(tag => (
+                  {Array.isArray(formData.tags) && formData.tags.map(tag => (
                     <span key={tag} className="tag-chip">
                       #{tag}
                       <button
