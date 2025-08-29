@@ -10,7 +10,7 @@ import ScheduleBuilder from './components/builder/ScheduleBuilder';
 import SmartboardDisplay from './components/display/SmartboardDisplay';
 import StudentManagement from './components/management/StudentManagement';
 import StaffManagement from './components/management/StaffManagement';
-import Library from './components/common/ActivityLibrary';
+import Library from './components/common/ActivityLibrary'
 import Reports from './components/reports/Reports';
 import Settings from './components/management/Settings';
 import ReportsExportSystem from './components/data-collection/ReportsExportSystem';

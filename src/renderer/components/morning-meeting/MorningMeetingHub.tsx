@@ -5,6 +5,7 @@ import UnifiedDataService from '../../services/unifiedDataService';
 interface MorningMeetingHubProps {
   onStartMorningMeeting: () => void;
   onClose: () => void;
+  isActive?: boolean;
 }
 
 interface HubSettings {
