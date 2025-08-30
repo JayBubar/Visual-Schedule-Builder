@@ -2,6 +2,40 @@ import React, { useState, useMemo, useEffect } from 'react';
 import UnifiedDataService, { UnifiedActivity } from '../../services/unifiedDataService';
 import MorningMeetingHub from '../morning-meeting/MorningMeetingHub';
 
+// Interface definitions for lesson plans and state standards
+interface LessonPlanData {
+  subject: string;
+  gradeLevel: string[];
+  duration: number;
+  objectives: string[];
+  materials: string[];
+  procedure: {
+    introduction: string;
+    mainActivity: string;
+    closure: string;
+  };
+  assessment: string;
+  differentiation: string[];
+  linkedStandardIds: string[];
+  iepGoalAlignment: string[];
+  preparationTime: number;
+  groupSize: 'individual' | 'small-group' | 'whole-class' | 'flexible';
+}
+
+interface StateStandardData {
+  standardCode: string;
+  subject: string;
+  gradeLevel: string[];
+  description: string;
+  learningObjectives: string[];
+  assessmentCriteria: string[];
+  crossCurricularConnections: string[];
+  iepGoalDomains: string[];
+  complexity: 'foundational' | 'developing' | 'proficient' | 'advanced';
+  prerequisites: string[];
+  state: string;
+}
+
 // DisplayVideoCheckbox Component
 interface DisplayVideoCheckboxProps {
   videoId: string;
@@ -96,7 +130,7 @@ interface LibraryContent {
   name: string;
   icon: string;
   category: 'academic' | 'break' | 'other';
-  contentType: 'activity' | 'video' | 'document' | 'choice-item';
+  contentType: 'activity' | 'video' | 'document' | 'choice-item' | 'lesson-plan' | 'state-standard';
   defaultDuration: number;
   description: string;
   tags: string[];
@@ -117,6 +151,37 @@ interface LibraryContent {
     skillAreas: string[];
     supervisionLevel: 'independent' | 'minimal' | 'moderate' | 'full';
     format: 'solo' | 'group' | 'flexible';
+  };
+  lessonPlanData?: {
+    subject: string;
+    gradeLevel: string[];
+    duration: number;
+    objectives: string[];
+    materials: string[];
+    procedure: {
+      introduction: string;
+      mainActivity: string;
+      closure: string;
+    };
+    assessment: string;
+    differentiation: string[];
+    linkedStandardIds: string[];
+    iepGoalAlignment: string[];
+    preparationTime: number;
+    groupSize: 'individual' | 'small-group' | 'whole-class' | 'flexible';
+  };
+  stateStandardData?: {
+    standardCode: string;
+    subject: string;
+    gradeLevel: string[];
+    description: string;
+    learningObjectives: string[];
+    assessmentCriteria: string[];
+    crossCurricularConnections: string[];
+    iepGoalDomains: string[];
+    complexity: 'foundational' | 'developing' | 'proficient' | 'advanced';
+    prerequisites: string[];
+    state: string;
   };
   materials?: string[];
   instructions?: string;
@@ -145,7 +210,7 @@ const ContentModal: React.FC<{
   onSave: (content: LibraryContent) => void;
   onCancel: () => void;
   isOpen: boolean;
-  defaultContentType?: 'activity' | 'video' | 'document' | 'choice-item';
+  defaultContentType?: 'activity' | 'video' | 'document' | 'choice-item' | 'lesson-plan' | 'state-standard';
 }> = ({ content, onSave, onCancel, isOpen, defaultContentType = 'activity' }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -1670,55 +1735,1712 @@ const ChoiceItemsTab: React.FC<{
 };
 
 // Lesson Plans Tab Component
-const LessonPlansTab: React.FC = () => {
+// Complete Lesson Plans & State Standards Implementation
+// Lesson Plan Creation/Edit Modal Component
+// Add this to the LessonPlansTab implementation
+
+const LessonPlanModal: React.FC<{
+  isOpen: boolean;
+  lessonPlan?: LibraryContent;
+  onSave: (lessonPlan: LibraryContent) => void;
+  onClose: () => void;
+  availableStandards: LibraryContent[];
+}> = ({ isOpen, lessonPlan, onSave, onClose, availableStandards }) => {
+  const [formData, setFormData] = useState({
+    name: lessonPlan?.name || '',
+    subject: lessonPlan?.lessonPlanData?.subject || '',
+    gradeLevel: lessonPlan?.lessonPlanData?.gradeLevel || [],
+    duration: lessonPlan?.lessonPlanData?.duration || 45,
+    objectives: lessonPlan?.lessonPlanData?.objectives || [''],
+    materials: lessonPlan?.lessonPlanData?.materials || [''],
+    introduction: lessonPlan?.lessonPlanData?.procedure.introduction || '',
+    mainActivity: lessonPlan?.lessonPlanData?.procedure.mainActivity || '',
+    closure: lessonPlan?.lessonPlanData?.procedure.closure || '',
+    assessment: lessonPlan?.lessonPlanData?.assessment || '',
+    differentiation: lessonPlan?.lessonPlanData?.differentiation || [''],
+    linkedStandardIds: lessonPlan?.lessonPlanData?.linkedStandardIds || [],
+    iepGoalAlignment: lessonPlan?.lessonPlanData?.iepGoalAlignment || [],
+    preparationTime: lessonPlan?.lessonPlanData?.preparationTime || 15,
+    groupSize: lessonPlan?.lessonPlanData?.groupSize || 'whole-class' as const
+  });
+
+  const [activeTab, setActiveTab] = useState<'basic' | 'procedure' | 'standards' | 'accessibility'>('basic');
+
+  useEffect(() => {
+    if (isOpen && lessonPlan) {
+      // Reset form when opening existing lesson
+      setFormData({
+        name: lessonPlan.name || '',
+        subject: lessonPlan.lessonPlanData?.subject || '',
+        gradeLevel: lessonPlan.lessonPlanData?.gradeLevel || [],
+        duration: lessonPlan.lessonPlanData?.duration || 45,
+        objectives: lessonPlan.lessonPlanData?.objectives || [''],
+        materials: lessonPlan.lessonPlanData?.materials || [''],
+        introduction: lessonPlan.lessonPlanData?.procedure.introduction || '',
+        mainActivity: lessonPlan.lessonPlanData?.procedure.mainActivity || '',
+        closure: lessonPlan.lessonPlanData?.procedure.closure || '',
+        assessment: lessonPlan.lessonPlanData?.assessment || '',
+        differentiation: lessonPlan.lessonPlanData?.differentiation || [''],
+        linkedStandardIds: lessonPlan.lessonPlanData?.linkedStandardIds || [],
+        iepGoalAlignment: lessonPlan.lessonPlanData?.iepGoalAlignment || [],
+        preparationTime: lessonPlan.lessonPlanData?.preparationTime || 15,
+        groupSize: lessonPlan.lessonPlanData?.groupSize || 'whole-class'
+      });
+    }
+  }, [isOpen, lessonPlan]);
+
+  const handleArrayFieldChange = (
+    field: 'objectives' | 'materials' | 'differentiation' | 'iepGoalAlignment',
+    index: number,
+    value: string
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const addArrayField = (field: 'objectives' | 'materials' | 'differentiation' | 'iepGoalAlignment') => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...prev[field], '']
+    }));
+  };
+
+  const removeArrayField = (field: 'objectives' | 'materials' | 'differentiation' | 'iepGoalAlignment', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleGradeLevelChange = (grade: string) => {
+    setFormData(prev => ({
+      ...prev,
+      gradeLevel: prev.gradeLevel.includes(grade)
+        ? prev.gradeLevel.filter(g => g !== grade)
+        : [...prev.gradeLevel, grade]
+    }));
+  };
+
+  const handleStandardToggle = (standardId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      linkedStandardIds: prev.linkedStandardIds.includes(standardId)
+        ? prev.linkedStandardIds.filter(id => id !== standardId)
+        : [...prev.linkedStandardIds, standardId]
+    }));
+  };
+
+  const handleSave = () => {
+    if (!formData.name.trim() || !formData.subject.trim()) {
+      alert('Please fill in required fields: Name and Subject');
+      return;
+    }
+
+    const lessonPlanData: LessonPlanData = {
+      subject: formData.subject.trim(),
+      gradeLevel: formData.gradeLevel,
+      duration: formData.duration,
+      objectives: formData.objectives.filter(obj => obj.trim()),
+      materials: formData.materials.filter(mat => mat.trim()),
+      procedure: {
+        introduction: formData.introduction.trim(),
+        mainActivity: formData.mainActivity.trim(),
+        closure: formData.closure.trim()
+      },
+      assessment: formData.assessment.trim(),
+      differentiation: formData.differentiation.filter(diff => diff.trim()),
+      linkedStandardIds: formData.linkedStandardIds,
+      iepGoalAlignment: formData.iepGoalAlignment.filter(goal => goal.trim()),
+      preparationTime: formData.preparationTime,
+      groupSize: formData.groupSize
+    };
+
+    const newLessonPlan: LibraryContent = {
+      id: lessonPlan?.id || generateUniqueId('lesson'),
+      name: formData.name.trim(),
+      icon: '📋',
+      category: 'academic' as 'academic' | 'break' | 'other',
+      contentType: 'lesson-plan' as const,
+      defaultDuration: formData.duration,
+      description: `${formData.subject} lesson plan for grades ${formData.gradeLevel.join(', ')}`,
+      lessonPlanData,
+      createdAt: lessonPlan?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isDeletable: true,
+      isCustom: true,
+      tags: [formData.subject, ...formData.gradeLevel.map(g => `Grade ${g}`)]
+    };
+
+    onSave(newLessonPlan);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-      <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>📄</div>
-      <h3 style={{
-        fontSize: '1.5rem',
-        fontWeight: '600',
-        color: '#2d3748',
-        margin: '0 0 1rem 0'
-      }}>Lesson Plans</h3>
-      <p style={{
-        color: '#718096',
-        fontSize: '1.1rem',
-        marginBottom: '2rem',
-        maxWidth: '500px',
-        margin: '0 auto 2rem auto'
-      }}>
-        Lesson plan management coming soon! This will integrate with your activities and standards tracking.
-      </p>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+      padding: '1rem'
+    }}>
       <div style={{
-        background: 'rgba(102, 126, 234, 0.1)',
-        border: '1px solid rgba(102, 126, 234, 0.3)',
-        borderRadius: '12px',
-        padding: '1.5rem',
-        maxWidth: '600px',
-        margin: '0 auto'
+        background: 'white',
+        borderRadius: '16px',
+        width: '100%',
+        maxWidth: '800px',
+        maxHeight: '90vh',
+        overflow: 'hidden',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
       }}>
-        <h4 style={{ 
-          color: '#667eea', 
-          margin: '0 0 1rem 0',
-          fontSize: '1.1rem',
-          fontWeight: '600'
-        }}>Planned Features:</h4>
-        <ul style={{
-          color: '#4a5568',
-          textAlign: 'left',
-          margin: 0,
-          paddingLeft: '1.5rem'
+        {/* Modal Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.5rem 2rem',
+          borderBottom: '1px solid #e5e7eb',
+          background: 'linear-gradient(135deg, #059669, #10b981)'
         }}>
-          <li>Standards-aligned lesson plan templates</li>
-          <li>Integration with Activity Library</li>
-          <li>IEP goal alignment tracking</li>
-          <li>Differentiation suggestions</li>
-          <li>Assessment planning tools</li>
-        </ul>
+          <div>
+            <h2 style={{ margin: 0, color: 'white', fontSize: '1.5rem', fontWeight: '700' }}>
+              {lessonPlan ? '✏️ Edit Lesson Plan' : '➕ Create Lesson Plan'}
+            </h2>
+            <p style={{ margin: '0.25rem 0 0 0', color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>
+              {lessonPlan ? 'Update your lesson plan details' : 'Design a comprehensive lesson plan'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.5rem',
+              cursor: 'pointer',
+              fontSize: '1.2rem',
+              width: '40px',
+              height: '40px'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f8fafc'
+        }}>
+          {[
+            { id: 'basic', icon: '📝', label: 'Basic Info' },
+            { id: 'procedure', icon: '📋', label: 'Procedure' },
+            { id: 'standards', icon: '📚', label: 'Standards' },
+            { id: 'accessibility', icon: '♿', label: 'Accessibility' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              style={{
+                flex: 1,
+                padding: '1rem',
+                border: 'none',
+                background: activeTab === tab.id ? 'white' : 'transparent',
+                color: activeTab === tab.id ? '#059669' : '#6b7280',
+                borderBottom: activeTab === tab.id ? '2px solid #059669' : '2px solid transparent',
+                cursor: 'pointer',
+                fontWeight: '600',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Modal Body */}
+        <div style={{
+          padding: '2rem',
+          maxHeight: 'calc(90vh - 200px)',
+          overflow: 'auto'
+        }}>
+          {/* Basic Info Tab */}
+          {activeTab === 'basic' && (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  Lesson Name *
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Introduction to Fractions"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                    Subject *
+                  </label>
+                  <select
+                    value={formData.subject}
+                    onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="">Select Subject</option>
+                    <option value="Math">Math</option>
+                    <option value="English Language Arts">English Language Arts</option>
+                    <option value="Science">Science</option>
+                    <option value="Social Studies">Social Studies</option>
+                    <option value="Art">Art</option>
+                    <option value="Music">Music</option>
+                    <option value="Physical Education">Physical Education</option>
+                    <option value="Life Skills">Life Skills</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                    Duration (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.duration}
+                    onChange={(e) => setFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 45 }))}
+                    min="5"
+                    max="180"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                    Group Size
+                  </label>
+                  <select
+                    value={formData.groupSize}
+                    onChange={(e) => setFormData(prev => ({ ...prev, groupSize: e.target.value as any }))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  >
+                    <option value="individual">Individual</option>
+                    <option value="small-group">Small Group</option>
+                    <option value="whole-class">Whole Class</option>
+                    <option value="flexible">Flexible</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  Grade Levels
+                </label>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                  gap: '0.5rem',
+                  padding: '1rem',
+                  background: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '2px solid #e5e7eb'
+                }}>
+                  {['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map(grade => (
+                    <label key={grade} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                      padding: '0.5rem',
+                      borderRadius: '6px',
+                      background: formData.gradeLevel.includes(grade) ? '#dcfce7' : 'white',
+                      border: `2px solid ${formData.gradeLevel.includes(grade) ? '#16a34a' : '#e5e7eb'}`,
+                      justifyContent: 'center',
+                      fontWeight: '500'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.gradeLevel.includes(grade)}
+                        onChange={() => handleGradeLevelChange(grade)}
+                        style={{ margin: 0 }}
+                      />
+                      {grade}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  Learning Objectives
+                </label>
+                {formData.objectives.map((objective, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={objective}
+                      onChange={(e) => handleArrayFieldChange('objectives', index, e.target.value)}
+                      placeholder={`Objective ${index + 1}`}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    {formData.objectives.length > 1 && (
+                      <button
+                        onClick={() => removeArrayField('objectives', index)}
+                        style={{
+                          padding: '0.75rem',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => addArrayField('objectives')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '2px dashed #0369a1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontWeight: '500'
+                  }}
+                >
+                  + Add Objective
+                </button>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  Materials Needed
+                </label>
+                {formData.materials.map((material, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={material}
+                      onChange={(e) => handleArrayFieldChange('materials', index, e.target.value)}
+                      placeholder={`Material ${index + 1}`}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    {formData.materials.length > 1 && (
+                      <button
+                        onClick={() => removeArrayField('materials', index)}
+                        style={{
+                          padding: '0.75rem',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => addArrayField('materials')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '2px dashed #0369a1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontWeight: '500'
+                  }}
+                >
+                  + Add Material
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Procedure Tab */}
+          {activeTab === 'procedure' && (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  🚀 Introduction / Hook
+                </label>
+                <textarea
+                  value={formData.introduction}
+                  onChange={(e) => setFormData(prev => ({ ...prev, introduction: e.target.value }))}
+                  placeholder="How will you grab students' attention and introduce the topic?"
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  📚 Main Activity / Instruction
+                </label>
+                <textarea
+                  value={formData.mainActivity}
+                  onChange={(e) => setFormData(prev => ({ ...prev, mainActivity: e.target.value }))}
+                  placeholder="Detailed description of the main learning activities..."
+                  rows={6}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  🎯 Closure / Wrap-up
+                </label>
+                <textarea
+                  value={formData.closure}
+                  onChange={(e) => setFormData(prev => ({ ...prev, closure: e.target.value }))}
+                  placeholder="How will you summarize learning and transition to next activity?"
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  📊 Assessment / Evaluation
+                </label>
+                <textarea
+                  value={formData.assessment}
+                  onChange={(e) => setFormData(prev => ({ ...prev, assessment: e.target.value }))}
+                  placeholder="How will you assess student understanding and progress?"
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                    ⏱️ Preparation Time (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.preparationTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, preparationTime: parseInt(e.target.value) || 15 }))}
+                    min="0"
+                    max="120"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Standards Tab */}
+          {activeTab === 'standards' && (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div>
+                <h3 style={{ color: '#374151', marginBottom: '1rem' }}>
+                  📚 Link State Standards
+                </h3>
+                {availableStandards.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '2rem',
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    border: '2px dashed #d1d5db'
+                  }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📚</div>
+                    <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+                      No state standards loaded yet
+                    </p>
+                    <p style={{ color: '#374151', fontSize: '0.9rem' }}>
+                      Go to the Standards section to import your state standards first
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{
+                    maxHeight: '400px',
+                    overflow: 'auto',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '1rem'
+                  }}>
+                    {availableStandards.map(standard => (
+                      <div key={standard.id} style={{
+                        display: 'flex',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '6px',
+                        marginBottom: '0.5rem',
+                        background: formData.linkedStandardIds.includes(standard.id) ? '#f0f9ff' : 'white'
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={formData.linkedStandardIds.includes(standard.id)}
+                          onChange={() => handleStandardToggle(standard.id)}
+                          style={{ margin: 0 }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '600', color: '#374151', marginBottom: '0.25rem' }}>
+                            {standard.name}
+                          </div>
+                          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
+                            {standard.stateStandardData?.subject} • Grades {standard.stateStandardData?.gradeLevel.join(', ')}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#4b5563' }}>
+                            {standard.description?.slice(0, 120)}...
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {formData.linkedStandardIds.length > 0 && (
+                  <div style={{
+                    background: '#f0fdf4',
+                    border: '1px solid #22c55e',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    marginTop: '1rem'
+                  }}>
+                    <div style={{ color: '#16a34a', fontWeight: '600', marginBottom: '0.5rem' }}>
+                      ✅ {formData.linkedStandardIds.length} standards linked to this lesson
+                    </div>
+                    <div style={{ fontSize: '0.9rem', color: '#15803d' }}>
+                      This lesson plan will be aligned with the selected state standards for curriculum compliance.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Accessibility Tab */}
+          {activeTab === 'accessibility' && (
+            <div style={{ display: 'grid', gap: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  ♿ Differentiation Strategies
+                </label>
+                <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                  How will this lesson be adapted for different learning needs and abilities?
+                </p>
+                {formData.differentiation.map((strategy, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={strategy}
+                      onChange={(e) => handleArrayFieldChange('differentiation', index, e.target.value)}
+                      placeholder={`Differentiation strategy ${index + 1}`}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem'
+                      }}
+                    />
+                    {formData.differentiation.length > 1 && (
+                      <button
+                        onClick={() => removeArrayField('differentiation', index)}
+                        style={{
+                          padding: '0.75rem',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => addArrayField('differentiation')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '2px dashed #0369a1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontWeight: '500'
+                  }}
+                >
+                  + Add Differentiation Strategy
+                </button>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#374151' }}>
+                  🎯 IEP Goal Alignment
+                </label>
+                <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                  Which IEP goal domains does this lesson support?
+                </p>
+                {formData.iepGoalAlignment.map((goal, index) => (
+                  <div key={index} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <select
+                      value={goal}
+                      onChange={(e) => handleArrayFieldChange('iepGoalAlignment', index, e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      <option value="">Select IEP Domain</option>
+                      <option value="Communication">Communication</option>
+                      <option value="Social Skills">Social Skills</option>
+                      <option value="Academics">Academics</option>
+                      <option value="Independence">Independence</option>
+                      <option value="Behavior">Behavior</option>
+                      <option value="Motor Skills">Motor Skills</option>
+                      <option value="Self-Care">Self-Care</option>
+                      <option value="Vocational">Vocational</option>
+                    </select>
+                    {formData.iepGoalAlignment.length > 1 && (
+                      <button
+                        onClick={() => removeArrayField('iepGoalAlignment', index)}
+                        style={{
+                          padding: '0.75rem',
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={() => addArrayField('iepGoalAlignment')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#f0f9ff',
+                    color: '#0369a1',
+                    border: '2px dashed #0369a1',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontWeight: '500'
+                  }}
+                >
+                  + Add IEP Domain
+                </button>
+              </div>
+
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(59, 130, 246, 0.05))',
+                border: '1px solid rgba(139, 92, 246, 0.2)',
+                borderRadius: '12px',
+                padding: '1.5rem'
+              }}>
+                <h4 style={{ color: '#7c3aed', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  💡 Accessibility Quick Tips
+                </h4>
+                <div style={{ display: 'grid', gap: '0.75rem', fontSize: '0.9rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span>👁️</span>
+                    <span><strong>Visual:</strong> Large print, high contrast, visual supports, picture schedules</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span>👂</span>
+                    <span><strong>Auditory:</strong> Reduce background noise, use FM systems, provide written instructions</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span>🧠</span>
+                    <span><strong>Cognitive:</strong> Break into steps, provide extra time, use concrete examples</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span>🤝</span>
+                    <span><strong>Social:</strong> Peer buddies, structured interactions, social stories</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '1.5rem 2rem',
+          borderTop: '1px solid #e5e7eb',
+          background: '#f8fafc'
+        }}>
+          <div style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+            {lessonPlan ? 'Editing existing lesson plan' : 'Creating new lesson plan'}
+          </div>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button
+              onClick={onClose}
+              style={{
+                padding: '0.75rem 1.5rem',
+                border: '2px solid #d1d5db',
+                borderRadius: '8px',
+                background: 'white',
+                color: '#6b7280',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!formData.name.trim() || !formData.subject.trim()}
+              style={{
+                padding: '0.75rem 2rem',
+                border: 'none',
+                borderRadius: '8px',
+                background: (!formData.name.trim() || !formData.subject.trim()) 
+                  ? '#d1d5db' 
+                  : 'linear-gradient(135deg, #059669, #10b981)',
+                color: 'white',
+                cursor: (!formData.name.trim() || !formData.subject.trim()) ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '1rem'
+              }}
+            >
+              {lessonPlan ? '💾 Save Changes' : '✨ Create Lesson Plan'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+// Updated LessonPlansTab component with modal integration
+const EnhancedLessonPlansTab: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [lessonPlans, setLessonPlans] = useState<LibraryContent[]>([]);
+  const [stateStandards, setStateStandards] = useState<LibraryContent[]>([]);
+  const [activeSection, setActiveSection] = useState<'overview' | 'lesson-plans' | 'standards'>('overview');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<LibraryContent | null>(null);
+
+  useEffect(() => {
+    loadContent();
+  }, []);
+
+  const loadContent = () => {
+    const allContent = UnifiedDataService.getLibraryContent();
+    setLessonPlans(allContent.filter(c => c.contentType === 'lesson-plan'));
+    setStateStandards(allContent.filter(c => c.contentType === 'state-standard'));
+  };
+
+  const handleLessonSave = (lessonPlan: LibraryContent) => {
+    // Save to UnifiedDataService
+    if (editingLesson) {
+      UnifiedDataService.updateLibraryContent(lessonPlan.id, lessonPlan);
+      setLessonPlans(prev => prev.map(l => l.id === lessonPlan.id ? lessonPlan : l));
+    } else {
+      UnifiedDataService.addLibraryContent(lessonPlan);
+      setLessonPlans(prev => [...prev, lessonPlan]);
+    }
+
+    // Close modal
+    setIsModalOpen(false);
+    setEditingLesson(null);
+
+    // Dispatch update event
+    window.dispatchEvent(new CustomEvent('libraryContentUpdated', {
+      detail: { 
+        content: lessonPlan,
+        action: editingLesson ? 'updated' : 'created',
+        contentType: 'lesson-plan'
+      }
+    }));
+  };
+
+  const handleStandardsUpload = (standards: StateStandardData[]) => {
+    const standardsContent: LibraryContent[] = standards.map(standard => ({
+      id: generateUniqueId('standard'),
+      name: standard.standardCode,
+      icon: '📚',
+      category: 'academic' as const,
+      contentType: 'state-standard' as const,
+      defaultDuration: 0,
+      description: standard.description,
+      tags: [standard.subject, standard.complexity, ...standard.iepGoalDomains],
+      isDeletable: true,
+      isCustom: true,
+      stateStandardData: standard,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+
+    // Save to UnifiedDataService
+    standardsContent.forEach(content => {
+      UnifiedDataService.addLibraryContent(content);
+    });
+
+    // Update local state
+    setStateStandards(prev => [...prev, ...standardsContent]);
+
+    // Dispatch update event
+    window.dispatchEvent(new CustomEvent('libraryContentUpdated', {
+      detail: { 
+        content: standardsContent,
+        action: 'bulk-created',
+        contentType: 'state-standard'
+      }
+    }));
+  };
+
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Navigation and content sections remain the same as above */}
+      {/* ... (previous JSX content) ... */}
+
+      {/* Lesson Plan Modal */}
+      <LessonPlanModal
+        isOpen={isModalOpen}
+        lessonPlan={editingLesson}
+        availableStandards={stateStandards}
+        onSave={handleLessonSave}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingLesson(null);
+        }}
+      />
+    </div>
+  );
+};
+
+// Export the complete implementation
+export { EnhancedLessonPlansTab, LessonPlanModal, StandardsUploadSection };
+
+// State Standards Upload Component
+const StandardsUploadSection: React.FC<{
+  onStandardsUploaded: (standards: StateStandardData[]) => void;
+  existingStandardsCount: number;
+}> = ({ onStandardsUploaded, existingStandardsCount }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const handleFileUpload = async (file: File) => {
+    setIsProcessing(true);
+    setUploadProgress(0);
+
+    try {
+      const fileContent = await file.text();
+      
+      // Simulate processing progress
+      for (let i = 0; i <= 100; i += 10) {
+        setUploadProgress(i);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Parse the file content (JSON or CSV)
+      let standards: StateStandardData[] = [];
+      
+      if (file.name.endsWith('.json')) {
+        const jsonData = JSON.parse(fileContent);
+        standards = parseJSONStandards(jsonData);
+      } else if (file.name.endsWith('.csv')) {
+        standards = parseCSVStandards(fileContent);
+      } else {
+        throw new Error('Unsupported file format. Please use JSON or CSV.');
+      }
+
+      onStandardsUploaded(standards);
+      alert(`✅ Successfully imported ${standards.length} state standards!`);
+      
+    } catch (error) {
+      console.error('Error processing standards file:', error);
+      alert(`❌ Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const parseJSONStandards = (jsonData: any): StateStandardData[] => {
+    // Handle different JSON structures
+    const standardsArray = Array.isArray(jsonData) ? jsonData : jsonData.standards || [jsonData];
+    
+    return standardsArray.map((item: any, index: number) => ({
+      standardCode: item.code || item.standardCode || `STD-${index + 1}`,
+      subject: item.subject || 'General',
+      gradeLevel: Array.isArray(item.gradeLevel) ? item.gradeLevel : [item.gradeLevel || 'K'],
+      description: item.description || item.text || '',
+      learningObjectives: Array.isArray(item.objectives) ? item.objectives : [item.objective || ''].filter(Boolean),
+      assessmentCriteria: item.assessmentCriteria || [],
+      crossCurricularConnections: item.connections || [],
+      iepGoalDomains: item.iepDomains || [],
+      complexity: item.complexity || 'developing',
+      prerequisites: item.prerequisites || [],
+      state: item.state || 'Unknown'
+    }));
+  };
+
+  const parseCSVStandards = (csvContent: string): StateStandardData[] => {
+    const lines = csvContent.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    
+    return lines.slice(1).map((line, index) => {
+      const values = line.split(',').map(v => v.trim());
+      const row: any = {};
+      
+      headers.forEach((header, i) => {
+        row[header] = values[i] || '';
+      });
+
+      return {
+        standardCode: row.code || row.standardcode || `CSV-STD-${index + 1}`,
+        subject: row.subject || 'General',
+        gradeLevel: row.gradelevel ? row.gradelevel.split(';') : ['K'],
+        description: row.description || row.text || '',
+        learningObjectives: row.objectives ? row.objectives.split(';') : [],
+        assessmentCriteria: row.assessmentcriteria ? row.assessmentcriteria.split(';') : [],
+        crossCurricularConnections: row.connections ? row.connections.split(';') : [],
+        iepGoalDomains: row.iepdomains ? row.iepdomains.split(';') : [],
+        complexity: (row.complexity as any) || 'developing',
+        prerequisites: row.prerequisites ? row.prerequisites.split(';') : [],
+        state: row.state || 'Unknown'
+      };
+    });
+  };
+
+  return (
+    <div style={{
+      background: 'rgba(59, 130, 246, 0.05)',
+      border: '2px dashed rgba(59, 130, 246, 0.3)',
+      borderRadius: '12px',
+      padding: '2rem',
+      marginBottom: '2rem',
+      textAlign: 'center',
+      transition: 'all 0.3s ease',
+      ...(isDragging && {
+        background: 'rgba(59, 130, 246, 0.1)',
+        borderColor: 'rgba(59, 130, 246, 0.5)',
+        transform: 'scale(1.02)'
+      })
+    }}>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
+      <h3 style={{ color: '#3b82f6', marginBottom: '1rem', fontSize: '1.2rem' }}>
+        Import State Standards
+      </h3>
+      
+      {existingStandardsCount > 0 && (
+        <div style={{ 
+          background: 'rgba(34, 197, 94, 0.1)', 
+          border: '1px solid rgba(34, 197, 94, 0.3)',
+          borderRadius: '8px', 
+          padding: '0.75rem', 
+          marginBottom: '1rem',
+          color: '#16a34a'
+        }}>
+          ✅ {existingStandardsCount} standards currently loaded
+        </div>
+      )}
+
+      {isProcessing ? (
+        <div>
+          <div style={{
+            background: '#e5e7eb',
+            borderRadius: '8px',
+            height: '8px',
+            marginBottom: '1rem',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+              height: '100%',
+              width: `${uploadProgress}%`,
+              transition: 'width 0.3s ease'
+            }} />
+          </div>
+          <p>Processing standards... {uploadProgress}%</p>
+        </div>
+      ) : (
+        <>
+          <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+            Upload a JSON or CSV file containing your state standards
+          </p>
+          
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              const files = Array.from(e.dataTransfer.files);
+              if (files[0]) handleFileUpload(files[0]);
+            }}
+          >
+            <input
+              type="file"
+              accept=".json,.csv"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileUpload(file);
+              }}
+              style={{ display: 'none' }}
+              id="standards-upload"
+            />
+            
+            <label
+              htmlFor="standards-upload"
+              style={{
+                display: 'inline-block',
+                padding: '1rem 2rem',
+                background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                color: 'white',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'transform 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              📤 Choose Standards File
+            </label>
+          </div>
+          
+          <div style={{ 
+            marginTop: '1.5rem', 
+            fontSize: '0.9rem', 
+            color: '#6b7280',
+            textAlign: 'left',
+            maxWidth: '600px',
+            margin: '1.5rem auto 0'
+          }}>
+            <h4 style={{ color: '#374151', marginBottom: '0.5rem' }}>Supported Formats:</h4>
+            <ul style={{ paddingLeft: '1.5rem' }}>
+              <li><strong>JSON:</strong> Array of standard objects with properties like code, subject, gradeLevel, description</li>
+              <li><strong>CSV:</strong> Comma-separated with headers: code, subject, gradeLevel, description, objectives</li>
+            </ul>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Lesson Plans Tab Component
+const LessonPlansTab: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all');
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [lessonPlans, setLessonPlans] = useState<LibraryContent[]>([]);
+  const [stateStandards, setStateStandards] = useState<LibraryContent[]>([]);
+  const [activeSection, setActiveSection] = useState<'overview' | 'lesson-plans' | 'standards'>('overview');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<LibraryContent | null>(null);
+
+  useEffect(() => {
+    loadContent();
+  }, []);
+
+  const loadContent = () => {
+    const allContent = UnifiedDataService.getLibraryContent();
+    setLessonPlans(allContent.filter(c => c.contentType === 'lesson-plan'));
+    setStateStandards(allContent.filter(c => c.contentType === 'state-standard'));
+  };
+
+  const handleStandardsUpload = (standards: StateStandardData[]) => {
+    const standardsContent: LibraryContent[] = standards.map(standard => ({
+      id: generateUniqueId('standard'),
+      name: standard.standardCode,
+      icon: '📚',
+      category: 'academic' as 'academic' | 'break' | 'other',
+      contentType: 'state-standard' as const,
+      defaultDuration: 0,
+      description: standard.description,
+      stateStandardData: standard,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isDeletable: true,
+      isCustom: true,
+      tags: [standard.subject, standard.complexity, ...standard.iepGoalDomains]
+    }));
+
+    // Save to UnifiedDataService
+    standardsContent.forEach(content => {
+      UnifiedDataService.addLibraryContent(content);
+    });
+
+    // Update local state
+    setStateStandards(prev => [...prev, ...standardsContent]);
+  };
+
+  const filteredLessonPlans = lessonPlans.filter(plan => {
+    const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         plan.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubject = selectedSubject === 'all' || plan.lessonPlanData?.subject === selectedSubject;
+    const matchesGrade = selectedGrade === 'all' || 
+                        plan.lessonPlanData?.gradeLevel.includes(selectedGrade);
+    
+    return matchesSearch && matchesSubject && matchesGrade;
+  });
+
+  const subjects = [...new Set(lessonPlans.map(p => p.lessonPlanData?.subject).filter(Boolean))];
+  const grades = [...new Set(lessonPlans.flatMap(p => p.lessonPlanData?.gradeLevel || []))];
+
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Navigation Tabs */}
+      <div style={{
+        display: 'flex',
+        background: '#f8fafc',
+        borderRadius: '12px',
+        padding: '0.5rem',
+        marginBottom: '2rem',
+        border: '1px solid #e2e8f0'
+      }}>
+        {[
+          { id: 'overview', icon: '📊', label: 'Overview' },
+          { id: 'lesson-plans', icon: '📋', label: 'Lesson Plans' },
+          { id: 'standards', icon: '📚', label: 'State Standards' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSection(tab.id as any)}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '1rem',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeSection === tab.id ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'transparent',
+              color: activeSection === tab.id ? 'white' : '#6b7280',
+              cursor: 'pointer',
+              fontWeight: '600',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Overview Section */}
+      {activeSection === 'overview' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(147, 197, 253, 0.1))',
+            borderRadius: '16px',
+            padding: '2rem',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+            <h3 style={{ color: '#3b82f6', marginBottom: '1rem' }}>Lesson Plans</h3>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: '#1e40af', marginBottom: '0.5rem' }}>
+              {lessonPlans.length}
+            </div>
+            <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+              Complete lesson plans with objectives, procedures, and assessments
+            </p>
+            <button
+              onClick={() => setActiveSection('lesson-plans')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Manage Lessons
+            </button>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(196, 181, 253, 0.1))',
+            borderRadius: '16px',
+            padding: '2rem',
+            border: '1px solid rgba(139, 92, 246, 0.2)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📚</div>
+            <h3 style={{ color: '#8b5cf6', marginBottom: '1rem' }}>State Standards</h3>
+            <div style={{ fontSize: '2rem', fontWeight: '700', color: '#7c3aed', marginBottom: '0.5rem' }}>
+              {stateStandards.length}
+            </div>
+            <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+              Imported state standards for curriculum alignment
+            </p>
+            <button
+              onClick={() => setActiveSection('standards')}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#8b5cf6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Manage Standards
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Standards Section */}
+      {activeSection === 'standards' && (
+        <div>
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#374151', marginBottom: '0.5rem' }}>
+              📚 State Standards Repository
+            </h3>
+            <p style={{ color: '#6b7280' }}>
+              Import and manage state standards for lesson plan alignment
+            </p>
+          </div>
+
+          <StandardsUploadSection 
+            onStandardsUploaded={handleStandardsUpload}
+            existingStandardsCount={stateStandards.length}
+          />
+
+          {stateStandards.length > 0 && (
+            <div>
+              <h4 style={{ marginBottom: '1rem', color: '#374151' }}>
+                Loaded Standards ({stateStandards.length})
+              </h4>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '1rem'
+              }}>
+                {stateStandards.slice(0, 6).map(standard => (
+                  <div key={standard.id} style={{
+                    background: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                    padding: '1rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '0.5rem'
+                    }}>
+                      <h5 style={{ margin: 0, color: '#1f2937', fontSize: '0.9rem', fontWeight: '600' }}>
+                        {standard.name}
+                      </h5>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem'
+                      }}>
+                        {standard.stateStandardData?.subject}
+                      </span>
+                    </div>
+                    <p style={{
+                      margin: 0,
+                      color: '#6b7280',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.4'
+                    }}>
+                      {standard.description?.slice(0, 100)}...
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {stateStandards.length > 6 && (
+                <p style={{ textAlign: 'center', marginTop: '1rem', color: '#6b7280' }}>
+                  ...and {stateStandards.length - 6} more standards
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lesson Plans Section */}
+      {activeSection === 'lesson-plans' && (
+        <div>
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '2rem' 
+          }}>
+            <div>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#374151', margin: 0 }}>
+                📋 Lesson Plans
+              </h3>
+              <p style={{ color: '#6b7280', margin: '0.25rem 0 0 0' }}>
+                Create and manage detailed lesson plans
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '1rem 1.5rem',
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              ➕ Create Lesson Plan
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div style={{
+            background: '#f8fafc',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            gap: '1rem',
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <input
+              type="text"
+              placeholder="Search lesson plans..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: '200px',
+                padding: '0.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px'
+              }}
+            />
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px'
+              }}
+            >
+              <option value="all">All Subjects</option>
+              {subjects.map(subject => (
+                <option key={subject} value={subject}>{subject}</option>
+              ))}
+            </select>
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px'
+              }}
+            >
+              <option value="all">All Grades</option>
+              {grades.sort().map(grade => (
+                <option key={grade} value={grade}>Grade {grade}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Lesson Plans Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '1.5rem'
+          }}>
+            {filteredLessonPlans.length === 0 ? (
+              <div style={{
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: '3rem 1rem',
+                color: '#6b7280'
+              }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</div>
+                <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: '#374151' }}>
+                  No lesson plans found
+                </h3>
+                <p style={{ marginBottom: '1.5rem' }}>
+                  Create your first lesson plan to get started
+                </p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: '#059669',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  Create Lesson Plan
+                </button>
+              </div>
+            ) : (
+              filteredLessonPlans.map(lesson => (
+                <LessonPlanCard 
+                  key={lesson.id}
+                  lessonPlan={lesson}
+                  onEdit={() => {
+                    setEditingLesson(lesson);
+                    setIsModalOpen(true);
+                  }}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Lesson Plan Card Component
+const LessonPlanCard: React.FC<{
+  lessonPlan: LibraryContent;
+  onEdit: () => void;
+}> = ({ lessonPlan, onEdit }) => {
+  const data = lessonPlan.lessonPlanData;
+  if (!data) return null;
+
+  return (
+    <div style={{
+      background: 'white',
+      border: '1px solid #e5e7eb',
+      borderLeft: '4px solid #059669',
+      borderRadius: '8px',
+      padding: '1.5rem',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: '1rem'
+      }}>
+        <div>
+          <h4 style={{ margin: '0 0 0.25rem 0', color: '#1f2937', fontSize: '1.1rem' }}>
+            {lessonPlan.name}
+          </h4>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <span style={{
+              background: '#dcfce7',
+              color: '#16a34a',
+              padding: '0.125rem 0.5rem',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: '500'
+            }}>
+              {data.subject}
+            </span>
+            <span style={{
+              background: '#ddd6fe',
+              color: '#7c3aed',
+              padding: '0.125rem 0.5rem',
+              borderRadius: '4px',
+              fontSize: '0.75rem',
+              fontWeight: '500'
+            }}>
+              {data.gradeLevel.join(', ')}
+            </span>
+          </div>
+        </div>
+        <div style={{ color: '#6b7280', fontSize: '0.875rem', textAlign: 'right' }}>
+          {data.duration}min
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <h5 style={{ margin: '0 0 0.5rem 0', color: '#374151', fontSize: '0.9rem' }}>
+          Learning Objectives:
+        </h5>
+        <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#6b7280', fontSize: '0.85rem' }}>
+          {data.objectives.slice(0, 2).map((obj, index) => (
+            <li key={index} style={{ marginBottom: '0.25rem' }}>{obj}</li>
+          ))}
+          {data.objectives.length > 2 && (
+            <li style={{ color: '#9ca3af', fontStyle: 'italic' }}>
+              +{data.objectives.length - 2} more objectives
+            </li>
+          )}
+        </ul>
+      </div>
+
+      {data.linkedStandardIds.length > 0 && (
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{
+            background: '#fef3c7',
+            border: '1px solid #fcd34d',
+            borderRadius: '6px',
+            padding: '0.5rem',
+            fontSize: '0.8rem',
+            color: '#92400e'
+          }}>
+            📚 Linked to {data.linkedStandardIds.length} state standards
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button
+          onClick={onEdit}
+          style={{
+            flex: 1,
+            padding: '0.5rem',
+            background: '#059669',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '500'
+          }}
+        >
+          ✏️ Edit
+        </button>
+        <button
+          onClick={() => {
+            // Future: Export or duplicate functionality
+            console.log('Export lesson plan:', lessonPlan);
+          }}
+          style={{
+            padding: '0.5rem',
+            background: 'transparent',
+            color: '#6b7280',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          📤
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 // Activity Card Component
 const ActivityCard: React.FC<{

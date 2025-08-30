@@ -2349,6 +2349,90 @@ class UnifiedDataService {
     }
   }
 
+  // ===== LIBRARY CONTENT MANAGEMENT METHODS =====
+  
+  // Get all library content
+  static getLibraryContent(): any[] {
+    try {
+      const content = localStorage.getItem('libraryContent');
+      return content ? JSON.parse(content) : [];
+    } catch (error) {
+      console.error('Error loading library content:', error);
+      return [];
+    }
+  }
+
+  // Add new library content
+  static addLibraryContent(content: any): void {
+    try {
+      const existingContent = this.getLibraryContent();
+      const updatedContent = [...existingContent, content];
+      localStorage.setItem('libraryContent', JSON.stringify(updatedContent));
+    } catch (error) {
+      console.error('Error adding library content:', error);
+    }
+  }
+
+  // Update existing library content
+  static updateLibraryContent(id: string, updates: any): void {
+    try {
+      const existingContent = this.getLibraryContent();
+      const updatedContent = existingContent.map(content => 
+        content.id === id ? { ...content, ...updates, updatedAt: new Date().toISOString() } : content
+      );
+      localStorage.setItem('libraryContent', JSON.stringify(updatedContent));
+    } catch (error) {
+      console.error('Error updating library content:', error);
+    }
+  }
+
+  // Delete library content
+  static deleteLibraryContent(id: string): void {
+    try {
+      const existingContent = this.getLibraryContent();
+      const filteredContent = existingContent.filter(content => content.id !== id);
+      localStorage.setItem('libraryContent', JSON.stringify(filteredContent));
+    } catch (error) {
+      console.error('Error deleting library content:', error);
+    }
+  }
+
+  // Get standards by subject
+  static getStandardsBySubject(subject: string): any[] {
+    return this.getLibraryContent()
+      .filter(content => 
+        content.contentType === 'state-standard' && 
+        content.stateStandardData?.subject === subject
+      );
+  }
+
+  // Get standards by grade
+  static getStandardsByGrade(grade: string): any[] {
+    return this.getLibraryContent()
+      .filter(content => 
+        content.contentType === 'state-standard' && 
+        content.stateStandardData?.gradeLevel.includes(grade)
+      );
+  }
+
+  // Get lesson plans by subject
+  static getLessonPlansBySubject(subject: string): any[] {
+    return this.getLibraryContent()
+      .filter(content => 
+        content.contentType === 'lesson-plan' && 
+        content.lessonPlanData?.subject === subject
+      );
+  }
+
+  // Get lesson plans linked to a specific standard
+  static getLessonPlansLinkedToStandard(standardId: string): any[] {
+    return this.getLibraryContent()
+      .filter(content => 
+        content.contentType === 'lesson-plan' && 
+        content.lessonPlanData?.linkedStandardIds.includes(standardId)
+      );
+  }
+
   // ===== BEHAVIOR COMMITMENT METHODS =====
   
   // Get behavior commitments for a specific date
