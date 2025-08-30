@@ -2979,6 +2979,32 @@ const LessonPlansTab: React.FC = () => {
     setStateStandards(prev => [...prev, ...standardsContent]);
   };
 
+  const handleLessonSave = (lessonPlan: LibraryContent) => {
+    // Save to UnifiedDataService
+    if (editingLesson) {
+      UnifiedDataService.updateLibraryContent(lessonPlan.id, lessonPlan);
+      setLessonPlans(prev => prev.map(l => (l.id === lessonPlan.id ? lessonPlan : l)));
+    } else {
+      UnifiedDataService.addLibraryContent(lessonPlan);
+      setLessonPlans(prev => [...prev, lessonPlan]);
+    }
+
+    // Close modal
+    setIsModalOpen(false);
+    setEditingLesson(null);
+
+    // Dispatch update event
+    window.dispatchEvent(
+      new CustomEvent('libraryContentUpdated', {
+        detail: {
+          content: lessonPlan,
+          action: editingLesson ? 'updated' : 'created',
+          contentType: 'lesson-plan',
+        },
+      })
+    );
+  };
+
   const filteredLessonPlans = lessonPlans.filter(plan => {
     const matchesSearch = plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          plan.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -3192,7 +3218,10 @@ const LessonPlansTab: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEditingLesson(null); // Clear any existing lesson
+                setIsModalOpen(true);   // Open the modal
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -3314,6 +3343,17 @@ const LessonPlansTab: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Add this at the end of your LessonPlansTab return statement */}
+      <LessonPlanModal
+        isOpen={isModalOpen}
+        lessonPlan={editingLesson}
+        availableStandards={stateStandards}
+        onSave={handleLessonSave}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingLesson(null);
+        }}
+      />
     </div>
   );
 };
